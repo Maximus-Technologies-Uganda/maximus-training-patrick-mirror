@@ -51,9 +51,19 @@ if (command === 'add') {
     }
   
 } else if (command === 'toggle') {
-    // The first argument is the index number of the task to toggle
-    const index = parseInt(args[0]) - 1; // Subtract 1 to match the array index
+    const indexStr = args[0];
+    const index = parseInt(indexStr) - 1;
   
+    // --- VALIDATION START ---
+    if (isNaN(index) || index < 0 || index >= todos.length) {
+      console.error('Error: Please provide a valid index to toggle.');
+      return; // Stop the script
+    }
+    // --- VALIDATION END ---
+  
+    todos[index].completed = !todos[index].completed;
+    writeTodos(todos);
+    console.log('Toggled status for:', todos[index].task);
     // Check if the index is valid
     if (index >= 0 && index < todos.length) {
       // Flip the 'completed' status
@@ -65,9 +75,19 @@ if (command === 'add') {
     }
   
 } else if (command === 'remove') {
-    // The first argument is the index number of the task to remove
-    const index = parseInt(args[0]) - 1; // Subtract 1 to match the array index
+    const indexStr = args[0];
+    const index = parseInt(indexStr) - 1;
   
+    // --- VALIDATION START ---
+    if (isNaN(index) || index < 0 || index >= todos.length) {
+      console.error('Error: Please provide a valid index to remove.');
+      return; // Stop the script
+    }
+    // --- VALIDATION END ---
+  
+    const removedTodo = todos.splice(index, 1);
+    writeTodos(todos);
+    console.log(`Removed: "${removedTodo[0].task}"`);
     // Check if the index is valid
     if (index >= 0 && index < todos.length) {
       // Use splice() to remove the item from the array
