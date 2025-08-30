@@ -1,3 +1,63 @@
+name: mirror
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["*"]
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    name: mirror
+    runs-on: ubuntu-latest
+    if: ${{ secrets.MIRROR_URL != '' && secrets.MIRROR_PAT != '' }}
+    steps:
+      - name: Check secret present
+        run: echo "Secrets present: MIRROR_URL and MIRROR_PAT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add public mirror remote
+        env:
+          MIRROR_URL: ${{ secrets.MIRROR_URL }}
+          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${MIRROR_URL}" ]]; then
+            echo "MIRROR_URL is empty" >&2; exit 1
+          fi
+          if [[ "${MIRROR_URL}" =~ ^git@ ]]; then
+            echo "Using SSH mirror URL"
+            git remote add mirror "${MIRROR_URL}"
+          else
+            echo "Using HTTPS mirror URL with token"
+            url_no_proto="${MIRROR_URL#https://}"
+            url_no_proto="${url_no_proto#http://}"
+            git remote add mirror "https://x-access-token:${MIRROR_PAT}@${url_no_proto}"
+          fi
+          git remote -v
+
+      - name: Push all branches and tags to mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mirror all refs (branches and tags). Force to ensure tags update.
+          git push --mirror --force mirror
+
 name: Mirror to Public
 
 on:
