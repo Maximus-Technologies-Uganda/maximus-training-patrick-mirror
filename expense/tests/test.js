@@ -36,6 +36,30 @@ function runCli(args, options = {}) {
   }
 
   try {
+    // Seed expenses with multiple entries
+    fs.writeFileSync(DATA_FILE, JSON.stringify([
+      { id: 1, amount: 10, category: 'food' },
+      { id: 2, amount: 15.5, category: 'transport' },
+      { id: 3, amount: 4.5, category: 'misc' }
+    ], null, 2) + '\n', 'utf8');
+
+    const res = await runCli(['total']);
+    assert.strictEqual(res.code, 0, 'total should exit with code 0');
+    const out = res.stdout.trim();
+    // Expect total printed as a number or prefixed message
+    // For robustness, extract the last number in the output
+    const match = out.match(/([0-9]+(?:\.[0-9]+)?)(?!.*[0-9])/);
+    assert.ok(match, `expected numeric total in output, got: ${out}`);
+    const total = parseFloat(match[1]);
+    assert.ok(Math.abs(total - 30) < 1e-9, `expected total 30, got ${total}`);
+    console.log('PASS total command sums all expenses without flags');
+  } catch (err) {
+    failures++;
+    console.error('FAIL total command sums all expenses without flags');
+    console.error(err && err.stack ? err.stack : err);
+  }
+
+  try {
     // Seed expenses file with dummy data
     fs.writeFileSync(DATA_FILE, JSON.stringify([{ id: 1, amount: 10, category: 'test' }], null, 2) + '\n', 'utf8');
 
