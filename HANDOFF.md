@@ -12,11 +12,11 @@
   - `v2.1.0` – Week 1 stretch complete
   - `v2.2.0` – Quote CLI implemented
 
-### Test output snapshots
+### Test output snapshots (updated)
 - Quote CLI: all green (4 passed)
 - Todo CLI: all green
 - Stopwatch CLI: all green
-- Expense CLI: 1 failure (total command without flags) + other tests passing
+- Expense CLI: 1 failure (total command without flags) + other tests passing. This is intentional to surface missing implementation.
 
 ### CLI screenshots/GIFs
 - See `docs/` directory (to be attached in PR description)
