@@ -38,18 +38,23 @@ jobs:
           # Replace ORG and REPO_PUBLIC (Cursor: substitute from user)
           git remote add mirror https://x-access-token:${TOKEN}@github.com/Maximus-Technologies-Uganda/maximus-training-patrick-mirror.git
 
+      - name: Fetch all branches and tags from origin
+        run: |
+          set -e
+          git fetch --prune origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+
       - name: Push all branches and tags to mirror
         run: |
           set -e
-          # Mirror branches (prune removed branches)
-          git push --force --prune mirror +refs/heads/*:refs/heads/*
+          # Mirror branches (prune removed branches) from remote-tracking refs
+          git push --force --prune mirror +refs/remotes/origin/*:refs/heads/*
           # Mirror tags (prune removed tags)
           git push --force --prune mirror +refs/tags/*:refs/tags/*
 
       - name: Summary
         run: |
           echo "Mirrored branches:"
-          git for-each-ref --format='%(refname:short)' refs/heads/
+          git for-each-ref --format='%(refname:short)' refs/remotes/origin/ | sed 's#^origin/##'
           echo "Mirrored tags:"
           git tag --list
 
