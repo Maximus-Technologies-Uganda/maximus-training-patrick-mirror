@@ -8,6 +8,14 @@ function selectRandom(items) {
   return items[idx];
 }
 
+function filterQuotesByAuthor(quotes, author) {
+  if (!author) return quotes;
+  const needle = author.trim().toLowerCase();
+  return quotes.filter(q =>
+    q && typeof q.author === 'string' && q.author.trim().toLowerCase() === needle
+  );
+}
+
 function parseArgs(argv) {
   const out = { by: null, help: false };
   for (let i = 2; i < argv.length; i++) {
@@ -41,8 +49,7 @@ function main() {
 
     let pool = quotes;
     if (args.by) {
-      const needle = args.by.trim().toLowerCase();
-      pool = quotes.filter(q => q.author.trim().toLowerCase() === needle);
+      pool = filterQuotesByAuthor(quotes, args.by);
       if (pool.length === 0) {
         console.error(`Error: No quotes found for author "${args.by}".`);
         process.exit(1);
@@ -59,6 +66,6 @@ function main() {
 
 if (require.main === module) { main(); }
 
-module.exports = { parseArgs, selectRandom };
+module.exports = { parseArgs, selectRandom, filterQuotesByAuthor };
 
 
