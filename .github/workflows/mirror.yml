@@ -14,10 +14,10 @@ jobs:
   mirror:
     name: mirror
     runs-on: ubuntu-latest
-    if: ${{ secrets.MIRROR_URL != '' && secrets.MIRROR_PAT != '' }}
     steps:
       - name: Check secret present
-        run: echo "Secrets present: MIRROR_URL and MIRROR_PAT"
+        run: |
+          echo "Secrets present: MIRROR_URL and MIRROR_PAT"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,60 +57,5 @@ jobs:
           set -euo pipefail
           # Mirror all refs (branches and tags). Force to ensure tags update.
           git push --mirror --force mirror
-
-name: Mirror to Public
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-      - 'patrick/**'
-    tags:
-      - '*'
-
-jobs:
-  mirror:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check secret present
-        run: |
-          if [ -z "${{ secrets.MIRROR_TOKEN }}" ]; then
-            echo "ERROR: MIRROR_TOKEN is missing."
-            echo "Add it in: Settings > Secrets and variables > Actions > New repository secret"
-            exit 1
-          fi
-
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Configure git
-        run: |
-          git config user.name "ci-mirror-bot"
-          git config user.email "ci-mirror-bot@users.noreply.github.com"
-
-      - name: Add public mirror remote
-        env:
-          TOKEN: ${{ secrets.MIRROR_TOKEN }}
-        run: |
-          # Replace ORG and REPO_PUBLIC (Cursor: substitute from user)
-          git remote add mirror https://x-access-token:${TOKEN}@github.com/Maximus-Technologies-Uganda/maximus-training-patrick-mirror.git
-
-      - name: Push all branches and tags to mirror
-        run: |
-          set -e
-          # Mirror branches (prune removed branches)
-          git push --force --prune mirror +refs/heads/*:refs/heads/*
-          # Mirror tags (prune removed tags)
-          git push --force --prune mirror +refs/tags/*:refs/tags/*
-
-      - name: Summary
-        run: |
-          echo "Mirrored branches:"
-          git for-each-ref --format='%(refname:short)' refs/heads/
-          echo "Mirrored tags:"
-          git tag --list
 
 
