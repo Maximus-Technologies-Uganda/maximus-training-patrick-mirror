@@ -32,7 +32,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Run tests with coverage
-        run: npx c8 -r text -r lcov npm test
+        run: npx c8 -r text -r lcov node scripts/run-tests.js
 
       - name: Upload coverage (lcov)
         if: always()
