@@ -16,15 +16,54 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Scan for app directories
+      - name: Scan for app directories (python, robust)
         id: scan
         run: |
-          node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);let apps=[];try{apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`) || fs.existsSync(`${d}/src`) && fs.existsSync(`${d}/tests`) || fs.existsSync(`${d}/tests`);}catch(_){return false;}});}catch(_){apps=[]} process.stdout.write(JSON.stringify(apps));" > apps.json
-          # Guarantee single-line JSON and default to []:
-          if [ ! -s apps.json ]; then echo "[]" > apps.json; fi
-          printf "apps=%s" "$(cat apps.json)" >> "$GITHUB_OUTPUT"
+          python3 - << 'PY'
+          import os, json
+          skip = {'.git','.github','docs','helpers','labs','repos','node_modules'}
+          apps = []
+          for d in os.listdir('.'):
+            if d in skip or d.startswith('.'):
+              continue
+            if not os.path.isdir(d):
+              continue
+            has_pkg = os.path.isfile(os.path.join(d,'package.json'))
+            has_src = os.path.isdir(os.path.join(d,'src'))
+            has_tests = os.path.isdir(os.path.join(d,'tests'))
+            if has_pkg or has_tests or (has_src and has_tests):
+              apps.append(d)
+          print(json.dumps(apps))
+          PY
+          # Save single-line JSON and export to GITHUB_OUTPUT
+          apps_json="$(python3 - << 'PY'
+import os,json
+with open(0) as f: pass
+PY
+)"
+          # Re-read stdout from the previous python block:
+          apps_json="$(tail -n1 <<'EOT'
+$(python3 - << 'PY'
+import os, json
+skip={'.git','.github','docs','helpers','labs','repos','node_modules'}
+apps=[]
+for d in os.listdir('.'):
+  if d in skip or d.startswith('.'): continue
+  if not os.path.isdir(d): continue
+  has_pkg = os.path.isfile(os.path.join(d,'package.json'))
+  has_src = os.path.isdir(os.path.join(d,'src'))
+  has_tests = os.path.isdir(os.path.join(d,'tests'))
+  if has_pkg or has_tests or (has_src and has_tests):
+    apps.append(d)
+print(json.dumps(apps))
+PY
+)
+EOT
+)"
+          [ -z "$apps_json" ] && apps_json="[]"
+          printf "apps=%s" "$apps_json" >> "$GITHUB_OUTPUT"
           echo
-          echo "Discovered apps: $(cat apps.json)"
+          echo "Discovered apps: $apps_json"
 
   per_app:
     name: Per-app tests & coverage
