@@ -62,9 +62,16 @@ jobs:
 
       - name: Fetch all branches and tags from origin
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+          # Authenticate fetch against private origin using GITHUB_TOKEN (does not persist credentials)
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git fetch --prune origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+          # Restore clean origin URL
+          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
 
       - name: Push all branches and tags to mirror
         shell: bash
