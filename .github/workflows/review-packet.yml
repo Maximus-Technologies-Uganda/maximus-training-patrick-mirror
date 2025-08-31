@@ -153,13 +153,13 @@ jobs:
             const fs=require('fs');
             let apps=[];
             try{apps=JSON.parse(process.env.APPS_JSON||'[]')}catch(e){apps=[]}
-            if(!apps.length){console.log('No apps discovered from matrix.'); return;}
+            if(!apps.length){console.log('No apps discovered from matrix.'); process.exit(0);}
             for(const app of apps){
               const cov=fs.existsSync('review-artifacts/coverage-'+app);
               let summary='(no summary)';
               const p='_dl/perapp-'+app+'/perapp-'+app+'.txt';
               if(fs.existsSync(p)) summary=fs.readFileSync(p,'utf8').trim().replace(/\\n/g,' / ');
-              console.log(`- ${app}: ${cov?'coverage collected':'no coverage'} / ${summary}`);
+              console.log(\`- \${app}: \${cov?'coverage collected':'no coverage'} / \${summary}\`);
             }
           " >> review.md
 
