@@ -28,11 +28,12 @@ jobs:
   per_app:
     name: Per-app tests & coverage
     needs: discover
+    if: ${{ needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJSON(needs.discover.outputs.apps) }}
+        app: ${{ fromJSON(needs.discover.outputs.apps || '[]') }}
     steps:
       - uses: actions/checkout@v4
 
