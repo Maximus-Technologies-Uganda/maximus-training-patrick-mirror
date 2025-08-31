@@ -17,16 +17,16 @@ jobs:
     steps:
       - name: Check secret present
         shell: bash
+        env:
+          MIRROR_URL: ${{ secrets.MIRROR_URL || 'https://github.com/Maximus-Technologies-Uganda/maximus-training-patrick-mirror.git' }}
+          MIRROR_PAT: ${{ secrets.MIRROR_PAT || secrets.MIRROR_TOKEN }}
         run: |
           set -euo pipefail
-          if [[ -z "${{ secrets.MIRROR_URL }}" ]]; then
-            echo "ERROR: MIRROR_URL is missing." >&2
+          if [[ -z "${MIRROR_PAT}" ]]; then
+            echo "ERROR: MIRROR_PAT (or MIRROR_TOKEN) is missing." >&2
             exit 1
           fi
-          if [[ -z "${{ secrets.MIRROR_PAT }}" ]]; then
-            echo "ERROR: MIRROR_PAT is missing." >&2
-            exit 1
-          fi
+          echo "Using MIRROR_URL=${MIRROR_URL}"
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,8 +41,8 @@ jobs:
 
       - name: Add public mirror remote
         env:
-          MIRROR_URL: ${{ secrets.MIRROR_URL }}
-          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
+          MIRROR_URL: ${{ secrets.MIRROR_URL || 'https://github.com/Maximus-Technologies-Uganda/maximus-training-patrick-mirror.git' }}
+          MIRROR_PAT: ${{ secrets.MIRROR_PAT || secrets.MIRROR_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
