@@ -3,6 +3,6 @@ module.exports = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   collectCoverageFrom: ['src/**/*.js'],
-  testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.spec.js'],
+  testMatch: ['**/tests/**/*.js'],
   transform: {},
 };
