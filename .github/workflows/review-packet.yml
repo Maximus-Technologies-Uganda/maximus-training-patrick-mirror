@@ -172,13 +172,19 @@ jobs:
             review-artifacts/**
             CHANGELOG.md
             README.md
+            docs/**/*.md
+            helpers/**
             expense/README.md
             todo/README.md
             stopwatch/README.md
             quote/README.md
+            expense/src/**
+            todo/src/**
+            stopwatch/src/**
+            quote/src/**
             expense/tests/**
             todo/tests/**
-            stopwatch/tests**
+            stopwatch/tests/**
             quote/tests/**
           if-no-files-found: ignore
         # Intentionally exclude legacy repos/** by not listing it.
