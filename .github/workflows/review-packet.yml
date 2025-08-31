@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - 'patrick/**'   # adjust later if you want fewer branches
+      - 'patrick/**'   # adjust if you want fewer branches
 
 jobs:
   discover:
@@ -21,19 +21,19 @@ jobs:
         shell: bash
         run: |
           set -e
-          apps=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`) || (fs.existsSync(`${d}/src`) && fs.existsSync(`${d}/tests`)) || fs.existsSync(`${d}/tests`);}catch(e){return false;}});process.stdout.write(JSON.stringify(apps));")
+          apps=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`)||(fs.existsSync(`${d}/src`)&&fs.existsSync(`${d}/tests`))||fs.existsSync(`${d}/tests`);}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
           [ -z "$apps" ] && apps="[]"
           echo "apps=$apps" >> "$GITHUB_OUTPUT"
           echo "Discovered apps: $apps"
           {
             echo "### Discovered apps";
-            echo "```json"; echo "$apps"; echo "```";
+            echo "\`\`\`json"; echo "$apps"; echo "\`\`\`";
           } >> "$GITHUB_STEP_SUMMARY"
 
   per_app:
     name: Per-app tests & coverage
     needs: discover
-    if: ${{ needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]' }}
+    if: ${{ (fromJSON(needs.discover.outputs.apps || '[]')).length > 0 }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -41,55 +41,38 @@ jobs:
         app: ${{ fromJSON(needs.discover.outputs.apps) }}
     steps:
       - uses: actions/checkout@v4
-      - name: Debug matrix app
-        run: echo "Running per_app for ${{ matrix.app }}"
 
       - name: Node setup
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Run tests/coverage (best-effort) for ${{ matrix.app }}
+      - name: Debug matrix app
+        run: echo "Running per_app for ${{ matrix.app }}"
+
+      - name: Install (best-effort)
+        shell: bash
         run: |
           set -e
           APP="${{ matrix.app }}"
-          SUMMARY="perapp-$APP.txt"
-          echo "== $APP ==" | tee "$SUMMARY"
-
           if [ -d "$APP" ]; then
-            if [ -f "$APP/package.json" ]; then
-              echo "-- npm ci (best-effort)" | tee -a "$SUMMARY"
-              (cd "$APP" (cd "$APP" && npm ci)(cd "$APP" && npm ci) npm ci || npm install || true) || echo "($APP) npm ci failed or lockfile missing; continuing" | tee -a "$SUMMARY"
-
-              echo "-- jest --coverage (best-effort)" | tee -a "$SUMMARY"
-              (cd "$APP" && npx jest --coverage) || echo "($APP) jest missing or tests failed; continuing" | tee -a "$SUMMARY"
-
-              if [ -d "$APP/coverage" ]; then
-                echo "coverage: present" | tee -a "$SUMMARY"
-              else
-                echo "coverage: missing" | tee -a "$SUMMARY"
-              fi
-            fi
-
-            if ls "$APP/tests/"*.js >/dev/null 2>&1; then
-              echo "-- fallback node tests" | tee -a "$SUMMARY"
-              FAILS=0
-              for t in "$APP"/tests/*.js; do
-                node "$t" || { echo "$t failed" | tee -a "$SUMMARY"; FAILS=$((FAILS+1)); }
-              done
-              echo "fallback_failures: $FAILS" | tee -a "$SUMMARY"
-            fi
-          else
-            echo "folder not found: $APP" | tee -a "$SUMMARY"
+            (cd "$APP" && npm ci) || (cd "$APP" && npm install) || true
           fi
 
-          # Stash per-app coverage in a stable path for artifact upload
-          if [ -d "$APP/coverage" ]; then
-            mkdir -p "stage/coverage-$APP"
-            cp -R "$APP/coverage/." "stage/coverage-$APP/"
+      - name: Jest coverage (best-effort)
+        shell: bash
+        run: |
+          set -e
+          APP="${{ matrix.app }}"
+          if [ -d "$APP" ]; then
+            (cd "$APP" && npx jest --coverage) || echo "$APP: jest missing or tests failed; continuing"
+            if [ -d "$APP/coverage" ]; then
+              mkdir -p "stage/coverage-$APP"
+              cp -R "$APP/coverage/." "stage/coverage-$APP/" || true
+            fi
           fi
 
-      - name: Upload per-app coverage (if any)
+      - name: Upload per-app coverage
         if: ${{ hashFiles(format('{0}/coverage/**', matrix.app)) != '' }}
         uses: actions/upload-artifact@v4
         with:
@@ -97,7 +80,16 @@ jobs:
           path: stage/coverage-${{ matrix.app }}/**
 
       - name: Upload per-app summary
-        uses: actions/upload-artifact@v4
+        run: |
+          APP="${{ matrix.app }}"
+          echo "app=$APP" > "perapp-${APP}.txt"
+          if [ -d "stage/coverage-${APP}" ]; then
+            echo "coverage=present" >> "perapp-${APP}.txt"
+          else
+            echo "coverage=absent" >> "perapp-${APP}.txt"
+          fi
+        shell: bash
+      - uses: actions/upload-artifact@v4
         with:
           name: perapp-${{ matrix.app }}
           path: perapp-${{ matrix.app }}.txt
@@ -109,12 +101,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Debug apps passed to assemble
-        env:
-          APPS_JSON: ${{ needs.discover.outputs.apps }}
-        run: |
-          echo "APPS_JSON=${APPS_JSON:-<empty>}"
-          echo -n "APPS length (parsed): "; node -e "try{console.log(JSON.parse(process.env.APPS_JSON||'[]').length)}catch(e){console.log('parse-error')}"
 
       - name: Node setup
         uses: actions/setup-node@v4
@@ -126,15 +112,19 @@ jobs:
           echo "# Automated Review Packet" > review.md
           echo "## Environment" >> review.md
           (node -v && npm -v) >> review.md || echo "node/npm unavailable" >> review.md
-
           echo -e "\n## Commit Summary (20 most recent)" >> review.md
           git log -n 20 --pretty=format:'- %h %ad %an — %s' --date=short >> review.md
-
           echo -e "\n## Repo Map (depth=2)" >> review.md
           find . -maxdepth 2 -type d | sort | sed 's#^\./##' >> review.md
-
           echo -e "\n## Notes" >> review.md
           echo "- Best-effort run: missing tools will not fail the job; see summaries below." >> review.md
+
+      - name: Debug apps passed to assemble
+        env:
+          APPS_JSON: ${{ needs.discover.outputs.apps }}
+        run: |
+          echo "APPS_JSON=${APPS_JSON:-<empty>}"
+          echo "APPS length (parsed):" $(node -e "try{console.log(JSON.parse(process.env.APPS_JSON||'[]').length)}catch(e){console.log('parse-error')}")
 
       - name: Download all per-app artifacts
         uses: actions/download-artifact@v4
@@ -143,7 +133,7 @@ jobs:
           merge-multiple: true
         continue-on-error: true
 
-      - name: Assemble coverage and per-app summaries
+      - name: Consolidate coverage + per-app summaries
         env:
           APPS_JSON: ${{ needs.discover.outputs.apps }}
         run: |
@@ -157,25 +147,66 @@ jobs:
               cp -R "$d/." "review-artifacts/coverage-$APP_NAME/" || true
             done
           fi
-
-          # Append an App Test Summary section
+          # Append App Test Summary
           echo -e "\n## App Test Summary" >> review.md
           node -e "
             const fs=require('fs');
-            const apps = process.env.APPS_JSON ? JSON.parse(process.env.APPS_JSON) : [];
-            if (!apps.length) {
-              console.log('No apps discovered');
-            } else {
-              for (const app of apps) {
-                const cov = fs.existsSync('review-artifacts/coverage-' + app);
-                const summ = fs.existsSync('_dl/perapp-' + app + '/perapp-' + app + '.txt')
-                  ? fs.readFileSync('_dl/perapp-' + app + '/perapp-' + app + '.txt', 'utf8').trim()
-                  : '(no summary)';
-                console.log('- ' + app + ': ' + (cov ? 'coverage collected' : 'no coverage') );
-                console.log('  summary: ' + summ.replace(/\\n/g, ' / '));
-              }
+            let apps=[];
+            try{apps=JSON.parse(process.env.APPS_JSON||'[]')}catch(e){apps=[]}
+            if(!apps.length){console.log('No apps discovered'); process.exit(0)}
+            for(const app of apps){
+              const cov=fs.existsSync('review-artifacts/coverage-'+app);
+              let summary='(no summary)';
+              const p='_dl/perapp-'+app+'/perapp-'+app+'.txt';
+              if(fs.existsSync(p)) summary=fs.readFileSync(p,'utf8').trim().replace(/\\n/g,' / ');
+              console.log(`- ${app}: ${cov?'coverage collected':'no coverage'} / ${summary}`);
             }
           " >> review.md
+
+      - name: Serial fallback (run per-app tests if matrix didn't)
+        if: ${{ (fromJSON(needs.discover.outputs.apps || '[]')).length == 0 }}
+        shell: bash
+        run: |
+          set -e
+          echo "Matrix skipped or apps not propagated; running serial fallback."
+          APPS=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`)||(fs.existsSync(`${d}/src`)&&fs.existsSync(`${d}/tests`))||fs.existsSync(`${d}/tests`);}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
+          echo "Locally discovered apps: $APPS"
+          mkdir -p review-artifacts
+          for APP in $(node -e "const a=$APPS;JSON.parse(a).forEach(x=>process.stdout.write(x+' '))"); do
+            echo "---- $APP: install ----"
+            (cd "$APP" && npm ci || npm install || true)
+            echo "---- $APP: jest --coverage ----"
+            (cd "$APP" && npx jest --coverage) || echo "$APP: jest missing or tests failed; continuing"
+            if [ -d "$APP/coverage" ]; then
+              mkdir -p "review-artifacts/coverage-$APP"
+              cp -R "$APP/coverage/." "review-artifacts/coverage-$APP/" || true
+            fi
+          done
+          {
+            echo ""; echo "## App Test Summary (serial fallback)";
+            node -e "
+              const fs=require('fs');
+              const apps=JSON.parse(process.env.APPS||'[]');
+              for (const app of apps) {
+                const has=fs.existsSync('review-artifacts/coverage-'+app);
+                console.log('- '+app+': '+(has?'coverage collected':'no coverage'));
+              }
+            "
+          } >> review.md
+
+      - name: Build coverage index
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const base='review-artifacts';
+          if(!fs.existsSync(base)) fs.mkdirSync(base,{recursive:true});
+          const apps=fs.existsSync(base) ? fs.readdirSync(base).filter(d=>d.startsWith('coverage-')).map(d=>d.replace(/^coverage-/,'')) : [];
+          let html='<!doctype html><meta charset="utf-8"><title>Coverage Index</title><h1>Coverage Index</h1>';
+          if(!apps.length){ html+='<p>No coverage collected.</p>'; }
+          else { html+='<ul>'+apps.map(a=>`<li><a href="./coverage-${a}/lcov-report/index.html">${a}</a></li>`).join('')+'</ul>'; }
+          fs.writeFileSync(`${base}/index.html`, html);
+          NODE
+          echo -e "\n**Coverage Index:** see \`review-artifacts/index.html\`" >> review.md
 
       - name: Upload final artifact (review-packet)
         uses: actions/upload-artifact@v4
@@ -201,6 +232,3 @@ jobs:
             stopwatch/tests/**
             quote/tests/**
           if-no-files-found: ignore
-        # Intentionally exclude legacy repos/** by not listing it.
-
-
