@@ -16,8 +16,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check secret present
+        shell: bash
         run: |
-          echo "Secrets present: MIRROR_URL and MIRROR_PAT"
+          set -euo pipefail
+          if [[ -z "${{ secrets.MIRROR_URL }}" ]]; then
+            echo "ERROR: MIRROR_URL is missing." >&2
+            exit 1
+          fi
+          if [[ -z "${{ secrets.MIRROR_PAT }}" ]]; then
+            echo "ERROR: MIRROR_PAT is missing." >&2
+            exit 1
+          fi
 
       - name: Checkout
         uses: actions/checkout@v4
