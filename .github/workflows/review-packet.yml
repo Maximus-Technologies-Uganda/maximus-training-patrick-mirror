@@ -19,8 +19,8 @@ jobs:
       - name: Scan for app directories
         id: scan
         run: |
-          # Node script: find top-level directories that look like apps
-          node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','node_modules']);const apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)) return false; const s=fs.statSync(d); if(!s.isDirectory()) return false; return fs.existsSync(`${d}/package.json`) || fs.existsSync(`${d}/tests`);}catch(_){return false;}}); process.stdout.write(JSON.stringify(apps));" | tee apps.json
+          node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','node_modules']);let apps=[];try{apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)) return false; const s=fs.statSync(d); if(!s.isDirectory()) return false; return fs.existsSync(`${d}/package.json`) || fs.existsSync(`${d}/tests`);}catch(_){return false;}});}catch(_){apps=[]} process.stdout.write(JSON.stringify(apps));" | tee apps.json
+          if [ ! -s apps.json ]; then echo "[]" > apps.json; fi
           echo "apps=$(cat apps.json)" >> $GITHUB_OUTPUT
           echo "Discovered apps: $(cat apps.json)"
 
@@ -96,7 +96,8 @@ jobs:
 
   assemble:
     name: Assemble review packet
-    needs: [discover, per_app]
+    needs: [discover]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -125,6 +126,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: _dl
+          merge-multiple: true
+        continue-on-error: true
 
       - name: Assemble coverage and per-app summaries
         env:
@@ -146,13 +149,17 @@ jobs:
           node -e "
             const fs=require('fs');
             const apps = process.env.APPS_JSON ? JSON.parse(process.env.APPS_JSON) : [];
-            for (const app of apps) {
-              const cov = fs.existsSync('review-artifacts/coverage-' + app);
-              const summ = fs.existsSync('_dl/perapp-' + app + '/perapp-' + app + '.txt')
-                ? fs.readFileSync('_dl/perapp-' + app + '/perapp-' + app + '.txt', 'utf8').trim()
-                : '(no summary)';
-              console.log('- ' + app + ': ' + (cov ? 'coverage collected' : 'no coverage') );
-              console.log('  summary: ' + summ.replace(/\\n/g, ' / '));
+            if (!apps.length) {
+              console.log('No apps discovered');
+            } else {
+              for (const app of apps) {
+                const cov = fs.existsSync('review-artifacts/coverage-' + app);
+                const summ = fs.existsSync('_dl/perapp-' + app + '/perapp-' + app + '.txt')
+                  ? fs.readFileSync('_dl/perapp-' + app + '/perapp-' + app + '.txt', 'utf8').trim()
+                  : '(no summary)';
+                console.log('- ' + app + ': ' + (cov ? 'coverage collected' : 'no coverage') );
+                console.log('  summary: ' + summ.replace(/\\n/g, ' / '));
+              }
             }
           " >> review.md
 
@@ -173,6 +180,7 @@ jobs:
             todo/tests/**
             stopwatch/tests**
             quote/tests/**
+          if-no-files-found: ignore
         # Intentionally exclude legacy repos/** by not listing it.
 
 
