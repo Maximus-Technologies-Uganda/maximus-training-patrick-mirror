@@ -52,7 +52,7 @@ jobs:
           if [ -d "$APP" ]; then
             if [ -f "$APP/package.json" ]; then
               echo "-- npm ci (best-effort)" | tee -a "$SUMMARY"
-              (cd "$APP" && npm ci) || echo "($APP) npm ci failed or lockfile missing; continuing" | tee -a "$SUMMARY"
+              (cd "$APP" (cd "$APP" && npm ci)(cd "$APP" && npm ci) npm ci || npm install || true) || echo "($APP) npm ci failed or lockfile missing; continuing" | tee -a "$SUMMARY"
 
               echo "-- jest --coverage (best-effort)" | tee -a "$SUMMARY"
               (cd "$APP" && npx jest --coverage) || echo "($APP) jest missing or tests failed; continuing" | tee -a "$SUMMARY"
