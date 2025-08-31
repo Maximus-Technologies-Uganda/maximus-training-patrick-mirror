@@ -18,12 +18,13 @@ jobs:
 
       - name: Scan for app directories
         id: scan
+        shell: bash
         run: |
-          node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);let apps=[];try{apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)) return false; const s=fs.statSync(d); if(!s.isDirectory()) return false; const hasPkg=fs.existsSync(`${d}/package.json`); const hasSrc=fs.existsSync(`${d}/src`); const hasTests=fs.existsSync(`${d}/tests`); return hasPkg || hasTests || (hasSrc && hasTests);}catch(_){return false;}});}catch(_){apps=[]} process.stdout.write(JSON.stringify(apps));" > apps.json
-          if [ ! -s apps.json ]; then echo "[]" > apps.json; fi
-          printf "apps=%s" "$(cat apps.json)" >> "$GITHUB_OUTPUT"
-          echo
-          echo "Discovered apps: $(cat apps.json)"
+          set -e
+          apps=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`) || (fs.existsSync(`${d}/src`) && fs.existsSync(`${d}/tests`)) || fs.existsSync(`${d}/tests`);}catch(e){return false;}});process.stdout.write(JSON.stringify(apps));")
+          [ -z "$apps" ] && apps="[]"
+          echo "apps=$apps" >> "$GITHUB_OUTPUT"
+          echo "Discovered apps: $apps"
 
   per_app:
     name: Per-app tests & coverage
