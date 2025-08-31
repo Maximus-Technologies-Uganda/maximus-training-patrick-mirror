@@ -1,0 +1,9 @@
+name: Review Packet (Manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-main-workflow:
+    uses: ./.github/workflows/review-packet.yml
+
