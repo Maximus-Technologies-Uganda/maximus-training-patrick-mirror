@@ -133,9 +133,7 @@ jobs:
           merge-multiple: true
         continue-on-error: true
 
-      - name: Consolidate coverage + per-app summaries
-        env:
-          APPS_JSON: ${{ needs.discover.outputs.apps }}
+      - name: Consolidate coverage artifacts
         run: |
           mkdir -p review-artifacts
           # Move coverage artifacts to review-artifacts/coverage-<app>
@@ -147,33 +145,6 @@ jobs:
               cp -R "$d/." "review-artifacts/coverage-$APP_NAME/" || true
             done
           fi
-          # Append App Test Summary
-          echo -e "\n## App Test Summary" >> review.md
-          node -e "
-            const fs=require('fs');
-            let apps=[];
-            try{apps=JSON.parse(process.env.APPS_JSON||'[]')}catch(e){apps=[]}
-            if(!apps.length){
-              console.log('No apps discovered from matrix.');
-              // Check for coverage artifacts from serial fallback
-              const covDirs=fs.existsSync('review-artifacts')?fs.readdirSync('review-artifacts').filter(d=>d.startsWith('coverage-')):[];
-              if(covDirs.length){
-                console.log('Coverage found from serial fallback:');
-                for(const d of covDirs){
-                  const app=d.replace('coverage-','');
-                  console.log(\`- \${app}: coverage collected (serial fallback)\`);
-                }
-              }
-              process.exit(0);
-            }
-            for(const app of apps){
-              const cov=fs.existsSync('review-artifacts/coverage-'+app);
-              let summary='(no summary)';
-              const p='_dl/perapp-'+app+'/perapp-'+app+'.txt';
-              if(fs.existsSync(p)) summary=fs.readFileSync(p,'utf8').trim().replace(/\\n/g,' / ');
-              console.log(\`- \${app}: \${cov?'coverage collected':'no coverage'} / \${summary}\`);
-            }
-          " >> review.md
 
       - name: Serial fallback (always run if no coverage artifacts found)
         shell: bash
@@ -221,8 +192,11 @@ jobs:
             }
           " >> review.md
 
-      - name: Build coverage index
+      - name: Generate final summary and coverage index
+        env:
+          APPS_JSON: ${{ needs.discover.outputs.apps }}
         run: |
+          # Build coverage index
           node - <<'NODE'
           const fs=require('fs');
           const base='review-artifacts';
@@ -233,6 +207,38 @@ jobs:
           else { html+='<ul>'+apps.map(a=>`<li><a href="./coverage-${a}/lcov-report/index.html">${a}</a></li>`).join('')+'</ul>'; }
           fs.writeFileSync(`${base}/index.html`, html);
           NODE
+          
+          # Append App Test Summary based on actual coverage artifacts
+          echo -e "\n## App Test Summary" >> review.md
+          node -e "
+            const fs=require('fs');
+            // Get all coverage directories that actually exist
+            const covDirs=fs.existsSync('review-artifacts')?fs.readdirSync('review-artifacts').filter(d=>d.startsWith('coverage-')):[];
+            const appsWithCoverage=new Set(covDirs.map(d=>d.replace('coverage-','')));
+            
+            // Get discovered apps from matrix (if any)
+            let discoveredApps=[];
+            try{discoveredApps=JSON.parse(process.env.APPS_JSON||'[]')}catch(e){}
+            
+            // Get all apps (discovered + any with coverage)
+            const allApps=new Set([...discoveredApps, ...appsWithCoverage]);
+            
+            if(!allApps.size){
+              console.log('No apps found.');
+            } else {
+              for(const app of Array.from(allApps).sort()){
+                const hasCov=appsWithCoverage.has(app);
+                let summary='';
+                const p='_dl/perapp-'+app+'/perapp-'+app+'.txt';
+                if(fs.existsSync(p)) {
+                  const content=fs.readFileSync(p,'utf8').trim().replace(/\\n/g,' / ');
+                  summary=' / '+content;
+                }
+                console.log(\`- \${app}: \${hasCov?'coverage collected':'no coverage'}\${summary}\`);
+              }
+            }
+          " >> review.md
+          
           echo -e "\n**Coverage Index:** see \`review-artifacts/index.html\`" >> review.md
 
       - name: Upload final artifact (review-packet)
