@@ -39,10 +39,43 @@ function handleReport(tokens) {
   console.log(`Report for ${month}`);
 }
 
+(function ensureDataFile() {
+  try {
+    if (!fs.existsSync(DATA_FILE)) {
+      fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2) + '\n', 'utf8');
+    }
+  } catch {}
+})();
+
+function readExpenses() {
+  try {
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    if (!raw.trim()) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 (function main() {
   const { command, rest } = parseArgs(process.argv);
   if (command === 'report') {
     handleReport(rest);
+    return;
+  }
+  if (command === 'total') {
+    try {
+      const expenses = readExpenses();
+      const sum = expenses.reduce((acc, e) => {
+        const n = Number(e && e.amount);
+        return Number.isFinite(n) ? acc + n : acc;
+      }, 0);
+      console.log(`Total expenses: ${sum}`);
+    } catch (e) {
+      console.error('Error: failed to compute total:', e.message);
+      process.exitCode = 1;
+    }
     return;
   }
   if (command === 'clear') {
