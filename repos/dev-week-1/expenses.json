@@ -1,0 +1,13 @@
+[
+  {
+    "description": "Coffee with client",
+    "amount": 4.5,
+    "date": "2025-08-27T11:58:17.829Z"
+  },
+  {
+    "description": "Bus fare",
+    "amount": 2,
+    "category": "transport",
+    "date": "2025-08-28T15:34:58.278Z"
+  }
+]
