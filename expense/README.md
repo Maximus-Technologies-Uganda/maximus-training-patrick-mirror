@@ -4,7 +4,7 @@
 Command-line tool to track personal expenses. Add entries, list them with filters, compute totals, and generate monthly reports. Data is stored in `expense/expenses.json`.
 
 ### Supported commands
-- **add**: Add a new expense entry (amount, category, date, and optional note).
+- **add**: Add a new expense entry (amount, category, date, and an optional note).
 - **list**: List expenses, optionally filtered by month or category.
 - **total**: Show the total amount, optionally filtered by month or category.
 - **report**: Output a summary report for a specific month (`--month=YYYY-MM`).
