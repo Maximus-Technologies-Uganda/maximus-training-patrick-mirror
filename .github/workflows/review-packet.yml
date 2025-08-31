@@ -153,7 +153,7 @@ jobs:
             const fs=require('fs');
             let apps=[];
             try{apps=JSON.parse(process.env.APPS_JSON||'[]')}catch(e){apps=[]}
-            if(!apps.length){console.log('No apps discovered'); process.exit(0)}
+            if(!apps.length){console.log('No apps discovered from matrix.'); return;}
             for(const app of apps){
               const cov=fs.existsSync('review-artifacts/coverage-'+app);
               let summary='(no summary)';
@@ -163,16 +163,31 @@ jobs:
             }
           " >> review.md
 
-      - name: Serial fallback (run per-app tests if matrix didn't)
-        if: ${{ (fromJSON(needs.discover.outputs.apps || '[]')).length == 0 }}
+      - name: Serial fallback (always run if no coverage artifacts found)
         shell: bash
         run: |
           set -e
-          echo "Matrix skipped or apps not propagated; running serial fallback."
+          # Check if we have any coverage artifacts from matrix jobs
+          COVERAGE_COUNT=$(find review-artifacts -name "coverage-*" -type d 2>/dev/null | wc -l || echo "0")
+          if [ "$COVERAGE_COUNT" -gt 0 ]; then
+            echo "Found $COVERAGE_COUNT coverage artifacts from matrix jobs. Skipping serial fallback."
+            exit 0
+          fi
+          
+          echo "No coverage artifacts found. Running serial fallback for all apps."
           APPS=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`)||(fs.existsSync(`${d}/src`)&&fs.existsSync(`${d}/tests`))||fs.existsSync(`${d}/tests`);}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
-          echo "Locally discovered apps: $APPS"
+          export APPS_ARRAY="$APPS"
+          echo "Locally discovered apps: $APPS_ARRAY"
+          
+          if [ "$APPS_ARRAY" = "[]" ]; then
+            echo "No apps found locally either."
+            echo -e "\n## App Test Summary (serial fallback)" >> review.md
+            echo "No apps discovered." >> review.md
+            exit 0
+          fi
+          
           mkdir -p review-artifacts
-          for APP in $(node -e "const a=$APPS;JSON.parse(a).forEach(x=>process.stdout.write(x+' '))"); do
+          for APP in $(node -e "const a=process.env.APPS_ARRAY;JSON.parse(a).forEach(x=>process.stdout.write(x+' '))"); do
             echo "---- $APP: install ----"
             (cd "$APP" && npm ci || npm install || true)
             echo "---- $APP: jest --coverage ----"
@@ -182,17 +197,17 @@ jobs:
               cp -R "$APP/coverage/." "review-artifacts/coverage-$APP/" || true
             fi
           done
-          {
-            echo ""; echo "## App Test Summary (serial fallback)";
-            node -e "
-              const fs=require('fs');
-              const apps=JSON.parse(process.env.APPS||'[]');
-              for (const app of apps) {
-                const has=fs.existsSync('review-artifacts/coverage-'+app);
-                console.log('- '+app+': '+(has?'coverage collected':'no coverage'));
-              }
-            "
-          } >> review.md
+          
+          # Always append summary section
+          echo -e "\n## App Test Summary (serial fallback)" >> review.md
+          node -e "
+            const fs=require('fs');
+            const apps=JSON.parse(process.env.APPS_ARRAY||'[]');
+            for (const app of apps) {
+              const has=fs.existsSync('review-artifacts/coverage-'+app);
+              console.log('- '+app+': '+(has?'coverage collected':'no coverage'));
+            }
+          " >> review.md
 
       - name: Build coverage index
         run: |
