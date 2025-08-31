@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          # No cache because repo has no lockfile; caching requires package-lock.json/yarn.lock
+          cache: 'npm'
 
       - name: Install
         run: npm install --no-audit --no-fund
