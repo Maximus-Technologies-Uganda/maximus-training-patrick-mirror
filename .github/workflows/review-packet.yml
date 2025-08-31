@@ -1,0 +1,65 @@
+name: Review Packet
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'patrick/**'
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install (best-effort)
+        run: |
+          npm ci || echo "No lockfile or npm project at root; skipping"
+
+      - name: Tests with coverage (best-effort)
+        run: |
+          npx jest --coverage || echo "Jest missing or tests failed; continuing"
+
+      - name: Lint (best-effort)
+        run: |
+          npx eslint . || echo "ESLint missing or failed; continuing"
+          npx markdownlint '**/*.md' || echo "markdownlint missing or failed; continuing"
+
+      - name: Generate review.md
+        run: |
+          echo "# Automated Review Packet" > review.md
+          echo "## Environment" >> review.md
+          node -v >> review.md || echo "node not available" >> review.md
+          npm -v >> review.md || echo "npm not available" >> review.md
+          echo -e "\n## Commit Summary (20 most recent)" >> review.md
+          git log -n 20 --pretty=format:'- %h %ad %an — %s' --date=short >> review.md
+          echo -e "\n## Repo Map (depth=2)" >> review.md
+          find . -maxdepth 2 -type d | sort | sed 's#^\./##' >> review.md
+          echo -e "\n## Test & Coverage" >> review.md
+          if [ -d coverage ]; then
+            echo "- Coverage generated (see artifact)." >> review.md
+          else
+            echo "- No coverage folder found (add tests or jest to generate)." >> review.md
+          fi
+          echo -e "\n## Lint Summary" >> review.md
+          echo "- ESLint/markdownlint run in best-effort mode; see CI logs for issues." >> review.md
+          echo -e "\n## Notes" >> review.md
+          echo "- This report is non-blocking and intended for mentor review." >> review.md
+
+      - name: Upload artifact (review-packet)
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-packet
+          path: |
+            review.md
+            coverage/**
+            **/README.md
+            **/CHANGELOG.md
+            **/tests/**
+
+
