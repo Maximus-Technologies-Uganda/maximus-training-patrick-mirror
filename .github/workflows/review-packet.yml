@@ -65,7 +65,7 @@ jobs:
           set -e
           APP="${{ matrix.app }}"
           if [ -d "$APP" ]; then
-            (cd "$APP" && npx jest --coverage) || echo "$APP: jest missing or tests failed; continuing"
+            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "stage/coverage-$APP"
               cp -R "$APP/coverage/." "stage/coverage-$APP/" || true
@@ -153,7 +153,19 @@ jobs:
             const fs=require('fs');
             let apps=[];
             try{apps=JSON.parse(process.env.APPS_JSON||'[]')}catch(e){apps=[]}
-            if(!apps.length){console.log('No apps discovered from matrix.'); process.exit(0);}
+            if(!apps.length){
+              console.log('No apps discovered from matrix.');
+              // Check for coverage artifacts from serial fallback
+              const covDirs=fs.existsSync('review-artifacts')?fs.readdirSync('review-artifacts').filter(d=>d.startsWith('coverage-')):[];
+              if(covDirs.length){
+                console.log('Coverage found from serial fallback:');
+                for(const d of covDirs){
+                  const app=d.replace('coverage-','');
+                  console.log(\`- \${app}: coverage collected (serial fallback)\`);
+                }
+              }
+              process.exit(0);
+            }
             for(const app of apps){
               const cov=fs.existsSync('review-artifacts/coverage-'+app);
               let summary='(no summary)';
@@ -191,7 +203,7 @@ jobs:
             echo "---- $APP: install ----"
             (cd "$APP" && npm ci || npm install || true)
             echo "---- $APP: jest --coverage ----"
-            (cd "$APP" && npx jest --coverage) || echo "$APP: jest missing or tests failed; continuing"
+            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "review-artifacts/coverage-$APP"
               cp -R "$APP/coverage/." "review-artifacts/coverage-$APP/" || true
