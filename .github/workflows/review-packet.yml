@@ -25,6 +25,10 @@ jobs:
           [ -z "$apps" ] && apps="[]"
           echo "apps=$apps" >> "$GITHUB_OUTPUT"
           echo "Discovered apps: $apps"
+          {
+            echo "### Discovered apps";
+            echo "```json"; echo "$apps"; echo "```";
+          } >> "$GITHUB_STEP_SUMMARY"
 
   per_app:
     name: Per-app tests & coverage
@@ -37,6 +41,8 @@ jobs:
         app: ${{ fromJSON(needs.discover.outputs.apps) }}
     steps:
       - uses: actions/checkout@v4
+      - name: Debug matrix app
+        run: echo "Running per_app for ${{ matrix.app }}"
 
       - name: Node setup
         uses: actions/setup-node@v4
@@ -103,6 +109,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Debug apps passed to assemble
+        env:
+          APPS_JSON: ${{ needs.discover.outputs.apps }}
+        run: |
+          echo "APPS_JSON=${APPS_JSON:-<empty>}"
+          echo -n "APPS length (parsed): "; node -e "try{console.log(JSON.parse(process.env.APPS_JSON||'[]').length)}catch(e){console.log('parse-error')}"
 
       - name: Node setup
         uses: actions/setup-node@v4
