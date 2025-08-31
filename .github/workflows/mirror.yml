@@ -1,61 +1,70 @@
-name: Mirror to Public
+name: mirror
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-      - 'patrick/**'
-    tags:
-      - '*'
+    branches: ["**"]
+    tags: ["*"]
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   mirror:
+    name: mirror
     runs-on: ubuntu-latest
     steps:
       - name: Check secret present
+        shell: bash
         run: |
-          if [ -z "${{ secrets.MIRROR_TOKEN }}" ]; then
-            echo "ERROR: MIRROR_TOKEN is missing."
-            echo "Add it in: Settings > Secrets and variables > Actions > New repository secret"
+          set -euo pipefail
+          if [[ -z "${{ secrets.MIRROR_URL }}" ]]; then
+            echo "ERROR: MIRROR_URL is missing." >&2
+            exit 1
+          fi
+          if [[ -z "${{ secrets.MIRROR_PAT }}" ]]; then
+            echo "ERROR: MIRROR_PAT is missing." >&2
             exit 1
           fi
 
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Configure git
         run: |
-          git config user.name "ci-mirror-bot"
-          git config user.email "ci-mirror-bot@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Add public mirror remote
         env:
-          TOKEN: ${{ secrets.MIRROR_TOKEN }}
+          MIRROR_URL: ${{ secrets.MIRROR_URL }}
+          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
+        shell: bash
         run: |
-          # Replace ORG and REPO_PUBLIC (Cursor: substitute from user)
-          git remote add mirror https://x-access-token:${TOKEN}@github.com/Maximus-Technologies-Uganda/maximus-training-patrick-mirror.git
-
-      - name: Fetch all branches and tags from origin
-        run: |
-          set -e
-          git fetch --prune origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+          set -euo pipefail
+          if [[ -z "${MIRROR_URL}" ]]; then
+            echo "MIRROR_URL is empty" >&2; exit 1
+          fi
+          if [[ "${MIRROR_URL}" =~ ^git@ ]]; then
+            echo "Using SSH mirror URL"
+            git remote add mirror "${MIRROR_URL}"
+          else
+            echo "Using HTTPS mirror URL with token"
+            url_no_proto="${MIRROR_URL#https://}"
+            url_no_proto="${url_no_proto#http://}"
+            git remote add mirror "https://x-access-token:${MIRROR_PAT}@${url_no_proto}"
+          fi
+          git remote -v
 
       - name: Push all branches and tags to mirror
+        shell: bash
         run: |
-          set -e
-          # Mirror branches (prune removed branches) from remote-tracking refs
-          git push --force --prune mirror +refs/remotes/origin/*:refs/heads/*
-          # Mirror tags (prune removed tags)
-          git push --force --prune mirror +refs/tags/*:refs/tags/*
-
-      - name: Summary
-        run: |
-          echo "Mirrored branches:"
-          git for-each-ref --format='%(refname:short)' refs/remotes/origin/ | sed 's#^origin/##'
-          echo "Mirrored tags:"
-          git tag --list
+          set -euo pipefail
+          # Mirror all refs (branches and tags). Force to ensure tags update.
+          git push --mirror --force mirror
 
 
