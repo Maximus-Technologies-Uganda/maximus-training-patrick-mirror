@@ -1,0 +1,18 @@
+{
+  "name": "training-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node scripts/run-tests.js",
+    "test:quote": "node quote/tests/test.js",
+    "test:expense": "node expense/tests/test.js",
+    "test:stopwatch": "node stopwatch/tests/test.js",
+    "test:todo": "node todo/tests/test.js",
+    "test:dev": "node scripts/run-tests.js --scope dev-week-1"
+  }
+}
+
+
