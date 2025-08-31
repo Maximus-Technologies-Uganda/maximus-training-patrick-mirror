@@ -1,13 +1,102 @@
 name: Review Packet
+
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-      - 'patrick/**'
+      - 'patrick/**'   # adjust later if you want fewer branches
 
 jobs:
-  review:
+  discover:
+    name: Discover app folders
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.scan.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for app directories
+        id: scan
+        run: |
+          # Node script: find top-level directories that look like apps
+          node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','node_modules']);const apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)) return false; const s=fs.statSync(d); if(!s.isDirectory()) return false; return fs.existsSync(`${d}/package.json`) || fs.existsSync(`${d}/tests`);}catch(_){return false;}}); process.stdout.write(JSON.stringify(apps));" | tee apps.json
+          echo "apps=$(cat apps.json)" >> $GITHUB_OUTPUT
+          echo "Discovered apps: $(cat apps.json)"
+
+  per_app:
+    name: Per-app tests & coverage
+    needs: discover
+    if: ${{ needs.discover.outputs.apps != '[]' && needs.discover.outputs.apps != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.discover.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run tests/coverage (best-effort) for ${{ matrix.app }}
+        run: |
+          set -e
+          APP="${{ matrix.app }}"
+          SUMMARY="perapp-$APP.txt"
+          echo "== $APP ==" | tee "$SUMMARY"
+
+          if [ -d "$APP" ]; then
+            if [ -f "$APP/package.json" ]; then
+              echo "-- npm ci (best-effort)" | tee -a "$SUMMARY"
+              (cd "$APP" && npm ci) || echo "($APP) npm ci failed or lockfile missing; continuing" | tee -a "$SUMMARY"
+
+              echo "-- jest --coverage (best-effort)" | tee -a "$SUMMARY"
+              (cd "$APP" && npx jest --coverage) || echo "($APP) jest missing or tests failed; continuing" | tee -a "$SUMMARY"
+
+              if [ -d "$APP/coverage" ]; then
+                echo "coverage: present" | tee -a "$SUMMARY"
+              else
+                echo "coverage: missing" | tee -a "$SUMMARY"
+              fi
+            fi
+
+            if ls "$APP/tests/"*.js >/dev/null 2>&1; then
+              echo "-- fallback node tests" | tee -a "$SUMMARY"
+              FAILS=0
+              for t in "$APP"/tests/*.js; do
+                node "$t" || { echo "$t failed" | tee -a "$SUMMARY"; FAILS=$((FAILS+1)); }
+              done
+              echo "fallback_failures: $FAILS" | tee -a "$SUMMARY"
+            fi
+          else
+            echo "folder not found: $APP" | tee -a "$SUMMARY"
+          fi
+
+          # Stash per-app coverage in a stable path for artifact upload
+          if [ -d "$APP/coverage" ]; then
+            mkdir -p "stage/coverage-$APP"
+            cp -R "$APP/coverage/." "stage/coverage-$APP/"
+          fi
+
+      - name: Upload per-app coverage (if any)
+        if: ${{ hashFiles(format('{0}/coverage/**', matrix.app)) != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.app }}
+          path: stage/coverage-${{ matrix.app }}/**
+
+      - name: Upload per-app summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: perapp-${{ matrix.app }}
+          path: perapp-${{ matrix.app }}.txt
+
+  assemble:
+    name: Assemble review packet
+    needs: [discover, per_app]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,49 +106,73 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install (best-effort)
-        run: |
-          npm ci || echo "No lockfile or npm project at root; skipping"
-
-      - name: Tests with coverage (best-effort)
-        run: |
-          npx jest --coverage || echo "Jest missing or tests failed; continuing"
-
-      - name: Lint (best-effort)
-        run: |
-          npx eslint . || echo "ESLint missing or failed; continuing"
-          npx markdownlint '**/*.md' || echo "markdownlint missing or failed; continuing"
-
-      - name: Generate review.md
+      - name: Generate review.md (env + commits + repo map)
         run: |
           echo "# Automated Review Packet" > review.md
           echo "## Environment" >> review.md
-          node -v >> review.md || echo "node not available" >> review.md
-          npm -v >> review.md || echo "npm not available" >> review.md
+          (node -v && npm -v) >> review.md || echo "node/npm unavailable" >> review.md
+
           echo -e "\n## Commit Summary (20 most recent)" >> review.md
           git log -n 20 --pretty=format:'- %h %ad %an — %s' --date=short >> review.md
+
           echo -e "\n## Repo Map (depth=2)" >> review.md
           find . -maxdepth 2 -type d | sort | sed 's#^\./##' >> review.md
-          echo -e "\n## Test & Coverage" >> review.md
-          if [ -d coverage ]; then
-            echo "- Coverage generated (see artifact)." >> review.md
-          else
-            echo "- No coverage folder found (add tests or jest to generate)." >> review.md
-          fi
-          echo -e "\n## Lint Summary" >> review.md
-          echo "- ESLint/markdownlint run in best-effort mode; see CI logs for issues." >> review.md
-          echo -e "\n## Notes" >> review.md
-          echo "- This report is non-blocking and intended for mentor review." >> review.md
 
-      - name: Upload artifact (review-packet)
+          echo -e "\n## Notes" >> review.md
+          echo "- Best-effort run: missing tools will not fail the job; see summaries below." >> review.md
+
+      - name: Download all per-app artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: _dl
+
+      - name: Assemble coverage and per-app summaries
+        env:
+          APPS_JSON: ${{ needs.discover.outputs.apps }}
+        run: |
+          mkdir -p review-artifacts
+          # Move coverage artifacts to review-artifacts/coverage-<app>
+          if [ -d "_dl" ]; then
+            for d in _dl/coverage-*; do
+              [ -d "$d" ] || continue
+              APP_NAME=$(basename "$d" | sed 's/^coverage-//')
+              mkdir -p "review-artifacts/coverage-$APP_NAME"
+              cp -R "$d/." "review-artifacts/coverage-$APP_NAME/" || true
+            done
+          fi
+
+          # Append an App Test Summary section
+          echo -e "\n## App Test Summary" >> review.md
+          node -e "
+            const fs=require('fs');
+            const apps = process.env.APPS_JSON ? JSON.parse(process.env.APPS_JSON) : [];
+            for (const app of apps) {
+              const cov = fs.existsSync('review-artifacts/coverage-' + app);
+              const summ = fs.existsSync('_dl/perapp-' + app + '/perapp-' + app + '.txt')
+                ? fs.readFileSync('_dl/perapp-' + app + '/perapp-' + app + '.txt', 'utf8').trim()
+                : '(no summary)';
+              console.log('- ' + app + ': ' + (cov ? 'coverage collected' : 'no coverage') );
+              console.log('  summary: ' + summ.replace(/\\n/g, ' / '));
+            }
+          " >> review.md
+
+      - name: Upload final artifact (review-packet)
         uses: actions/upload-artifact@v4
         with:
           name: review-packet
           path: |
             review.md
-            coverage/**
-            **/README.md
-            **/CHANGELOG.md
-            **/tests/**
+            review-artifacts/**
+            CHANGELOG.md
+            README.md
+            expense/README.md
+            todo/README.md
+            stopwatch/README.md
+            quote/README.md
+            expense/tests/**
+            todo/tests/**
+            stopwatch/tests**
+            quote/tests/**
+        # Intentionally exclude legacy repos/** by not listing it.
 
 
