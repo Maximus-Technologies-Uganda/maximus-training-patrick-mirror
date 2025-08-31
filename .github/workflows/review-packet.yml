@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          apps=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`)||(fs.existsSync(`${d}/src`)&&fs.existsSync(`${d}/tests`))||fs.existsSync(`${d}/tests`);}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
+          apps=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(d+'/package.json')||(fs.existsSync(d+'/src')&&fs.existsSync(d+'/tests'))||fs.existsSync(d+'/tests');}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
           [ -z "$apps" ] && apps="[]"
           echo "apps=$apps" >> "$GITHUB_OUTPUT"
           echo "Discovered apps: $apps"
@@ -175,7 +175,7 @@ jobs:
           fi
           
           echo "No coverage artifacts found. Running serial fallback for all apps."
-          APPS=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(`${d}/package.json`)||(fs.existsSync(`${d}/src`)&&fs.existsSync(`${d}/tests`))||fs.existsSync(`${d}/tests`);}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
+          APPS=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(d+'/package.json')||(fs.existsSync(d+'/src')&&fs.existsSync(d+'/tests'))||fs.existsSync(d+'/tests');}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
           export APPS_ARRAY="$APPS"
           echo "Locally discovered apps: $APPS_ARRAY"
           
