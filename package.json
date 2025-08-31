@@ -12,6 +12,9 @@
     "test:stopwatch": "node stopwatch/tests/test.js",
     "test:todo": "node todo/tests/test.js",
     "test:dev": "node scripts/run-tests.js --scope dev-week-1"
+  },
+  "devDependencies": {
+    "c8": "^9.1.0"
   }
 }
 
