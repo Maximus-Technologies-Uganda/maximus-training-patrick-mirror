@@ -13,27 +13,29 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       apps: ${{ steps.scan.outputs.apps }}
+      matrix: ${{ steps.scan.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Scan for app directories
         id: scan
         run: |
-          node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','node_modules']);let apps=[];try{apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)) return false; const s=fs.statSync(d); if(!s.isDirectory()) return false; return fs.existsSync(`${d}/package.json`) || fs.existsSync(`${d}/tests`);}catch(_){return false;}});}catch(_){apps=[]} process.stdout.write(JSON.stringify(apps));" > apps.json
-          # Guarantee a single-line JSON array with no trailing newline issues:
+          node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);let apps=[];try{apps=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)) return false; const s=fs.statSync(d); if(!s.isDirectory()) return false; return fs.existsSync(`${d}/package.json`) || (fs.existsSync(`${d}/src`) && fs.existsSync(`${d}/tests`)) || fs.existsSync(`${d}/tests`);}catch(_){return false;}});}catch(_){apps=[]} process.stdout.write(JSON.stringify(apps));" > apps.json
+          # Single-line JSON to GITHUB_OUTPUT
           printf "apps=%s" "$(cat apps.json)" >> "$GITHUB_OUTPUT"
+          echo
+          node -e "const fs=require('fs');const apps=JSON.parse(fs.readFileSync('apps.json','utf8')||'[]');const matrix={include: apps.map(a=>({app:a}))};process.stdout.write(JSON.stringify(matrix));" > matrix.json
+          printf "matrix=%s" "$(cat matrix.json)" >> "$GITHUB_OUTPUT"
           echo
           echo "Discovered apps: $(cat apps.json)"
 
   per_app:
     name: Per-app tests & coverage
     needs: discover
-    if: ${{ needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        app: ${{ fromJSON(needs.discover.outputs.apps || '[]') }}
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
 
