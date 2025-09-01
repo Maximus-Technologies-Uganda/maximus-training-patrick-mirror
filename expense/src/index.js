@@ -16,17 +16,55 @@ function parseArgs(argv) {
   return args;
 }
 
-function parseReportArgs(tokens) {
+function parseCommonFlags(tokens) {
   let month = null;
+  let category = null;
   for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
+    const t = tokens[i] || '';
     if (t.startsWith('--month=')) {
       month = t.slice('--month='.length);
     } else if (t === '--month') {
       month = tokens[++i];
+    } else if (t.startsWith('--category=')) {
+      category = t.slice('--category='.length);
+    } else if (t === '--category') {
+      category = tokens[++i];
     }
   }
+  return { month, category };
+}
+
+function parseReportArgs(tokens) {
+  const { month } = parseCommonFlags(tokens);
   return { month };
+}
+
+function getExpenseMonth(expense) {
+  const d = expense && expense.date;
+  if (!d) return null;
+  if (typeof d === 'string') {
+    // Accept YYYY-MM or YYYY-MM-DD formats
+    const m1 = /^(\d{4})-(\d{2})$/.exec(d);
+    if (m1) return `${m1[1]}-${m1[2]}`;
+    const m2 = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    if (m2) return `${m2[1]}-${m2[2]}`;
+  }
+  return null;
+}
+
+function filterExpenses(expenses, flags) {
+  const { month, category } = flags || {};
+  let filtered = Array.isArray(expenses) ? expenses.slice() : [];
+  if (month) {
+    filtered = filtered.filter((e) => getExpenseMonth(e) === month);
+  }
+  if (category) {
+    filtered = filtered.filter((e) => {
+      const c = e && e.category;
+      return typeof c === 'string' ? c === category : false;
+    });
+  }
+  return filtered;
 }
 
 function handleReport(tokens) {
@@ -36,7 +74,30 @@ function handleReport(tokens) {
     process.exitCode = 1;
     return;
   }
-  console.log(`Report for ${month}`);
+  try {
+    const expenses = readExpenses();
+    const scoped = filterExpenses(expenses, { month });
+    if (!scoped.length) {
+      console.log(`No expenses found for ${month}.`);
+      return;
+    }
+    const totals = Object.create(null);
+    for (const e of scoped) {
+      const key = typeof (e && e.category) === 'string' && e.category ? e.category : 'uncategorized';
+      const n = Number(e && e.amount);
+      if (Number.isFinite(n)) {
+        totals[key] = (totals[key] || 0) + n;
+      }
+    }
+    const categories = Object.keys(totals).sort((a, b) => a.localeCompare(b));
+    console.log(`Report for ${month}`);
+    for (const c of categories) {
+      console.log(`${c}: ${totals[c]}`);
+    }
+  } catch (e) {
+    console.error('Error: failed to generate report:', e.message);
+    process.exitCode = 1;
+  }
 }
 
 (function ensureDataFile() {
@@ -64,10 +125,40 @@ function readExpenses() {
     handleReport(rest);
     return;
   }
+  if (command === 'list') {
+    try {
+      const { month, category } = parseCommonFlags(rest);
+      if (month && !validateMonth(month)) {
+        console.error('Error: --month must be in YYYY-MM format with a valid month (01-12).');
+        process.exitCode = 1;
+        return;
+      }
+      const expenses = readExpenses();
+      const filtered = filterExpenses(expenses, { month, category });
+      if (!filtered.length) {
+        console.log('No expenses to list.');
+        return;
+      }
+      for (const e of filtered) {
+        console.log(JSON.stringify(e));
+      }
+    } catch (e) {
+      console.error('Error: failed to list expenses:', e.message);
+      process.exitCode = 1;
+    }
+    return;
+  }
   if (command === 'total') {
     try {
+      const { month, category } = parseCommonFlags(rest);
+      if (month && !validateMonth(month)) {
+        console.error('Error: --month must be in YYYY-MM format with a valid month (01-12).');
+        process.exitCode = 1;
+        return;
+      }
       const expenses = readExpenses();
-      const sum = expenses.reduce((acc, e) => {
+      const filtered = filterExpenses(expenses, { month, category });
+      const sum = filtered.reduce((acc, e) => {
         const n = Number(e && e.amount);
         return Number.isFinite(n) ? acc + n : acc;
       }, 0);
