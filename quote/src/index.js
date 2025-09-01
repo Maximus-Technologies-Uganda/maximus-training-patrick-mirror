@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const path = require('path');
-const { loadJSON } = require('../../helpers/io.js');
+const fs = require('fs');
 
 function selectRandom(items) {
   const idx = Math.floor(Math.random() * items.length);
@@ -28,7 +28,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log('Usage: node index.js [--by=<author>]');
+  console.log('Usage: node quote/src/index.js [--by=<author>]');
 }
 
 function main() {
@@ -37,14 +37,27 @@ function main() {
     if (args.help) { printHelp(); process.exit(0); }
 
     const quotesPath = path.resolve(__dirname, 'quotes.json');
-    const loaded = loadJSON(quotesPath);
-    const quotes = Array.isArray(loaded)
-      ? loaded.filter(q => q && typeof q.text === 'string' && q.text.trim() && typeof q.author === 'string' && q.author.trim())
-      : [];
-
-    if (quotes.length === 0) {
+    let quotes = [];
+    try {
+      if (!fs.existsSync(quotesPath)) {
+        console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
+        process.exit(1);
+        return;
+      }
+      const raw = fs.readFileSync(quotesPath, 'utf8').trim();
+      const loaded = raw ? JSON.parse(raw) : [];
+      quotes = Array.isArray(loaded)
+        ? loaded.filter(q => q && typeof q.text === 'string' && q.text.trim() && typeof q.author === 'string' && q.author.trim())
+        : [];
+      if (quotes.length === 0) {
+        console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
+        process.exit(1);
+        return;
+      }
+    } catch (e) {
       console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
       process.exit(1);
+      return;
     }
 
     let pool = quotes;
