@@ -21,15 +21,26 @@ function parseCommonFlags(tokens) {
   let category = null;
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i] || '';
+    if (t === '--') break; // stop flag parsing
     if (t.startsWith('--month=')) {
       month = t.slice('--month='.length);
     } else if (t === '--month') {
-      month = tokens[++i];
+      const v = tokens[++i];
+      if (!v || v.startsWith('--')) return { month: '__INVALID__', category };
+      month = v;
     } else if (t.startsWith('--category=')) {
       category = t.slice('--category='.length);
     } else if (t === '--category') {
-      category = tokens[++i];
+      const v = tokens[++i];
+      if (!v || v.startsWith('--')) return { month, category: '__INVALID__' };
+      category = v;
+    } else if (t.startsWith('-')) {
+      // unknown or malformed flag
+      return { month: '__INVALID__', category: '__INVALID__' };
     }
+  }
+  if (typeof category === 'string' && category.trim() === '') {
+    category = '__INVALID__';
   }
   return { month, category };
 }
@@ -128,6 +139,11 @@ function readExpenses() {
   if (command === 'list') {
     try {
       const { month, category } = parseCommonFlags(rest);
+      if (month === '__INVALID__' || category === '__INVALID__') {
+        console.error('Error: malformed flags. Use --month=YYYY-MM and non-empty --category.');
+        process.exitCode = 1;
+        return;
+      }
       if (month && !validateMonth(month)) {
         console.error('Error: --month must be in YYYY-MM format with a valid month (01-12).');
         process.exitCode = 1;
@@ -151,6 +167,11 @@ function readExpenses() {
   if (command === 'total') {
     try {
       const { month, category } = parseCommonFlags(rest);
+      if (month === '__INVALID__' || category === '__INVALID__') {
+        console.error('Error: malformed flags. Use --month=YYYY-MM and non-empty --category.');
+        process.exitCode = 1;
+        return;
+      }
       if (month && !validateMonth(month)) {
         console.error('Error: --month must be in YYYY-MM format with a valid month (01-12).');
         process.exitCode = 1;
@@ -180,5 +201,10 @@ function readExpenses() {
     return;
   }
   console.error('Error: unknown command.');
+  console.error('Usage:');
+  console.error('  node expense/src/index.js list [--month=YYYY-MM] [--category=<name>]');
+  console.error('  node expense/src/index.js total [--month=YYYY-MM] [--category=<name>]');
+  console.error('  node expense/src/index.js report --month=YYYY-MM');
+  console.error('  node expense/src/index.js clear');
   process.exitCode = 1;
 })();
