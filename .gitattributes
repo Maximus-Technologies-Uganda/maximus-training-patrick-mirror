@@ -1,0 +1,39 @@
+# Enforce standard line endings across the repository
+
+# Treat common text files as text and normalize to LF in the repo
+* text=auto eol=lf
+
+# Keep images and other binary assets untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.gz binary
+*.svg -text
+
+# Windows batch files can keep CRLF in working copy but normalize in repo
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts should use LF
+*.sh text eol=lf
+
+# Keep JSON/JS/TS/MD files normalized to LF
+*.js text eol=lf
+*.cjs text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+
+
