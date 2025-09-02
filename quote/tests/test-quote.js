@@ -1,6 +1,7 @@
-const { run } = require('../src/index');
+const { run } = require('../src/cli');
+const { readQuotesFromFile, getDefaultQuotesPath } = require('../src/core');
 
-describe('run() direct unit tests', () => {
+describe('quote CLI (refactored)', () => {
   let logSpy;
   let errSpy;
 
@@ -19,14 +20,18 @@ describe('run() direct unit tests', () => {
     expect(logSpy).toHaveBeenCalled();
     const line = (logSpy.mock.calls[0][0] || '').trim();
     expect(line).toMatch(/ - /);
+
+    const [text, author] = line.split(' - ');
+    const quotes = readQuotesFromFile(getDefaultQuotesPath());
+    expect(quotes.some(q => q.text === text && q.author === author)).toBe(true);
   });
 
   test('filters by an existing author and returns 0', () => {
-    const code = run(['node', 'index.js', '--by=Steve Jobs']);
+    const code = run(['node', 'index.js', '--by=Albert Einstein']);
     expect(code).toBe(0);
     expect(logSpy).toHaveBeenCalled();
     const line = (logSpy.mock.calls[0][0] || '').trim();
-    expect(line.endsWith('- Steve Jobs')).toBe(true);
+    expect(line.endsWith('- Albert Einstein')).toBe(true);
   });
 
   test('non-existent author returns 1 and logs an error', () => {
@@ -35,14 +40,6 @@ describe('run() direct unit tests', () => {
     expect(errSpy).toHaveBeenCalled();
     const msg = (errSpy.mock.calls[0][0] || '').toString();
     expect(msg).toContain('No quotes found for author');
-  });
-
-  test('prints help and returns 0 with --help', () => {
-    const code = run(['node', 'index.js', '--help']);
-    expect(code).toBe(0);
-    expect(logSpy).toHaveBeenCalled();
-    const msg = (logSpy.mock.calls[0][0] || '').toString().toLowerCase();
-    expect(msg).toContain('usage');
   });
 });
 

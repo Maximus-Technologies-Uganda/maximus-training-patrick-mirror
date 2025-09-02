@@ -17,7 +17,7 @@ Run from the repository root.
 - Random quote:
 
 ```
-node quote/src/index.js
+node quote/bin/quote.js
 ```
 
 Example output:
@@ -29,7 +29,7 @@ The only limit to our realization of tomorrow is our doubts of today. - Franklin
 - Filter by author:
 
 ```
-node quote/src/index.js --by="Albert Einstein"
+node quote/bin/quote.js --by="Albert Einstein"
 ```
 
 Example output:
@@ -41,7 +41,7 @@ In the middle of difficulty lies opportunity. - Albert Einstein
 You can also pass the author as two arguments:
 
 ```
-node quote/src/index.js --by "Albert Einstein"
+node quote/bin/quote.js --by "Albert Einstein"
 ```
 
 ### Error Handling
@@ -55,8 +55,8 @@ node quote/src/index.js --by "Albert Einstein"
 
 ### Development
 
-- Source code: `quote/src/index.js`
-- Helper utilities: `helpers/io.js`
+- CLI entrypoint: `quote/src/cli.js`
+- Core library: `quote/src/core.js`
 
 ### Running Tests
 
