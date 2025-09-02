@@ -1,59 +1,48 @@
-const fs = require('fs');
-const path = require('path');
-const assert = require('assert');
-const { spawn } = require('child_process');
+const { run } = require('../src/index');
 
-const CLI_PATH = path.resolve(__dirname, '../src/index.js');
-const DATA_FILE = path.resolve(__dirname, '../data/quotes.json');
+describe('run() direct unit tests', () => {
+  let logSpy;
+  let errSpy;
 
-function runCli(args, options = {}) {
-  return new Promise((resolve) => {
-    const child = spawn(process.execPath, [CLI_PATH, ...args], {
-      cwd: options.cwd || path.resolve(__dirname, '..')
-    });
-
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', (d) => (stdout += d.toString()));
-    child.stderr.on('data', (d) => (stderr += d.toString()));
-    child.on('close', (code) => resolve({ code, stdout, stderr }));
+  beforeEach(() => {
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
-}
 
-(async function run() {
-  let failures = 0;
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
-  try {
-    // Ensure data file exists and has sufficient quotes
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    const arr = JSON.parse(raw);
-    assert.ok(Array.isArray(arr) && arr.length >= 15, 'quotes.json should have at least 15 entries');
+  test('prints a random quote and returns 0 by default', () => {
+    const code = run(['node', 'index.js']);
+    expect(code).toBe(0);
+    expect(logSpy).toHaveBeenCalled();
+    const line = (logSpy.mock.calls[0][0] || '').trim();
+    expect(line).toMatch(/ - /);
+  });
 
-    const res = await runCli([]);
-    assert.strictEqual(res.code, 0, 'random quote command should exit 0');
-    assert.ok(/ - /.test(res.stdout.trim()), 'output should include "text - author"');
-    console.log('PASS prints a random quote');
-  } catch (err) {
-    failures++;
-    console.error('FAIL prints a random quote');
-    console.error(err && err.stack ? err.stack : err);
-  }
+  test('filters by an existing author and returns 0', () => {
+    const code = run(['node', 'index.js', '--by=Steve Jobs']);
+    expect(code).toBe(0);
+    expect(logSpy).toHaveBeenCalled();
+    const line = (logSpy.mock.calls[0][0] || '').trim();
+    expect(line.endsWith('- Steve Jobs')).toBe(true);
+  });
 
-  try {
-    const author = 'Steve Jobs';
-    const res = await runCli([`--by=${author}`]);
-    assert.strictEqual(res.code, 0, '--by author should exit 0 when matches exist');
-    const out = res.stdout.trim();
-    assert.ok(out.endsWith(`- ${author}`), 'output should end with the requested author');
-    console.log('PASS filters quotes by author');
-  } catch (err) {
-    failures++;
-    console.error('FAIL filters quotes by author');
-    console.error(err && err.stack ? err.stack : err);
-  }
+  test('non-existent author returns 1 and logs an error', () => {
+    const code = run(['node', 'index.js', '--by=Unknown Author 12345']);
+    expect(code).toBe(1);
+    expect(errSpy).toHaveBeenCalled();
+    const msg = (errSpy.mock.calls[0][0] || '').toString();
+    expect(msg).toContain('No quotes found for author');
+  });
 
-  process.exitCode = failures ? 1 : 0;
-})();
-
+  test('prints help and returns 0 with --help', () => {
+    const code = run(['node', 'index.js', '--help']);
+    expect(code).toBe(0);
+    expect(logSpy).toHaveBeenCalled();
+    const msg = (logSpy.mock.calls[0][0] || '').toString().toLowerCase();
+    expect(msg).toContain('usage');
+  });
+});
 

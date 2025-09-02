@@ -31,18 +31,17 @@ function printHelp() {
   console.log('Usage: node quote/src/index.js [--by=<author>]');
 }
 
-function main() {
+function run(argv = process.argv) {
   try {
-    const args = parseArgs(process.argv);
-    if (args.help) { printHelp(); process.exit(0); }
+    const args = parseArgs(argv);
+    if (args.help) { printHelp(); return 0; }
 
     const quotesPath = path.resolve(__dirname, 'quotes.json');
     let quotes = [];
     try {
       if (!fs.existsSync(quotesPath)) {
         console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
-        process.exit(1);
-        return;
+        return 1;
       }
       const raw = fs.readFileSync(quotesPath, 'utf8').trim();
       const loaded = raw ? JSON.parse(raw) : [];
@@ -51,13 +50,11 @@ function main() {
         : [];
       if (quotes.length === 0) {
         console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
-        process.exit(1);
-        return;
+        return 1;
       }
     } catch (e) {
       console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
-      process.exit(1);
-      return;
+      return 1;
     }
 
     let pool = quotes;
@@ -65,20 +62,24 @@ function main() {
       pool = filterQuotesByAuthor(quotes, args.by);
       if (pool.length === 0) {
         console.error(`Error: No quotes found for author "${args.by}".`);
-        process.exit(1);
+        return 1;
       }
     }
 
     const choice = selectRandom(pool);
     console.log(`${choice.text} - ${choice.author}`);
+    return 0;
   } catch (err) {
     console.error('Unexpected error:', err && err.message ? err.message : String(err));
-    process.exit(1);
+    return 1;
   }
 }
 
-if (require.main === module) { main(); }
+if (require.main === module) {
+  const code = run(process.argv);
+  process.exit(code);
+}
 
-module.exports = { parseArgs, selectRandom, filterQuotesByAuthor };
+module.exports = { run, parseArgs, selectRandom, filterQuotesByAuthor };
 
 
