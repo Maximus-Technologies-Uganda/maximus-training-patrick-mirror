@@ -88,13 +88,11 @@ function handleAdd() {
 
   const todos = readTodos();
 
-  const isDuplicate = todos.some(t =>
-    String(t.text || '').trim().toLowerCase() === text.toLowerCase() &&
-    String(t.due || null) === String(due || null)
-  );
+  const normalizedText = text.toLowerCase();
+  const isDuplicate = todos.some(t => String(t.text || '').trim().toLowerCase() === normalizedText);
 
   if (isDuplicate) {
-    console.error('Error: duplicate to-do with the same text and due date already exists.');
+    console.error('Error: duplicate to-do with the same text already exists.');
     process.exitCode = 1;
     return;
   }

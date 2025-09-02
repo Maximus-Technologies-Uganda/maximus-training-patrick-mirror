@@ -22,8 +22,8 @@ node todo/src/index.js add "Buy milk"
 # add with due date and priority (low|medium|high)
 node todo/src/index.js add "Pay electricity bill" --due=2025-10-31 --priority=high
 
-# duplicate protection example (same text + due date is rejected)
-node todo/src/index.js add "Pay electricity bill" --due=2025-10-31 --priority=medium
+# duplicate protection (same text is rejected regardless of due date)
+node todo/src/index.js add "Pay electricity bill" --due=2025-11-01 --priority=medium
 ```
 
 #### list
@@ -31,7 +31,7 @@ node todo/src/index.js add "Pay electricity bill" --due=2025-10-31 --priority=me
 # all items
 node todo/src/index.js list
 
-# items due today
+# items due today (local date)
 node todo/src/index.js list --dueToday
 
 # only high-priority items
