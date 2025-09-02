@@ -58,6 +58,16 @@ jobs:
             const out={ app:'${{ matrix.app }}', coveragePct:pct, coveragePresent: fs.existsSync('${{ matrix.app }}/coverage') };
             fs.writeFileSync('gate/${{ matrix.app }}.json', JSON.stringify(out));
           "
+
+      - name: Post PR comment – Code Coverage Summary (best-effort)
+        if: github.event_name == 'pull_request'
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-files: |
+            **/coverage/coverage-summary.json
+          title: Code Coverage Summary
+          skip-step-if-no-files-found: true
       - name: Upload gate result
         uses: actions/upload-artifact@v4
         with:
