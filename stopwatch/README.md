@@ -6,11 +6,10 @@ Command-line stopwatch to measure elapsed time and record laps. It can start/sto
 ### Supported commands
 - **start**: Begin timing. If already running, has no effect.
 - **stop**: Stop timing and persist the accumulated elapsed time.
-- **lap**: Record a lap split while running; prints the latest lap duration.
-- **status**: Show whether the stopwatch is running, the total elapsed time, and lap count.
-- **export**: Write a readable report of the total time and all laps to a file via `--out=<filename>`.
+- **reset**: Clear state (elapsed time and laps).
+- **export**: Write a readable report to a file via `--out=<filename>`. If there are no laps, prints "No laps recorded." and does not write a file.
 
-### Usage examples
+### Usage
 
 #### start
 ```bash
@@ -22,20 +21,21 @@ node stopwatch/src/index.js start
 node stopwatch/src/index.js stop
 ```
 
-#### lap
+#### reset
 ```bash
-node stopwatch/src/index.js lap
-```
-
-#### status
-```bash
-node stopwatch/src/index.js status
+node stopwatch/src/index.js reset
 ```
 
 #### export
 ```bash
 # Exports a human-readable report to report.txt
 node stopwatch/src/index.js export --out=report.txt
+```
+
+If no laps have been recorded yet:
+```bash
+node stopwatch/src/index.js export --out=empty.txt
+# -> prints: "No laps recorded." and does not create empty.txt
 ```
 
 ### Running tests
@@ -47,3 +47,4 @@ node stopwatch/tests/test.js
 ![Stopwatch demo](../docs/stopwatch-demo.gif)
 
 
+<!-- touch: ensure this README is explicitly included in a follow-up commit -->

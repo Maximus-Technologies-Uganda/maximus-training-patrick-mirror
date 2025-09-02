@@ -9,26 +9,34 @@ Command-line tool to track personal expenses. Add entries, list them with filter
 - **total**: Show the total amount, optionally filtered by month or category.
 - **report**: Output a summary report for a specific month (`--month=YYYY-MM`).
 
-### Usage examples
+### Usage
+
+Run from the repository root.
 
 #### add
+Add a new expense with a description, amount, and category.
 ```bash
-node expense/src/index.js add --amount=23.50 --category=groceries --date=2025-01-05 --note="milk and bread"
+node expense/src/index.js add "Lunch at cafe" 12.50 food
 ```
 
 #### list
+List expenses with optional filters.
 ```bash
-# list all
+# all expenses
 node expense/src/index.js list
 
-# list for a category
+# by category
 node expense/src/index.js list --category=transport
 
-# list for a month (YYYY-MM)
+# by month (YYYY-MM)
 node expense/src/index.js list --month=2025-01
+
+# by category and month
+node expense/src/index.js list --category=groceries --month=2025-01
 ```
 
 #### total
+Show the total amount, with the same optional filters.
 ```bash
 # total for all expenses
 node expense/src/index.js total
@@ -38,11 +46,14 @@ node expense/src/index.js total --category=groceries
 
 # total for a month
 node expense/src/index.js total --month=2025-01
+
+# total for a category in a month
+node expense/src/index.js total --category=food --month=2025-02
 ```
 
 #### report
+Generate a summary report for a specific month (required flag).
 ```bash
-# monthly report (required flag)
 node expense/src/index.js report --month=2025-01
 ```
 
@@ -55,3 +66,4 @@ node expense/tests/test.js
 ![Expense Tracker demo](../docs/expense-demo.gif)
 
 
+<!-- touch: ensure this README is explicitly included in a follow-up commit -->

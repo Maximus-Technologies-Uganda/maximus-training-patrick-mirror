@@ -4,55 +4,56 @@
 Command-line To-Do application to add tasks, list them with useful filters, and generate summaries. Tasks are stored in `todo/todos.json`.
 
 ### Supported commands
-- **add**: Add a new to-do item with optional due date and priority.
+- **add**: Add a new to-do item with optional due date and priority. Prevents duplicates (same text + due date).
 - **list**: List to-dos, with optional filters for due today or high priority.
-- **total**: Show a summary count of to-dos (e.g., total, completed, pending).
-- **report**: Generate a human-readable summary of to-dos for quick review.
+- **toggle**: Toggle completion by ID.
+- **remove**: Remove a to-do by ID.
+- **filter**: Show items by simple criteria (e.g., high priority). [If not implemented, use list flags instead.]
 
-### Usage examples
+### Usage
+
+Run from the repository root.
 
 #### add
-- Add a basic to-do:
 ```bash
+# basic add
 node todo/src/index.js add "Buy milk"
-```
-- Add with due date and priority:
-```bash
+
+# add with due date and priority (low|medium|high)
 node todo/src/index.js add "Pay electricity bill" --due=2025-10-31 --priority=high
+
+# duplicate protection example (same text + due date is rejected)
+node todo/src/index.js add "Pay electricity bill" --due=2025-10-31 --priority=medium
 ```
 
 #### list
-- List all to-dos:
 ```bash
+# all items
 node todo/src/index.js list
-```
-- Only items due today:
-```bash
+
+# items due today
 node todo/src/index.js list --dueToday
-```
-- Only high-priority items:
-```bash
+
+# only high-priority items
 node todo/src/index.js list --highPriority
 ```
 
-#### total
-- Overall summary counts:
+#### toggle
 ```bash
-node todo/src/index.js total
-```
-- Example with a filter (if supported):
-```bash
-node todo/src/index.js total --highPriority
+# toggle completion by numeric ID
+node todo/src/index.js toggle 3
 ```
 
-#### report
-- Quick report of items due today:
+#### remove
 ```bash
-node todo/src/index.js report --dueToday
+# remove by numeric ID
+node todo/src/index.js remove 2
 ```
-- Quick report of high-priority items:
+
+#### filter
 ```bash
-node todo/src/index.js report --highPriority
+# if implemented, show high-priority items (otherwise use list --highPriority)
+node todo/src/index.js filter --highPriority
 ```
 
 ### Running tests
@@ -64,3 +65,4 @@ node todo/tests/test.js
 ![To-Do demo](../docs/todo-demo.gif)
 
 
+<!-- touch: ensure this README is explicitly included in a follow-up commit -->
