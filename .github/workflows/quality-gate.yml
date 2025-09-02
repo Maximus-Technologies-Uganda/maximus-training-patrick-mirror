@@ -49,7 +49,8 @@ jobs:
         shell: bash
         run: |
           APP="${{ matrix.app }}"
-          (cd "$APP" && npx jest --coverage) || echo "$APP: jest missing or tests failed; continuing"
+          # Ensure json-summary is produced for downstream tools
+          (cd "$APP" && npx jest --coverage --coverageReporters=text --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
           # Collect coverage pct if available
           mkdir -p gate
           node -e "
@@ -67,10 +68,9 @@ jobs:
         uses: davelosert/jest-coverage-report-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          coverage-files: |
-            **/coverage/coverage-summary.json
+          working-directory: ${{ matrix.app }}
+          test-script: npx jest --coverage --coverageReporters=text --coverageReporters=json-summary
           title: Code Coverage Summary
-          skip-step-if-no-files-found: true
       - name: Upload gate result
         uses: actions/upload-artifact@v4
         with:
