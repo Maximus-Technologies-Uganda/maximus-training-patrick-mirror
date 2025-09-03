@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const STATE_FILE = path.resolve(__dirname, '..', 'stopwatch-state.json');
+const { buildExportLines } = require('./exporter');
 
 function loadState() {
   try {
@@ -29,21 +30,7 @@ function saveState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(toWrite, null, 2) + '\n', 'utf8');
 }
 
-function pad(num, width) {
-  return String(num).padStart(width, '0');
-}
-
-function formatDuration(ms) {
-  if (!Number.isFinite(ms) || ms < 0) ms = 0;
-  ms = Math.floor(ms);
-  const hours = Math.floor(ms / 3600000);
-  ms -= hours * 3600000;
-  const minutes = Math.floor(ms / 60000);
-  ms -= minutes * 60000;
-  const seconds = Math.floor(ms / 1000);
-  const millis = ms - seconds * 1000;
-  return `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(seconds, 2)}.${pad(millis, 3)}`;
-}
+// formatDuration now lives in exporter
 
 function parseExportArgs(argv) {
   let out = null;
@@ -69,31 +56,10 @@ function handleExport() {
   }
 
   const { elapsedTime, laps } = loadState();
-  if (!Array.isArray(laps) || laps.length === 0) {
+  const lines = buildExportLines(elapsedTime, laps);
+  if (!Array.isArray(lines) || lines.length === 0) {
     console.log('No laps recorded.');
     return;
-  }
-
-  const lines = [];
-  lines.push(`Total: ${formatDuration(elapsedTime)}`);
-
-  if (Array.isArray(laps) && laps.length > 0) {
-    let index = 1;
-    for (const lap of laps) {
-      let ms = null;
-      if (typeof lap === 'number') {
-        ms = lap;
-      } else if (lap && typeof lap === 'object') {
-        const candidates = [lap.duration, lap.time, lap.elapsedTime];
-        for (const c of candidates) {
-          if (typeof c === 'number') { ms = c; break; }
-        }
-      }
-      if (typeof ms === 'number') {
-        lines.push(`Lap ${index}: ${formatDuration(ms)}`);
-        index++;
-      }
-    }
   }
 
   const outPath = path.resolve(process.cwd(), out);
@@ -136,7 +102,7 @@ function handleLap() {
   const newLaps = Array.isArray(laps) ? laps.slice() : [];
   newLaps.push(lapDuration);
   saveState({ startTime, isRunning: true, elapsedTime, laps: newLaps });
-  console.log(`Lap ${newLaps.length}: ${formatDuration(lapDuration)}`);
+  console.log(`Lap ${newLaps.length}: ${require('./exporter').formatDuration(lapDuration)}`);
 }
 
 if (process.argv[2] === 'lap') {
