@@ -17,6 +17,24 @@
 ### Notes
 - These changes improve test determinism across platforms and provide fast feedback on PRs via coverage summary comments. (DEV-14–DEV-16)
 
+### 2025-09-03 (Docs & Hygiene - DEV-12)
+
+### Added
+- **Docs**:
+  - Updated per-app READMEs to reflect current flags and outputs for `expense`, `todo`, `stopwatch`, and `quote`. (DEV-18)
+  - Root README now includes instructions to access the CI coverage artifact and PR coverage table. (DEV-19)
+- **CI**:
+  - Coverage report HTML is uploaded as an artifact with an index page across apps. (DEV-19)
+- **Process**:
+  - Added PR template enforcing links to Linear issues and required artifacts/snippets. (DEV-21)
+
+### Changed
+- **Docs**:
+  - `todo` README uses `complete` instead of `toggle`; removed unsupported `filter` command in favor of list flags. (DEV-18)
+  - `quote` README updated to use `quote/src/index.js` entry point. (DEV-18)
+  - `expense` README now documents `clear` command and tightened usage notes. (DEV-18)
+
+
 ### 2025-08-30
 
 ### Added

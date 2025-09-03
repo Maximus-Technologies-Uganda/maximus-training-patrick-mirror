@@ -41,6 +41,8 @@ node stopwatch/src/index.js export --out=empty.txt
 ### Running tests
 ```bash
 node stopwatch/tests/test.js
+# Or run Jest for golden-file tests
+npm --prefix stopwatch test --silent
 ```
 
 ### Demo

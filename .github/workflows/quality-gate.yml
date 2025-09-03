@@ -35,7 +35,43 @@ jobs:
           npm --prefix expense test --silent || true
           npm --prefix stopwatch test --silent || true
           npm --prefix todo test --silent || true
+      
+      - name: Build coverage HTML index
+        run: |
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          const apps = ['quote','expense','stopwatch','todo'];
+          const outDir = path.join(process.cwd(), 'coverage-report');
+          fs.mkdirSync(outDir, { recursive: true });
+          function copyDir(src, dest){
+            if (!fs.existsSync(src)) return false;
+            fs.mkdirSync(dest, { recursive: true });
+            for (const entry of fs.readdirSync(src)){
+              const s = path.join(src, entry);
+              const d = path.join(dest, entry);
+              const st = fs.statSync(s);
+              if (st.isDirectory()) copyDir(s, d); else fs.copyFileSync(s, d);
+            }
+            return true;
+          }
+          const links = [];
+          for (const app of apps){
+            const src = path.join(process.cwd(), app, 'coverage', 'lcov-report');
+            const dest = path.join(outDir, app);
+            const ok = copyDir(src, dest);
+            if (ok) links.push({ app, href: `${app}/index.html` });
+          }
+          const html = `<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>Coverage Report</title></head><body>\n<h1>Coverage Report Index</h1>\n<ul>\n${links.map(l=>`<li><a href=\"${l.href}\">${l.app}</a></li>`).join('\n')}\n</ul>\n</body></html>`;
+          fs.writeFileSync(path.join(outDir, 'index.html'), html);
+          console.log('Wrote coverage-report/index.html');
+          "
 
+      - name: Upload coverage HTML artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report
       - name: Aggregate coverage summaries
         id: coverage
         run: |

@@ -4,10 +4,10 @@
 Command-line tool to track personal expenses. Add entries, list them with filters, compute totals, and generate monthly reports. Data is stored in `expense/expenses.json`.
 
 ### Supported commands
-- **add**: Add a new expense entry (amount, category, date, and an optional note).
 - **list**: List expenses, optionally filtered by month or category.
 - **total**: Show the total amount, optionally filtered by month or category.
 - **report**: Output a summary report for a specific month (`--month=YYYY-MM`).
+- **clear**: Clear all expenses (resets `expense/expenses.json` to an empty array).
 
 ### Usage
 
@@ -51,7 +51,12 @@ Generate a summary report for a specific month.
 # month is required and must be YYYY-MM
 node expense/src/index.js report --month=2025-01
 ```
-
+#### clear
+Reset the expenses file to an empty list.
+```bash
+node expense/src/index.js clear
+# -> prints: "Cleared expenses."
+```
 #### Help
 On unknown commands or malformed flags, the CLI prints usage:
 ```
