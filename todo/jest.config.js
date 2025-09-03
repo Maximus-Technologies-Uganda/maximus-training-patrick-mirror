@@ -5,4 +5,5 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.js'],
   testMatch: ['**/tests/**/*.js'],
   transform: {},
+  coverageReporters: ['json', 'lcov', 'text-summary'],
 };
