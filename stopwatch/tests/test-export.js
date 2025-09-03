@@ -10,6 +10,10 @@ function writeState(state) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + '\n', 'utf8');
 }
 
+function removeFileIfExists(p) {
+  try { fs.unlinkSync(p); } catch {}
+}
+
 function runCli(args, options = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLI_PATH, ...args], {
@@ -31,11 +35,11 @@ function ms(h, m, s, ms) {
 
 (async function run() {
   let failures = 0;
-  const outPath = path.resolve(__dirname, 'report.txt');
-  try { fs.unlinkSync(outPath); } catch {}
 
+  // Populated state golden test
+  const outPath = path.resolve(__dirname, 'report.txt');
+  removeFileIfExists(outPath);
   try {
-    // Use deterministic values so the output matches the golden file exactly
     writeState({
       startTime: null,
       isRunning: false,
@@ -56,6 +60,27 @@ function ms(h, m, s, ms) {
   } catch (err) {
     failures++;
     console.error('FAIL export output matches expected golden file');
+    console.error(err && err.stack ? err.stack : err);
+  }
+
+  // Empty state golden test (headers-only)
+  const emptyOut = path.resolve(__dirname, 'empty-report.txt');
+  removeFileIfExists(emptyOut);
+  try {
+    writeState({ startTime: null, isRunning: false, elapsedTime: 0, laps: [] });
+    const result = await runCli(['export', `--out=${emptyOut}`]);
+    assert.strictEqual(result.code, 0, 'export with empty state should exit 0');
+
+    const actualRaw = fs.existsSync(emptyOut) ? fs.readFileSync(emptyOut, 'utf8') : '';
+    const expectedRaw = fs.readFileSync(path.resolve(__dirname, 'expected-empty.txt'), 'utf8');
+    const normalize = (s) => s.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+$/g, '\n');
+    const actual = normalize(actualRaw);
+    const expected = normalize(expectedRaw);
+    assert.strictEqual(actual, expected, 'empty export output should match empty golden file');
+    console.log('PASS export empty state matches expected golden file');
+  } catch (err) {
+    failures++;
+    console.error('FAIL export empty state matches expected golden file');
     console.error(err && err.stack ? err.stack : err);
   }
 
