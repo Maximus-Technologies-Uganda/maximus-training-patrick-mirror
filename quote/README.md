@@ -55,7 +55,7 @@ node quote/bin/quote.js --by "Albert Einstein"
 
 ### Development
 
-- CLI entrypoint: `quote/src/cli.js`
+- CLI entrypoint: `quote/src/index.js`
 - Core library: `quote/src/core.js`
 
 ### Running Tests

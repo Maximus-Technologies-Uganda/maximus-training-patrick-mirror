@@ -4,11 +4,10 @@
 Command-line To-Do application to add tasks, list them with useful filters, and generate summaries. Tasks are stored in `todo/todos.json`.
 
 ### Supported commands
-- **add**: Add a new to-do item with optional due date and priority. Prevents duplicates (same text + due date).
+- **add**: Add a new to-do item with optional due date and priority. Prevents duplicates by text.
 - **list**: List to-dos, with optional filters for due today or high priority.
-- **toggle**: Toggle completion by ID.
+- **complete**: Mark a to-do as completed by ID.
 - **remove**: Remove a to-do by ID.
-- **filter**: Show items by simple criteria (e.g., high priority). [If not implemented, use list flags instead.]
 
 ### Usage
 
@@ -38,10 +37,10 @@ node todo/src/index.js list --dueToday
 node todo/src/index.js list --highPriority
 ```
 
-#### toggle
+#### complete
 ```bash
-# toggle completion by numeric ID
-node todo/src/index.js toggle 3
+# mark completion by numeric ID
+node todo/src/index.js complete 3
 ```
 
 #### remove
@@ -50,11 +49,7 @@ node todo/src/index.js toggle 3
 node todo/src/index.js remove 2
 ```
 
-#### filter
-```bash
-# if implemented, show high-priority items (otherwise use list --highPriority)
-node todo/src/index.js filter --highPriority
-```
+Note: Filtering by high priority uses `list --highPriority`.
 
 ### Running tests
 ```bash
