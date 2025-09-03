@@ -1,15 +1,9 @@
 const fs = require('fs');
  const path = require('path');
+const core = require('./core');
 const DATA_FILE = path.resolve(__dirname, '..', 'expenses.json');
 
-function validateMonth(month) {
-  if (typeof month !== 'string') return false;
-  const m = /^(\d{4})-(\d{2})$/.exec(month);
-  if (!m) return false;
-  const y = Number(m[1]);
-  const mo = Number(m[2]);
-  return y >= 1970 && mo >= 1 && mo <= 12;
-}
+const { validateMonth, filterExpenses, getExpenseMonth } = core;
 
 function parseArgs(argv) {
   const args = { command: argv[2] || '', rest: argv.slice(3) };
@@ -50,33 +44,7 @@ function parseReportArgs(tokens) {
   return { month };
 }
 
-function getExpenseMonth(expense) {
-  const d = expense && expense.date;
-  if (!d) return null;
-  if (typeof d === 'string') {
-    // Accept YYYY-MM or YYYY-MM-DD formats
-    const m1 = /^(\d{4})-(\d{2})$/.exec(d);
-    if (m1) return `${m1[1]}-${m1[2]}`;
-    const m2 = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
-    if (m2) return `${m2[1]}-${m2[2]}`;
-  }
-  return null;
-}
-
-function filterExpenses(expenses, flags) {
-  const { month, category } = flags || {};
-  let filtered = Array.isArray(expenses) ? expenses.slice() : [];
-  if (month) {
-    filtered = filtered.filter((e) => getExpenseMonth(e) === month);
-  }
-  if (category) {
-    filtered = filtered.filter((e) => {
-      const c = e && e.category;
-      return typeof c === 'string' ? c === category : false;
-    });
-  }
-  return filtered;
-}
+// filterExpenses and getExpenseMonth are provided by core
 
 function handleReport(tokens) {
   const { month } = parseReportArgs(tokens);
