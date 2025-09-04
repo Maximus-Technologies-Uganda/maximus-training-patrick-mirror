@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": 1,
+    "text": "One",
+    "due": null,
+    "priority": "medium",
+    "createdAt": "2025-09-04T06:00:12.335Z",
+    "completed": false
+  }
+]

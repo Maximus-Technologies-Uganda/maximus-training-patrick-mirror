@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const core = require('./core');
 
 const DATA_FILE = path.resolve(__dirname, '..', 'todos.json');
 
@@ -22,139 +23,37 @@ function writeTodos(todos) {
   }
 }
 
-function validateDue(due) {
-  if (due == null || due === '') return true;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(due);
-  if (!m) return false;
-  const y = Number(m[1]);
-  const mo = Number(m[2]);
-  const d = Number(m[3]);
-  const dt = new Date(Date.UTC(y, mo - 1, d));
-  return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
-}
-
-function parseAddArgs(argv) {
-  let due = null;
-  let priority = 'medium';
-  const textParts = [];
-
-  for (let i = 0; i < argv.length; i++) {
-    const token = argv[i];
-    if (token.startsWith('--due=')) {
-      due = token.slice('--due='.length);
-    } else if (token === '--due') {
-      due = argv[++i];
-    } else if (token.startsWith('--priority=')) {
-      priority = token.slice('--priority='.length).toLowerCase();
-    } else if (token === '--priority') {
-      priority = (argv[++i] || '').toLowerCase();
-    } else {
-      textParts.push(token);
-    }
-  }
-
-  return { text: textParts.join(' ').trim(), due, priority };
-}
-
-function generateId(todos) {
-  let max = 0;
-  for (const t of todos) {
-    if (typeof t.id === 'number' && t.id > max) max = t.id;
-  }
-  return max + 1;
-}
-
 function handleAdd() {
   const argv = process.argv.slice(3);
-  const { text, due, priority } = parseAddArgs(argv);
-
-  if (!text) {
-    console.error('Error: to-do text is required.');
-    process.exitCode = 1;
-    return;
-  }
-
-  if (!validateDue(due)) {
-    console.error('Error: --due must be a real date in YYYY-MM-DD format.');
-    process.exitCode = 1;
-    return;
-  }
-
-  if (!['low', 'medium', 'high'].includes(priority)) {
-    console.error('Error: --priority must be one of low|medium|high.');
-    process.exitCode = 1;
-    return;
-  }
+  const { text, due, priority } = core.parseAddArgs(argv);
 
   const todos = readTodos();
-
-  const normalizedText = text.toLowerCase();
-  const isDuplicate = todos.some(t => String(t.text || '').trim().toLowerCase() === normalizedText);
-
-  if (isDuplicate) {
-    console.error('Error: duplicate to-do with the same text already exists.');
+  const result = core.addTodo(todos, { text, due, priority }, new Date());
+  if (!result.ok) {
+    console.error('Error:', result.message);
     process.exitCode = 1;
     return;
   }
 
-  const newTodo = {
-    id: generateId(todos),
-    text,
-    due: due || null,
-    priority,
-    createdAt: new Date().toISOString(),
-    completed: false
-  };
-
-  todos.push(newTodo);
-  writeTodos(todos);
-
-  console.log(`Added: "${newTodo.text}"${newTodo.due ? ' (due ' + newTodo.due + ')' : ''} [priority: ${newTodo.priority}]`);
-}
-
-function parseListArgs(argv) {
-  let dueToday = false;
-  let highPriority = false;
-
-  for (const token of argv) {
-    if (token === '--dueToday') {
-      dueToday = true;
-    } else if (token === '--highPriority') {
-      highPriority = true;
-    }
-  }
-
-  return { dueToday, highPriority };
-}
-
-function getLocalISODate() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  writeTodos(result.todos);
+  const t = result.todo;
+  console.log(`Added: "${t.text}"${t.due ? ' (due ' + t.due + ')' : ''} [priority: ${t.priority}]`);
 }
 
 function handleList() {
   const argv = process.argv.slice(3);
-  const { dueToday, highPriority } = parseListArgs(argv);
+  const { dueToday, highPriority } = core.parseListArgs(argv);
 
-  if (dueToday && highPriority) {
-    console.error('Error: --dueToday and --highPriority cannot be used together.');
+  const todos = readTodos();
+  const todayISO = core.toLocalISODate(new Date());
+  const result = core.listTodos(todos, { dueToday, highPriority }, todayISO);
+  if (!result.ok) {
+    console.error('Error:', result.message);
     process.exitCode = 1;
     return;
   }
 
-  const todos = readTodos();
-  let results = todos.slice();
-
-  if (dueToday) {
-    const today = getLocalISODate();
-    results = results.filter(t => (t.due || null) === today);
-  } else if (highPriority) {
-    results = results.filter(t => String(t.priority || '').toLowerCase() === 'high');
-  }
-
+  const results = result.results;
   if (results.length === 0) {
     console.log('No to-dos found.');
     return;
@@ -177,30 +76,19 @@ if (process.argv[2] === 'add') {
 function handleComplete() {
   const argv = process.argv.slice(3);
   const idRaw = argv[0];
-  const id = Number(idRaw);
-
-  if (!Number.isInteger(id) || id <= 0) {
-    console.error('Error: a valid numeric ID is required.');
-    process.exitCode = 1;
-    return;
-  }
-
   const todos = readTodos();
-  const todo = todos.find(t => t.id === id);
-  if (!todo) {
-    console.error('Error: to-do not found.');
+  const result = core.completeTodo(todos, idRaw);
+  if (!result.ok) {
+    console.error('Error:', result.message);
     process.exitCode = 1;
     return;
   }
-
-  if (todo.completed) {
+  if (result.alreadyCompleted) {
     console.log('Already completed.');
     return;
   }
-
-  todo.completed = true;
-  writeTodos(todos);
-  console.log(`Completed #${id}: ${todo.text}`);
+  writeTodos(result.todos);
+  console.log(`Completed #${result.todo.id}: ${result.todo.text}`);
 }
 
 if (process.argv[2] === 'complete') {
@@ -210,24 +98,15 @@ if (process.argv[2] === 'complete') {
 function handleRemove() {
   const argv = process.argv.slice(3);
   const idRaw = argv[0];
-  const id = Number(idRaw);
-
-  if (!Number.isInteger(id) || id <= 0) {
-    console.error('Error: a valid numeric ID is required.');
-    process.exitCode = 1;
-    return;
-  }
-
   const todos = readTodos();
-  const next = todos.filter(t => t.id !== id);
-  if (next.length === todos.length) {
-    console.error('Error: to-do not found.');
+  const result = core.removeTodo(todos, idRaw);
+  if (!result.ok) {
+    console.error('Error:', result.message);
     process.exitCode = 1;
     return;
   }
-
-  writeTodos(next);
-  console.log(`Removed #${id}`);
+  writeTodos(result.todos);
+  console.log(`Removed #${result.removedId}`);
 }
 
 if (process.argv[2] === 'remove') {
