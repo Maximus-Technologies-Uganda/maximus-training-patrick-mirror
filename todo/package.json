@@ -2,6 +2,9 @@
   "name": "todo-tests",
   "private": true,
   "version": "0.0.0",
+  "bin": {
+    "todo": "./bin/todo.js"
+  },
   "scripts": {
     "test": "jest --coverage"
   },

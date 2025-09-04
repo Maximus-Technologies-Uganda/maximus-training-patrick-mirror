@@ -1,7 +1,8 @@
+#!/usr/bin/env node
+
 const fs = require('fs');
 const path = require('path');
-const core = require('./core');
-const argsHelper = require('../../helpers/args');
+const core = require('../src/core');
 
 const DATA_FILE = path.resolve(__dirname, '..', 'todos.json');
 
@@ -19,7 +20,8 @@ function writeTodos(todos) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(todos, null, 2) + '\n', 'utf8');
   } catch (err) {
-    argsHelper.exitWithError(`Error: failed to write todos.json: ${err.message}`);
+    console.error(`Error: failed to write todos.json: ${err.message}`);
+    process.exit(1);
   }
 }
 
@@ -30,7 +32,8 @@ function handleAdd() {
   const todos = readTodos();
   const result = core.addTodo(todos, { text, due, priority }, new Date());
   if (!result.ok) {
-    argsHelper.exitWithError(`Error: ${result.message}`);
+    console.error(`Error: ${result.message}`);
+    process.exit(1);
   }
 
   writeTodos(result.todos);
@@ -46,7 +49,8 @@ function handleList() {
   const todayISO = core.toLocalISODate(new Date());
   const result = core.listTodos(todos, { dueToday, highPriority }, todayISO);
   if (!result.ok) {
-    argsHelper.exitWithError(`Error: ${result.message}`);
+    console.error(`Error: ${result.message}`);
+    process.exit(1);
   }
 
   let results = result.results;
@@ -69,21 +73,14 @@ function handleList() {
   }
 }
 
-if (process.argv[2] === 'list') {
-  handleList();
-}
-
-if (process.argv[2] === 'add') {
-  handleAdd();
-}
-
 function handleComplete() {
   const argv = process.argv.slice(3);
   const idRaw = argv[0];
   const todos = readTodos();
   const result = core.completeTodo(todos, idRaw);
   if (!result.ok) {
-    argsHelper.exitWithError(`Error: ${result.message}`);
+    console.error(`Error: ${result.message}`);
+    process.exit(1);
   }
   if (result.alreadyCompleted) {
     console.log('Already completed.');
@@ -93,56 +90,37 @@ function handleComplete() {
   console.log(`Completed #${result.todo.id}: ${result.todo.text}`);
 }
 
-if (process.argv[2] === 'complete') {
-  handleComplete();
-}
-
 function handleRemove() {
   const argv = process.argv.slice(3);
   const idRaw = argv[0];
   const todos = readTodos();
   const result = core.removeTodo(todos, idRaw);
   if (!result.ok) {
-    argsHelper.exitWithError(`Error: ${result.message}`);
+    console.error(`Error: ${result.message}`);
+    process.exit(1);
   }
   writeTodos(result.todos);
   console.log(`Removed #${result.removedId}`);
 }
 
-if (process.argv[2] === 'remove') {
-  handleRemove();
+function main() {
+  const command = process.argv[2];
+
+  if (command === 'add') {
+    handleAdd();
+  } else if (command === 'list') {
+    handleList();
+  } else if (command === 'complete') {
+    handleComplete();
+  } else if (command === 'remove') {
+    handleRemove();
+  } else {
+    console.error('Usage: todo <command>');
+    console.error('Commands: add, list, complete, remove');
+    process.exit(1);
+  }
 }
 
-function handleHelp() {
-  console.log('Todo CLI - Manage your todo list');
-  console.log('');
-  console.log('Usage:');
-  console.log('  todo add <text> [--due YYYY-MM-DD] [--priority low|medium|high]');
-  console.log('  todo list [--dueToday] [--highPriority]');
-  console.log('  todo complete <id>');
-  console.log('  todo remove <id>');
-  console.log('  todo help');
-  console.log('');
-  console.log('Examples:');
-  console.log('  todo add "Buy groceries" --due 2024-12-25 --priority high');
-  console.log('  todo list --dueToday');
-  console.log('  todo complete 1');
-  console.log('  todo remove 2');
-}
-
-if (process.argv[2] === 'help' || process.argv.includes('--help') || process.argv.includes('-h')) {
-  handleHelp();
-}
-
-// Export functions for testing
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    readTodos,
-    writeTodos,
-    handleAdd,
-    handleList,
-    handleComplete,
-    handleRemove,
-    handleHelp
-  };
+if (require.main === module) {
+  main();
 }
