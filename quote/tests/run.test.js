@@ -23,19 +23,33 @@ describe('run()', () => {
   });
 
   test('prints a random quote and returns 0 with no args', () => {
+    // Mock Math.random for deterministic behavior
+    const originalRandom = Math.random;
+    Math.random = jest.fn().mockReturnValue(0.3); // Selects index 1
+
     const code = run(['node', 'index.js']);
     expect(code).toBe(0);
     expect(logSpy).toHaveBeenCalled();
     const line = (logSpy.mock.calls[0][0] || '').trim();
     expect(line).toMatch(/ - /);
+
+    // Restore original Math.random
+    Math.random = originalRandom;
   });
 
   test('filters by author and returns 0', () => {
+    // Mock Math.random for deterministic behavior
+    const originalRandom = Math.random;
+    Math.random = jest.fn().mockReturnValue(0); // Selects first matching quote
+
     const code = run(['node', 'index.js', '--by=Albert Einstein']);
     expect(code).toBe(0);
     expect(logSpy).toHaveBeenCalled();
     const line = (logSpy.mock.calls[0][0] || '').trim();
     expect(line.endsWith('- Albert Einstein')).toBe(true);
+
+    // Restore original Math.random
+    Math.random = originalRandom;
   });
 
   test('unknown author returns 1 with error message', () => {
