@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const argsHelper = require('../../helpers/args');
 
 function selectRandom(items) {
   const idx = Math.floor(Math.random() * items.length);
@@ -40,8 +41,7 @@ function run(argv = process.argv) {
     let quotes = [];
     try {
       if (!fs.existsSync(quotesPath)) {
-        console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
-        return 1;
+        argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
       }
       const raw = fs.readFileSync(quotesPath, 'utf8').trim();
       const loaded = raw ? JSON.parse(raw) : [];
@@ -49,35 +49,30 @@ function run(argv = process.argv) {
         ? loaded.filter(q => q && typeof q.text === 'string' && q.text.trim() && typeof q.author === 'string' && q.author.trim())
         : [];
       if (quotes.length === 0) {
-        console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
-        return 1;
+        argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
       }
     } catch (e) {
-      console.error('Error: No quotes available. Ensure quotes.json exists beside index.js.');
-      return 1;
+      argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
     }
 
     let pool = quotes;
     if (args.by) {
       pool = filterQuotesByAuthor(quotes, args.by);
       if (pool.length === 0) {
-        console.error(`Error: No quotes found for author "${args.by}".`);
-        return 1;
+        argsHelper.exitWithError(`Error: No quotes found for author "${args.by}".`);
       }
     }
 
     const choice = selectRandom(pool);
     console.log(`${choice.text} - ${choice.author}`);
-    return 0;
+    argsHelper.exitWithSuccess();
   } catch (err) {
-    console.error('Unexpected error:', err && err.message ? err.message : String(err));
-    return 1;
+    argsHelper.exitWithError(`Unexpected error: ${err && err.message ? err.message : String(err)}`);
   }
 }
 
 if (require.main === module) {
-  const code = run(process.argv);
-  process.exit(code);
+  run(process.argv);
 }
 
 module.exports = { run, parseArgs, selectRandom, filterQuotesByAuthor };
