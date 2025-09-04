@@ -124,7 +124,14 @@ function readExpenses() {
   argsHelper.exitWithError(`Error: unknown command '${command}'.
 Usage:
   node expense/src/index.js list [--month=YYYY-MM] [--category=<name>]
+    Examples:
+      node expense/src/index.js list --month=2025-01
+      node expense/src/index.js list --category=food
   node expense/src/index.js total [--month=YYYY-MM] [--category=<name>]
+    Examples:
+      node expense/src/index.js total --month=2025-02 --category=groceries
   node expense/src/index.js report --month=YYYY-MM
-  node expense/src/index.js clear`);
+    Example: node expense/src/index.js report --month=2025-01
+  node expense/src/index.js clear
+    Example: node expense/src/index.js clear`);
 })();

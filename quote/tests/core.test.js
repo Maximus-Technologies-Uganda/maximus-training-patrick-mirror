@@ -157,6 +157,15 @@ describe('core functions', () => {
       const result = selectRandom(items);
       expect(result).toBe('c'); // Math.floor(0.5 * 5) = 2, so items[2] = 'c'
     });
+
+    test('selectRandom is deterministic with seed', () => {
+      const items = ['a', 'b', 'c', 'd', 'e'];
+      const result1 = selectRandom(items, 42);
+      const result2 = selectRandom(items, 42);
+      expect(result1).toBe(result2); // Same seed produces same result
+      const result3 = selectRandom(items, 43);
+      expect(result1).not.toBe(result3); // Different seed produces different result
+    });
   });
 
   describe('filterByAuthor', () => {

@@ -49,11 +49,19 @@ function handleList() {
     argsHelper.exitWithError(`Error: ${result.message}`);
   }
 
-  const results = result.results;
+  let results = result.results;
   if (results.length === 0) {
     console.log('No to-dos found.');
     return;
   }
+
+  // Sort by priority: high > medium > low
+  const priorityOrder = { high: 3, medium: 2, low: 1 };
+  results.sort((a, b) => {
+    const aPri = priorityOrder[a.priority || 'medium'] || 2;
+    const bPri = priorityOrder[b.priority || 'medium'] || 2;
+    return bPri - aPri;
+  });
 
   for (const t of results) {
     const status = t.completed ? '✓' : ' ';

@@ -4,7 +4,16 @@ const path = require('path');
 const fs = require('fs');
 const argsHelper = require('../../helpers/args');
 
-function selectRandom(items) {
+function selectRandom(items, seed = null) {
+  if (seed !== null) {
+    // Use seed for deterministic behavior in tests
+    const seededRandom = (s) => {
+      s = Math.sin(s) * 10000;
+      return s - Math.floor(s);
+    };
+    const idx = Math.floor(seededRandom(seed) * items.length);
+    return items[idx];
+  }
   const idx = Math.floor(Math.random() * items.length);
   return items[idx];
 }

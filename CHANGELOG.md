@@ -1,5 +1,108 @@
 ## Changelog
 
+### 2025-09-04 (Week 2 Wrap-up - DEV-81, DEV-82, DEV-83, DEV-84)
+
+### Added
+- **Expense App**:
+  - Enhanced help text with examples for `list`, `total`, `report`, and `clear` commands. (DEV-82)
+- **To-Do App**:
+  - Priority ordering in `list` output (high > medium > low). (DEV-82)
+- **Stopwatch App**:
+  - Path validation for `--out` flag, including directory existence and write permissions. (DEV-82)
+- **Quote App**:
+  - Deterministic random selection with seed support for predictable tests. (DEV-82)
+- **Docs**:
+  - Updated root README.md to emphasize Coverage Index artifact access. (DEV-83)
+- **CHANGELOG**:
+  - Added entries for all Week 2 PRs and improvements. (DEV-84)
+
+### Changed
+- **Expense App**:
+  - Improved error messages and usage examples in help output. (DEV-82)
+- **To-Do App**:
+  - List command now sorts tasks by priority descending. (DEV-82)
+- **Stopwatch App**:
+  - Added user-friendly error messages for invalid export paths. (DEV-82)
+- **Quote App**:
+  - `selectRandom` function supports seeded randomness for test determinism. (DEV-82)
+
+### Fixed
+- **Testing**:
+  - Added 1-2 tests per app for the new micro-improvements. (DEV-82)
+
+### Notes
+- These capstone improvements enhance usability, reliability, and testability across all apps. (DEV-81, DEV-82)
+- Documentation updates ensure users can easily access coverage reports and understand CLI behavior. (DEV-83, DEV-84)
+
+### 2025-09-04 (Exit Codes & Helpers - DEV-73, DEV-74)
+
+### Added
+- **Shared Helpers**:
+  - Created `helpers/args.js` with common argument parsing, flag handling, and exit code utilities. (DEV-74)
+- **Exit Code Standardization**:
+  - Standardized all apps to use 0 for success and 1 for errors consistently. (DEV-73)
+- **Expense App**:
+  - Integrated shared helpers for parsing and error handling. (DEV-73, DEV-74)
+- **To-Do App**:
+  - Used shared helpers and consistent exit codes. (DEV-73, DEV-74)
+- **Stopwatch App**:
+  - Replaced process.exitCode with standardized exit functions. (DEV-73, DEV-74)
+- **Quote App**:
+  - Updated to use shared exit helpers and consistent codes. (DEV-73, DEV-74)
+
+### Changed
+- **All Apps**:
+  - Refactored to use `helpers/args.js` for argument parsing and error handling. (DEV-74)
+  - Ensured all error paths exit with code 1, success with code 0. (DEV-73)
+
+### Notes
+- This refactoring reduces code duplication and ensures consistent behavior across all CLI applications. (DEV-73, DEV-74)
+
+### 2025-09-04 (.gitattributes - DEV-72)
+
+### Added
+- **Repo Hygiene**:
+  - Added `.gitattributes` with `* text=auto` for EOL normalization across operating systems. (DEV-72)
+
+### Notes
+- Ensures golden-file tests and other text files remain stable across Windows, Linux, and macOS. (DEV-72)
+
+### 2025-09-04 (Expense Error-Paths - DEV-64)
+
+### Added
+- **Expense App**:
+  - Added comprehensive tests for invalid months, category-only/month-only/both/no-flags scenarios. (DEV-64)
+  - Tests for edge months (30/31 days) and error-path validation. (DEV-64)
+
+### Changed
+- **Expense App**:
+  - Improved core functions with better error handling for filters and sums. (DEV-64)
+
+### Notes
+- Achieved ≥50% coverage for `expense/src/core.js` with systematic test implementation. (DEV-64)
+
+### 2025-09-04 (To-Do Coverage & Tests - DEV-59, DEV-60, DEV-61, DEV-62, DEV-63)
+
+### Added
+- **To-Do App**:
+  - Created `todo/src/core.js` with pure functions for parsing, validation, and filtering. (DEV-60)
+  - Added table-driven tests for `--dueToday` boundaries (yesterday, today, tomorrow). (DEV-62)
+  - Implemented `--highPriority` semantics with tests. (DEV-63)
+  - Added duplicate rule tests including error exit paths. (DEV-63)
+  - Core unit tests replacing child_process-based integration tests. (DEV-61)
+
+### Changed
+- **To-Do App**:
+  - Refactored CLI to use core functions, improving testability. (DEV-60, DEV-61)
+  - Achieved 56.7% statement coverage and 100% for core module. (DEV-59)
+
+### Fixed
+- **To-Do App**:
+  - Resolved 0% coverage issue with pure functions and deterministic tests. (DEV-59)
+
+### Notes
+- Systematic testing approach hit error paths and ensured no randomness in assertions. (DEV-59, DEV-61, DEV-62, DEV-63)
+
 ### 2025-09-03
 
 ### Added
