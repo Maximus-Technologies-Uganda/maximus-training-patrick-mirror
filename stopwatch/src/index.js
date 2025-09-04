@@ -122,3 +122,13 @@ function handleReset() {
 if (process.argv[2] === 'reset') {
   handleReset();
 }
+
+// Export functions for testing
+module.exports = {
+  loadState,
+  saveState,
+  parseExportArgs,
+  handleExport,
+  handleLap,
+  handleReset
+};
