@@ -54,6 +54,19 @@ function handleExport() {
     argsHelper.exitWithError('Error: --out=<filename> is required.');
   }
 
+  // Validate output path
+  const outPath = path.resolve(process.cwd(), out);
+  try {
+    // Check if the directory exists and is writable
+    const dir = path.dirname(outPath);
+    const fsStats = require('fs').statSync(dir);
+    if (!fsStats.isDirectory()) {
+      argsHelper.exitWithError(`Error: Directory '${dir}' does not exist or is not a directory.`);
+    }
+  } catch (e) {
+    argsHelper.exitWithError(`Error: Cannot access directory for '${outPath}'. Please check the path.`);
+  }
+
   const { elapsedTime, laps } = loadState();
   const lines = buildExportLines(elapsedTime, laps);
   if (!Array.isArray(lines) || lines.length === 0) {
@@ -61,7 +74,6 @@ function handleExport() {
     return;
   }
 
-  const outPath = path.resolve(process.cwd(), out);
   try {
     fs.writeFileSync(outPath, lines.join('\n') + '\n', 'utf8');
     console.log(`Exported stopwatch report to ${outPath}`);

@@ -73,6 +73,22 @@ async function run() {
     assert.ok((dup.stderr || '').toLowerCase().includes('duplicate'));
   });
 
+  step('CLI: list sorts by priority (high > medium > low)', () => {
+    resetTodos();
+    runCli(['add', 'Low priority', '--priority=low']);
+    runCli(['add', 'Medium priority']);
+    runCli(['add', 'High priority', '--priority=high']);
+    const r = runCli(['list']);
+    assert.strictEqual(r.status, 0);
+    const lines = (r.stdout || '').trim().split(/\r?\n/);
+    assert.ok(lines.length >= 3); // At least 3 tasks
+    // Check order: High first, then Medium, then Low
+    const highIndex = lines.findIndex(l => l.includes('High priority'));
+    const mediumIndex = lines.findIndex(l => l.includes('Medium priority'));
+    const lowIndex = lines.findIndex(l => l.includes('Low priority'));
+    assert.ok(highIndex < mediumIndex && mediumIndex < lowIndex);
+  });
+
   process.exitCode = failures ? 1 : 0;
 }
 

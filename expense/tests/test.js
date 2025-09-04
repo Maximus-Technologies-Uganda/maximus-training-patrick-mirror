@@ -73,6 +73,13 @@ function runCli(args) {
     assert.ok((r.stdout || '').toLowerCase().includes('no expenses'));
   });
 
+  step('CLI: unknown command shows enhanced help with examples', () => {
+    const r = runCli(['unknown']);
+    assert.strictEqual(r.status, 1);
+    assert.ok((r.stderr || '').includes('unknown command'));
+    assert.ok((r.stderr || '').includes('Examples:'));
+  });
+
   process.exitCode = failures ? 1 : 0;
 })();
 
