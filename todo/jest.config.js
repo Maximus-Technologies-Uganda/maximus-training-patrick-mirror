@@ -6,4 +6,5 @@ module.exports = {
   testMatch: ['**/tests/**/*.js'],
   transform: {},
   coverageReporters: ['json', 'lcov', 'text-summary'],
+  maxWorkers: 1, // Run tests serially to avoid interference
 };

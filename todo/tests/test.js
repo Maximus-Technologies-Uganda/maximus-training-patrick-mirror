@@ -1,11 +1,10 @@
-/* c8 ignore start */
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const { spawnSync } = require('child_process');
 const core = require('../src/core');
 
-const CLI = path.resolve(__dirname, '../src/index.js');
+const CLI = path.resolve(__dirname, '../bin/todo.js');
 const DATA = path.resolve(__dirname, '../todos.json');
 
 function writeTodosFile(todos) {
@@ -99,4 +98,3 @@ run().catch((e) => {
 
 
 
-/* c8 ignore stop */
