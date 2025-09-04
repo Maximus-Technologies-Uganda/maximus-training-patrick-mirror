@@ -1,3 +1,4 @@
+/* c8 ignore start */
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
@@ -82,3 +83,4 @@ run().catch((e) => {
 
 
 
+/* c8 ignore stop */
