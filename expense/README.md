@@ -58,7 +58,7 @@ node expense/src/index.js clear
 # -> prints: "Cleared expenses."
 ```
 #### Help
-On unknown commands or malformed flags, the CLI prints usage:
+On unknown commands or malformed flags, the CLI prints usage and exits with code 1:
 ```
 Usage:
   node expense/src/index.js list [--month=YYYY-MM] [--category=<name>]
@@ -66,6 +66,10 @@ Usage:
   node expense/src/index.js report --month=YYYY-MM
   node expense/src/index.js clear
 ```
+
+### Exit Codes
+- **0**: Success - Command executed successfully.
+- **1**: Error - Invalid arguments, malformed flags, missing files, or other runtime errors.
 
 ### Running tests
 ```bash

@@ -51,6 +51,10 @@ node todo/src/index.js remove 2
 
 Note: Filtering by high priority uses `list --highPriority`.
 
+### Exit Codes
+- **0**: Success - Command executed successfully.
+- **1**: Error - Invalid arguments, malformed flags, missing files, duplicate tasks, or other runtime errors.
+
 ### Running tests
 ```bash
 node todo/tests/test.js
