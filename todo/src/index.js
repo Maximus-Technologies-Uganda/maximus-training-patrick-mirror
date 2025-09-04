@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const core = require('./core');
+const argsHelper = require('../../helpers/args');
 
 const DATA_FILE = path.resolve(__dirname, '..', 'todos.json');
 
@@ -18,8 +19,7 @@ function writeTodos(todos) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(todos, null, 2) + '\n', 'utf8');
   } catch (err) {
-    console.error('Error: failed to write todos.json:', err.message);
-    process.exitCode = 1;
+    argsHelper.exitWithError(`Error: failed to write todos.json: ${err.message}`);
   }
 }
 
@@ -30,9 +30,7 @@ function handleAdd() {
   const todos = readTodos();
   const result = core.addTodo(todos, { text, due, priority }, new Date());
   if (!result.ok) {
-    console.error('Error:', result.message);
-    process.exitCode = 1;
-    return;
+    argsHelper.exitWithError(`Error: ${result.message}`);
   }
 
   writeTodos(result.todos);
@@ -48,9 +46,7 @@ function handleList() {
   const todayISO = core.toLocalISODate(new Date());
   const result = core.listTodos(todos, { dueToday, highPriority }, todayISO);
   if (!result.ok) {
-    console.error('Error:', result.message);
-    process.exitCode = 1;
-    return;
+    argsHelper.exitWithError(`Error: ${result.message}`);
   }
 
   const results = result.results;
@@ -79,9 +75,7 @@ function handleComplete() {
   const todos = readTodos();
   const result = core.completeTodo(todos, idRaw);
   if (!result.ok) {
-    console.error('Error:', result.message);
-    process.exitCode = 1;
-    return;
+    argsHelper.exitWithError(`Error: ${result.message}`);
   }
   if (result.alreadyCompleted) {
     console.log('Already completed.');
@@ -101,9 +95,7 @@ function handleRemove() {
   const todos = readTodos();
   const result = core.removeTodo(todos, idRaw);
   if (!result.ok) {
-    console.error('Error:', result.message);
-    process.exitCode = 1;
-    return;
+    argsHelper.exitWithError(`Error: ${result.message}`);
   }
   writeTodos(result.todos);
   console.log(`Removed #${result.removedId}`);

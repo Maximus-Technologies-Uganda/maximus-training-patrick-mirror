@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const argsHelper = require('../../helpers/args');
 
 const STATE_FILE = path.resolve(__dirname, '..', 'stopwatch-state.json');
 const { buildExportLines } = require('./exporter');
@@ -50,9 +51,7 @@ function handleExport() {
   const { out } = parseExportArgs(argv);
 
   if (!out || out.trim() === '') {
-    console.error('Error: --out=<filename> is required.');
-    process.exitCode = 1;
-    return;
+    argsHelper.exitWithError('Error: --out=<filename> is required.');
   }
 
   const { elapsedTime, laps } = loadState();
@@ -67,8 +66,7 @@ function handleExport() {
     fs.writeFileSync(outPath, lines.join('\n') + '\n', 'utf8');
     console.log(`Exported stopwatch report to ${outPath}`);
   } catch (e) {
-    console.error('Error: failed to write output file:', e.message);
-    process.exitCode = 1;
+    argsHelper.exitWithError(`Error: failed to write output file: ${e.message}`);
   }
 }
 
@@ -80,9 +78,7 @@ function handleLap() {
   const { startTime, isRunning, elapsedTime, laps } = loadState();
   const hasStarted = typeof startTime === 'number' && startTime > 0;
   if (!hasStarted || !isRunning) {
-    console.error('Error: stopwatch has not been started.');
-    process.exitCode = 1;
-    return;
+    argsHelper.exitWithError('Error: stopwatch has not been started.');
   }
 
   const currentElapsed = (Date.now() - startTime) + (Number(elapsedTime) || 0);
@@ -114,8 +110,7 @@ function handleReset() {
     saveState({ startTime: null, isRunning: false, elapsedTime: 0, laps: [] });
     console.log('Stopwatch state reset.');
   } catch (e) {
-    console.error('Error: failed to reset stopwatch state:', e.message);
-    process.exitCode = 1;
+    argsHelper.exitWithError(`Error: failed to reset stopwatch state: ${e.message}`);
   }
 }
 
