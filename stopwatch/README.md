@@ -38,6 +38,10 @@ node stopwatch/src/index.js export --out=empty.txt
 # -> prints: "No laps recorded." and does not create empty.txt
 ```
 
+### Exit Codes
+- **0**: Success - Command executed successfully.
+- **1**: Error - Invalid arguments, malformed flags, stopwatch not started, or other runtime errors.
+
 ### Running tests
 ```bash
 node stopwatch/tests/test.js
