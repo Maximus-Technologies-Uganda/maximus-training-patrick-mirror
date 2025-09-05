@@ -96,7 +96,7 @@ jobs:
 
   assemble:
     name: Assemble review packet
-    needs: [discover]
+    needs: [discover, per_app]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -146,18 +146,11 @@ jobs:
             done
           fi
 
-      - name: Serial fallback (always run if no coverage artifacts found)
+      - name: Serial fallback (backfill missing apps only)
         shell: bash
         run: |
           set -e
-          # Check if we have any coverage artifacts from matrix jobs
-          COVERAGE_COUNT=$(find review-artifacts -name "coverage-*" -type d 2>/dev/null | wc -l || echo "0")
-          if [ "$COVERAGE_COUNT" -gt 0 ]; then
-            echo "Found $COVERAGE_COUNT coverage artifacts from matrix jobs. Skipping serial fallback."
-            exit 0
-          fi
-          
-          echo "No coverage artifacts found. Running serial fallback for all apps."
+          # Discover apps locally
           APPS=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(d+'/package.json')||(fs.existsSync(d+'/src')&&fs.existsSync(d+'/tests'))||fs.existsSync(d+'/tests');}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
           export APPS_ARRAY="$APPS"
           echo "Locally discovered apps: $APPS_ARRAY"
@@ -170,7 +163,15 @@ jobs:
           fi
           
           mkdir -p review-artifacts
-          for APP in $(node -e "const a=process.env.APPS_ARRAY;JSON.parse(a).forEach(x=>process.stdout.write(x+' '))"); do
+          # Determine which apps are missing coverage folders
+          MISSING=$(node -e "const fs=require('fs');const a=JSON.parse(process.env.APPS_ARRAY||'[]');const missing=a.filter(app=>!fs.existsSync('review-artifacts/coverage-'+app));process.stdout.write(missing.join(' '));")
+          if [ -z "$MISSING" ]; then
+            echo "All discovered apps already have coverage artifacts; no fallback needed."
+          else
+            echo "Backfilling coverage for apps: $MISSING"
+          fi
+
+          for APP in $MISSING; do
             echo "---- $APP: install ----"
             (cd "$APP" && npm ci || npm install || true)
             echo "---- $APP: jest --coverage ----"
