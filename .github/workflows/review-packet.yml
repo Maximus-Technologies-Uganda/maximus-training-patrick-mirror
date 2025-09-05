@@ -65,7 +65,7 @@ jobs:
           set -e
           APP="${{ matrix.app }}"
           if [ -d "$APP" ]; then
-            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary --coverageReporters=json) || echo "$APP: jest missing or tests failed; continuing"
+            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary --coverageReporters=json --coverageReporters=text-summary) || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "stage/coverage-$APP"
               cp -R "$APP/coverage/." "stage/coverage-$APP/" || true
@@ -93,6 +93,16 @@ jobs:
         with:
           name: perapp-${{ matrix.app }}
           path: perapp-${{ matrix.app }}.txt
+
+      - name: Upload per-app code snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-${{ matrix.app }}
+          path: |
+            ${{ matrix.app }}/README.md
+            ${{ matrix.app }}/src/**
+            ${{ matrix.app }}/tests/**
+          if-no-files-found: ignore
 
   assemble:
     name: Assemble review packet
@@ -146,6 +156,18 @@ jobs:
             done
           fi
 
+      - name: Consolidate code snapshots
+        run: |
+          mkdir -p review-artifacts
+          if [ -d "_dl" ]; then
+            for d in _dl/code-*; do
+              [ -d "$d" ] || continue
+              APP_NAME=$(basename "$d" | sed 's/^code-//')
+              mkdir -p "review-artifacts/code-$APP_NAME"
+              cp -R "$d/." "review-artifacts/code-$APP_NAME/" || true
+            done
+          fi
+
       - name: Serial fallback (backfill missing apps only)
         shell: bash
         run: |
@@ -175,7 +197,7 @@ jobs:
             echo "---- $APP: install ----"
             (cd "$APP" && npm ci || npm install || true)
             echo "---- $APP: jest --coverage ----"
-            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary --coverageReporters=json) || echo "$APP: jest missing or tests failed; continuing"
+            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary --coverageReporters=json --coverageReporters=text-summary) || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "review-artifacts/coverage-$APP"
               cp -R "$APP/coverage/." "review-artifacts/coverage-$APP/" || true
