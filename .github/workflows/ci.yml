@@ -170,41 +170,110 @@ jobs:
             find downloaded-artifacts -type f | head -20
 
             # Find and copy coverage files for each app
-            # Since merge-multiple flattens the structure, we need to find files by their paths or names
+            # Artifacts are downloaded as: coverage-{app}-{os}-{node}/
 
             # Copy expense coverage files
-            find downloaded-artifacts -name "coverage-final.json" -path "*/expense/*" -exec cp {} review-packet/coverage-reports/expense/ \; 2>/dev/null || true
-            find downloaded-artifacts -name "index.html" -path "*/expense/*" -exec cp {} review-packet/coverage-reports/expense/ \; 2>/dev/null || true
+            find downloaded-artifacts -name "coverage-expense-*" -type d -exec sh -c '
+              for dir in "$@"; do
+                if [ -f "$dir/coverage-final.json" ]; then
+                  cp "$dir/coverage-final.json" review-packet/coverage-reports/expense/ 2>/dev/null || true
+                fi
+                if [ -f "$dir/lcov-report/index.html" ]; then
+                  cp "$dir/lcov-report/index.html" review-packet/coverage-reports/expense/ 2>/dev/null || true
+                fi
+              done
+            ' _ {} +
 
             # Copy todo coverage files
-            find downloaded-artifacts -name "coverage-final.json" -path "*/todo/*" -exec cp {} review-packet/coverage-reports/todo/ \; 2>/dev/null || true
-            find downloaded-artifacts -name "index.html" -path "*/todo/*" -exec cp {} review-packet/coverage-reports/todo/ \; 2>/dev/null || true
+            find downloaded-artifacts -name "coverage-todo-*" -type d -exec sh -c '
+              for dir in "$@"; do
+                if [ -f "$dir/coverage-final.json" ]; then
+                  cp "$dir/coverage-final.json" review-packet/coverage-reports/todo/ 2>/dev/null || true
+                fi
+                if [ -f "$dir/lcov-report/index.html" ]; then
+                  cp "$dir/lcov-report/index.html" review-packet/coverage-reports/todo/ 2>/dev/null || true
+                fi
+              done
+            ' _ {} +
 
             # Copy stopwatch coverage files
-            find downloaded-artifacts -name "coverage-final.json" -path "*/stopwatch/*" -exec cp {} review-packet/coverage-reports/stopwatch/ \; 2>/dev/null || true
-            find downloaded-artifacts -name "index.html" -path "*/stopwatch/*" -exec cp {} review-packet/coverage-reports/stopwatch/ \; 2>/dev/null || true
+            find downloaded-artifacts -name "coverage-stopwatch-*" -type d -exec sh -c '
+              for dir in "$@"; do
+                if [ -f "$dir/coverage-final.json" ]; then
+                  cp "$dir/coverage-final.json" review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
+                fi
+                if [ -f "$dir/lcov-report/index.html" ]; then
+                  cp "$dir/lcov-report/index.html" review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
+                fi
+              done
+            ' _ {} +
 
             # Copy quote coverage files
-            find downloaded-artifacts -name "coverage-final.json" -path "*/quote/*" -exec cp {} review-packet/coverage-reports/quote/ \; 2>/dev/null || true
-            find downloaded-artifacts -name "index.html" -path "*/quote/*" -exec cp {} review-packet/coverage-reports/quote/ \; 2>/dev/null || true
+            find downloaded-artifacts -name "coverage-quote-*" -type d -exec sh -c '
+              for dir in "$@"; do
+                if [ -f "$dir/coverage-final.json" ]; then
+                  cp "$dir/coverage-final.json" review-packet/coverage-reports/quote/ 2>/dev/null || true
+                fi
+                if [ -f "$dir/lcov-report/index.html" ]; then
+                  cp "$dir/lcov-report/index.html" review-packet/coverage-reports/quote/ 2>/dev/null || true
+                fi
+              done
+            ' _ {} +
 
-            # Alternative approach: if the above doesn't work, try copying by filename patterns
-            # This handles cases where directory structure is flattened
+            # Alternative approach: if the above doesn't work, try direct file copying
+            # This handles edge cases where the find commands might miss files
             if [ ! -f "review-packet/coverage-reports/expense/coverage-final.json" ]; then
               echo "Trying alternative file discovery method..."
-              cp downloaded-artifacts/coverage-final.json review-packet/coverage-reports/expense/ 2>/dev/null || true
-              cp downloaded-artifacts/index.html review-packet/coverage-reports/expense/ 2>/dev/null || true
-              cp downloaded-artifacts/coverage-final.json review-packet/coverage-reports/todo/ 2>/dev/null || true
-              cp downloaded-artifacts/index.html review-packet/coverage-reports/todo/ 2>/dev/null || true
-              cp downloaded-artifacts/coverage-final.json review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
-              cp downloaded-artifacts/index.html review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
-              cp downloaded-artifacts/coverage-final.json review-packet/coverage-reports/quote/ 2>/dev/null || true
-              cp downloaded-artifacts/index.html review-packet/coverage-reports/quote/ 2>/dev/null || true
+
+              # Try to find and copy files from any coverage directories
+              find downloaded-artifacts -name "coverage-final.json" -exec sh -c '
+                for file in "$@"; do
+                  if [[ "$file" == *"expense"* ]]; then
+                    cp "$file" review-packet/coverage-reports/expense/ 2>/dev/null || true
+                  elif [[ "$file" == *"todo"* ]]; then
+                    cp "$file" review-packet/coverage-reports/todo/ 2>/dev/null || true
+                  elif [[ "$file" == *"stopwatch"* ]]; then
+                    cp "$file" review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
+                  elif [[ "$file" == *"quote"* ]]; then
+                    cp "$file" review-packet/coverage-reports/quote/ 2>/dev/null || true
+                  fi
+                done
+              ' _ {} +
+
+              find downloaded-artifacts -name "index.html" -exec sh -c '
+                for file in "$@"; do
+                  if [[ "$file" == *"expense"* ]]; then
+                    cp "$file" review-packet/coverage-reports/expense/ 2>/dev/null || true
+                  elif [[ "$file" == *"todo"* ]]; then
+                    cp "$file" review-packet/coverage-reports/todo/ 2>/dev/null || true
+                  elif [[ "$file" == *"stopwatch"* ]]; then
+                    cp "$file" review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
+                  elif [[ "$file" == *"quote"* ]]; then
+                    cp "$file" review-packet/coverage-reports/quote/ 2>/dev/null || true
+                  fi
+                done
+              ' _ {} +
             fi
 
             # Verify what we copied
             echo "Coverage files collected:"
             find review-packet/coverage-reports -name "*.json" -o -name "*.html" | sort
+
+            echo ""
+            echo "Coverage summary by app:"
+            for app in expense todo stopwatch quote; do
+              coverage_file="review-packet/coverage-reports/$app/coverage-final.json"
+              html_file="review-packet/coverage-reports/$app/index.html"
+              if [ -f "$coverage_file" ] && [ -f "$html_file" ]; then
+                echo "- $app: ✓ Both coverage-final.json and index.html found"
+              elif [ -f "$coverage_file" ]; then
+                echo "- $app: ⚠ Only coverage-final.json found (missing index.html)"
+              elif [ -f "$html_file" ]; then
+                echo "- $app: ⚠ Only index.html found (missing coverage-final.json)"
+              else
+                echo "- $app: ✗ No coverage files found"
+              fi
+            done
           fi
 
           # Copy review.md
