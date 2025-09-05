@@ -201,6 +201,10 @@ jobs:
               cp downloaded-artifacts/coverage-final.json review-packet/coverage-reports/quote/ 2>/dev/null || true
               cp downloaded-artifacts/index.html review-packet/coverage-reports/quote/ 2>/dev/null || true
             fi
+
+            # Verify what we copied
+            echo "Coverage files collected:"
+            find review-packet/coverage-reports -name "*.json" -o -name "*.html" | sort
           fi
 
           # Copy review.md
