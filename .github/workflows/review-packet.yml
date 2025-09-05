@@ -208,6 +208,50 @@ jobs:
           else { html+='<ul>'+apps.map(a=>`<li><a href="./coverage-${a}/lcov-report/index.html">${a}</a></li>`).join('')+'</ul>'; }
           fs.writeFileSync(`${base}/index.html`, html);
           NODE
+
+          # Produce review-level coverage JSONs in root for convenience/consumers
+          node - <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const base='review-artifacts';
+          if(!fs.existsSync(base)) process.exit(0);
+          const apps=fs.readdirSync(base).filter(d=>d.startsWith('coverage-')).map(d=>d.replace(/^coverage-/,''));
+
+          // Copy per-app coverage-final.json to root as review-coverage-final-<app>.json
+          for(const app of apps){
+            const inPath=path.join(base, `coverage-${app}`, 'coverage-final.json');
+            const outPath=path.join(base, `review-coverage-final-${app}.json`);
+            if(fs.existsSync(inPath)){
+              fs.copyFileSync(inPath, outPath);
+            }
+          }
+
+          // Also create a combined coverage-final that namespaces file keys by app
+          const combined={};
+          for(const app of apps){
+            const inPath=path.join(base, `coverage-${app}`, 'coverage-final.json');
+            if(!fs.existsSync(inPath)) continue;
+            const data=JSON.parse(fs.readFileSync(inPath,'utf8'));
+            for(const [file, cov] of Object.entries(data)){
+              combined[`apps/${app}/${file}`]=cov;
+            }
+          }
+          if(Object.keys(combined).length){
+            fs.writeFileSync(path.join(base,'review-coverage-final.json'), JSON.stringify(combined));
+          }
+
+          // Create a simple review-coverage-summary.json aggregating per-app summaries if present
+          const summary={ apps:{} };
+          for(const app of apps){
+            const p=path.join(base, `coverage-${app}`, 'coverage-summary.json');
+            if(fs.existsSync(p)){
+              try { summary.apps[app]=JSON.parse(fs.readFileSync(p,'utf8')); } catch {}
+            }
+          }
+          if(Object.keys(summary.apps).length){
+            fs.writeFileSync(path.join(base,'review-coverage-summary.json'), JSON.stringify(summary, null, 2));
+          }
+          NODE
           
           # Append App Test Summary based on actual coverage artifacts
           echo -e "\n## App Test Summary" >> review.md
