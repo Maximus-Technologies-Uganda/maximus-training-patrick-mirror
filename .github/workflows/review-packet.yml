@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Upload per-app coverage
-        if: ${{ hashFiles(format('{0}/coverage/**', matrix.app)) != '' }}
+        if: ${{ hashFiles(format('stage/coverage-{0}/**', matrix.app)) != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.app }}
@@ -309,6 +309,7 @@ jobs:
             review-artifacts/**
             CHANGELOG.md
             README.md
+            .gitattributes
             docs/**/*.md
             helpers/**
             expense/README.md
