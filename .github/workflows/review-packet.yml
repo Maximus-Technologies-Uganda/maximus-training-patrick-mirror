@@ -249,12 +249,21 @@ jobs:
             review-artifacts/**
             CHANGELOG.md
             README.md
+            .gitattributes
             docs/**/*.md
             helpers/**
             expense/README.md
+            expense/package.json
+            expense/jest.config.*
             todo/README.md
+            todo/package.json
+            todo/jest.config.*
             stopwatch/README.md
+            stopwatch/package.json
+            stopwatch/jest.config.*
             quote/README.md
+            quote/package.json
+            quote/jest.config.*
             expense/src/**
             todo/src/**
             stopwatch/src/**
