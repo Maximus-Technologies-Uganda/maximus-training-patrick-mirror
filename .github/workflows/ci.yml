@@ -126,6 +126,13 @@ jobs:
             quote/coverage/coverage-summary.json
             quote/coverage/lcov-report/index.html
 
+      - name: Upload review.md
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-md-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: review.md
+
   package-artifacts:
     needs: test
     if: always()
@@ -141,24 +148,70 @@ jobs:
           path: downloaded-artifacts
           merge-multiple: true
 
+      - name: Download review.md
+        uses: actions/download-artifact@v4
+        with:
+          name: review-md-ubuntu-latest-node20
+          path: downloaded-artifacts
+
       - name: Organize artifacts
         run: |
           mkdir -p review-packet/coverage-reports
-          # Copy coverage files for each app
+
+          # Create directories for each app
+          mkdir -p review-packet/coverage-reports/expense
+          mkdir -p review-packet/coverage-reports/todo
+          mkdir -p review-packet/coverage-reports/stopwatch
+          mkdir -p review-packet/coverage-reports/quote
+
+          # Copy coverage files from downloaded artifacts
           if [ -d "downloaded-artifacts" ]; then
             # Copy expense coverage
-            if [ -f "downloaded-artifacts/coverage-summary.json" ] || [ -f "downloaded-artifacts/index.html" ]; then
-              mkdir -p review-packet/coverage-reports/expense
-              cp downloaded-artifacts/coverage-summary.json review-packet/coverage-reports/expense/ 2>/dev/null || true
-              cp downloaded-artifacts/index.html review-packet/coverage-reports/expense/ 2>/dev/null || true
+            if [ -f "downloaded-artifacts/expense/coverage/coverage-summary.json" ]; then
+              cp downloaded-artifacts/expense/coverage/coverage-summary.json review-packet/coverage-reports/expense/ 2>/dev/null || true
             fi
-            # Copy coverage files from subdirectories
-            find downloaded-artifacts -name "coverage-summary.json" -exec cp {} review-packet/coverage-reports/ \;
-            find downloaded-artifacts -name "index.html" -exec cp {} review-packet/coverage-reports/ \;
+            if [ -f "downloaded-artifacts/expense/coverage/lcov-report/index.html" ]; then
+              cp downloaded-artifacts/expense/coverage/lcov-report/index.html review-packet/coverage-reports/expense/ 2>/dev/null || true
+            fi
+
+            # Copy todo coverage
+            if [ -f "downloaded-artifacts/todo/coverage/coverage-summary.json" ]; then
+              cp downloaded-artifacts/todo/coverage/coverage-summary.json review-packet/coverage-reports/todo/ 2>/dev/null || true
+            fi
+            if [ -f "downloaded-artifacts/todo/coverage/lcov-report/index.html" ]; then
+              cp downloaded-artifacts/todo/coverage/lcov-report/index.html review-packet/coverage-reports/todo/ 2>/dev/null || true
+            fi
+
+            # Copy stopwatch coverage
+            if [ -f "downloaded-artifacts/stopwatch/coverage/coverage-summary.json" ]; then
+              cp downloaded-artifacts/stopwatch/coverage/coverage-summary.json review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
+            fi
+            if [ -f "downloaded-artifacts/stopwatch/coverage/lcov-report/index.html" ]; then
+              cp downloaded-artifacts/stopwatch/coverage/lcov-report/index.html review-packet/coverage-reports/stopwatch/ 2>/dev/null || true
+            fi
+
+            # Copy quote coverage
+            if [ -f "downloaded-artifacts/quote/coverage/coverage-summary.json" ]; then
+              cp downloaded-artifacts/quote/coverage/coverage-summary.json review-packet/coverage-reports/quote/ 2>/dev/null || true
+            fi
+            if [ -f "downloaded-artifacts/quote/coverage/lcov-report/index.html" ]; then
+              cp downloaded-artifacts/quote/coverage/lcov-report/index.html review-packet/coverage-reports/quote/ 2>/dev/null || true
+            fi
           fi
 
           # Copy review.md
-          cp review.md review-packet/ 2>/dev/null || echo "# Review Packet" > review-packet/review.md
+          if [ -f "downloaded-artifacts/review.md" ]; then
+            cp downloaded-artifacts/review.md review-packet/ 2>/dev/null || echo "# Review Packet" > review-packet/review.md
+          else
+            echo "# Review Packet" > review-packet/review.md
+            echo "## Generated on $(date)" >> review-packet/review.md
+            echo "" >> review-packet/review.md
+            echo "## Coverage Reports" >> review-packet/review.md
+            echo "- Expense app coverage: $([ -f "review-packet/coverage-reports/expense/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
+            echo "- Todo app coverage: $([ -f "review-packet/coverage-reports/todo/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
+            echo "- Stopwatch app coverage: $([ -f "review-packet/coverage-reports/stopwatch/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
+            echo "- Quote app coverage: $([ -f "review-packet/coverage-reports/quote/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
+          fi
 
       - name: Create review-packet.zip
         run: |
