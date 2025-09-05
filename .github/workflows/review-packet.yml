@@ -100,6 +100,8 @@ jobs:
           name: code-${{ matrix.app }}
           path: |
             ${{ matrix.app }}/README.md
+            ${{ matrix.app }}/package.json
+            ${{ matrix.app }}/jest.config.js
             ${{ matrix.app }}/src/**
             ${{ matrix.app }}/tests/**
           if-no-files-found: ignore
@@ -313,9 +315,17 @@ jobs:
             docs/**/*.md
             helpers/**
             expense/README.md
+            expense/package.json
+            expense/jest.config.js
             todo/README.md
+            todo/package.json
+            todo/jest.config.js
             stopwatch/README.md
+            stopwatch/package.json
+            stopwatch/jest.config.js
             quote/README.md
+            quote/package.json
+            quote/jest.config.js
             expense/src/**
             todo/src/**
             stopwatch/src/**

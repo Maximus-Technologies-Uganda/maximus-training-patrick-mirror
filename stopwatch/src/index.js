@@ -156,3 +156,11 @@ function handleReset() {
 if (process.argv[2] === 'reset') {
   handleReset();
 }
+
+module.exports = { 
+  loadState, 
+  saveState, 
+  pad, 
+  formatDuration, 
+  parseExportArgs 
+};

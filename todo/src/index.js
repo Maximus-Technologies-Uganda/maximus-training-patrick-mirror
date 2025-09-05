@@ -235,3 +235,13 @@ function handleRemove() {
 if (process.argv[2] === 'remove') {
   handleRemove();
 }
+
+module.exports = { 
+  readTodos, 
+  writeTodos, 
+  validateDue, 
+  parseAddArgs, 
+  generateId, 
+  parseListArgs, 
+  getLocalISODate 
+};

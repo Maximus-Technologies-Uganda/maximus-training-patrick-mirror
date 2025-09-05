@@ -58,3 +58,5 @@ function handleReport(tokens) {
   console.error('Error: unknown command.');
   process.exitCode = 1;
 })();
+
+module.exports = { validateMonth, parseArgs, parseReportArgs, handleReport };
