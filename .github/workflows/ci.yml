@@ -170,22 +170,20 @@ jobs:
             echo "Processing $app coverage files..."
 
             # Find and copy coverage-final.json
-            coverage_files=$(find downloaded-artifacts -name "*$app*" -name "coverage-final.json" 2>/dev/null)
-            if [ -n "$coverage_files" ]; then
-              echo "Found coverage-final.json for $app:"
-              echo "$coverage_files" | head -1
-              cp "$(echo "$coverage_files" | head -1)" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+            coverage_files=$(find downloaded-artifacts -name "*$app*" | grep "coverage-final.json" | head -1)
+            if [ -n "$coverage_files" ] && [ -f "$coverage_files" ]; then
+              echo "Found coverage-final.json for $app: $coverage_files"
+              cp "$coverage_files" "review-packet/coverage-reports/$app/" 2>/dev/null || true
               echo "✓ Copied coverage-final.json for $app"
             else
               echo "✗ No coverage-final.json found for $app"
             fi
 
             # Find and copy index.html (lcov report)
-            html_files=$(find downloaded-artifacts -name "*$app*" -name "index.html" 2>/dev/null)
-            if [ -n "$html_files" ]; then
-              echo "Found index.html for $app:"
-              echo "$html_files" | head -1
-              cp "$(echo "$html_files" | head -1)" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+            html_files=$(find downloaded-artifacts -name "*$app*" | grep "index.html" | head -1)
+            if [ -n "$html_files" ] && [ -f "$html_files" ]; then
+              echo "Found index.html for $app: $html_files"
+              cp "$html_files" "review-packet/coverage-reports/$app/" 2>/dev/null || true
               echo "✓ Copied index.html for $app"
             else
               echo "✗ No index.html found for $app"
