@@ -65,7 +65,7 @@ jobs:
           set -e
           APP="${{ matrix.app }}"
           if [ -d "$APP" ]; then
-            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
+            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary --coverageReporters=json) || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "stage/coverage-$APP"
               cp -R "$APP/coverage/." "stage/coverage-$APP/" || true
@@ -175,7 +175,7 @@ jobs:
             echo "---- $APP: install ----"
             (cd "$APP" && npm ci || npm install || true)
             echo "---- $APP: jest --coverage ----"
-            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
+            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary --coverageReporters=json) || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "review-artifacts/coverage-$APP"
               cp -R "$APP/coverage/." "review-artifacts/coverage-$APP/" || true
