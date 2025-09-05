@@ -1,43 +1,5 @@
-  [31mgit-practice-2/ci/fix-mirror-workflow[m
-  [31mgit-practice-2/feat/add-author-filter-to-quote-cli[m
-  [31mgit-practice-2/fix/typo-in-expense-readme[m
-  [31mgit-practice-2/handoff/final-week1[m
-  [31mgit-practice-2/main[m
-  [31mgit-practice-2/test/add-missing-total-test[m
-  [31mgit-practice-3/ci/fix-mirror-workflow[m
-  [31mgit-practice-3/feat/add-author-filter-to-quote-cli[m
-  [31mgit-practice-3/fix/typo-in-expense-readme[m
-  [31mgit-practice-3/handoff/final-week1[m
-  [31mgit-practice-3/main[m
-  [31mgit-practice-3/test/add-missing-total-test[m
-  [31mgit-practice/ci/fix-mirror-workflow[m
-  [31mgit-practice/feat/add-author-filter-to-quote-cli[m
-  [31mgit-practice/fix/typo-in-expense-readme[m
-  [31mgit-practice/handoff/final-week1[m
-  [31mgit-practice/main[m
-  [31mgit-practice/test/add-missing-total-test[m
-  [31morigin/HEAD[m -> origin/main
-  [31morigin/chore/unified-tests-setup[m
-  [31morigin/ci/enable-jest-per-app[m
-  [31morigin/ci/review-diag[m
-  [31morigin/ci/review-discovery-clean[m
-  [31morigin/ci/review-discovery-fix[m
-  [31morigin/ci/review-include-src-helpers[m
-  [31morigin/ci/review-manual-badge[m
-  [31morigin/ci/review-matrix-empty-fix[m
-  [31morigin/ci/review-matrix-guard[m
-  [31morigin/ci/review-packet-dynamic-matrix[m
-  [31morigin/ci/review-packet-tolerant[m
-  [31morigin/ci/review-packet-tolerant2[m
-  [31morigin/ci/review-stable-fallback-plus-gate[m
-  [31morigin/ci/review-workflow-fix[m
-  [31morigin/feat/MAX-58-quote-cli-with-tests[m
-  [31morigin/feat/expense-monthly-report[m
-  [31morigin/feat/quote-cli-random-and-filter[m
-  [31morigin/feat/stopwatch-export-laps[m
-  [31morigin/feat/todo-priority-due-duplicate-dueToday[m
-  [31morigin/feature/DEV-11-refactor-quote-cli[m
-  [31morigin/feature/DEV-8-harden-expense-cli[m
-  [31morigin/feature/DEV-9-harden-todo-cli[m
-  [31morigin/main[m
-  [31morigin/review/ci-foundation[m
+[33m504f07e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/DEV-91-fix-ci-artifacts[m[33m, [m[1;31morigin/feature/DEV-91-fix-ci-artifacts[m[33m)[m fix(ci): Resolve Windows-specific test failures (LIN-###)
+[33m452412b[m fix(ci): Ensure all review packet artifacts are generated (DEV-91, DEV-92, DEV-93, DEV-94, DEV-95)
+[33m9f9c346[m[33m ([m[1;31morigin/feature/LIN-85-final-week2-tasks[m[33m, [m[1;32mfeature/LIN-85-final-week2-tasks[m[33m)[m feat(index): Dramatically improve coverage to passing state
+[33ma32d5f2[m feat(index): Add comprehensive smoke tests and --help functionality
+[33md3d8f93[m test(todo): Add index.js smoke test and fix coverage

@@ -13,3 +13,12 @@
 
   e  ^E  j  ^N  CR  *  Forward  one line   (or _N lines).
   y  ^Y  k  ^K  ^P  *  Backward one line   (or _N lines).
+expense/coverage/lcov-report/core.js.html
+expense/coverage/lcov-report/index.html
+expense/node_modules/.package-lock.json
+expense/package-lock.json
+t
+todo/coverage/lcov-report/core.js.html
+todo/coverage/lcov-report/index.html
+todo/coverage/lcov-report/index.js.html
+todo/todos.json
