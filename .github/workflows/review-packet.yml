@@ -180,16 +180,7 @@ jobs:
             fi
           done
           
-          # Always append summary section
-          echo -e "\n## App Test Summary (serial fallback)" >> review.md
-          node -e "
-            const fs=require('fs');
-            const apps=JSON.parse(process.env.APPS_ARRAY||'[]');
-            for (const app of apps) {
-              const has=fs.existsSync('review-artifacts/coverage-'+app);
-              console.log('- '+app+': '+(has?'coverage collected':'no coverage'));
-            }
-          " >> review.md
+          # No fallback summary here to avoid redundancy; final summary is appended later
 
       - name: Generate final summary and coverage index
         env:
