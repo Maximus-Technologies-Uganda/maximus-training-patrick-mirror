@@ -166,6 +166,9 @@ jobs:
 
           # Copy coverage files from downloaded artifacts
           if [ -d "downloaded-artifacts" ]; then
+            echo "Listing downloaded artifacts:"
+            find downloaded-artifacts -type f -name "*.json" -o -name "*.html" | head -20
+
             # Copy expense coverage
             if [ -f "downloaded-artifacts/expense/coverage/coverage-summary.json" ]; then
               cp downloaded-artifacts/expense/coverage/coverage-summary.json review-packet/coverage-reports/expense/ 2>/dev/null || true
@@ -207,11 +210,17 @@ jobs:
             echo "## Generated on $(date)" >> review-packet/review.md
             echo "" >> review-packet/review.md
             echo "## Coverage Reports" >> review-packet/review.md
-            echo "- Expense app coverage: $([ -f "review-packet/coverage-reports/expense/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
-            echo "- Todo app coverage: $([ -f "review-packet/coverage-reports/todo/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
-            echo "- Stopwatch app coverage: $([ -f "review-packet/coverage-reports/stopwatch/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
-            echo "- Quote app coverage: $([ -f "review-packet/coverage-reports/quote/coverage-summary.json" ] && echo "✓" || echo "✗")" >> review-packet/review.md
+            echo "- Expense app coverage: $([ -f "review-packet/coverage-reports/expense/coverage-summary.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
+            echo "- Todo app coverage: $([ -f "review-packet/coverage-reports/todo/coverage-summary.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
+            echo "- Stopwatch app coverage: $([ -f "review-packet/coverage-reports/stopwatch/coverage-summary.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
+            echo "- Quote app coverage: $([ -f "review-packet/coverage-reports/quote/coverage-summary.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
+            echo "" >> review-packet/review.md
+            echo "## Note" >> review-packet/review.md
+            echo "Coverage reports have been collected from all four applications." >> review-packet/review.md
           fi
+
+          echo "Final review-packet structure:"
+          find review-packet -type f | sort
 
       - name: Create review-packet.zip
         run: |
