@@ -165,33 +165,48 @@ jobs:
           echo ""
           echo "=== Collecting Coverage Files ==="
 
-          # Collect coverage files for each app using a more robust approach
+          # Collect coverage files for each app using corrected approach
           for app in expense todo stopwatch quote; do
             echo "Processing $app coverage files..."
 
-            # Find and copy coverage-final.json
-            coverage_files=$(find downloaded-artifacts -name "*$app*" | grep "coverage-final.json" | head -1)
-            if [ -n "$coverage_files" ] && [ -f "$coverage_files" ]; then
-              echo "Found coverage-final.json for $app: $coverage_files"
-              cp "$coverage_files" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+            # Find coverage-final.json - prefer ubuntu-latest-node20, then any ubuntu, then others
+            coverage_file=$(find downloaded-artifacts -path "*/coverage-$app-*" -name "coverage-final.json" | grep -E "(ubuntu-latest-node20|ubuntu)" | head -1 || find downloaded-artifacts -path "*/coverage-$app-*" -name "coverage-final.json" | head -1)
+            if [ -n "$coverage_file" ] && [ -f "$coverage_file" ]; then
+              echo "Found coverage-final.json for $app: $coverage_file"
+              cp "$coverage_file" "review-packet/coverage-reports/$app/" 2>/dev/null || true
               echo "✓ Copied coverage-final.json for $app"
             else
               echo "✗ No coverage-final.json found for $app"
+              # Try alternative pattern in case the file structure is different
+              alt_coverage=$(find downloaded-artifacts -name "*$app*" -type f | grep "coverage-final.json" | head -1)
+              if [ -n "$alt_coverage" ] && [ -f "$alt_coverage" ]; then
+                echo "Found alternative coverage-final.json for $app: $alt_coverage"
+                cp "$alt_coverage" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+                echo "✓ Copied alternative coverage-final.json for $app"
+              fi
             fi
 
-            # Find and copy index.html (lcov report)
-            html_files=$(find downloaded-artifacts -name "*$app*" | grep "index.html" | head -1)
-            if [ -n "$html_files" ] && [ -f "$html_files" ]; then
-              echo "Found index.html for $app: $html_files"
-              cp "$html_files" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+            # Find index.html (lcov report) - prefer ubuntu-latest-node20, then any ubuntu, then others
+            html_file=$(find downloaded-artifacts -path "*/coverage-$app-*" -name "index.html" | grep -E "(ubuntu-latest-node20|ubuntu)" | head -1 || find downloaded-artifacts -path "*/coverage-$app-*" -name "index.html" | head -1)
+            if [ -n "$html_file" ] && [ -f "$html_file" ]; then
+              echo "Found index.html for $app: $html_file"
+              cp "$html_file" "review-packet/coverage-reports/$app/" 2>/dev/null || true
               echo "✓ Copied index.html for $app"
             else
               echo "✗ No index.html found for $app"
+              # Try alternative pattern in case the file structure is different
+              alt_html=$(find downloaded-artifacts -name "*$app*" -type f | grep "index.html" | head -1)
+              if [ -n "$alt_html" ] && [ -f "$alt_html" ]; then
+                echo "Found alternative index.html for $app: $alt_html"
+                cp "$alt_html" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+                echo "✓ Copied alternative index.html for $app"
+              fi
             fi
           done
 
           echo ""
           echo "=== Coverage Collection Summary ==="
+          all_collected=true
           for app in expense todo stopwatch quote; do
             coverage_file="review-packet/coverage-reports/$app/coverage-final.json"
             html_file="review-packet/coverage-reports/$app/index.html"
@@ -200,12 +215,22 @@ jobs:
               echo "✓ $app: Both coverage files collected successfully"
             elif [ -f "$coverage_file" ]; then
               echo "⚠ $app: Only coverage-final.json found (missing index.html)"
+              all_collected=false
             elif [ -f "$html_file" ]; then
               echo "⚠ $app: Only index.html found (missing coverage-final.json)"
+              all_collected=false
             else
               echo "✗ $app: No coverage files found"
+              all_collected=false
             fi
           done
+
+          echo ""
+          if [ "$all_collected" = true ]; then
+            echo "🎉 SUCCESS: All coverage artifacts collected for all four applications!"
+          else
+            echo "❌ WARNING: Some coverage artifacts are missing. Check the debug output above."
+          fi
 
           echo ""
           echo "=== Final Review Packet Structure ==="
