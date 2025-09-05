@@ -33,12 +33,11 @@ jobs:
   per_app:
     name: Per-app tests & coverage
     needs: discover
-    if: ${{ (fromJSON(needs.discover.outputs.apps || '[]')).length > 0 }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJSON(needs.discover.outputs.apps) }}
+        app: [expense, todo, stopwatch, quote]
     steps:
       - uses: actions/checkout@v4
 
