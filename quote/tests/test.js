@@ -88,7 +88,8 @@ function runAll() {
   }
   const failed = tests.length - passed;
   console.log(`\n${passed} passed, ${failed} failed`);
-  process.exit(failed === 0 ? 0 : 1);
+  // Important: do not hard-exit under Jest; set exitCode instead so coverage is written
+  process.exitCode = failed === 0 ? 0 : 1;
 }
 
 runAll();
