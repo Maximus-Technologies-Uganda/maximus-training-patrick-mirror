@@ -168,7 +168,7 @@ jobs:
             done
           fi
 
-      - name: Serial fallback (backfill missing apps only)
+      - name: Serial ensure coverage for all apps (best-effort)
         shell: bash
         run: |
           set -e
@@ -185,15 +185,7 @@ jobs:
           fi
           
           mkdir -p review-artifacts
-          # Determine which apps are missing coverage folders
-          MISSING=$(node -e "const fs=require('fs');const a=JSON.parse(process.env.APPS_ARRAY||'[]');const missing=a.filter(app=>!fs.existsSync('review-artifacts/coverage-'+app));process.stdout.write(missing.join(' '));")
-          if [ -z "$MISSING" ]; then
-            echo "All discovered apps already have coverage artifacts; no fallback needed."
-          else
-            echo "Backfilling coverage for apps: $MISSING"
-          fi
-
-          for APP in $MISSING; do
+          for APP in $(node -e "const a=process.env.APPS_ARRAY;JSON.parse(a).forEach(x=>process.stdout.write(x+' '))"); do
             echo "---- $APP: install ----"
             (cd "$APP" && npm ci || npm install || true)
             echo "---- $APP: jest --coverage ----"
