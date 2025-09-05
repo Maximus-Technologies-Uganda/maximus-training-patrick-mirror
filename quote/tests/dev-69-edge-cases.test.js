@@ -22,10 +22,15 @@ describe('DEV-69: Edge Cases and Error Paths', () => {
   describe('Missing/Empty quotes file handling', () => {
     test('gracefully handles missing quotes file', () => {
       jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+      
+      // Mock exitWithError to prevent process.exit
+      const argsHelper = require('../../helpers/args.js');
+      const exitSpy = jest.spyOn(argsHelper, 'exitWithError').mockImplementation(() => {
+        throw new Error('EXIT_WITH_ERROR'); // Throw instead of exit
+      });
 
-      const code = run(['node', 'index.js']);
-      expect(code).toBe(1);
-      expect(errSpy).toHaveBeenCalledWith('Error: No quotes available. Ensure quotes.json exists beside index.js.');
+      expect(() => run(['node', 'index.js'])).toThrow('EXIT_WITH_ERROR');
+      expect(exitSpy).toHaveBeenCalledWith('Error: No quotes available. Ensure quotes.json exists beside index.js.');
     });
 
     test('gracefully handles empty quotes file', () => {
