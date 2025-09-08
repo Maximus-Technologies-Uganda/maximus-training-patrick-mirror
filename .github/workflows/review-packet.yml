@@ -96,7 +96,8 @@ jobs:
 
   frontend:
     name: Frontend tests & coverage
-    if: ${{ hashFiles('frontend/package.json') != '' }}
+    needs: discover
+    if: ${{ contains(fromJSON(needs.discover.outputs.apps || '[]'), 'frontend') }}
     runs-on: ubuntu-latest
     defaults:
       run:
