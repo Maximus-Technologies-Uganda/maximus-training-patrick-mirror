@@ -7,9 +7,22 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test-setup.js'],
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: 'coverage',
+      reporter: ['text', 'json-summary', 'lcov'],
+      include: ['src/**'],
+      exclude: [
+        'src/**/*.test.{js,jsx,ts,tsx}',
+        'src/**/*.spec.{js,jsx,ts,tsx}',
+        'src/main.js',
+        'src/counter.js',
+        'src/test-setup.js',
+      ],
+    },
     exclude: [
       '**/node_modules/**',
-      '**/tests/**', // Exclude Playwright test directory
+      '**/tests/**/*.spec.{js,jsx,ts,tsx}', // Exclude Playwright specs only
       '**/playwright*.config.js'
     ],
   },
