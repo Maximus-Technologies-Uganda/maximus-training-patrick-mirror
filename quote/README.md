@@ -128,6 +128,73 @@ $ echo $?
 
 - Quotes are read from `quote/src/quotes.json` and must be an array of objects with `text` and `author` fields.
 
+### How to Run the UI
+
+A modern web interface is available for browsing quotes interactively.
+
+#### Prerequisites
+
+- Node.js 16+ installed
+- Modern web browser (Chrome, Firefox, Safari, Edge)
+
+#### Installation and Setup
+
+1. **Install dependencies** (from repository root):
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+
+3. **Open your browser** and navigate to:
+   ```
+   http://localhost:5173
+   ```
+
+#### UI Features
+
+- **Random Quote Display**: Automatically shows a random inspirational quote on page load
+- **Author Search**: Filter quotes by entering an author name in the search box
+- **Case-Insensitive Search**: Author matching works regardless of capitalization
+- **Responsive Design**: Optimized for desktop and mobile devices
+- **Error Handling**: Clear error messages for invalid searches or connection issues
+
+#### Usage Examples
+
+1. **View Random Quotes**:
+   - Refresh the page or click "Search Quotes" with an empty input field
+   - Each refresh shows a different random quote
+
+2. **Search by Author**:
+   - Enter "Steve Jobs" in the search field
+   - Click "Search Quotes" or press Enter
+   - Shows a random quote from that author
+
+3. **Search Examples**:
+   - "albert einstein" → Shows Einstein quotes
+   - "STEVE JOBS" → Shows Jobs quotes (case-insensitive)
+   - "Confucius" → Shows Confucius quotes
+   - "Unknown Author" → Shows error message
+
+#### Running Tests
+
+The frontend includes comprehensive test suites:
+
+**Unit Tests** (Vitest):
+```bash
+cd frontend
+npm run test:run
+```
+
+**End-to-End Tests** (Playwright):
+```bash
+npm run test:e2e
+```
+
 ### Development
 
 - CLI entrypoint: `quote/src/index.js`

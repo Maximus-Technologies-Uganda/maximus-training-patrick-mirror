@@ -4,10 +4,206 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
+    <title>Quote Display</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        width: 100%;
+      }
+
+      .header {
+        background: #2c3e50;
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+      }
+
+      .quote-section {
+        padding: 3rem 2rem;
+        text-align: center;
+        background: #f8f9fa;
+      }
+
+      .quote-text {
+        font-size: 1.8rem;
+        font-style: italic;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        line-height: 1.4;
+        position: relative;
+      }
+
+      .quote-text::before,
+      .quote-text::after {
+        content: '"';
+        font-size: 3rem;
+        color: #3498db;
+        position: absolute;
+        top: -10px;
+      }
+
+      .quote-text::before {
+        left: -20px;
+      }
+
+      .quote-text::after {
+        right: -20px;
+      }
+
+      .quote-author {
+        font-size: 1.2rem;
+        color: #7f8c8d;
+        font-weight: 600;
+      }
+
+      .search-section {
+        padding: 2rem;
+        background: white;
+        border-top: 1px solid #ecf0f1;
+      }
+
+      .search-container {
+        display: flex;
+        gap: 1rem;
+        max-width: 500px;
+        margin: 0 auto;
+        flex-wrap: wrap;
+      }
+
+      .search-input {
+        flex: 1;
+        min-width: 250px;
+        padding: 0.8rem 1rem;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #3498db;
+      }
+
+      .search-button {
+        padding: 0.8rem 1.5rem;
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .search-button:hover {
+        background: #2980b9;
+      }
+
+      .search-button:active {
+        transform: translateY(1px);
+      }
+
+      .loading {
+        display: none;
+        color: #7f8c8d;
+        font-style: italic;
+      }
+
+      .error {
+        color: #e74c3c;
+        background: #fdf2f2;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border: 1px solid #f5c6cb;
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .quote-text {
+          font-size: 1.5rem;
+        }
+
+        .search-container {
+          flex-direction: column;
+        }
+
+        .search-input {
+          min-width: auto;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div class="container">
+      <header class="header">
+        <h1>Inspirational Quotes</h1>
+        <p>Discover wisdom from great minds</p>
+      </header>
+
+      <main class="quote-section">
+        <div id="loading" class="loading">Loading quote...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <blockquote class="quote-text" id="quote-text">
+          "Click the button below to get your first inspirational quote!"
+        </blockquote>
+        <cite class="quote-author" id="quote-author">— Welcome</cite>
+      </main>
+
+      <section class="search-section">
+        <div class="search-container">
+          <input
+            type="text"
+            id="author-input"
+            class="search-input"
+            placeholder="Filter by author (e.g., Steve Jobs)"
+            autocomplete="off"
+          />
+          <button id="search-button" class="search-button">
+            Search Quotes
+          </button>
+        </div>
+      </section>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
