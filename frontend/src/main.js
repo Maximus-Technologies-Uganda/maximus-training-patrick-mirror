@@ -94,7 +94,6 @@ async function initQuoteApp() {
     // Display initial random quote
     const randomQuote = selectRandom(quotes);
     displayQuote(randomQuote);
-
   } catch (error) {
     showError(error.message);
     displayQuote(null);
@@ -140,7 +139,9 @@ async function initQuoteApp() {
       const filteredQuotes = filterByAuthor(allQuotes, authorValue);
 
       if (filteredQuotes.length === 0) {
-        showError(`No quotes found for author "${authorValue}". Please check the spelling and try again.`);
+        showError(
+          `No quotes found for author "${authorValue}". Please check the spelling and try again.`
+        );
         displayQuote(null);
         return;
       }
@@ -151,7 +152,6 @@ async function initQuoteApp() {
 
       // Update current filtered quotes for subsequent random selections
       currentFilteredQuotes = filteredQuotes;
-
     } catch (error) {
       showError('An error occurred while searching. Please try again.');
       console.error('Search error:', error);
