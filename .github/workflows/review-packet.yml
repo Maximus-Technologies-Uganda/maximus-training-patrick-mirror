@@ -96,6 +96,7 @@ jobs:
 
   frontend:
     name: Frontend tests & coverage
+    if: ${{ hashFiles('frontend/package.json') != '' }}
     runs-on: ubuntu-latest
     defaults:
       run:
