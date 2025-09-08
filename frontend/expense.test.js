@@ -1,0 +1,206 @@
+import { describe, it, expect } from 'vitest';
+import {
+    formatDate,
+    formatAmount,
+    getUniqueCategories,
+    getExpenseMonth,
+    filterExpenses,
+    calculateTotal,
+    populateCategoryFilter
+} from './expense.js';
+
+describe('Expense Tracker Frontend', () => {
+    describe('formatDate', () => {
+        it('should format valid date strings correctly', () => {
+            expect(formatDate('2025-01-15')).toBe('Jan 15, 2025');
+            expect(formatDate('2024-12-31')).toBe('Dec 31, 2024');
+        });
+
+        it('should handle invalid date strings gracefully', () => {
+            expect(formatDate('invalid-date')).toBe('invalid-date');
+            expect(formatDate('')).toBe('');
+            expect(formatDate(null)).toBe(null);
+        });
+    });
+
+    describe('formatAmount', () => {
+        it('should format numbers as currency', () => {
+            expect(formatAmount(10)).toBe('$10.00');
+            expect(formatAmount(15.5)).toBe('$15.50');
+            expect(formatAmount(0)).toBe('$0.00');
+            expect(formatAmount(-5.25)).toBe('-$5.25');
+        });
+
+        it('should handle edge cases', () => {
+            expect(formatAmount(NaN)).toBe('$NaN');
+            expect(formatAmount(Infinity)).toBe('$∞');
+        });
+    });
+
+    describe('getUniqueCategories', () => {
+        it('should extract and sort unique categories', () => {
+            const expenses = [
+                { category: 'groceries' },
+                { category: 'transport' },
+                { category: 'groceries' },
+                { category: 'utilities' },
+                { category: 'transport' }
+            ];
+
+            const result = getUniqueCategories(expenses);
+            expect(result).toEqual(['groceries', 'transport', 'utilities']);
+        });
+
+        it('should handle expenses without categories', () => {
+            const expenses = [
+                { category: 'groceries' },
+                {},
+                { category: null },
+                { category: '' }
+            ];
+
+            const result = getUniqueCategories(expenses);
+            expect(result).toEqual(['groceries']);
+        });
+
+        it('should handle empty array', () => {
+            expect(getUniqueCategories([])).toEqual([]);
+        });
+    });
+
+    describe('getExpenseMonth', () => {
+        it('should extract month from valid date strings', () => {
+            expect(getExpenseMonth({ date: '2025-01-15' })).toBe('2025-01');
+            expect(getExpenseMonth({ date: '2024-12-31' })).toBe('2024-12');
+            expect(getExpenseMonth({ date: '2023-06-01' })).toBe('2023-06');
+        });
+
+        it('should return null for invalid dates', () => {
+            expect(getExpenseMonth({ date: 'invalid' })).toBe(null);
+            expect(getExpenseMonth({ date: '' })).toBe(null);
+            expect(getExpenseMonth({})).toBe(null);
+            expect(getExpenseMonth(null)).toBe(null);
+        });
+    });
+
+    describe('filterExpenses', () => {
+        const sampleExpenses = [
+            { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+            { id: 2, amount: 15, category: 'transport', date: '2025-01-20' },
+            { id: 3, amount: 7.5, category: 'groceries', date: '2025-02-03' },
+            { id: 4, amount: 20, category: 'utilities', date: '2025-02-20' },
+            { id: 5, amount: 5, category: 'transport', date: '2025-01-30' }
+        ];
+
+        it('should return all expenses when no filters are applied', () => {
+            const result = filterExpenses(sampleExpenses, '', '');
+            expect(result).toEqual(sampleExpenses);
+        });
+
+        it('should filter by month correctly', () => {
+            const result = filterExpenses(sampleExpenses, '2025-01', '');
+            expect(result).toEqual([
+                { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                { id: 2, amount: 15, category: 'transport', date: '2025-01-20' },
+                { id: 5, amount: 5, category: 'transport', date: '2025-01-30' }
+            ]);
+        });
+
+        it('should filter by category correctly', () => {
+            const result = filterExpenses(sampleExpenses, '', 'groceries');
+            expect(result).toEqual([
+                { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                { id: 3, amount: 7.5, category: 'groceries', date: '2025-02-03' }
+            ]);
+        });
+
+        it('should filter by both month and category', () => {
+            const result = filterExpenses(sampleExpenses, '2025-01', 'groceries');
+            expect(result).toEqual([
+                { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' }
+            ]);
+        });
+
+        it('should handle non-existent filters gracefully', () => {
+            const result = filterExpenses(sampleExpenses, '2025-12', '');
+            expect(result).toEqual([]);
+
+            const result2 = filterExpenses(sampleExpenses, '', 'nonexistent');
+            expect(result2).toEqual([]);
+        });
+
+        it('should handle expenses with missing properties', () => {
+            const expensesWithMissing = [
+                { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                { id: 2, amount: 15 }, // missing category and date
+                { id: 3, amount: 7.5, category: 'transport' } // missing date
+            ];
+
+            const result = filterExpenses(expensesWithMissing, '2025-01', 'groceries');
+            expect(result).toEqual([
+                { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' }
+            ]);
+        });
+    });
+
+    describe('calculateTotal', () => {
+        it('should calculate total of valid amounts', () => {
+            const expenses = [
+                { amount: 10 },
+                { amount: 15.5 },
+                { amount: 7.25 }
+            ];
+
+            expect(calculateTotal(expenses)).toBe(32.75);
+        });
+
+        it('should handle invalid amounts gracefully', () => {
+            const expenses = [
+                { amount: 10 },
+                { amount: 'invalid' },
+                { amount: null },
+                { amount: 15 }
+            ];
+
+            expect(calculateTotal(expenses)).toBe(25);
+        });
+
+        it('should handle empty array', () => {
+            expect(calculateTotal([])).toBe(0);
+        });
+
+        it('should handle expenses without amount property', () => {
+            const expenses = [
+                { category: 'groceries' },
+                { amount: 10 }
+            ];
+
+            expect(calculateTotal(expenses)).toBe(10);
+        });
+    });
+
+    describe('Integration tests', () => {
+        it('should handle complete expense filtering workflow', () => {
+            const expenses = [
+                { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                { id: 2, amount: 15, category: 'transport', date: '2025-01-20' },
+                { id: 3, amount: 7.5, category: 'groceries', date: '2025-02-03' }
+            ];
+
+            // Test filtering by month
+            const januaryExpenses = filterExpenses(expenses, '2025-01', '');
+            expect(januaryExpenses.length).toBe(2);
+            expect(calculateTotal(januaryExpenses)).toBe(25);
+
+            // Test filtering by category
+            const groceriesExpenses = filterExpenses(expenses, '', 'groceries');
+            expect(groceriesExpenses.length).toBe(2);
+            expect(calculateTotal(groceriesExpenses)).toBe(17.5);
+
+            // Test combined filtering
+            const januaryGroceries = filterExpenses(expenses, '2025-01', 'groceries');
+            expect(januaryGroceries.length).toBe(1);
+            expect(calculateTotal(januaryGroceries)).toBe(10);
+        });
+    });
+});

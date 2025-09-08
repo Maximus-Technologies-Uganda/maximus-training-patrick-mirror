@@ -8,9 +8,13 @@
  */
 export function sanitizeQuotes(rawQuotes) {
   if (!Array.isArray(rawQuotes)) return [];
-  return rawQuotes.filter(q =>
-    q && typeof q.text === 'string' && q.text.trim() &&
-    typeof q.author === 'string' && q.author.trim()
+  return rawQuotes.filter(
+    (q) =>
+      q &&
+      typeof q.text === 'string' &&
+      q.text.trim() &&
+      typeof q.author === 'string' &&
+      q.author.trim()
   );
 }
 
@@ -35,9 +39,11 @@ export function filterByAuthor(quotes, author) {
   if (!quotes || !Array.isArray(quotes)) return [];
   const needle = author.trim().toLowerCase();
   if (!needle) return [];
-  return quotes.filter(q =>
-    q && typeof q.author === 'string' &&
-    q.author.trim().toLowerCase() === needle
+  return quotes.filter(
+    (q) =>
+      q &&
+      typeof q.author === 'string' &&
+      q.author.trim().toLowerCase() === needle
   );
 }
 
@@ -69,7 +75,7 @@ export async function loadQuotes(url = '/quotes.json') {
  */
 export function getRandomQuote({ by } = {}, { quotes: quotesArray } = {}) {
   // For testing purposes, we'll use a mock quotes array if provided
-  let quotes = quotesArray || [];
+  const quotes = quotesArray || [];
 
   if (!quotes || quotes.length === 0) {
     return { ok: false, error: 'No quotes available.' };
