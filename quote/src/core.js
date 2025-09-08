@@ -27,8 +27,9 @@ function selectRandom(items) {
 
 function filterByAuthor(quotes, author) {
   if (!author) return quotes;
-  const needle = author.trim().toLowerCase();
-  if (!needle) return [];
+  const trimmed = typeof author === 'string' ? author.trim() : '';
+  if (!trimmed) return [];
+  const needle = trimmed.toLowerCase();
   return quotes.filter(q =>
     q && typeof q.author === 'string' && q.author.trim().toLowerCase() === needle
   );
@@ -38,7 +39,23 @@ function formatQuote(quote) {
   return `${quote.text} - ${quote.author}`;
 }
 
-function getRandomQuote({ by } = {}, { quotesPath } = {}) {
+function getRandomQuote(arg1 = {}, arg2 = {}) {
+  // Backward-compatible argument handling:
+  // - Legacy signature: getRandomQuote(quotesPath: string, by: string)
+  // - Current signature: getRandomQuote({ by }, { quotesPath })
+  let by;
+  let quotesPath;
+  if (typeof arg1 === 'string') {
+    quotesPath = arg1;
+  } else if (arg1 && typeof arg1 === 'object') {
+    by = arg1.by;
+  }
+  if (typeof arg2 === 'string') {
+    by = arg2;
+  } else if (arg2 && typeof arg2 === 'object') {
+    quotesPath = arg2.quotesPath;
+  }
+
   const pathToUse = quotesPath || getDefaultQuotesPath();
   let quotes;
   try {
@@ -50,10 +67,11 @@ function getRandomQuote({ by } = {}, { quotesPath } = {}) {
     return { ok: false, error: 'No quotes available. Ensure quotes.json exists beside index.js.' };
   }
   let pool = quotes;
-  if (by) {
-    pool = filterByAuthor(quotes, by);
+  const normalizedBy = typeof by === 'string' ? by.trim() : by;
+  if (normalizedBy) {
+    pool = filterByAuthor(quotes, normalizedBy);
     if (pool.length === 0) {
-      return { ok: false, error: `No quotes found for author "${by}".` };
+      return { ok: false, error: `No quotes found for author "${normalizedBy}".` };
     }
   }
   const choice = selectRandom(pool);
