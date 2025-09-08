@@ -33,11 +33,12 @@ jobs:
   per_app:
     name: Per-app tests & coverage
     needs: discover
+    if: ${{ fromJSON(needs.discover.outputs.apps) != [] }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        app: [expense, todo, stopwatch, quote]
+        app: ${{ fromJSON(needs.discover.outputs.apps) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -93,9 +94,45 @@ jobs:
           name: perapp-${{ matrix.app }}
           path: perapp-${{ matrix.app }}.txt
 
+  frontend:
+    name: Frontend tests & coverage
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage (Vitest)
+        run: npm run test -- --coverage
+
+      - name: Upload frontend coverage and sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          if-no-files-found: error
+          path: |
+            frontend/coverage/coverage-summary.json
+            frontend/coverage/lcov-report/**
+            frontend/src/**
+            frontend/tests/**
+            frontend/package.json
+            frontend/eslint.config.*
+            frontend/vitest.config.*
+
   assemble:
     name: Assemble review packet
-    needs: [discover]
+    needs: [discover, frontend]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -130,6 +167,7 @@ jobs:
         with:
           path: _dl
           merge-multiple: true
+          if-no-files-found: ignore
         continue-on-error: true
 
       - name: Consolidate coverage artifacts
@@ -142,6 +180,16 @@ jobs:
               APP_NAME=$(basename "$d" | sed 's/^coverage-//')
               mkdir -p "review-artifacts/coverage-$APP_NAME"
               cp -R "$d/." "review-artifacts/coverage-$APP_NAME/" || true
+              # Flatten frontend paths so coverage files are at expected locations
+              if [ "$APP_NAME" = "frontend" ]; then
+                if [ -f "review-artifacts/coverage-frontend/frontend/coverage/coverage-summary.json" ]; then
+                  mv "review-artifacts/coverage-frontend/frontend/coverage/coverage-summary.json" "review-artifacts/coverage-frontend/coverage-summary.json" || true
+                fi
+                if [ -d "review-artifacts/coverage-frontend/frontend/coverage/lcov-report" ]; then
+                  rm -rf "review-artifacts/coverage-frontend/lcov-report"
+                  mv "review-artifacts/coverage-frontend/frontend/coverage/lcov-report" "review-artifacts/coverage-frontend/lcov-report" || true
+                fi
+              fi
             done
           fi
 
