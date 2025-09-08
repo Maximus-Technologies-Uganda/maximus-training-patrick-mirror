@@ -79,20 +79,25 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           const apps = ['quote','expense','stopwatch','todo'];
-          function readSummary(app){
-            const p = path.join(process.cwd(), app, 'coverage', 'coverage-summary.json');
+          function readSummaryAt(p){
             if (!fs.existsSync(p)) return null;
             try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; }
           }
-          function pct(s){
-            if (!s || !s.total || !s.total.lines) return 'N/A';
-            return String(s.total.lines.pct) + '%';
+          function statementsPct(summary){
+            if (!summary || !summary.total || !summary.total.statements) return 'no files collected';
+            const t = summary.total.statements;
+            if (typeof t.total === 'number' && t.total === 0) return 'no files collected';
+            if (typeof t.pct === 'number') return String(t.pct) + '%';
+            return 'no files collected';
           }
-          const rows = [['App','Lines']];
+          const rows = [['Target','Statements %']];
           for (const app of apps){
-            const s = readSummary(app);
-            rows.push([app, pct(s)]);
+            const s = readSummaryAt(path.join(process.cwd(), app, 'coverage', 'coverage-summary.json'));
+            rows.push([app, statementsPct(s)]);
           }
+          // Frontend row (Vitest)
+          const fsum = readSummaryAt(path.join(process.cwd(), 'frontend', 'coverage', 'coverage-summary.json'));
+          rows.push(['Frontend', statementsPct(fsum)]);
           const pad = (arr, widths) => arr.map((c,i)=>String(c).padEnd(widths[i])).join(' | ');
           const widths = rows[0].map((_,i)=>Math.max(...rows.map(r=>String(r[i]).length)));
           let table = `| ${pad(rows[0], widths)} |\n| ${widths.map(w=>'-'.repeat(w)).join(' | ')} |\n`;
