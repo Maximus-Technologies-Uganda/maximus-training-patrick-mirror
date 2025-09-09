@@ -19,6 +19,7 @@ export default defineConfig({
         'src/counter.js',
         'src/test-setup.js',
         'src/todo-dom.js',
+        'src/expense-dom.js',
       ],
       thresholds: {
         perFile: true,
