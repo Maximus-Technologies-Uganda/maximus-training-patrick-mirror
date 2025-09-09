@@ -5,9 +5,8 @@ import {
     getUniqueCategories,
     getExpenseMonth,
     filterExpenses,
-    calculateTotal,
-    populateCategoryFilter
-} from './expense.js';
+    calculateTotal
+} from './src/expense-core.js';
 
 describe('Expense Tracker Frontend', () => {
     describe('formatDate', () => {
