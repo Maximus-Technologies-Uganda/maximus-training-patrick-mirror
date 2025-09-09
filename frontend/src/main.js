@@ -60,7 +60,8 @@ function hideError() {
  */
 async function loadQuotes() {
   try {
-    const response = await fetch('/quotes.json');
+    const base = import.meta.env.BASE_URL || '/';
+    const response = await fetch(`${base}quotes.json`);
     if (!response.ok) {
       throw new Error(`Failed to load quotes: ${response.status}`);
     }
