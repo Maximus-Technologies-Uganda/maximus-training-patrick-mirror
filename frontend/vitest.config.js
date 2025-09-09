@@ -19,6 +19,13 @@ export default defineConfig({
         'src/counter.js',
         'src/test-setup.js',
       ],
+      thresholds: {
+        perFile: true,
+        statements: 40,
+        branches: 40,
+        functions: 40,
+        lines: 40,
+      },
     },
     exclude: [
       '**/node_modules/**',
