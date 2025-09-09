@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/',
+  // Allow overriding the base path for GitHub Pages deployments
+  base: process.env.APP_BASE || '/',
 });

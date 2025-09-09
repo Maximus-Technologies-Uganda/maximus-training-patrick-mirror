@@ -2,7 +2,7 @@ name: Deploy Frontend to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/** ]
     paths:
       - 'frontend/**'
       - '.github/workflows/pages.yml'
@@ -38,7 +38,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build
+        run: APP_BASE="/${{ github.event.repository.name }}/" npm run build
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v4
