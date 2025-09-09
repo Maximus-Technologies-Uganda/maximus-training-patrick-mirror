@@ -33,7 +33,8 @@ jobs:
   per_app:
     name: Per-app tests & coverage
     needs: discover
-    if: ${{ fromJSON(needs.discover.outputs.apps) != [] }}
+    # Avoid array literal [] in expressions; use join() to test for non-empty array
+    if: ${{ join(fromJSON(needs.discover.outputs.apps), '') != '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
