@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>To-Do App</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Ubuntu,
+          Cantarell,
+          Noto Sans,
+          Helvetica Neue,
+          Arial,
+          'Apple Color Emoji',
+          'Segoe UI Emoji';
+        margin: 2rem;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      #error {
+        color: #b00020;
+        margin-top: 0.5rem;
+        display: none;
+      }
+      ul {
+        padding-left: 1.25rem;
+      }
+      li.task-item {
+        margin: 0.25rem 0;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .task-title {
+        font-weight: 500;
+      }
+      .task-meta {
+        color: #555;
+        font-size: 0.9em;
+        margin-left: 0.25rem;
+      }
+      fieldset {
+        border: 1px solid #ddd;
+        padding: 0.75rem;
+        border-radius: 8px;
+      }
+      legend {
+        padding: 0 0.25rem;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>To-Do</h1>
+
+    <form id="add-task-form" class="row" autocomplete="off">
+      <input
+        id="task-title"
+        name="title"
+        type="text"
+        placeholder="Add a task..."
+        required
+        aria-label="Task title"
+      />
+      <input
+        id="task-due"
+        name="due"
+        type="date"
+        required
+        aria-label="Due date"
+      />
+      <label>
+        <input id="task-priority" name="priority" type="checkbox" /> High
+        priority
+      </label>
+      <button type="submit">Add</button>
+    </form>
+    <div id="error" role="alert" aria-live="polite"></div>
+
+    <fieldset style="margin-top: 1rem">
+      <legend>Filters</legend>
+      <label> <input id="filter-due-today" type="checkbox" /> Due today </label>
+      <label>
+        <input id="filter-high-priority" type="checkbox" /> High priority
+      </label>
+    </fieldset>
+
+    <h2 style="margin-top: 1rem">Tasks</h2>
+    <ul id="task-list" aria-live="polite"></ul>
+
+    <script type="module" src="./todo.js"></script>
+  </body>
+</html>
