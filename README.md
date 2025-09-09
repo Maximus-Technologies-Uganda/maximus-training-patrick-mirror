@@ -31,9 +31,9 @@ npm run test:dev
 
 ## Live Preview
 
-This repository can be published via GitHub Pages.
+Deployed via GitHub Pages from `frontend/dist` on `main`.
 
-- Live site: <PLACEHOLDER_GH_PAGES_URL>
+- Live site: <INSERT_GITHUB_PAGES_URL>
 
 ## Coverage Reports
 
