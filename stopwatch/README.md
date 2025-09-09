@@ -49,6 +49,22 @@ node stopwatch/tests/test.js
 npm --prefix stopwatch test --silent
 ```
 
+### How to run the UI
+
+```bash
+cd frontend
+npm run dev
+# then open http://localhost:5173/stopwatch.html
+```
+
+- The UI has a timer display and buttons for Start/Stop, Reset, and Export to CSV.
+- CSV export sample (first line is the header):
+
+```csv
+elapsed_ms,elapsed_formatted
+0,00:00.000
+```
+
 ### Demo
 ![Stopwatch demo](../docs/stopwatch-demo.gif)
 

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stopwatch</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; margin: 2rem; }
+      .container { display: grid; gap: 1rem; max-width: 480px; }
+      #timer-display { font-size: 3rem; font-weight: 700; letter-spacing: 1px; }
+      .actions { display: flex; gap: .5rem; }
+      button { padding: .5rem .75rem; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="timer-display" aria-live="polite">00:00.000</div>
+      <div class="actions">
+        <button id="btn-toggle">Start</button>
+        <button id="btn-reset">Reset</button>
+        <button id="btn-export">Export to CSV</button>
+      </div>
+    </div>
+    <script type="module" src="./stopwatch.js"></script>
+  </body>
+  </html>
+
+
