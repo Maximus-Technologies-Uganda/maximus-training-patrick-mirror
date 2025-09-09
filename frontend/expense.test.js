@@ -141,6 +141,81 @@ describe('Expense Tracker Frontend', () => {
                 { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' }
             ]);
         });
+
+        // Table-driven tests for empty/no-result scenarios to boost branch/function coverage
+        const noResultScenarios = [
+            [
+                'empty expenses with no filters',
+                [],
+                '',
+                ''
+            ],
+            [
+                'empty expenses with month filter only',
+                [],
+                '2025-01',
+                ''
+            ],
+            [
+                'empty expenses with category filter only',
+                [],
+                '',
+                'groceries'
+            ],
+            [
+                'no match: month filter excludes all entries',
+                [
+                    { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                    { id: 2, amount: 15, category: 'transport', date: '2025-02-20' }
+                ],
+                '2025-12',
+                ''
+            ],
+            [
+                'no match: category filter excludes all entries',
+                [
+                    { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                    { id: 2, amount: 15, category: 'transport', date: '2025-02-20' }
+                ],
+                '',
+                'nonexistent'
+            ],
+            [
+                'no match: both filters set, but dates mismatch',
+                [
+                    { id: 1, amount: 10, category: 'groceries', date: '2025-02-15' },
+                    { id: 2, amount: 15, category: 'groceries', date: '2025-02-20' }
+                ],
+                '2025-01',
+                'groceries'
+            ],
+            [
+                'no match: invalid dates cannot satisfy month filter',
+                [
+                    { id: 1, amount: 10, category: 'groceries', date: 'invalid' },
+                    { id: 2, amount: 15, category: 'transport' } // missing date
+                ],
+                '2025-01',
+                ''
+            ],
+            [
+                'no match: missing category cannot satisfy category filter',
+                [
+                    { id: 1, amount: 10, date: '2025-01-15' }, // missing category
+                    { id: 2, amount: 15, category: '', date: '2025-01-20' } // empty category
+                ],
+                '',
+                'groceries'
+            ]
+        ];
+
+        it.each(noResultScenarios)(
+            'should return empty list for %s',
+            (_label, expenses, month, category) => {
+                const result = filterExpenses(expenses, month, category);
+                expect(result).toEqual([]);
+            }
+        );
     });
 
     describe('calculateTotal', () => {

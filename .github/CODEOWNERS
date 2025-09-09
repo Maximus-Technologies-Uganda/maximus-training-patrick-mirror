@@ -1,0 +1,4 @@
+# CODEOWNERS assigns default reviewers for PRs touching matching paths.
+# Docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @patrickzizinga @pmwanje2
