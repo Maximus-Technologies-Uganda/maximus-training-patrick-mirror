@@ -74,7 +74,8 @@ jobs:
           fi
 
       - name: Upload per-app coverage
-        if: ${{ hashFiles(format('{0}/coverage/**', matrix.app)) != '' }}
+        # Skip frontend here to avoid artifact name conflict with the dedicated 'frontend' job
+        if: ${{ matrix.app != 'frontend' && hashFiles(format('{0}/coverage/**', matrix.app)) != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.app }}
@@ -168,7 +169,6 @@ jobs:
         with:
           path: _dl
           merge-multiple: true
-          if-no-files-found: ignore
         continue-on-error: true
 
       - name: Consolidate coverage artifacts
