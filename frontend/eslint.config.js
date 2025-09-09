@@ -3,6 +3,17 @@ import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 
 export default [
+  // Global ignores for build outputs and reports
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      '*.min.js',
+    ],
+  },
   js.configs.recommended,
   prettierConfig,
   {
@@ -42,6 +53,5 @@ export default [
       'prefer-const': 'error',
       'no-var': 'error',
     },
-    ignores: ['dist/', 'node_modules/', '*.min.js'],
   },
 ];

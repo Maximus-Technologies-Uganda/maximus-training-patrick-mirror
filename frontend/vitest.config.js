@@ -18,6 +18,7 @@ export default defineConfig({
         'src/main.js',
         'src/counter.js',
         'src/test-setup.js',
+        'src/todo-dom.js',
       ],
       thresholds: {
         perFile: true,
@@ -30,7 +31,7 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/tests/**/*.spec.{js,jsx,ts,tsx}', // Exclude Playwright specs only
-      '**/playwright*.config.js'
+      '**/playwright*.config.js',
     ],
   },
   resolve: {
