@@ -99,8 +99,10 @@ jobs:
         run: |
           set -euo pipefail
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64)"
-          git -c http.extraheader="Authorization: Basic ${AUTH_B64}" ls-remote "https://github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
+          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64 -w 0)"
+          export GIT_TERMINAL_PROMPT=0
+          export GIT_ASKPASS=:
+          git -c credential.helper= -c http.extraheader="Authorization: Basic ${AUTH_B64}" ls-remote "https://github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
 
       - name: Mirror push (branches and tags)
         if: steps.validate.outputs.auth == 'https'
@@ -112,5 +114,16 @@ jobs:
           set -euo pipefail
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64)"
-          git -c credential.helper= -c http.extraheader="Authorization: Basic ${AUTH_B64}" push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
+          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64 -w 0)"
+          export GIT_TERMINAL_PROMPT=0
+          export GIT_ASKPASS=:
+          # Ensure no credential helper interferes
+          git config --global --unset-all credential.helper || true
+          # Clear any repo-level extraheader and perform push with explicit Basic auth header
+          git -c credential.helper= \
+              -c http.https://github.com/.extraheader= \
+              -c core.askPass= \
+              -c credential.interactive=never \
+              -c credential.useHttpPath=true \
+              -c http.extraheader="Authorization: Basic ${AUTH_B64}" \
+              push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
