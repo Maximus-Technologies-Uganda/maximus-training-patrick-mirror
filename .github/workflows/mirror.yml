@@ -109,7 +109,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MIRROR_URL="https://x-access-token:${MIRROR_PAT}@github.com/${MIRROR_REPO_SLUG}.git"
+          PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
+          MIRROR_URL="https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
           git remote remove mirror 2>/dev/null || true
           git remote add mirror "$MIRROR_URL"
           git remote -v
@@ -140,7 +141,8 @@ jobs:
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         run: |
           set -euo pipefail
-          git ls-remote "https://x-access-token:${MIRROR_PAT}@github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
+          PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
+          git ls-remote "https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
 
       - name: Preflight auth to mirror (SSH)
         if: steps.validate.outputs.auth == 'ssh'
@@ -159,4 +161,5 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --prune origin
-          git -c credential.helper= -c http.extraheader= -c "http.https://github.com/.extraheader=" push --prune --mirror "https://x-access-token:${MIRROR_PAT}@github.com/${MIRROR_REPO_SLUG}.git"
+          PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
+          git -c credential.helper= -c http.extraheader= -c "http.https://github.com/.extraheader=" push --prune --mirror "https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
