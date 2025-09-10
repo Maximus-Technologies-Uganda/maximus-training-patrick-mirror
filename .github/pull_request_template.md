@@ -1,3 +1,19 @@
+Pull Request
+
+## Summary
+
+- What change is being introduced?
+- Why is it needed?
+
+## Changes
+
+- [ ] Describe the key changes
+- [ ] Mention any breaking changes
+
+## Screenshots (UI changes)
+
+- Attach before/after screenshots or recordings
+
 # Pull Request
 
 ## Summary
