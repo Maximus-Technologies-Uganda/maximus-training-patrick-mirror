@@ -1,3 +1,71 @@
+name: Mirror to Public Repo
+
+# Prevent overlapping runs per ref
+concurrency:
+  group: mirror-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - '*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Set repository variable MIRROR_REPO_SLUG to the destination repo as 'owner/repo'
+  MIRROR_REPO_SLUG: ${{ vars.MIRROR_REPO_SLUG }}
+
+jobs:
+  mirror:
+    name: Push all refs to public mirror
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate configuration
+        shell: bash
+        run: |
+          if [ -z "${MIRROR_REPO_SLUG}" ]; then
+            echo "ERROR: Repository variable MIRROR_REPO_SLUG is not set."
+            echo "Please set vars.MIRROR_REPO_SLUG to 'owner/public-repo' in repository Settings → Variables." >&2
+            exit 1
+          fi
+          if [ -z "${{ secrets.MIRROR_PAT }}" ]; then
+            echo "ERROR: Secret MIRROR_PAT is not set." >&2
+            exit 1
+          fi
+
+      - name: Configure git
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add mirror remote
+        shell: bash
+        run: |
+          set -euo pipefail
+          MIRROR_URL="https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/${MIRROR_REPO_SLUG}.git"
+          git remote remove mirror 2>/dev/null || true
+          git remote add mirror "$MIRROR_URL"
+          git remote -v
+
+      - name: Mirror push (branches and tags)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --prune origin
+          git push --prune --mirror mirror
+
 name: mirror
 
 on:
