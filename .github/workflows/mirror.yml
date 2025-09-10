@@ -13,6 +13,15 @@ on:
     tags:
       - '*'
   workflow_dispatch:
+    inputs:
+      mirror_repo_slug:
+        description: "Destination repo as owner/repo (overrides variables)"
+        required: false
+        type: string
+      mirror_repo_url:
+        description: "Destination repo full URL (https or ssh)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -29,19 +38,43 @@ jobs:
 
       - name: Validate configuration
         env:
-          MIRROR_REPO_SLUG: ${{ vars.MIRROR_REPO_SLUG }}
+          INPUT_SLUG: ${{ inputs.mirror_repo_slug }}
+          INPUT_URL: ${{ inputs.mirror_repo_url }}
+          VAR_SLUG: ${{ vars.MIRROR_REPO_SLUG }}
+          VAR_URL: ${{ vars.MIRROR_REPO_URL }}
+          SECRET_URL: ${{ secrets.MIRROR_REPO_URL || secrets.MIRROR_URL }}
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         shell: bash
         run: |
+          set -euo pipefail
+          MIRROR_REPO_SLUG="${INPUT_SLUG:-${VAR_SLUG:-}}"
+          MIRROR_URL="${INPUT_URL:-${VAR_URL:-${SECRET_URL:-}}}"
+
+          if [ -z "${MIRROR_REPO_SLUG}" ] && [ -n "${MIRROR_URL}" ]; then
+            # Derive owner/repo from URL
+            tmp="${MIRROR_URL}"
+            tmp="${tmp#https://github.com/}"
+            tmp="${tmp#http://github.com/}"
+            tmp="${tmp#git@github.com:}"
+            tmp="${tmp%.git}"
+            MIRROR_REPO_SLUG="${tmp}"
+          fi
+
           if [ -z "${MIRROR_REPO_SLUG}" ]; then
-            echo "ERROR: Repository variable MIRROR_REPO_SLUG is not set."
-            echo "Please set vars.MIRROR_REPO_SLUG to 'owner/public-repo' in repository Settings → Variables." >&2
+            echo "ERROR: Destination not configured. Provide one of:"
+            echo "- vars.MIRROR_REPO_SLUG (owner/repo)"
+            echo "- secrets.MIRROR_REPO_URL (https or ssh)"
+            echo "- workflow_dispatch input mirror_repo_slug or mirror_repo_url" >&2
             exit 1
           fi
+
           if [ -z "${MIRROR_PAT}" ]; then
             echo "ERROR: Secret MIRROR_PAT is not set." >&2
             exit 1
           fi
+          echo "Resolved MIRROR_REPO_SLUG=${MIRROR_REPO_SLUG}"
+          echo "::set-output name=slug::${MIRROR_REPO_SLUG}"
+        id: validate
 
       - name: Configure git
         shell: bash
@@ -51,7 +84,7 @@ jobs:
 
       - name: Add mirror remote
         env:
-          MIRROR_REPO_SLUG: ${{ vars.MIRROR_REPO_SLUG }}
+          MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         shell: bash
         run: |
