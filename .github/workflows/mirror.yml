@@ -125,5 +125,5 @@ jobs:
               -c core.askPass=/bin/echo \
               -c credential.interactive=never \
               -c credential.useHttpPath=true \
-              -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_B64}" \
+              -c http.https://github.com/.extraheader="Authorization: Basic ${AUTH_B64}" \
               push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
