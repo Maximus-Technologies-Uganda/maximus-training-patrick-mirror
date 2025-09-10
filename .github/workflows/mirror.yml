@@ -73,7 +73,7 @@ jobs:
             exit 1
           fi
           echo "Resolved MIRROR_REPO_SLUG=${MIRROR_REPO_SLUG}"
-          echo "::set-output name=slug::${MIRROR_REPO_SLUG}"
+          echo "slug=${MIRROR_REPO_SLUG}" >> "$GITHUB_OUTPUT"
         id: validate
 
       - name: Configure git
