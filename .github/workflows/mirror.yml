@@ -153,7 +153,10 @@ jobs:
 
       - name: Mirror push (branches and tags)
         shell: bash
+        env:
+          MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
+          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         run: |
           set -euo pipefail
           git fetch --prune origin
-          git push --prune --mirror mirror
+          git push --prune --mirror "https://x-access-token:${MIRROR_PAT}@github.com/${MIRROR_REPO_SLUG}.git"
