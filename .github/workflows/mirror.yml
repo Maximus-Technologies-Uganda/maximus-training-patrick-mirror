@@ -114,16 +114,17 @@ jobs:
           set -euo pipefail
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64 -w 0)"
+          PUSH_URL="https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
           export GIT_TERMINAL_PROMPT=0
           export GIT_ASKPASS=/bin/echo
           export GIT_SSH_ASKPASS=/bin/echo
           # Ensure no credential helper interferes
           git config --global --unset-all credential.helper || true
-          # Perform push with host-scoped Basic auth header to ensure it is applied
+          # Clear any extra headers and push using embedded token URL
           git -c credential.helper= \
               -c core.askPass=/bin/echo \
               -c credential.interactive=never \
               -c credential.useHttpPath=true \
-              -c http.https://github.com/.extraheader="Authorization: Basic ${AUTH_B64}" \
-              push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
+              -c http.extraheader= \
+              -c http.https://github.com/.extraheader= \
+              push --prune --mirror "${PUSH_URL}"
