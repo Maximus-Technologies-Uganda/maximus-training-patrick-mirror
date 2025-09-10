@@ -45,6 +45,7 @@ jobs:
           VAR_URL: ${{ vars.MIRROR_REPO_URL }}
           SECRET_URL: ${{ secrets.MIRROR_REPO_URL || secrets.MIRROR_URL }}
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
+          MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -69,17 +70,23 @@ jobs:
             exit 1
           fi
 
-          if [ -z "${MIRROR_PAT}" ]; then
-            echo "ERROR: Secret MIRROR_PAT is not set." >&2
-            exit 1
-          fi
-          # Basic sanity check to help catch obviously invalid values
-          if ! [[ "${MIRROR_PAT}" =~ ^(ghp|github_pat)_ ]]; then
-            echo "ERROR: MIRROR_PAT does not look like a GitHub PAT (expected to start with ghp_ or github_pat_)." >&2
+          AUTH_METHOD=""
+          if [ -n "${MIRROR_SSH_PRIVATE_KEY}" ]; then
+            AUTH_METHOD="ssh"
+          elif [ -n "${MIRROR_PAT}" ]; then
+            if [[ "${MIRROR_PAT}" =~ ^(ghp|github_pat)_ ]]; then
+              AUTH_METHOD="https"
+            else
+              echo "ERROR: MIRROR_PAT does not look like a GitHub PAT (expected ghp_ or github_pat_)." >&2
+              exit 1
+            fi
+          else
+            echo "ERROR: Provide one of: secrets.MIRROR_SSH_PRIVATE_KEY (preferred) or secrets.MIRROR_PAT." >&2
             exit 1
           fi
           echo "Resolved MIRROR_REPO_SLUG=${MIRROR_REPO_SLUG}"
           echo "slug=${MIRROR_REPO_SLUG}" >> "$GITHUB_OUTPUT"
+          echo "auth=${AUTH_METHOD}" >> "$GITHUB_OUTPUT"
         id: validate
 
       - name: Configure git
@@ -94,7 +101,8 @@ jobs:
           # Ensure pushes to mirror use MIRROR_PAT rather than GITHUB_TOKEN injected by checkout
           git config --local --unset-all http.https://github.com/.extraheader || true
 
-      - name: Add mirror remote
+      - name: Add mirror remote (HTTPS with PAT)
+        if: steps.validate.outputs.auth == 'https'
         env:
           MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
@@ -106,15 +114,42 @@ jobs:
           git remote add mirror "$MIRROR_URL"
           git remote -v
 
-      - name: Preflight auth to mirror
+      - name: Add mirror remote (SSH with deploy key)
+        if: steps.validate.outputs.auth == 'ssh'
+        env:
+          MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
+          MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "${MIRROR_SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+          git remote remove mirror 2>/dev/null || true
+          git remote add mirror "git@github.com:${MIRROR_REPO_SLUG}.git"
+          git remote -v
+
+      - name: Preflight auth to mirror (HTTPS)
+        if: steps.validate.outputs.auth == 'https'
         shell: bash
         env:
           MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         run: |
           set -euo pipefail
-          echo "Verifying access to https://github.com/${MIRROR_REPO_SLUG}.git"
           git ls-remote "https://x-access-token:${MIRROR_PAT}@github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
+
+      - name: Preflight auth to mirror (SSH)
+        if: steps.validate.outputs.auth == 'ssh'
+        shell: bash
+        env:
+          MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
+        run: |
+          set -euo pipefail
+          git ls-remote "git@github.com:${MIRROR_REPO_SLUG}.git" >/dev/null
 
       - name: Mirror push (branches and tags)
         shell: bash
