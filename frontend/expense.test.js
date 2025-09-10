@@ -277,4 +277,65 @@ describe('Expense Tracker Frontend', () => {
             expect(calculateTotal(januaryGroceries)).toBe(10);
         });
     });
+
+    describe('applyFilters (DOM integration paths)', () => {
+        function makeDoc() {
+            const doc = global.document.implementation.createHTMLDocument('Expense');
+            doc.body.innerHTML = `
+                <select id="month-filter"><option value=""></option></select>
+                <select id="category-filter"><option value=""></option></select>
+                <button id="clear-filters"></button>
+                <table id="expenses-table" style="display:none"><tbody id="expenses-body"></tbody></table>
+                <div id="total-display" style="display:none"><span id="total-amount"></span></div>
+                <div id="loading" style="display:none"></div>
+                <div id="error-message" style="display:none"></div>
+                <div id="no-data" style="display:none"></div>
+            `;
+            return doc;
+        }
+
+        it.each([
+            [
+                'empty expenses with no filters returns empty and hides table',
+                [],
+                '',
+                ''
+            ],
+            [
+                'no match when month excludes all',
+                [
+                    { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                    { id: 2, amount: 15, category: 'transport', date: '2025-02-20' }
+                ],
+                '2025-12',
+                ''
+            ],
+            [
+                'no match when category excludes all',
+                [
+                    { id: 1, amount: 10, category: 'groceries', date: '2025-01-15' },
+                    { id: 2, amount: 15, category: 'transport', date: '2025-02-20' }
+                ],
+                '',
+                'nonexistent'
+            ],
+        ])('should handle %s', (_label, expenses, month, category) => {
+            const { initExpenseDom } = require('./src/expense-dom.js');
+            const doc = makeDoc();
+            // stub fetch to return provided expenses
+            global.fetch = async () => ({ ok: true, json: async () => expenses });
+            const api = initExpenseDom(doc);
+            // set filters and apply
+            doc.getElementById('month-filter').value = month;
+            doc.getElementById('category-filter').value = category;
+            api.applyFilters();
+            // assertions: body empty, table hidden, no-data visible when no results
+            const body = doc.getElementById('expenses-body');
+            const table = doc.getElementById('expenses-table');
+            const noData = doc.getElementById('no-data');
+            expect(body.children.length).toBe(0);
+            expect(table.style.display).toBe('none');
+            expect(noData.style.display).toBe('block');
+        });
+    });
 });
