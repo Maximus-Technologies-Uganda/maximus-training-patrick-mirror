@@ -114,27 +114,11 @@ jobs:
           set -euo pipefail
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          # Prepare a non-interactive askpass script to supply credentials
-          ASKPASS_SCRIPT="$RUNNER_TEMP/git-askpass.sh"
-          cat >"${ASKPASS_SCRIPT}" <<'EOF'
-          #!/usr/bin/env bash
-          case "$1" in
-            *Username\ for* ) echo "x-access-token" ;;
-            *Password\ for* ) echo "${GIT_TOKEN}" ;;
-            * ) echo ;;
-          esac
-          EOF
-          chmod 700 "${ASKPASS_SCRIPT}"
-          export GIT_TOKEN="${PAT_CLEAN}"
-          export GIT_ASKPASS="${ASKPASS_SCRIPT}"
-          export GIT_TERMINAL_PROMPT=1
+          REMOTE_URL="https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
           # Ensure no credential helper interferes
           git config --global --unset-all credential.helper || true
-          # Clear any extra headers and push using standard https URL with askpass
+          # Clear any extra headers and push using PAT in URL (non-interactive)
           git -c credential.helper= \
-              -c core.askPass="${ASKPASS_SCRIPT}" \
-              -c credential.interactive=never \
-              -c credential.useHttpPath=true \
               -c http.extraheader= \
               -c http.https://github.com/.extraheader= \
-              push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
+              push --prune --mirror "${REMOTE_URL}"
