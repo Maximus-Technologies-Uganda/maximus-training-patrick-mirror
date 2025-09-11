@@ -31,26 +31,24 @@ jobs:
     name: Push all refs to public mirror
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout full history
+      - name: Checkout full history (with PAT)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
+          token: ${{ secrets.MIRROR_PAT }}
 
-      - name: Validate configuration
+      - name: Validate configuration (PAT only)
         env:
           INPUT_SLUG: ${{ inputs.mirror_repo_slug }}
           INPUT_URL: ${{ inputs.mirror_repo_url }}
           VAR_SLUG: ${{ vars.MIRROR_REPO_SLUG }}
-          VAR_URL: ${{ vars.MIRROR_REPO_URL }}
-          SECRET_URL: ${{ secrets.MIRROR_REPO_URL || secrets.MIRROR_URL }}
           MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
-          MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
         shell: bash
         run: |
           set -euo pipefail
           MIRROR_REPO_SLUG="${INPUT_SLUG:-${VAR_SLUG:-}}"
-          MIRROR_URL="${INPUT_URL:-${VAR_URL:-${SECRET_URL:-}}}"
+          MIRROR_URL="${INPUT_URL:-}"
 
           if [ -z "${MIRROR_REPO_SLUG}" ] && [ -n "${MIRROR_URL}" ]; then
             # Derive owner/repo from URL
@@ -65,28 +63,18 @@ jobs:
           if [ -z "${MIRROR_REPO_SLUG}" ]; then
             echo "ERROR: Destination not configured. Provide one of:"
             echo "- vars.MIRROR_REPO_SLUG (owner/repo)"
-            echo "- secrets.MIRROR_REPO_URL (https or ssh)"
             echo "- workflow_dispatch input mirror_repo_slug or mirror_repo_url" >&2
             exit 1
           fi
 
-          AUTH_METHOD=""
-          if [ -n "${MIRROR_SSH_PRIVATE_KEY}" ]; then
-            AUTH_METHOD="ssh"
-          elif [ -n "${MIRROR_PAT}" ]; then
-            if [[ "${MIRROR_PAT}" =~ ^(ghp|github_pat)_ ]]; then
-              AUTH_METHOD="https"
-            else
-              echo "ERROR: MIRROR_PAT does not look like a GitHub PAT (expected ghp_ or github_pat_)." >&2
-              exit 1
-            fi
-          else
-            echo "ERROR: Provide one of: secrets.MIRROR_SSH_PRIVATE_KEY (preferred) or secrets.MIRROR_PAT." >&2
+          if [ -z "${MIRROR_PAT}" ]; then
+            echo "ERROR: secrets.MIRROR_PAT is not set (required for PAT mirroring)." >&2
             exit 1
           fi
+          # MIRROR_USERNAME is optional; fall back to x-access-token which works for most tokens
           echo "Resolved MIRROR_REPO_SLUG=${MIRROR_REPO_SLUG}"
           echo "slug=${MIRROR_REPO_SLUG}" >> "$GITHUB_OUTPUT"
-          echo "auth=${AUTH_METHOD}" >> "$GITHUB_OUTPUT"
+          echo "auth=https" >> "$GITHUB_OUTPUT"
         id: validate
 
       - name: Configure git
@@ -94,72 +82,25 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Remove leftover auth headers for github.com
-        shell: bash
-        run: |
-          # Ensure pushes to mirror use MIRROR_PAT rather than GITHUB_TOKEN injected by checkout
-          git config --local --unset-all http.https://github.com/.extraheader || true
-
-      - name: Add mirror remote (HTTPS with PAT)
-        if: steps.validate.outputs.auth == 'https'
-        env:
-          MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
-          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          MIRROR_URL="https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
-          git remote remove mirror 2>/dev/null || true
-          git remote add mirror "$MIRROR_URL"
-          git remote -v
-
-      - name: Add mirror remote (SSH with deploy key)
-        if: steps.validate.outputs.auth == 'ssh'
-        env:
-          MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
-          MIRROR_SSH_PRIVATE_KEY: ${{ secrets.MIRROR_SSH_PRIVATE_KEY }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          echo "${MIRROR_SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_ed25519
-          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
-          git remote remove mirror 2>/dev/null || true
-          git remote add mirror "git@github.com:${MIRROR_REPO_SLUG}.git"
-          git remote -v
-
+      # Preflight that the destination repo is reachable
       - name: Preflight auth to mirror (HTTPS)
         if: steps.validate.outputs.auth == 'https'
         shell: bash
         env:
           MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
-          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         run: |
           set -euo pipefail
-          PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          git ls-remote "https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
-
-      - name: Preflight auth to mirror (SSH)
-        if: steps.validate.outputs.auth == 'ssh'
-        shell: bash
-        env:
-          MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
-        run: |
-          set -euo pipefail
-          git ls-remote "git@github.com:${MIRROR_REPO_SLUG}.git" >/dev/null
+          git -c protocol.version=2 ls-remote "https://github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
 
       - name: Mirror push (branches and tags)
+        if: steps.validate.outputs.auth == 'https'
         shell: bash
         env:
           MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
-          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         run: |
           set -euo pipefail
           git fetch --prune origin
-          PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          git -c credential.helper= -c http.extraheader= -c "http.https://github.com/.extraheader=" push --prune --mirror "https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
+          git remote remove mirror || true
+          git remote add mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
+          # Push all origin branches and tags to mirror without attempting to delete default branch explicitly
+          git push --prune mirror "refs/remotes/origin/*:refs/heads/*" --tags
