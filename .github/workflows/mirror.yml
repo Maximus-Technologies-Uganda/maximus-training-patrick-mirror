@@ -122,5 +122,4 @@ jobs:
           git -c credential.helper= \
               -c credential.interactive=never \
               -c http.extraheader="Authorization: Basic ${AUTH_B64}" \
-              -c http.https://github.com/.extraheader= \
               push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
