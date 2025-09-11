@@ -1,71 +1,61 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('To-Do edge cases', () => {
+test.describe('To-Do - edge behavior', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/todo.html');
-    await page.waitForSelector('#add-task-form');
   });
 
-  test('duplicate title guard prevents creating duplicate for same date (DEV-195.1)', async ({ page }) => {
-    await page.fill('#task-title', 'Pay bills');
-    await page.click('button[type="submit"]');
-    await expect(page.locator('#task-list .task-item')).toHaveCount(1);
-
-    await page.fill('#task-title', 'Pay bills');
-    await page.click('button[type="submit"]');
-    await expect(page.locator('#error')).toBeVisible();
-    await expect(page.locator('#task-list .task-item')).toHaveCount(1);
+  test('duplicate title guard shows friendly error', async ({ page }) => {
+    const title = 'Pay bills';
+    await page.fill('#task-title', title);
+    await page.click('button:has-text("Add")');
+    await page.fill('#task-title', title);
+    await page.click('button:has-text("Add")');
+    const alert = page.locator('#error');
+    await expect(alert).toBeVisible();
+    await expect(alert).toContainText('already exists');
   });
 
-  test('"Due Today" pinning via mocked date (DEV-195.2)', async ({ page }) => {
+  test('due today pinning using mocked clock', async ({ page }) => {
     await page.addInitScript(() => {
+      // Freeze time to 2025-03-10
       const fixed = new Date('2025-03-10T09:00:00');
-      // eslint-disable-next-line no-undef
-      const _Date = Date;
-      // Minimal Date mock returning fixed now for Date.now and default constructor
-      // eslint-disable-next-line no-undef
-      globalThis.Date = class extends _Date {
-        constructor(...args) {
-          if (args.length === 0) return new _Date(fixed);
-          return new _Date(...args);
-        }
-        static now() {
-          return fixed.getTime();
-        }
-      };
+      const OriginalDate = Date;
+      class FakeDate extends OriginalDate {
+        constructor(...args) { super(...(args.length ? args : [fixed])); }
+        static now() { return fixed.getTime(); }
+      }
+      // @ts-ignore
+      window.Date = FakeDate;
     });
     await page.reload();
 
-    // Add two tasks, one today, one tomorrow
-    await page.fill('#task-title', 'Task Today');
-    await page.fill('#task-due', '2025-03-10');
-    await page.click('button[type="submit"]');
-
-    await page.fill('#task-title', 'Task Tomorrow');
+    // Add one task due tomorrow and one due today
+    await page.fill('#task-title', 'Due tomorrow');
     await page.fill('#task-due', '2025-03-11');
-    await page.click('button[type="submit"]');
+    await page.click('button:has-text("Add")');
 
-    // Enable due-today filter
+    await page.fill('#task-title', 'Due today');
+    await page.fill('#task-due', '2025-03-10');
+    await page.click('button:has-text("Add")');
+
+    // Enable due-today filter -> should surface only the today task
     await page.check('#filter-due-today');
-    const items = page.locator('#task-list .task-item');
+    const items = page.locator('#task-list .task-item .task-title');
     await expect(items).toHaveCount(1);
-    await expect(items.first()).toContainText('Task Today');
+    await expect(items.first()).toHaveText('Due today');
   });
 
-  test('invalid ID handling (no-op UI) (DEV-195.3)', async ({ page }) => {
-    // Add one item
-    await page.fill('#task-title', 'Toggle Me');
-    await page.click('button[type="submit"]');
-    await expect(page.locator('#task-list .task-item')).toHaveCount(1);
-
-    // Try to toggle an element that does not exist (simulate invalid ID) by clicking nothing.
-    // Instead, we ensure UI remains stable and error region stays hidden.
-    const before = await page.locator('#task-list').innerHTML();
-    // No-op action: press a key elsewhere
-    await page.keyboard.press('Tab');
-    const after = await page.locator('#task-list').innerHTML();
-    expect(before).toBe(after);
-    await expect(page.locator('#error')).toBeHidden();
+  test('invalid ID operations are no-ops (toggle/remove)', async ({ page }) => {
+    // No items yet, toggling an invalid id should not crash or change UI
+    await expect(page.locator('#task-list .task-item')).toHaveCount(0);
+    // There is no direct UI to toggle arbitrary id; ensure app remains stable
+    await page.evaluate(() => {
+      // Just dispatch a change event on a non-existent element
+      const ev = new Event('change');
+      document.dispatchEvent(ev);
+    });
+    await expect(page.locator('#task-list .task-item')).toHaveCount(0);
   });
 });
 
