@@ -114,11 +114,13 @@ jobs:
           set -euo pipefail
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          REMOTE_URL="https://x-access-token:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
-          # Ensure no credential helper interferes
+          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64 -w 0)"
+          # Ensure no credential helper interferes and prevent interactive prompts
           git config --global --unset-all credential.helper || true
-          # Clear any extra headers and push using PAT in URL (non-interactive)
+          export GIT_TERMINAL_PROMPT=0
+          # Push using explicit Basic Authorization header
           git -c credential.helper= \
-              -c http.extraheader= \
+              -c credential.interactive=never \
+              -c http.extraheader="Authorization: Basic ${AUTH_B64}" \
               -c http.https://github.com/.extraheader= \
-              push --prune --mirror "${REMOTE_URL}"
+              push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
