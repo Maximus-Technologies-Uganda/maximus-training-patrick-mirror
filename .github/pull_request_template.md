@@ -1,21 +1,3 @@
-Pull Request
-
-## Summary
-
-- What change is being introduced?
-- Why is it needed?
-
-## Changes
-
-- [ ] Describe the key changes
-- [ ] Mention any breaking changes
-
-## Screenshots (UI changes)
-
-- Attach before/after screenshots or recordings
-
-# Pull Request
-
 ## Summary
 
 - What change is being introduced?
@@ -50,6 +32,4 @@ Pull Request
 
 ## Related Issues
 
-- Linear: DEV-128
-
-
+- Linear: DEV-184 (and sub-issues)
