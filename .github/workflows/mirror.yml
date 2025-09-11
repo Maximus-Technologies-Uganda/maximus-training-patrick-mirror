@@ -127,7 +127,7 @@ jobs:
           chmod 700 "${ASKPASS_SCRIPT}"
           export GIT_TOKEN="${PAT_CLEAN}"
           export GIT_ASKPASS="${ASKPASS_SCRIPT}"
-          export GIT_TERMINAL_PROMPT=0
+          export GIT_TERMINAL_PROMPT=1
           # Ensure no credential helper interferes
           git config --global --unset-all credential.helper || true
           # Clear any extra headers and push using standard https URL with askpass
