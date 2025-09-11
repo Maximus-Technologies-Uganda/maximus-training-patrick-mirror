@@ -71,10 +71,7 @@ jobs:
             echo "ERROR: secrets.MIRROR_PAT is not set (required for PAT mirroring)." >&2
             exit 1
           fi
-          if [ -z "${MIRROR_USERNAME}" ]; then
-            echo "ERROR: secrets.MIRROR_USERNAME is not set (GitHub username of PAT owner)." >&2
-            exit 1
-          fi
+          # MIRROR_USERNAME is optional; fall back to x-access-token which works for most tokens
           echo "Resolved MIRROR_REPO_SLUG=${MIRROR_REPO_SLUG}"
           echo "slug=${MIRROR_REPO_SLUG}" >> "$GITHUB_OUTPUT"
           echo "auth=https" >> "$GITHUB_OUTPUT"
@@ -105,7 +102,8 @@ jobs:
         run: |
           set -euo pipefail
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          AUTH_B64="$(printf '%s:%s' "${MIRROR_USERNAME}" "${PAT_CLEAN}" | base64 -w 0)"
+          USER_PART="${MIRROR_USERNAME:-x-access-token}"
+          AUTH_B64="$(printf '%s:%s' "${USER_PART}" "${PAT_CLEAN}" | base64 -w 0)"
           export GIT_TERMINAL_PROMPT=0
           export GIT_ASKPASS=:
           git -c credential.helper= -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_B64}" ls-remote "https://github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
@@ -121,7 +119,8 @@ jobs:
           set -euo pipefail
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          AUTH_B64="$(printf '%s:%s' "${MIRROR_USERNAME}" "${PAT_CLEAN}" | base64 -w 0)"
+          USER_PART="${MIRROR_USERNAME:-x-access-token}"
+          AUTH_B64="$(printf '%s:%s' "${USER_PART}" "${PAT_CLEAN}" | base64 -w 0)"
           git config --global --unset-all credential.helper || true
           export GIT_TERMINAL_PROMPT=0
           export GIT_ASKPASS=:
