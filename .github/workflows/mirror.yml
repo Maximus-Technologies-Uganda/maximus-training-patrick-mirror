@@ -118,7 +118,8 @@ jobs:
           AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64 -w 0)"
           git config --global --unset-all credential.helper || true
           export GIT_TERMINAL_PROMPT=0
+          # Rewrite https://github.com/ URLs to embed PAT automatically
+          git config --global url."https://x-access-token:${PAT_CLEAN}@github.com/".insteadof "https://github.com/"
           git -c credential.helper= \
               -c credential.interactive=never \
-              -c http.https://github.com/.extraheader="Authorization: Basic ${AUTH_B64}" \
               push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
