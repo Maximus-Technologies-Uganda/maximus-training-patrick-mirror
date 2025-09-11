@@ -1,10 +1,5 @@
 name: Mirror to Public Repo
 
-# Prevent overlapping runs per ref
-concurrency:
-  group: mirror-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
     branches:
@@ -30,6 +25,9 @@ jobs:
   mirror:
     name: Push all refs to public mirror
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Checkout full history (with PAT)
         uses: actions/checkout@v4
@@ -92,7 +90,7 @@ jobs:
           set -euo pipefail
           git -c protocol.version=2 ls-remote "https://github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
 
-      - name: Mirror push (branches and tags)
+      - name: Mirror push (HEAD to main via PAT)
         if: steps.validate.outputs.auth == 'https'
         shell: bash
         env:
@@ -100,7 +98,5 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --prune origin
-          git remote remove mirror || true
-          git remote add mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
-          # Push all origin branches and tags to mirror without attempting to delete default branch explicitly
-          git push --prune mirror "refs/remotes/origin/*:refs/heads/*" --tags
+          # Push current HEAD to main on the mirror using PAT authentication
+          git push --force "https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/${MIRROR_REPO_SLUG}.git" HEAD:main

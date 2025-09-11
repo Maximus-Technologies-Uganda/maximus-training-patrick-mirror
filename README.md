@@ -33,6 +33,15 @@ Deployed via GitHub Pages from `frontend/dist` on `main`.
 
 - Live site: https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/
 
+## Deployment & Quality
+
+- Live deployment: [INSERT_LIVE_PAGES_URL]
+- UI preview:
+
+  [![Application UI](docs/assets/screenshot-app.png)]([INSERT_LIVE_PAGES_URL])
+
+- Latest coverage report: [INSERT_COVERAGE_REPORT_URL]
+
 Local development server:
 
 ```bash
