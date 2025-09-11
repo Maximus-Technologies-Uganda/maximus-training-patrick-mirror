@@ -114,12 +114,12 @@ jobs:
           set -euo pipefail
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64 -w 0)"
-          # Ensure no credential helper interferes and prevent interactive prompts
+          # Use credential store with temporary file to provide PAT non-interactively
           git config --global --unset-all credential.helper || true
           export GIT_TERMINAL_PROMPT=0
-          # Push using explicit Basic Authorization header
-          git -c credential.helper= \
+          CRED_FILE="$RUNNER_TEMP/git-credentials"
+          printf 'https://x-access-token:%s@github.com\n' "${PAT_CLEAN}" > "${CRED_FILE}"
+          git config --global credential.helper "store --file=${CRED_FILE}"
+          git -c credential.useHttpPath=true \
               -c credential.interactive=never \
-              -c http.extraheader="Authorization: Basic ${AUTH_B64}" \
               push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
