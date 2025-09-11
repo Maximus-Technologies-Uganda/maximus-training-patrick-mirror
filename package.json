@@ -11,7 +11,8 @@
     "test:expense": "node expense/tests/test.js",
     "test:stopwatch": "node stopwatch/tests/test.js",
     "test:todo": "node todo/tests/test.js",
-    "test:dev": "node scripts/run-tests.js --scope dev-week-1"
+    "test:dev": "node scripts/run-tests.js --scope dev-week-1",
+    "pages:docs": "node scripts/publish-docs.js"
   },
   "devDependencies": {
     "c8": "^9.1.0"
