@@ -121,11 +121,15 @@ jobs:
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
           USER_PART="${MIRROR_USERNAME:-x-access-token}"
           git config --global --unset-all credential.helper || true
+          git config --global credential.useHttpPath true
           export GIT_TERMINAL_PROMPT=0
           export GIT_ASKPASS=:
           CRED_FILE="$RUNNER_TEMP/git-credentials"
           git config --global credential.helper "store --file=${CRED_FILE}"
-          printf 'protocol=https\nhost=github.com\nusername=%s\npassword=%s\n\n' "${USER_PART}" "${PAT_CLEAN}" | git credential approve
+          # Store credentials including repo path to ensure lookup
+          printf 'protocol=https\nhost=github.com\npath=%s.git\nusername=%s\npassword=%s\n\n' "${MIRROR_REPO_SLUG}" "${USER_PART}" "${PAT_CLEAN}" | git credential approve
           git -c credential.helper="store --file=${CRED_FILE}" \
               -c credential.interactive=never \
+              -c http.extraheader= \
+              -c http.https://github.com/.extraheader= \
               push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
