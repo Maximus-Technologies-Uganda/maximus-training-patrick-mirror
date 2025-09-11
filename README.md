@@ -45,6 +45,7 @@ npm run dev
 
 - CI posts a coverage summary for the frontend to the PR job summary and comments.
 - Raw summary JSON path in CI: `frontend/coverage/coverage-summary.json`.
+- Coverage artifact (CI): `<insert CI artifact link here>`
 
 Local HTML report for the frontend:
 
