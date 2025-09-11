@@ -120,14 +120,12 @@ jobs:
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
           USER_PART="${MIRROR_USERNAME:-x-access-token}"
+          AUTH_B64="$(printf '%s:%s' "${USER_PART}" "${PAT_CLEAN}" | base64 -w 0)"
           git config --global --unset-all credential.helper || true
           export GIT_TERMINAL_PROMPT=0
           export GIT_ASKPASS=:
-          # Push via a named remote using classic username:token in URL
-          git remote remove mirror || true
-          git remote add mirror "https://${USER_PART}:${PAT_CLEAN}@github.com/${MIRROR_REPO_SLUG}.git"
+          # Push using Basic Authorization header scoped to github.com
           git -c credential.helper= \
               -c credential.interactive=never \
-              -c http.extraheader= \
-              -c http.https://github.com/.extraheader= \
-              push --prune --mirror mirror
+              -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_B64}" \
+              push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
