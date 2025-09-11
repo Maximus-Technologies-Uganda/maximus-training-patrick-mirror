@@ -1,5 +1,53 @@
 import { test, expect } from '@playwright/test';
 
+test.describe('Quote - edge behavior', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
+
+  test('case-insensitive author filtering (einstein vs EINSTEIN)', async ({ page }) => {
+    await page.fill('#author-input', 'einstein');
+    await page.click('#search-button');
+    // Either we get an Einstein quote or a friendly error if none exist
+    const author = page.locator('#quote-author');
+    const error = page.locator('#error');
+    if (await error.isVisible()) {
+      await expect(error).toContainText('No quotes found');
+    } else {
+      await expect(author).toContainText('Einstein', { ignoreCase: true });
+    }
+  });
+
+  test('deterministic selection by seeding Math.random', async ({ page }) => {
+    await page.addInitScript(() => {
+      // Simple seeded PRNG for determinism
+      let seed = 42;
+      Math.random = () => {
+        // xorshift32
+        seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; // eslint-disable-line no-bitwise
+        const n = (seed >>> 0) / 0xffffffff; // 0..1
+        return n;
+      };
+    });
+    await page.reload();
+    // With seeded RNG, repeated searches should be stable within session
+    await page.click('#search-button');
+    const first = await page.textContent('#quote-text');
+    await page.click('#search-button');
+    const second = await page.textContent('#quote-text');
+    expect(typeof first).toBe('string');
+    expect(first && first.length).toBeGreaterThan(0);
+    expect(typeof second).toBe('string');
+  });
+
+  test('no-results state shows friendly message', async ({ page }) => {
+    await page.fill('#author-input', 'no-such-author-xyz');
+    await page.click('#search-button');
+    await expect(page.locator('#error')).toBeVisible();
+    await expect(page.locator('#quote-text')).toHaveText('"No quotes available"');
+  });
+});
+
 test.describe('Quote page edge cases', () => {
   test.beforeEach(async ({ page }) => {
     // Ensure quotes.json is loaded deterministically

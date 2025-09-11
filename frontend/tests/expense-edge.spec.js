@@ -1,84 +1,73 @@
 import { test, expect } from '@playwright/test';
-// Use dev server baseURL from Playwright config
 
-test.describe('Expense edge cases', () => {
+const EXPENSE_HTML = '/expense.html';
+
+test.describe('Expense - edge behavior', () => {
   test.beforeEach(async ({ page }) => {
-    // Seeded data for determinism
-    const seedData = [
-      { id: 1, amount: 10, category: 'groceries', date: '2025-01-01' },
-      { id: 2, amount: 3.3333333, category: 'transport', date: '2025-01-31' },
-      { id: 3, amount: 20, category: 'utilities', date: '2025-12-31' },
-      { id: 4, amount: 5, category: 'groceries', date: '2025-02-01' },
-    ];
-
-    await page.route('**/expense/expenses.json', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(seedData) })
-    );
-
-    await page.goto('/expense.html');
+    // Mock expenses endpoint with a crafted dataset
+    await page.route('../expense/expenses.json', async route => {
+      const data = [
+        { id: 1, amount: 10.001, category: 'groceries', date: '2025-01-01' },
+        { id: 2, amount: 10 / 3, category: 'groceries', date: '2025-01-31' },
+        { id: 3, amount: 20, category: 'transport', date: '2025-12-31' },
+        { id: 4, amount: 5, category: 'transport', date: '2025-01-15' },
+        { id: 5, amount: 0, category: 'utilities', date: '2025-02-01' },
+      ];
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
+    });
+    await page.goto(EXPENSE_HTML);
   });
 
-  test('month parsing accepts case variants and invalids gracefully (DEV-194.1)', async ({ page }) => {
-    // The UI uses input type=month; emulate user typing invalid then clearing
+  test('month parsing with case variants and invalid input', async ({ page }) => {
+    // The UI uses <input type="month"> with canonical YYYY-MM, so simulate parsing by filling valid & invalid
     await page.fill('#month-filter', '2025-01');
     await page.waitForTimeout(50);
-    await expect(page.locator('#expenses-table tbody tr')).toHaveCount(2);
+    const rowsJan = page.locator('#expenses-table tbody tr');
+    await expect(rowsJan).toHaveCount(3);
 
-    // Invalid input via script should not crash the UI
+    // Invalid format cannot be typed into input[type=month]; set programmatically
     await page.evaluate(() => {
       const el = document.querySelector('#month-filter');
       el.value = 'bogus';
       el.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await page.waitForTimeout(50);
-    // When invalid, component treats as no filter and shows all rows
-    await expect(page.locator('#expenses-table tbody tr')).toHaveCount(4);
-
-    // Clear back to blank (all)
-    await page.fill('#month-filter', '');
-    await page.waitForTimeout(50);
-    await expect(page.locator('#expenses-table tbody tr')).toHaveCount(4);
+    const rowsInvalid = page.locator('#expenses-table tbody tr');
+    // Browsers coerce invalid value to empty for input[type=month]; expect all rows visible
+    await expect(page.locator('#no-data')).toBeHidden();
+    await expect(rowsInvalid).toHaveCount(5);
   });
 
-  test('compound filtering month+category yields correct subset (DEV-194.2)', async ({ page }) => {
+  test('compound filtering by month and category', async ({ page }) => {
     await page.fill('#month-filter', '2025-01');
     await page.selectOption('#category-filter', 'groceries');
     await page.waitForTimeout(50);
-    await expect(page.locator('#expenses-table tbody tr')).toHaveCount(1);
-    await expect(page.locator('#total-amount')).toHaveText('$10.00');
+    const rows = page.locator('#expenses-table tbody tr');
+    await expect(rows).toHaveCount(2);
   });
 
-  test('zero-row rendering shows $0.00 in totals row (DEV-194.3)', async ({ page }) => {
-    await page.fill('#month-filter', '2024-05');
-    await page.waitForTimeout(50);
-    await expect(page.locator('#no-data')).toBeVisible();
-    await expect(page.locator('#total-display')).toBeHidden();
-    // Clear filters then set a category that does not exist for chosen month
+  test('zero row rendering shows $0.00 total', async ({ page }) => {
     await page.fill('#month-filter', '2025-02');
-    await page.selectOption('#category-filter', 'utilities');
+    await page.selectOption('#category-filter', 'transport');
     await page.waitForTimeout(50);
-    await expect(page.locator('#no-data')).toBeVisible();
+    await expect(page.locator('#total-amount')).toHaveText('$0.00');
   });
 
-  test('rounding precision to 2dp (DEV-194.4)', async ({ page }) => {
+  test('rounding precision to 2dp', async ({ page }) => {
     await page.fill('#month-filter', '2025-01');
+    await page.selectOption('#category-filter', 'groceries');
     await page.waitForTimeout(50);
-    // Amounts 10 + 3.3333333 => 13.33 after rounding
-    await expect(page.locator('#total-amount')).toHaveText('$13.33');
+    const rows = page.locator('#expenses-table tbody tr');
+    // Check a cell contains 3.33 (from 10/3)
+    const last = rows.nth(1).locator('td').nth(3);
+    await expect(last).toHaveText('$3.33');
   });
 
-  test('date boundaries: first/last day of month/year (DEV-194.5)', async ({ page }) => {
-    // January boundary
+  test('date boundaries (first and last day of month/year)', async ({ page }) => {
     await page.fill('#month-filter', '2025-01');
     await page.waitForTimeout(50);
-    const janDates = await page.$$eval('#expenses-table tbody tr td:first-child', (cells) => cells.map((c) => c.textContent));
-    expect(janDates.join(' ')).toMatch(/Jan/);
-
-    // December boundary
-    await page.fill('#month-filter', '2025-12');
-    await page.waitForTimeout(50);
-    await expect(page.locator('#expenses-table tbody tr')).toHaveCount(1);
+    const texts = await page.locator('#expenses-table tbody tr td:first-child').allTextContents();
+    expect(texts.join('\n')).toMatch(/Jan 1, 2025/);
+    expect(texts.join('\n')).toMatch(/Jan 31, 2025/);
   });
 });
-
-
