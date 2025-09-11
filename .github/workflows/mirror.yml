@@ -119,8 +119,8 @@ jobs:
           cat >"${ASKPASS_SCRIPT}" <<'EOF'
           #!/usr/bin/env bash
           case "$1" in
-            *'Username for'* ) echo "x-access-token" ;;
-            *'Password for'* ) echo "${GIT_TOKEN}" ;;
+            *Username\ for* ) echo "x-access-token" ;;
+            *Password\ for* ) echo "${GIT_TOKEN}" ;;
             * ) echo ;;
           esac
           EOF
