@@ -46,6 +46,7 @@ npm run dev
 - CI posts a coverage summary for the frontend to the PR job summary and comments.
 - The full HTML coverage report is bundled in the "Review Packet" artifact from CI runs. Download the artifact from a run of the Review Packet workflow and open the coverage report inside (e.g., `frontend/coverage/lcov-report/index.html`).
 - Raw summary JSON path in CI: `frontend/coverage/coverage-summary.json`.
+- Coverage artifact (CI): `<insert CI artifact link here>`
 
 Local HTML report for the frontend:
 
