@@ -114,22 +114,11 @@ jobs:
           set -euo pipefail
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
-          # Last-resort: use askpass script to supply credentials non-interactively
+          # Use uppercase AUTHORIZATION extraheader (like actions/checkout) for push
+          AUTH_B64="$(printf 'x-access-token:%s' "${PAT_CLEAN}" | base64 -w 0)"
           git config --global --unset-all credential.helper || true
-          ASKPASS_SCRIPT="$RUNNER_TEMP/git-askpass.sh"
-          cat >"${ASKPASS_SCRIPT}" <<'EOF'
-          #!/usr/bin/env bash
-          case "$1" in
-            *Username\ for* ) echo "x-access-token" ;;
-            *Password\ for* ) echo "${GIT_TOKEN}" ;;
-            * ) echo ;;
-          esac
-          EOF
-          chmod 700 "${ASKPASS_SCRIPT}"
-          export GIT_TOKEN="${PAT_CLEAN}"
-          export GIT_ASKPASS="${ASKPASS_SCRIPT}"
-          export GIT_TERMINAL_PROMPT=1
+          export GIT_TERMINAL_PROMPT=0
+          export GIT_ASKPASS=:
           git -c credential.helper= \
-              -c core.askPass="${ASKPASS_SCRIPT}" \
-              -c credential.interactive=never \
+              -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_B64}" \
               push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
