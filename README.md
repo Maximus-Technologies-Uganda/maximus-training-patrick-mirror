@@ -31,7 +31,7 @@ npm run test:run -- --coverage
 
 Deployed via GitHub Pages from `frontend/dist` on `main`.
 
-- Live site: https://<your-org>.github.io/Training/
+- Live site: https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/
 
 Local development server:
 
@@ -44,8 +44,8 @@ npm run dev
 ## Coverage Index
 
 - CI posts a coverage summary for the frontend to the PR job summary and comments.
+- The full HTML coverage report is bundled in the "Review Packet" artifact from CI runs. Download the artifact from a run of the Review Packet workflow and open the coverage report inside (e.g., `frontend/coverage/lcov-report/index.html`).
 - Raw summary JSON path in CI: `frontend/coverage/coverage-summary.json`.
-- Coverage artifact (CI): `<insert CI artifact link here>`
 
 Local HTML report for the frontend:
 
