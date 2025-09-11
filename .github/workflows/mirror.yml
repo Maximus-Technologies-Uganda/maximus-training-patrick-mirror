@@ -120,12 +120,23 @@ jobs:
           git fetch --prune origin
           PAT_CLEAN="$(printf '%s' "${MIRROR_PAT}" | tr -d '\r\n')"
           USER_PART="${MIRROR_USERNAME:-x-access-token}"
-          AUTH_B64="$(printf '%s:%s' "${USER_PART}" "${PAT_CLEAN}" | base64 -w 0)"
           git config --global --unset-all credential.helper || true
-          export GIT_TERMINAL_PROMPT=0
-          export GIT_ASKPASS=:
-          # Push using Basic Authorization header scoped to github.com
+          # Use askpass to provide username and PAT non-interactively
+          ASKPASS_SCRIPT="$RUNNER_TEMP/git-askpass.sh"
+          cat >"${ASKPASS_SCRIPT}" <<'EOF'
+          #!/usr/bin/env bash
+          case "$1" in
+            *Username\ for* ) echo "${GIT_USER}" ;;
+            *Password\ for* ) echo "${GIT_TOKEN}" ;;
+            * ) echo ;;
+          esac
+          EOF
+          chmod 700 "${ASKPASS_SCRIPT}"
+          export GIT_USER="${USER_PART}"
+          export GIT_TOKEN="${PAT_CLEAN}"
+          export GIT_ASKPASS="${ASKPASS_SCRIPT}"
+          export GIT_TERMINAL_PROMPT=1
           git -c credential.helper= \
+              -c core.askPass="${ASKPASS_SCRIPT}" \
               -c credential.interactive=never \
-              -c http.https://github.com/.extraheader="AUTHORIZATION: basic ${AUTH_B64}" \
               push --prune --mirror "https://github.com/${MIRROR_REPO_SLUG}.git"
