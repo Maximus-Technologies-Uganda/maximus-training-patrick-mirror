@@ -6,7 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests',
-  testMatch: /(?:todo|stopwatch)\.spec\.js/,
+  // Run all specs in the tests folder
+  testMatch: /.*\.spec\.js/,
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

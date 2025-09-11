@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
-import path from 'path';
-
-const EXPENSE_HTML_PATH = path.join(process.cwd(), 'frontend/expense.html');
+// Use dev server baseURL from Playwright config
 
 test.describe('Expense Tracker Frontend - Smoke Tests', () => {
     test.beforeEach(async ({ page }) => {
@@ -46,7 +44,7 @@ test.describe('Expense Tracker Frontend - Smoke Tests', () => {
             });
         });
 
-        await page.goto(`file://${EXPENSE_HTML_PATH}`);
+        await page.goto('/expense.html');
         // Wait for the page to load and JavaScript to execute
         await page.waitForTimeout(100);
     });
