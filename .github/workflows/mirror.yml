@@ -118,7 +118,7 @@ jobs:
           git config --global --unset-all credential.helper || true
           export GIT_TERMINAL_PROMPT=0
           CRED_FILE="$RUNNER_TEMP/git-credentials"
-          printf 'https://x-access-token:%s@github.com\n' "${PAT_CLEAN}" > "${CRED_FILE}"
+          printf 'https://x-access-token:%s@github.com/%s.git\n' "${PAT_CLEAN}" "${MIRROR_REPO_SLUG}" > "${CRED_FILE}"
           git config --global credential.helper "store --file=${CRED_FILE}"
           git -c credential.useHttpPath=true \
               -c credential.interactive=never \
