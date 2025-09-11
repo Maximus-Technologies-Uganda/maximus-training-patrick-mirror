@@ -52,9 +52,7 @@ name: Deploy Frontend to GitHub Pages
 on:
   push:
     branches: [ main, feature/** ]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/pages.yml'
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -98,6 +96,7 @@ jobs:
           path: frontend/dist
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -108,4 +107,4 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          preview: ${{ github.ref != 'refs/heads/main' }}
+          preview: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
