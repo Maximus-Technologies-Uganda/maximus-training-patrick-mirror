@@ -35,12 +35,13 @@ Deployed via GitHub Pages from `frontend/dist` on `main`.
 
 ## Deployment & Quality
 
-- Live deployment: [INSERT_LIVE_PAGES_URL]
+- Live deployment: https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/
 - UI preview:
 
-  [![Application UI](docs/assets/screenshot-app.png)]([INSERT_LIVE_PAGES_URL])
+  [![Application UI](docs/assets/screenshot-app.png)](https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/)
 
-- Latest coverage report: [INSERT_COVERAGE_REPORT_URL]
+- Latest coverage report: [frontend/coverage/lcov-report/index.html](frontend/coverage/lcov-report/index.html)
+- Coverage summary: [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](frontend/coverage/lcov-report/index.html)
 
 Local development server:
 
@@ -52,10 +53,11 @@ npm run dev
 
 ## Coverage Index
 
+- Open the frontend HTML coverage index directly: [frontend/coverage/lcov-report/index.html](frontend/coverage/lcov-report/index.html)
 - CI posts a coverage summary for the frontend to the PR job summary and comments.
 - The full HTML coverage report is bundled in the "Review Packet" artifact from CI runs. Download the artifact from a run of the Review Packet workflow and open the coverage report inside (e.g., `frontend/coverage/lcov-report/index.html`).
 - Raw summary JSON path in CI: `frontend/coverage/coverage-summary.json`.
-- Coverage artifact (CI): `<insert CI artifact link here>`
+- Coverage artifact (CI): See Actions artifacts named "review-packet".
 
 Local HTML report for the frontend:
 

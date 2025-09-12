@@ -1,0 +1,52 @@
+name: Binary Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  guard-large-binaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout PR HEAD
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect new/changed large binaries (>2MB)
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_ref="${{ github.event.pull_request.base.sha }}"
+          head_ref="${{ github.event.pull_request.head.sha }}"
+          echo "Comparing $base_ref...$head_ref"
+          # Find added or modified files in the PR
+          git diff --name-status "$base_ref" "$head_ref" | awk '$1 ~ /^(A|M)$/ {print $2}' > changed.txt
+          if [ ! -s changed.txt ]; then
+            echo "No changed files"
+            exit 0
+          fi
+
+          fail=false
+          while IFS= read -r file; do
+            # Skip text-y extensions and known safe paths quickly
+            case "$file" in
+              *.md|*.txt|*.js|*.ts|*.json|*.yml|*.yaml|*.html|*.css|*.svg) continue;;
+            esac
+            if [ -f "$file" ]; then
+              size_bytes=$(wc -c < "$file" | tr -d ' ')
+              if [ "$size_bytes" -gt $((2*1024*1024)) ]; then
+                echo "Found large file (>2MB): $file ($size_bytes bytes)" >&2
+                fail=true
+              fi
+            fi
+          done < changed.txt
+
+          if [ "$fail" = true ]; then
+            echo "\n❌ Large binary files detected (>2MB). Please remove or use Git LFS." >&2
+            exit 1
+          fi
+          echo "✅ No large binaries introduced in this PR."
+
+
