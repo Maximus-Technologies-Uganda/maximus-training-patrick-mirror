@@ -23,4 +23,12 @@ test.describe('A11y smoke - primary pages', () => {
     await expect(page.locator('#category-filter')).toBeVisible();
     await expect(page.locator('#clear-filters')).toBeVisible();
   });
+
+  test('stopwatch: controls are labeled and operable', async ({ page }) => {
+    await page.goto('/stopwatch.html');
+    await expect(page.locator('#timer-display')).toHaveAttribute('aria-live', 'polite');
+    await expect(page.getByRole('button', { name: 'Start' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reset' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Export to CSV' })).toBeVisible();
+  });
 });
