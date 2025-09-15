@@ -19,6 +19,35 @@ npm ci
 npm test
 ```
 
+### Spec Kit (Specify) integration
+
+Slash commands are available via your AI assistant (Cursor/Copilot) using the prompts in `.github/prompts`.
+
+Non-interactive CLI setup (Windows/PowerShell):
+
+```powershell
+# one-time: ensure uv is available
+python -m pip install --user uv
+
+# run Specify CLI (examples)
+python -m uv tool run --from git+https://github.com/github/spec-kit.git specify init --here --ai cursor --script ps --ignore-agent-tools --no-git
+
+# create or update a spec in Cursor/Copilot chat
+/specify Build a todo filtering feature by status and text search
+
+# generate an implementation plan
+/plan Use React state + URL params; add tests and docs
+
+# generate tasks from artifacts
+/tasks Generate dependency-ordered tasks for the above plan
+```
+
+Relevant files and scripts:
+
+- `.github/prompts/specify.prompt.md`, `plan.prompt.md`, `tasks.prompt.md`
+- `.specify/templates/*.md` (templates used by prompts)
+- `.specify/scripts/powershell/*.ps1` (helper scripts invoked by prompts)
+
 Frontend (unit tests with coverage):
 
 ```bash
