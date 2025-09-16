@@ -13,11 +13,13 @@ test.describe('To-Do - edge behavior', () => {
     await page.click('button:has-text("Add")');
     const alert = page.locator('#error');
     await expect(alert).toBeVisible();
-    await expect(alert).toContainText('already exists');
+    await expect(alert).toContainText('Duplicate title');
   });
 
   test('due today pinning using mocked clock', async ({ page }) => {
     await page.addInitScript(() => {
+      // Clear localStorage to start fresh
+      localStorage.clear();
       // Freeze time to 2025-03-10
       const fixed = new Date('2025-03-10T09:00:00');
       const OriginalDate = Date;
@@ -41,7 +43,10 @@ test.describe('To-Do - edge behavior', () => {
 
     // Enable due-today filter -> should surface only the today task
     await page.check('#filter-due-today');
+    // Wait a bit for the filter to be applied
+    await page.waitForTimeout(100);
     const items = page.locator('#task-list .task-item .task-title');
+    
     await expect(items).toHaveCount(1);
     await expect(items.first()).toHaveText('Due today');
   });

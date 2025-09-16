@@ -56,11 +56,26 @@ npm ci
 npm run test:run -- --coverage
 ```
 
-## Live Preview
+## Live Demo
 
-Deployed via GitHub Pages from `frontend/dist` on `main`.
+🚀 **Try the To-Do Mini Project live**: [https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/todo.html](https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/todo.html)
 
-- Live site: https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/
+Features:
+- Add, toggle, and delete tasks
+- Search and filter by due date and priority
+- Export tasks to CSV
+- Persistent storage with LocalStorage
+- Full accessibility support (WCAG AA)
+
+## Test Coverage
+
+📊 **Coverage Report**: [frontend/coverage/lcov-report/index.html](frontend/coverage/lcov-report/index.html)
+
+- **Core modules**: ≥55% statement coverage required
+- **UI modules**: ≥40% statement coverage required
+- **Overall coverage**: [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](frontend/coverage/lcov-report/index.html)
+
+Coverage is enforced via CI with detailed per-file reporting and automated gates.
 
 ## Deployment & Quality
 
@@ -68,9 +83,6 @@ Deployed via GitHub Pages from `frontend/dist` on `main`.
 - UI preview:
 
   [![Application UI](docs/assets/screenshot-app.png)](https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/)
-
-- Latest coverage report: [frontend/coverage/lcov-report/index.html](frontend/coverage/lcov-report/index.html)
-- Coverage summary: [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](frontend/coverage/lcov-report/index.html)
 
 Local development server:
 
