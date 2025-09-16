@@ -1,0 +1,51 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - heading "To-Do" [level=1] [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e4]: Title
+    - textbox "Task title" [ref=e5]
+    - generic [ref=e6]: Due date
+    - textbox "Due date" [ref=e7]: 2025-03-10
+    - generic [ref=e8]:
+      - checkbox "High priority" [ref=e9]
+      - text: High priority
+    - button "Add" [ref=e10]
+  - group "Filters" [ref=e11]:
+    - generic [ref=e12]: Filters
+    - generic [ref=e13]: Search
+    - searchbox "Search tasks" [ref=e14]
+    - generic [ref=e15]: Due
+    - combobox "Filter by due type" [ref=e16]:
+      - option "All" [selected]
+      - option "Today"
+      - option "Tomorrow"
+      - option "Overdue"
+    - generic [ref=e17]: Priority
+    - combobox "Filter by priority" [ref=e18]:
+      - option "All"
+      - option "Low"
+      - option "Medium" [selected]
+      - option "High"
+    - button "Export CSV" [ref=e19] [cursor=pointer]
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - checkbox "Due today" [checked] [active] [ref=e22]
+        - text: Due today
+      - generic [ref=e23]:
+        - checkbox "High priority" [ref=e24]
+        - text: High priority
+  - heading "Tasks" [level=2] [ref=e25]
+  - list [ref=e26]:
+    - listitem [ref=e27]:
+      - checkbox "Toggle Due tomorrow" [ref=e28]
+      - generic [ref=e29]: Due tomorrow
+      - generic [ref=e30]: (2025-03-11 · Med)
+      - button "Delete Due tomorrow" [ref=e31]: Delete
+    - listitem [ref=e32]:
+      - checkbox "Toggle Due today" [ref=e33]
+      - generic [ref=e34]: Due today
+      - generic [ref=e35]: (2025-03-10 · Med)
+      - button "Delete Due today" [ref=e36]: Delete
+```

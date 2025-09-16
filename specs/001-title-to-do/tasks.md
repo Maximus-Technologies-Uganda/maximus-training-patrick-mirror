@@ -32,23 +32,23 @@
 ---
 
 ## D1 — Spec merged, environment and gates ready
-- [ ] T001 Create feature branch `feat/001-title-to-do` from `main` (repo root)
-- [ ] T002 Ensure plan/spec linked in PR description; reference `specs/001-title-to-do/spec.md` (PR template)
-- [ ] T003 Update agent context for Cursor: `.specify/scripts/powershell/update-agent-context.ps1 -AgentType cursor` (repo root)
-- [ ] T004 Configure coverage thresholds to meet spec: 55% statements for `frontend/src/todo-core*.{js,ts}`; ≥40% for all UI modules  
+- [x] T001 Create feature branch `feat/001-title-to-do` from `main` (repo root)
+- [x] T002 Ensure plan/spec linked in PR description; reference `specs/001-title-to-do/spec.md` (PR template)
+- [x] T003 Update agent context for Cursor: `.specify/scripts/powershell/update-agent-context.ps1 -AgentType cursor` (repo root)
+- [x] T004 Configure coverage thresholds to meet spec: 55% statements for `frontend/src/todo-core*.{js,ts}`; ≥40% for all UI modules  
       - File: `frontend/vitest.config.js`  
       - Add/adjust per-file gating (or add script override) so `todo-core*` requires 55% statements
-- [ ] T005 Add coverage gate script (pin single JSON path, echo totals):  
+- [x] T005 Add coverage gate script (pin single JSON path, echo totals):  
       - Create `frontend/scripts/coverage-gate.js` to read `frontend/coverage/coverage-summary.json`, assert:  
         - `src/todo-core*.{js,ts}` statements ≥ 55  
         - all `src/**/*.js` UI files statements ≥ 40  
       - Add npm scripts in `frontend/package.json`:  
         - `"test:coverage": "vitest run --coverage"`  
         - `"coverage:gate": "node scripts/coverage-gate.js"`
-- [ ] T006 Prepare new core module and storage adapter filenames (no implementation yet):  
+- [x] T006 Prepare new core module and storage adapter filenames (no implementation yet):  
       - Create empty exports with TODOs to force failing tests first  
       - Files: `frontend/src/todo-core-v2.js`, `frontend/src/todo-storage.js`
-- [ ] T007 [P] Ensure Playwright base URL works for `/todo.html` (verify `playwright.config.js` and Vite dev `vite.config.js`)  
+- [x] T007 [P] Ensure Playwright base URL works for `/todo.html` (verify `playwright.config.js` and Vite dev `vite.config.js`)  
       - Paths: `frontend/playwright.config.js`, `frontend/vite.config.js`
 
 ## D2 — Core (pure) TDD: write failing unit tests, then implement
