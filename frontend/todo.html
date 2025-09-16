@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>To-Do App</title>
     <style>
-      body {
+      body 
         font-family:
           system-ui,
           -apple-system,
@@ -63,6 +63,7 @@
     <h1>To-Do</h1>
 
     <form id="add-task-form" class="row" autocomplete="off">
+      <label for="task-title">Title</label>
       <input
         id="task-title"
         name="title"
@@ -71,27 +72,49 @@
         required
         aria-label="Task title"
       />
+      <label for="task-due">Due date</label>
       <input
         id="task-due"
         name="due"
         type="date"
-        required
         aria-label="Due date"
       />
       <label>
         <input id="task-priority" name="priority" type="checkbox" /> High
         priority
       </label>
-      <button type="submit">Add</button>
+      <button type="submit" id="add-task-btn">Add</button>
     </form>
     <div id="error" role="alert" aria-live="polite"></div>
 
     <fieldset style="margin-top: 1rem">
       <legend>Filters</legend>
-      <label> <input id="filter-due-today" type="checkbox" /> Due today </label>
-      <label>
-        <input id="filter-high-priority" type="checkbox" /> High priority
-      </label>
+      <label for="search-text">Search</label>
+      <input id="search-text" type="search" placeholder="Search..." aria-label="Search tasks" />
+
+      <label for="filter-due-type">Due</label>
+      <select id="filter-due-type" aria-label="Filter by due type">
+        <option value="all">All</option>
+        <option value="today">Today</option>
+        <option value="tomorrow">Tomorrow</option>
+        <option value="overdue">Overdue</option>
+      </select>
+
+      <label for="filter-priority">Priority</label>
+      <select id="filter-priority" aria-label="Filter by priority">
+        <option value="all">All</option>
+        <option value="low">Low</option>
+        <option value="med" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+
+      <a id="export-csv" href="#" download="todos.csv" role="button">Export CSV</a>
+
+      <!-- Legacy toggles kept for backward-compat Playwright smoke test -->
+      <div class="row" style="margin-top: 0.5rem">
+        <label> <input id="filter-due-today" type="checkbox" /> Due today </label>
+        <label> <input id="filter-high-priority" type="checkbox" /> High priority </label>
+      </div>
     </fieldset>
 
     <h2 style="margin-top: 1rem">Tasks</h2>

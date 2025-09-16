@@ -93,4 +93,41 @@ describe('todo-core', () => {
       expect(both).toEqual(['B']);
     });
   });
+
+  describe('ui/dom smoke for coverage', () => {
+    it('initializes todo-dom and adds one item', () => {
+      // Inline mount minimal UI used by todo-dom
+      document.body.innerHTML = `
+        <form id="add-task-form">
+          <input id="task-title" />
+          <input id="task-due" type="date" />
+          <input id="task-priority" type="checkbox" />
+        </form>
+        <div id="error" role="alert" aria-live="polite"></div>
+        <input id="search-text" />
+        <select id="filter-due-type"><option value="all">All</option></select>
+        <select id="filter-priority"><option value="all">All</option></select>
+        <a id="export-csv"></a>
+        <ul id="task-list"></ul>`;
+
+      const { initTodoDom } = require('../src/todo-dom.js');
+      const api = initTodoDom(document, {
+        idgen: () => 't-1',
+        clock: () => new Date('2025-01-02T00:00:00'),
+      });
+      expect(typeof api.render).toBe('function');
+
+      const input = document.querySelector('#task-title');
+      input.value = 'Smoke task';
+      const form = document.querySelector('#add-task-form');
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      expect(document.querySelectorAll('li.task-item').length).toBe(1);
+    });
+
+    it('todo-storage load/save works in jsdom', () => {
+      const { save, load } = require('../src/todo-storage.js');
+      save('hello', 'kv-test');
+      expect(load('kv-test')).toBe('hello');
+    });
+  });
 });
