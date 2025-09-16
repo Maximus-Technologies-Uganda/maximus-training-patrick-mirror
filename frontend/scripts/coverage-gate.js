@@ -66,19 +66,38 @@ async function main() {
     results.sort((a, b) => a.file.localeCompare(b.file));
 
     const totalPct = summary?.total?.statements?.pct ?? 0;
-    console.log(`Coverage summary (statements): total ${totalPct.toFixed(2)}%`);
-    for (const r of results) {
-      const status = r.passed ? 'PASS' : 'FAIL';
-      console.log(`${status} ${r.file}: ${r.pct.toFixed(2)}% >= ${r.threshold}%`);
-    }
-
+    const totalStatements = summary?.total?.statements?.total ?? 0;
+    const totalCovered = summary?.total?.statements?.covered ?? 0;
+    
+    console.log('\n📊 COVERAGE SUMMARY');
+    console.log('═'.repeat(50));
+    console.log(`📈 Overall: ${totalCovered}/${totalStatements} statements (${totalPct.toFixed(2)}%)`);
+    console.log('─'.repeat(50));
+    
+    // Group results by status for better readability
+    const passed = results.filter(r => r.passed);
     const failed = results.filter(r => !r.passed);
+    
+    if (passed.length > 0) {
+      console.log('✅ PASSING FILES:');
+      for (const r of passed) {
+        console.log(`   ✓ ${r.file.padEnd(30)} ${r.pct.toFixed(1).padStart(6)}% (≥${r.threshold}%)`);
+      }
+    }
+    
     if (failed.length > 0) {
-      console.error(`\nCoverage gate failed for ${failed.length} file(s). Thresholds: core >=55%, others >=40%.`);
+      console.log('\n❌ FAILING FILES:');
+      for (const r of failed) {
+        console.log(`   ✗ ${r.file.padEnd(30)} ${r.pct.toFixed(1).padStart(6)}% (≥${r.threshold}%)`);
+      }
+      console.log('\n🚫 COVERAGE GATE FAILED');
+      console.log(`   ${failed.length} file(s) below threshold`);
+      console.log('   Requirements: core modules ≥55%, others ≥40%');
       process.exit(1);
     }
 
-    console.log('\nCoverage gate passed.');
+    console.log('\n🎉 COVERAGE GATE PASSED');
+    console.log(`   All ${results.length} files meet requirements`);
   } catch (err) {
     console.error('Error while enforcing coverage gate:', err?.message || err);
     process.exit(1);

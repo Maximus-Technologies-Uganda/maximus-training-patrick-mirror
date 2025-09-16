@@ -1,206 +1,163 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { load, save } from '../src/todo-storage.js';
 
 describe('todo-storage', () => {
+  let mockLocalStorage;
+
+  beforeEach(() => {
+    // Reset localStorage mock
+    mockLocalStorage = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    };
+
+    // Mock window.localStorage
+    Object.defineProperty(window, 'localStorage', {
+      value: mockLocalStorage,
+      writable: true,
+    });
+  });
+
   describe('load', () => {
-    it('should return null when window is undefined', () => {
+    it('should return null when localStorage is not available', () => {
+      // Mock window as undefined (Node.js environment)
       const originalWindow = global.window;
-      global.window = undefined;
+      delete global.window;
+
       const result = load();
       expect(result).toBeNull();
+
+      // Restore window
       global.window = originalWindow;
     });
 
-    it('should return null when localStorage is not available', () => {
+    it('should return null when localStorage is not supported', () => {
+      // Mock window without localStorage
       const originalWindow = global.window;
       global.window = {};
+
       const result = load();
       expect(result).toBeNull();
+
+      // Restore window
       global.window = originalWindow;
     });
 
-    it('should return null when localStorage.getItem throws an error', () => {
-      const originalWindow = global.window;
-      global.window = {
-        localStorage: {
-          getItem: () => {
-            throw new Error('Storage error');
-          },
-        },
-      };
+    it('should return null when getItem returns null', () => {
+      mockLocalStorage.getItem.mockReturnValue(null);
+
       const result = load();
       expect(result).toBeNull();
-      global.window = originalWindow;
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('todos');
     });
 
-    it('should return null when value is null', () => {
-      const originalWindow = global.window;
-      global.window = {
-        localStorage: {
-          getItem: () => null,
-        },
-      };
+    it('should return null when getItem returns undefined', () => {
+      mockLocalStorage.getItem.mockReturnValue(undefined);
+
       const result = load();
       expect(result).toBeNull();
-      global.window = originalWindow;
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('todos');
     });
 
-    it('should return null when value is undefined', () => {
-      const originalWindow = global.window;
-      global.window = {
-        localStorage: {
-          getItem: () => undefined,
-        },
-      };
-      const result = load();
-      expect(result).toBeNull();
-      global.window = originalWindow;
-    });
+    it('should return string value when getItem returns valid data', () => {
+      const testData = '{"todos": []}';
+      mockLocalStorage.getItem.mockReturnValue(testData);
 
-    it('should return string value when data exists', () => {
-      const originalWindow = global.window;
-      const testData = 'test data';
-      global.window = {
-        localStorage: {
-          getItem: () => testData,
-        },
-      };
       const result = load();
       expect(result).toBe(testData);
-      global.window = originalWindow;
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('todos');
     });
 
-    it('should use default key "todos"', () => {
-      const originalWindow = global.window;
-      let calledWithKey = null;
-      global.window = {
-        localStorage: {
-          getItem: (key) => {
-            calledWithKey = key;
-            return 'data';
-          },
-        },
-      };
-      load();
-      expect(calledWithKey).toBe('todos');
-      global.window = originalWindow;
+    it('should return null when getItem throws an error', () => {
+      mockLocalStorage.getItem.mockImplementation(() => {
+        throw new Error('Storage error');
+      });
+
+      const result = load();
+      expect(result).toBeNull();
     });
 
-    it('should use provided key', () => {
-      const originalWindow = global.window;
-      let calledWithKey = null;
-      global.window = {
-        localStorage: {
-          getItem: (key) => {
-            calledWithKey = key;
-            return 'data';
-          },
-        },
-      };
-      load('custom-key');
-      expect(calledWithKey).toBe('custom-key');
-      global.window = originalWindow;
+    it('should use custom key when provided', () => {
+      const testData = '{"custom": []}';
+      mockLocalStorage.getItem.mockReturnValue(testData);
+
+      const result = load('custom-key');
+      expect(result).toBe(testData);
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('custom-key');
+    });
+
+    it('should convert non-string values to string', () => {
+      mockLocalStorage.getItem.mockReturnValue(123);
+
+      const result = load();
+      expect(result).toBe('123');
     });
   });
 
   describe('save', () => {
     it('should do nothing when window is undefined', () => {
       const originalWindow = global.window;
-      global.window = undefined;
-      expect(() => save('data')).not.toThrow();
+      delete global.window;
+
+      save('test data');
+      // Should not throw
+
+      // Restore window
       global.window = originalWindow;
     });
 
-    it('should do nothing when localStorage is not available', () => {
+    it('should do nothing when localStorage is not supported', () => {
       const originalWindow = global.window;
       global.window = {};
-      expect(() => save('data')).not.toThrow();
-      global.window = originalWindow;
-    });
 
-    it('should ignore errors when localStorage.setItem throws', () => {
-      const originalWindow = global.window;
-      global.window = {
-        localStorage: {
-          setItem: () => {
-            throw new Error('Storage error');
-          },
-        },
-      };
-      expect(() => save('data')).not.toThrow();
-      global.window = originalWindow;
-    });
-
-    it('should save data with default key "todos"', () => {
-      const originalWindow = global.window;
-      let calledWithKey = null;
-      let calledWithValue = null;
-      global.window = {
-        localStorage: {
-          setItem: (key, value) => {
-            calledWithKey = key;
-            calledWithValue = value;
-          },
-        },
-      };
       save('test data');
-      expect(calledWithKey).toBe('todos');
-      expect(calledWithValue).toBe('test data');
+      // Should not throw
+
+      // Restore window
       global.window = originalWindow;
     });
 
-    it('should save data with provided key', () => {
-      const originalWindow = global.window;
-      let calledWithKey = null;
-      let calledWithValue = null;
-      global.window = {
-        localStorage: {
-          setItem: (key, value) => {
-            calledWithKey = key;
-            calledWithValue = value;
-          },
-        },
-      };
-      save('test data', 'custom-key');
-      expect(calledWithKey).toBe('custom-key');
-      expect(calledWithValue).toBe('test data');
-      global.window = originalWindow;
+    it('should save data to localStorage with default key', () => {
+      const testData = '{"todos": []}';
+
+      save(testData);
+
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('todos', testData);
     });
 
-    it('should convert both key and value to strings', () => {
-      const originalWindow = global.window;
-      let calledWithKey = null;
-      let calledWithValue = null;
-      global.window = {
-        localStorage: {
-          setItem: (key, value) => {
-            calledWithKey = key;
-            calledWithValue = value;
-          },
-        },
-      };
-      save(456, 123);
-      expect(calledWithKey).toBe('123');
-      expect(calledWithValue).toBe('456');
-      global.window = originalWindow;
+    it('should save data to localStorage with custom key', () => {
+      const testData = '{"custom": []}';
+
+      save(testData, 'custom-key');
+
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('custom-key', testData);
+    });
+
+    it('should convert non-string values to string', () => {
+      const testData = { todos: [] };
+
+      save(testData);
+
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('todos', '[object Object]');
+    });
+
+    it('should handle setItem errors gracefully', () => {
+      mockLocalStorage.setItem.mockImplementation(() => {
+        throw new Error('Storage quota exceeded');
+      });
+
+      // Should not throw
+      expect(() => save('test data')).not.toThrow();
     });
 
     it('should handle null and undefined values', () => {
-      const originalWindow = global.window;
-      let calledWithValue = null;
-      global.window = {
-        localStorage: {
-          setItem: (key, value) => {
-            calledWithValue = value;
-          },
-        },
-      };
       save(null);
-      expect(calledWithValue).toBe('null');
-      
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('todos', 'null');
+
       save(undefined);
-      expect(calledWithValue).toBe('undefined');
-      global.window = originalWindow;
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('todos', 'undefined');
     });
   });
 });

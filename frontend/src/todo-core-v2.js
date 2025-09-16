@@ -109,14 +109,16 @@ export function remove(state, id) {
  * - text: case/space-insensitive substring match on title
  * - dueType: today|tomorrow|overdue|all (null dues excluded unless all)
  * - priority: low|med|high|all
- * Uses system time (fake timers in tests) for date boundaries.
+ * Uses injected clock for date boundaries (or system time as fallback).
  * @param {Array} state
  * @param {{ text?: string, dueType?: 'today'|'tomorrow'|'overdue'|'all', priority?: 'low'|'med'|'high'|'all' }} query
+ * @param {{ clock?: () => Date }} deps
  */
-export function filter(state, query = {}) {
+export function filter(state, query = {}, deps = {}) {
   const { text, dueType, priority } = query;
+  const clock = deps.clock || (() => new Date());
 
-  const now = new Date();
+  const now = clock();
   const today = ymd(now);
   const tomorrowDate = new Date(now.getTime());
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
