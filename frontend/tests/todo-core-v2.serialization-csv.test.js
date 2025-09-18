@@ -14,7 +14,10 @@ function ymdLocal(d) {
 describe('todo-core-v2.serialization & CSV', () => {
   it('exportCsv() emits stable header and normalized newlines', () => {
     const state = [
-      mk('1', 'Simple', { due: new Date('2025-01-01T12:00:00'), priority: 'low' }),
+      mk('1', 'Simple', {
+        due: new Date('2025-01-01T12:00:00'),
+        priority: 'low',
+      }),
       mk('2', 'Needs, quoting "here"', {
         due: new Date('2025-01-02T06:00:00'),
         priority: 'high',
@@ -56,5 +59,3 @@ describe('todo-core-v2.serialization & CSV', () => {
     expect(out).toEqual([]);
   });
 });
-
-

@@ -15,12 +15,13 @@ test('todo-dom initializes and sets CSV link', () => {
     <a id="export-csv"></a>
     <ul id="task-list"></ul>`;
 
-  const api = initTodoDom(document, { idgen: () => 'id', clock: () => new Date('2025-01-01T00:00:00') });
+  const api = initTodoDom(document, {
+    idgen: () => 'id',
+    clock: () => new Date('2025-01-01T00:00:00'),
+  });
   expect(typeof api.render).toBe('function');
   const a = document.querySelector('#export-csv');
   expect(a).toBeTruthy();
   const href = String(a.getAttribute('href') ?? '');
   expect(href).toMatch(/^data:text\/csv/);
 });
-
- 

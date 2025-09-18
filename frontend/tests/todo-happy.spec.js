@@ -19,5 +19,3 @@ test('happy path: add → toggle → delete', async ({ page }) => {
   await item.locator('.task-delete').click();
   await expect(page.locator('li.task-item')).toHaveCount(0);
 });
-
-

@@ -13,5 +13,3 @@ describe('todo-core-v2 id generation uniqueness', () => {
     expect(seen.size).toBe(count);
   }, 30000);
 });
-
-

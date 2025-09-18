@@ -47,5 +47,3 @@ describe('todo-core-v2.toggle & remove', () => {
     expect(after).toBe(state);
   });
 });
-
-

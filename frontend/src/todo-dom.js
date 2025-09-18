@@ -1,4 +1,12 @@
-import { add, toggle, remove, filter, exportCsv, serialize, deserialize } from './todo-core-v2.js';
+import {
+  add,
+  toggle,
+  remove,
+  filter,
+  exportCsv,
+  serialize,
+  deserialize,
+} from './todo-core-v2.js';
 import { load, save } from './todo-storage.js';
 
 /**
@@ -23,9 +31,15 @@ export function initTodoDom(doc = document, deps = {}) {
   const exportLink = doc.querySelector('#export-csv');
   const list = doc.querySelector('#task-list');
   const errorBox = doc.querySelector('#error');
+  const statusBox = doc.querySelector('#status');
 
   // Defaults for DI
-  const idgen = deps.idgen || (() => (globalThis.crypto && crypto.randomUUID ? crypto.randomUUID() : `id-${Math.random().toString(36).slice(2, 9)}`));
+  const idgen =
+    deps.idgen ||
+    (() =>
+      globalThis.crypto && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `id-${Math.random().toString(36).slice(2, 9)}`);
   const clock = deps.clock || (() => new Date());
 
   // Helpers
@@ -43,7 +57,7 @@ export function initTodoDom(doc = document, deps = {}) {
   /** @type {Array} */
   let state = [];
 
-  /** @type {{ focusTodoId?: string, focusNextAfterId?: string, focusIndex?: number, focusAddField?: boolean }} */
+  /** @type {{ focusTodoId?: string, focusNextAfterId?: string, focusIndex?: number, focusAddField?: boolean, focusListContainer?: boolean }} */
   let focusIntent = {};
 
   // Load initial state from localStorage
@@ -83,15 +97,16 @@ export function initTodoDom(doc = document, deps = {}) {
     /** @type {{ text?: string, dueType?: 'today'|'tomorrow'|'overdue'|'all', priority?: 'low'|'med'|'high'|'all' }} */
     const q = {};
     if (filterText && filterText.value) q.text = filterText.value;
-    if (filterPriority && filterPriority.value) q.priority = filterPriority.value;
-    
+    if (filterPriority && filterPriority.value)
+      q.priority = filterPriority.value;
+
     // Back-compat simple toggles take priority over select elements
     if (legacyDueToday && legacyDueToday.checked) {
       q.dueType = 'today';
     } else if (filterDueType && filterDueType.value) {
       q.dueType = filterDueType.value;
     }
-    
+
     if (legacyHighPriority && legacyHighPriority.checked) {
       q.priority = 'high';
     } else if (filterPriority && filterPriority.value) {
@@ -105,7 +120,8 @@ export function initTodoDom(doc = document, deps = {}) {
     const csv = exportCsv(state);
     const href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     exportLink.setAttribute('href', href);
-    if (!exportLink.getAttribute('download')) exportLink.setAttribute('download', 'todos.csv');
+    if (!exportLink.getAttribute('download'))
+      exportLink.setAttribute('download', 'todos.csv');
   }
 
   // Track if we need to rebuild the entire DOM
@@ -113,11 +129,14 @@ export function initTodoDom(doc = document, deps = {}) {
 
   function render() {
     if (!list) return;
-    
+
+    // Ensure list container can be programmatically focused for a11y fallback
+    list.setAttribute('tabindex', '-1');
+
     // If we need a full render (state changes), rebuild everything
     if (needsFullRender) {
       list.innerHTML = '';
-      
+
       state.forEach((t, idx) => {
         const li = doc.createElement('li');
         li.className = 'task-item';
@@ -148,9 +167,13 @@ export function initTodoDom(doc = document, deps = {}) {
           // Apply current filter to update visibility
           applyFilters();
           // focus next actionable control
-          const visibleItems = Array.from(list.querySelectorAll('li.task-item:not(.hidden)'));
+          const visibleItems = Array.from(
+            list.querySelectorAll('li.task-item:not(.hidden)')
+          );
           const currentIndex = visibleItems.indexOf(li);
-          focusIntent = { focusIndex: Math.min(currentIndex + 1, visibleItems.length - 1) };
+          focusIntent = {
+            focusIndex: Math.min(currentIndex + 1, visibleItems.length - 1),
+          };
           handleFocusIntent();
         });
 
@@ -163,7 +186,9 @@ export function initTodoDom(doc = document, deps = {}) {
         meta.className = 'task-meta';
         const parts = [];
         if (t.due instanceof Date) parts.push(ymd(t.due));
-        parts.push(t.priority === 'high' ? 'High' : t.priority === 'low' ? 'Low' : 'Med');
+        parts.push(
+          t.priority === 'high' ? 'High' : t.priority === 'low' ? 'Low' : 'Med'
+        );
         meta.textContent = `(${parts.join(' · ')})`;
 
         const del = doc.createElement('button');
@@ -174,15 +199,21 @@ export function initTodoDom(doc = document, deps = {}) {
         del.textContent = 'Delete';
         del.addEventListener('click', () => {
           // compute target index for focus after delete
-          const visibleItems = Array.from(list.querySelectorAll('li.task-item:not(.hidden)'));
+          const visibleItems = Array.from(
+            list.querySelectorAll('li.task-item:not(.hidden)')
+          );
           const pos = visibleItems.indexOf(li);
           state = remove(state, t.id);
           saveState();
           li.remove(); // Remove from DOM
-          // Next item at same index if exists, else previous, else add field
-          const nextVisibleItems = Array.from(list.querySelectorAll('li.task-item:not(.hidden)'));
+          // Re-apply filters and update status after deletion
+          applyFilters();
+          // Next item at same index if exists, else previous, else list container
+          const nextVisibleItems = Array.from(
+            list.querySelectorAll('li.task-item:not(.hidden)')
+          );
           if (nextVisibleItems.length === 0) {
-            focusIntent = { focusAddField: true };
+            focusIntent = { focusListContainer: true };
           } else if (pos < nextVisibleItems.length) {
             focusIntent = { focusIndex: pos };
           } else {
@@ -197,16 +228,16 @@ export function initTodoDom(doc = document, deps = {}) {
         li.appendChild(del);
         list.appendChild(li);
       });
-      
+
       needsFullRender = false;
     }
-    
+
     // Apply current filters to show/hide items
     applyFilters();
-    
+
     // Update CSV link based on full state (not just filtered)
     updateExportCsv();
-    
+
     // Handle post-render focus intents
     handleFocusIntent();
   }
@@ -215,11 +246,11 @@ export function initTodoDom(doc = document, deps = {}) {
     if (!list) return;
     const q = currentQuery();
     const visible = filter(state, q, { clock });
-    const visibleIds = new Set(visible.map(t => String(t.id)));
-    
+    const visibleIds = new Set(visible.map((t) => String(t.id)));
+
     // Show/hide items based on filter
     const items = list.querySelectorAll('li.task-item');
-    items.forEach(li => {
+    items.forEach((li) => {
       const taskId = li.dataset.taskId;
       if (visibleIds.has(taskId)) {
         li.classList.remove('hidden');
@@ -227,15 +258,25 @@ export function initTodoDom(doc = document, deps = {}) {
         li.classList.add('hidden');
       }
     });
+
+    // Update live status for screen readers
+    if (statusBox) {
+      const count = visible.length;
+      statusBox.textContent = `${count} ${count === 1 ? 'task' : 'tasks'} showing`;
+    }
   }
 
   function handleFocusIntent() {
     if (focusIntent.focusTodoId) {
-      const el = list.querySelector(`li[data-task-id="${focusIntent.focusTodoId}"] .task-title`);
+      const el = list.querySelector(
+        `li[data-task-id="${focusIntent.focusTodoId}"] .task-title`
+      );
       if (el && el instanceof HTMLElement) el.focus();
       focusIntent = {};
     } else if (typeof focusIntent.focusIndex === 'number') {
-      const visibleItems = Array.from(list.querySelectorAll('li.task-item:not(.hidden)'));
+      const visibleItems = Array.from(
+        list.querySelectorAll('li.task-item:not(.hidden)')
+      );
       const item = visibleItems[focusIntent.focusIndex];
       if (item) {
         const target = item.querySelector('.task-toggle');
@@ -245,24 +286,34 @@ export function initTodoDom(doc = document, deps = {}) {
     } else if (focusIntent.focusAddField) {
       if (inputTitle && inputTitle instanceof HTMLElement) inputTitle.focus();
       focusIntent = {};
+    } else if (focusIntent.focusListContainer) {
+      if (list && list instanceof HTMLElement) list.focus();
+      focusIntent = {};
     }
   }
 
   function onSubmit(event) {
     event.preventDefault();
     showError('');
-    const title = inputTitle && inputTitle.value ? String(inputTitle.value) : '';
-    const due = inputDue && inputDue.value ? new Date(`${inputDue.value}T00:00:00`) : undefined;
-    const priority = inputPriorityHigh && inputPriorityHigh.checked ? 'high' : 'med';
+    const title =
+      inputTitle && inputTitle.value ? String(inputTitle.value) : '';
+    const due =
+      inputDue && inputDue.value
+        ? new Date(`${inputDue.value}T00:00:00`)
+        : undefined;
+    const priority =
+      inputPriorityHigh && inputPriorityHigh.checked ? 'high' : 'med';
     try {
-      const before = state;
-      const next = add(state, { title, ...(due ? { due } : {}), priority }, { idgen, clock });
-      const added = next.filter((t) => !before.includes(t));
+      const next = add(
+        state,
+        { title, ...(due ? { due } : {}), priority },
+        { idgen, clock }
+      );
       state = next;
       saveState();
       if (inputTitle) inputTitle.value = '';
-      // Focus the new task's title
-      if (added.length > 0) focusIntent = { focusTodoId: String(added[0].id) };
+      // After adding, return focus to the title input for quick entry
+      focusIntent = { focusAddField: true };
       needsFullRender = true; // Trigger full render for new items
       render();
     } catch (err) {

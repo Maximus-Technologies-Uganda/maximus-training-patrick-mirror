@@ -120,7 +120,9 @@ describe('todo-core', () => {
       const input = document.querySelector('#task-title');
       input.value = 'Smoke task';
       const form = document.querySelector('#add-task-form');
-      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      form.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true })
+      );
       expect(document.querySelectorAll('li.task-item').length).toBe(1);
     });
 

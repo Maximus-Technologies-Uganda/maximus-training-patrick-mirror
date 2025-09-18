@@ -47,13 +47,17 @@ describe('todo-core-v2.filter', () => {
     const onlyToday = filter(state, { dueType: 'today' }).map((t) => t.id);
     expect(onlyToday).toEqual(['t']);
 
-    const onlyTomorrow = filter(state, { dueType: 'tomorrow' }).map((t) => t.id);
+    const onlyTomorrow = filter(state, { dueType: 'tomorrow' }).map(
+      (t) => t.id
+    );
     expect(onlyTomorrow).toEqual(['tm']);
 
     const onlyOverdue = filter(state, { dueType: 'overdue' }).map((t) => t.id);
     expect(onlyOverdue).toEqual(['y']);
 
-    const all = filter(state, { dueType: 'all' }).map((t) => t.id).sort();
+    const all = filter(state, { dueType: 'all' })
+      .map((t) => t.id)
+      .sort();
     expect(all).toEqual(['n', 't', 'tm', 'y'].sort());
   });
 
@@ -66,9 +70,11 @@ describe('todo-core-v2.filter', () => {
     expect(filter(state, { priority: 'low' }).map((t) => t.id)).toEqual(['a']);
     expect(filter(state, { priority: 'med' }).map((t) => t.id)).toEqual(['b']);
     expect(filter(state, { priority: 'high' }).map((t) => t.id)).toEqual(['c']);
-    expect(filter(state, { priority: 'all' }).map((t) => t.id).sort()).toEqual(
-      ['a', 'b', 'c'].sort()
-    );
+    expect(
+      filter(state, { priority: 'all' })
+        .map((t) => t.id)
+        .sort()
+    ).toEqual(['a', 'b', 'c'].sort());
   });
 
   it('composes text + dueType + priority', () => {
@@ -104,15 +110,18 @@ describe('todo-core-v2.filter', () => {
 
     const { initTodoDom } = require('../src/todo-dom.js');
     const { save, load } = require('../src/todo-storage.js');
-    const api = initTodoDom(document, { idgen: () => 'smk', clock: () => new Date('2025-03-10T00:00:00') });
+    const api = initTodoDom(document, {
+      idgen: () => 'smk',
+      clock: () => new Date('2025-03-10T00:00:00'),
+    });
     expect(typeof api.render).toBe('function');
     document.querySelector('#task-title').value = 'X';
-    document.querySelector('#add-task-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    document
+      .querySelector('#add-task-form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     expect(document.querySelectorAll('li.task-item').length).toBe(1);
 
     save('y', 'z');
     expect(load('z')).toBe('y');
   });
 });
-
-

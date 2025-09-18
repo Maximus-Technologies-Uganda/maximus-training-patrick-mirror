@@ -5,7 +5,7 @@ describe('debug-storage', () => {
     const { load } = await import('../src/todo-storage.js');
     console.log('load function:', load);
     console.log('typeof load:', typeof load);
-    
+
     const originalWindow = global.window;
     global.window = undefined;
     const result = load();

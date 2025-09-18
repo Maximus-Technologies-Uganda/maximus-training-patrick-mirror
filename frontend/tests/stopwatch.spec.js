@@ -12,9 +12,13 @@ test('stopwatch export matches golden CSV', async ({ page }) => {
   ]);
 
   const tmp = await download.path();
-  const content = (await fs.promises.readFile(tmp, 'utf-8')).replace(/\r\n/g, '\n');
-  const golden = (await fs.promises.readFile(GOLDEN, 'utf-8')).replace(/\r\n/g, '\n');
+  const content = (await fs.promises.readFile(tmp, 'utf-8')).replace(
+    /\r\n/g,
+    '\n'
+  );
+  const golden = (await fs.promises.readFile(GOLDEN, 'utf-8')).replace(
+    /\r\n/g,
+    '\n'
+  );
   expect(content.trim()).toBe(golden.trim());
 });
-
-

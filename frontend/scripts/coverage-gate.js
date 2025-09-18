@@ -36,7 +36,11 @@ async function main() {
     // Pin to frontend/coverage/coverage-summary.json regardless of cwd
     const scriptDir = path.dirname(fileURLToPath(import.meta.url));
     const frontendRoot = path.resolve(scriptDir, '..');
-    const summaryPath = path.resolve(frontendRoot, 'coverage', 'coverage-summary.json');
+    const summaryPath = path.resolve(
+      frontendRoot,
+      'coverage',
+      'coverage-summary.json'
+    );
     const raw = await readFile(summaryPath, 'utf-8');
     const summary = JSON.parse(raw);
 
@@ -45,14 +49,17 @@ async function main() {
     if (stepSummaryPath && summary?.total) {
       const totals = summary.total;
       const metrics = ['statements', 'branches', 'functions', 'lines'];
-      const rows = metrics.map((name) => {
-        const metric = totals?.[name] || {};
-        const covered = metric.covered ?? 0;
-        const total = metric.total ?? 0;
-        const pct = typeof metric.pct === 'number' ? metric.pct.toFixed(2) : '0.00';
-        const label = name.charAt(0).toUpperCase() + name.slice(1);
-        return `| ${label} | ${covered} | ${total} | ${pct}% |`;
-      }).join('\n');
+      const rows = metrics
+        .map((name) => {
+          const metric = totals?.[name] || {};
+          const covered = metric.covered ?? 0;
+          const total = metric.total ?? 0;
+          const pct =
+            typeof metric.pct === 'number' ? metric.pct.toFixed(2) : '0.00';
+          const label = name.charAt(0).toUpperCase() + name.slice(1);
+          return `| ${label} | ${covered} | ${total} | ${pct}% |`;
+        })
+        .join('\n');
 
       const markdown = [
         '### Coverage Summary',
@@ -78,7 +85,9 @@ async function main() {
       const relativePath = toPosix(path.relative(process.cwd(), absolutePath));
 
       if (!isSrcFile(relativePath) || !isJsOrTs(relativePath)) continue;
-      const ignoredByName = isExplicitlyIgnored(relativePath) || isExplicitlyIgnored(toPosix(absoluteOrRelative));
+      const ignoredByName =
+        isExplicitlyIgnored(relativePath) ||
+        isExplicitlyIgnored(toPosix(absoluteOrRelative));
       if (ignoredByName) {
         // Skip DOM glue and storage adapter entirely from per-file gating
         continue;
@@ -89,7 +98,12 @@ async function main() {
       if (statementsTotal === 0) continue; // skip files with no statements counted
       let threshold = isCoreModule(relativePath) ? 55 : 40;
       const passed = statementsPct >= threshold;
-      results.push({ file: relativePath, pct: statementsPct, threshold, passed });
+      results.push({
+        file: relativePath,
+        pct: statementsPct,
+        threshold,
+        passed,
+      });
     }
 
     // Sort for stable output
@@ -98,27 +112,33 @@ async function main() {
     const totalPct = summary?.total?.statements?.pct ?? 0;
     const totalStatements = summary?.total?.statements?.total ?? 0;
     const totalCovered = summary?.total?.statements?.covered ?? 0;
-    
+
     console.log('\n📊 COVERAGE SUMMARY');
     console.log('═'.repeat(50));
-    console.log(`📈 Overall: ${totalCovered}/${totalStatements} statements (${totalPct.toFixed(2)}%)`);
+    console.log(
+      `📈 Overall: ${totalCovered}/${totalStatements} statements (${totalPct.toFixed(2)}%)`
+    );
     console.log('─'.repeat(50));
-    
+
     // Group results by status for better readability
-    const passed = results.filter(r => r.passed);
-    const failed = results.filter(r => !r.passed);
-    
+    const passed = results.filter((r) => r.passed);
+    const failed = results.filter((r) => !r.passed);
+
     if (passed.length > 0) {
       console.log('✅ PASSING FILES:');
       for (const r of passed) {
-        console.log(`   ✓ ${r.file.padEnd(30)} ${r.pct.toFixed(1).padStart(6)}% (≥${r.threshold}%)`);
+        console.log(
+          `   ✓ ${r.file.padEnd(30)} ${r.pct.toFixed(1).padStart(6)}% (≥${r.threshold}%)`
+        );
       }
     }
-    
+
     if (failed.length > 0) {
       console.log('\n❌ FAILING FILES:');
       for (const r of failed) {
-        console.log(`   ✗ ${r.file.padEnd(30)} ${r.pct.toFixed(1).padStart(6)}% (≥${r.threshold}%)`);
+        console.log(
+          `   ✗ ${r.file.padEnd(30)} ${r.pct.toFixed(1).padStart(6)}% (≥${r.threshold}%)`
+        );
       }
       console.log('\n🚫 COVERAGE GATE FAILED');
       console.log(`   ${failed.length} file(s) below threshold`);
@@ -135,5 +155,3 @@ async function main() {
 }
 
 await main();
-
-

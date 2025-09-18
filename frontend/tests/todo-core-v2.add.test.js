@@ -68,17 +68,27 @@ describe('todo-core-v2.add', () => {
   });
 
   it('rejects duplicate titles (normalized, case/space-insensitive)', () => {
-    const deps = { idgen: () => '1', clock: () => new Date('2025-01-01T00:00:00') };
+    const deps = {
+      idgen: () => '1',
+      clock: () => new Date('2025-01-01T00:00:00'),
+    };
     const s1 = add([], { title: '  Buy    MILK  ' }, deps);
     expect(() => add(s1, { title: 'buy milk' }, deps)).toThrow(/duplicate/i);
   });
 
   it('does not mutate existing items; returns a new array', () => {
-    const deps = { idgen: () => '1', clock: () => new Date('2025-01-01T00:00:00') };
-    const base = [{ id: 'a', title: 'A', due: null, priority: 'med', done: false }];
+    const deps = {
+      idgen: () => '1',
+      clock: () => new Date('2025-01-01T00:00:00'),
+    };
+    const base = [
+      { id: 'a', title: 'A', due: null, priority: 'med', done: false },
+    ];
     const next = add(base, { title: 'B' }, deps);
     expect(next).not.toBe(base);
-    expect(base).toEqual([{ id: 'a', title: 'A', due: null, priority: 'med', done: false }]);
+    expect(base).toEqual([
+      { id: 'a', title: 'A', due: null, priority: 'med', done: false },
+    ]);
     expect(next).toHaveLength(2);
   });
 
@@ -96,12 +106,17 @@ describe('todo-core-v2.add', () => {
       <a id="export-csv"></a>
       <ul id="task-list"></ul>`;
 
-    const api = initTodoDom(document, { idgen: () => 'cov-1', clock: () => new Date('2025-02-03T00:00:00') });
+    const api = initTodoDom(document, {
+      idgen: () => 'cov-1',
+      clock: () => new Date('2025-02-03T00:00:00'),
+    });
     expect(typeof api.render).toBe('function');
 
     const input = document.querySelector('#task-title');
     input.value = 'Coverage item';
-    document.querySelector('#add-task-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    document
+      .querySelector('#add-task-form')
+      .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     expect(document.querySelectorAll('li.task-item').length).toBe(1);
 
     // storage smoke
@@ -109,5 +124,3 @@ describe('todo-core-v2.add', () => {
     expect(load('gate-smoke')).toBe('x');
   });
 });
-
-

@@ -20,8 +20,8 @@ test('due-today filter works', async ({ page }) => {
 
   // Apply filter
   await page.locator('#filter-due-type').selectOption('today');
-  await expect(page.locator('li.task-item')).toHaveCount(1);
-  await expect(page.locator('li.task-item').first()).toContainText('Today task');
+  await expect(page.locator('li.task-item:not(.hidden)')).toHaveCount(1);
+  await expect(page.locator('li.task-item:not(.hidden)').first()).toContainText(
+    'Today task'
+  );
 });
-
-

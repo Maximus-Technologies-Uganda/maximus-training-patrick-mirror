@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>To-Do App</title>
     <style>
-      body 
+      body
         font-family:
           system-ui,
           -apple-system,
@@ -47,19 +47,19 @@
         border-radius: 4px;
         transition: background-color 0.2s;
       }
-      
+
       li.task-item:hover {
         background-color: #f5f5f5;
       }
-      
+
       li.task-item.hidden {
         display: none;
       }
-      
+
       .task-checkbox {
         margin-right: 0.5rem;
       }
-      
+
       .task-delete {
         background-color: #d32f2f;
         color: white;
@@ -69,7 +69,7 @@
         font-size: 0.875rem;
         margin-left: auto;
       }
-      
+
       .task-delete:hover {
         background-color: #b71c1c;
         border-color: #b71c1c;
@@ -92,7 +92,7 @@
         color: #333;
         font-weight: 600;
       }
-      
+
       /* Button and form element styling for better contrast and accessibility */
       button {
         background-color: #1976d2;
@@ -104,30 +104,30 @@
         cursor: pointer;
         transition: background-color 0.2s, border-color 0.2s;
       }
-      
+
       button:hover {
         background-color: #1565c0;
         border-color: #1565c0;
       }
-      
+
       button:focus {
         outline: 2px solid #1976d2;
         outline-offset: 2px;
       }
-      
+
       input[type="text"], input[type="date"], input[type="search"], select {
         border: 1px solid #ccc;
         padding: 0.5rem;
         border-radius: 4px;
         font-size: 1rem;
       }
-      
+
       input:focus, select:focus {
         outline: 2px solid #1976d2;
         outline-offset: 2px;
         border-color: #1976d2;
       }
-      
+
       a[role="button"] {
         background-color: #f5f5f5;
         color: #1976d2;
@@ -139,17 +139,17 @@
         font-weight: 500;
         transition: background-color 0.2s, border-color 0.2s;
       }
-      
+
       a[role="button"]:hover {
         background-color: #e0e0e0;
         border-color: #1976d2;
       }
-      
+
       a[role="button"]:focus {
         outline: 2px solid #1976d2;
         outline-offset: 2px;
       }
-      
+
       label {
         font-weight: 500;
         color: #333;
@@ -170,12 +170,7 @@
         aria-label="Task title"
       />
       <label for="task-due">Due date</label>
-      <input
-        id="task-due"
-        name="due"
-        type="date"
-        aria-label="Due date"
-      />
+      <input id="task-due" name="due" type="date" aria-label="Due date" />
       <label>
         <input id="task-priority" name="priority" type="checkbox" /> High
         priority
@@ -187,7 +182,12 @@
     <fieldset style="margin-top: 1rem">
       <legend>Filters</legend>
       <label for="search-text">Search</label>
-      <input id="search-text" type="search" placeholder="Search..." aria-label="Search tasks" />
+      <input
+        id="search-text"
+        type="search"
+        placeholder="Search..."
+        aria-label="Search tasks"
+      />
 
       <label for="filter-due-type">Due</label>
       <select id="filter-due-type" aria-label="Filter by due type">
@@ -205,16 +205,29 @@
         <option value="high">High</option>
       </select>
 
-      <a id="export-csv" href="#" download="todos.csv" role="button">Export CSV</a>
+      <a id="export-csv" href="#" download="todos.csv" role="button"
+        >Export CSV</a
+      >
 
       <!-- Legacy toggles kept for backward-compat Playwright smoke test -->
       <div class="row" style="margin-top: 0.5rem">
-        <label> <input id="filter-due-today" type="checkbox" /> Due today </label>
-        <label> <input id="filter-high-priority" type="checkbox" /> High priority </label>
+        <label>
+          <input id="filter-due-today" type="checkbox" /> Due today
+        </label>
+        <label>
+          <input id="filter-high-priority" type="checkbox" /> High priority
+        </label>
       </div>
     </fieldset>
 
     <h2 style="margin-top: 1rem">Tasks</h2>
+    <div
+      id="status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      style="margin: 0.5rem 0; min-height: 1.25rem"
+    ></div>
     <ul id="task-list" aria-live="polite"></ul>
 
     <script type="module" src="./todo.js"></script>

@@ -85,7 +85,8 @@ export function initExpenseDom(doc = document) {
   }
 
   function updateTotalDisplay(total) {
-    if (elements.totalAmount) elements.totalAmount.textContent = formatAmount(total);
+    if (elements.totalAmount)
+      elements.totalAmount.textContent = formatAmount(total);
     if (elements.totalDisplay) {
       elements.totalDisplay.style.display = total > 0 ? 'flex' : 'none';
     }
@@ -115,7 +116,9 @@ export function initExpenseDom(doc = document) {
 
   function applyFilters() {
     const month = elements.monthFilter ? elements.monthFilter.value : '';
-    const category = elements.categoryFilter ? elements.categoryFilter.value : '';
+    const category = elements.categoryFilter
+      ? elements.categoryFilter.value
+      : '';
     filteredExpenses = filterExpenses(allExpenses, month, category);
     const total = calculateTotal(filteredExpenses);
     renderExpensesTable(filteredExpenses);
@@ -132,22 +135,29 @@ export function initExpenseDom(doc = document) {
     try {
       showLoading();
       const response = await fetch('../expense/expenses.json');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
       allExpenses = await response.json();
       populateCategoryFilter(getUniqueCategories(allExpenses));
       applyFilters();
       hideLoading();
     } catch (err) {
       hideLoading();
-      const message = err && typeof err.message === 'string' ? err.message : 'Failed to load expense data.';
+      const message =
+        err && typeof err.message === 'string'
+          ? err.message
+          : 'Failed to load expense data.';
       showError(message);
     }
   }
 
   // Events
-  elements.monthFilter && elements.monthFilter.addEventListener('change', applyFilters);
-  elements.categoryFilter && elements.categoryFilter.addEventListener('change', applyFilters);
-  elements.clearFiltersBtn && elements.clearFiltersBtn.addEventListener('click', clearFilters);
+  elements.monthFilter &&
+    elements.monthFilter.addEventListener('change', applyFilters);
+  elements.categoryFilter &&
+    elements.categoryFilter.addEventListener('change', applyFilters);
+  elements.clearFiltersBtn &&
+    elements.clearFiltersBtn.addEventListener('click', clearFilters);
 
   // Kick off
   initData();
@@ -162,5 +172,3 @@ export function initExpenseDom(doc = document) {
 }
 
 export default { initExpenseDom };
-
-

@@ -39,9 +39,14 @@ function ymdInZone(d, timeZone) {
       day: '2-digit',
     });
     const parts = fmt.formatToParts(d);
-    const year = parts.find((p) => p.type === 'year')?.value || String(d.getFullYear());
-    const month = parts.find((p) => p.type === 'month')?.value || String(d.getMonth() + 1).padStart(2, '0');
-    const day = parts.find((p) => p.type === 'day')?.value || String(d.getDate()).padStart(2, '0');
+    const year =
+      parts.find((p) => p.type === 'year')?.value || String(d.getFullYear());
+    const month =
+      parts.find((p) => p.type === 'month')?.value ||
+      String(d.getMonth() + 1).padStart(2, '0');
+    const day =
+      parts.find((p) => p.type === 'day')?.value ||
+      String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch (_err) {
     // If the environment doesn't support the timeZone, fall back to local
@@ -234,7 +239,11 @@ export function deserialize(raw) {
     let data = null;
     if (Array.isArray(parsed)) {
       data = parsed;
-    } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.data)) {
+    } else if (
+      parsed &&
+      typeof parsed === 'object' &&
+      Array.isArray(parsed.data)
+    ) {
       const schemaVersion = parsed.schemaVersion;
       if (schemaVersion !== 1) {
         // Future-proofing: unknown versions fallback to reading known shape if possible
@@ -254,4 +263,3 @@ export function deserialize(raw) {
     return [];
   }
 }
-

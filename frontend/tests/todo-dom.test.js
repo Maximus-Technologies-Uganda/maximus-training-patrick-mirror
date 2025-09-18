@@ -87,12 +87,12 @@ describe('todo-dom', () => {
     it('should initialize with custom dependencies', () => {
       const customIdgen = vi.fn(() => 'custom-id');
       const customClock = vi.fn(() => new Date('2023-01-01'));
-      
+
       const result = initTodoDom(mockDocument, {
         idgen: customIdgen,
         clock: customClock,
       });
-      
+
       expect(result).toHaveProperty('getState');
       expect(result).toHaveProperty('render');
     });
@@ -100,7 +100,7 @@ describe('todo-dom', () => {
     it('should set default due date to today', () => {
       const mockClock = vi.fn(() => new Date('2023-01-15'));
       initTodoDom(mockDocument, { clock: mockClock });
-      
+
       expect(mockElements.inputDue.value).toBe('2023-01-15');
     });
 
@@ -108,7 +108,7 @@ describe('todo-dom', () => {
       mockElements.inputDue.value = '2023-12-25';
       const mockClock = vi.fn(() => new Date('2023-01-15'));
       initTodoDom(mockDocument, { clock: mockClock });
-      
+
       expect(mockElements.inputDue.value).toBe('2023-12-25');
     });
   });
@@ -123,10 +123,10 @@ describe('todo-dom', () => {
     it('should add a new task on form submission', () => {
       mockElements.inputTitle.value = 'Test task';
       mockElements.inputDue.value = '2023-01-15';
-      
+
       const submitEvent = new Event('submit');
       mockElements.form.dispatchEvent(submitEvent);
-      
+
       const state = result.getState();
       expect(state.tasks).toHaveLength(1);
       expect(state.tasks[0].title).toBe('Test task');
@@ -136,29 +136,29 @@ describe('todo-dom', () => {
     it('should add high priority task when checkbox is checked', () => {
       mockElements.inputTitle.value = 'High priority task';
       mockElements.inputPriorityHigh.checked = true;
-      
+
       const submitEvent = new Event('submit');
       mockElements.form.dispatchEvent(submitEvent);
-      
+
       const state = result.getState();
       expect(state.tasks[0].highPriority).toBe(true);
     });
 
     it('should clear title input after adding task', () => {
       mockElements.inputTitle.value = 'Test task';
-      
+
       const submitEvent = new Event('submit');
       mockElements.form.dispatchEvent(submitEvent);
-      
+
       expect(mockElements.inputTitle.value).toBe('');
     });
 
     it('should handle empty title gracefully', () => {
       mockElements.inputTitle.value = '';
-      
+
       const submitEvent = new Event('submit');
       mockElements.form.dispatchEvent(submitEvent);
-      
+
       const state = result.getState();
       expect(state.tasks).toHaveLength(1);
       expect(state.tasks[0].title).toBe('');
@@ -180,10 +180,12 @@ describe('todo-dom', () => {
     it('should render tasks in the list', () => {
       const taskItems = mockElements.list.querySelectorAll('li.task-item');
       expect(taskItems).toHaveLength(1);
-      
+
       const taskItem = taskItems[0];
       expect(taskItem.dataset.taskId).toBe('test-uuid-123');
-      expect(taskItem.querySelector('.task-title').textContent).toBe('Test task');
+      expect(taskItem.querySelector('.task-title').textContent).toBe(
+        'Test task'
+      );
     });
 
     it('should render task metadata', () => {
@@ -198,9 +200,9 @@ describe('todo-dom', () => {
       mockElements.inputPriorityHigh.checked = true;
       const submitEvent = new Event('submit');
       mockElements.form.dispatchEvent(submitEvent);
-      
+
       const metaElements = mockElements.list.querySelectorAll('.task-meta');
-      const highPriorityMeta = Array.from(metaElements).find(el => 
+      const highPriorityMeta = Array.from(metaElements).find((el) =>
         el.textContent.includes('High')
       );
       expect(highPriorityMeta).toBeTruthy();
@@ -221,10 +223,10 @@ describe('todo-dom', () => {
     it('should toggle task completion', () => {
       const checkbox = mockElements.list.querySelector('.task-toggle');
       expect(checkbox.checked).toBe(false);
-      
+
       checkbox.checked = true;
       checkbox.dispatchEvent(new Event('change'));
-      
+
       const state = result.getState();
       expect(state.tasks[0].completed).toBe(true);
     });
@@ -232,7 +234,7 @@ describe('todo-dom', () => {
     it('should delete task when delete button is clicked', () => {
       const deleteButton = mockElements.list.querySelector('.task-delete');
       deleteButton.click();
-      
+
       const state = result.getState();
       expect(state.tasks).toHaveLength(0);
     });
@@ -240,7 +242,7 @@ describe('todo-dom', () => {
     it('should update task list after deletion', () => {
       const deleteButton = mockElements.list.querySelector('.task-delete');
       deleteButton.click();
-      
+
       const taskItems = mockElements.list.querySelectorAll('li.task-item');
       expect(taskItems).toHaveLength(0);
     });
@@ -255,7 +257,7 @@ describe('todo-dom', () => {
       mockElements.inputTitle.value = 'Task 1';
       mockElements.inputDue.value = '2023-01-15';
       mockElements.form.dispatchEvent(new Event('submit'));
-      
+
       mockElements.inputTitle.value = 'Task 2';
       mockElements.inputDue.value = '2023-01-16';
       mockElements.form.dispatchEvent(new Event('submit'));
@@ -264,19 +266,21 @@ describe('todo-dom', () => {
     it('should filter tasks by text', () => {
       mockElements.filterText.value = 'Task 1';
       mockElements.filterText.dispatchEvent(new Event('input'));
-      
+
       const taskItems = mockElements.list.querySelectorAll('li.task-item');
       expect(taskItems).toHaveLength(1);
-      expect(taskItems[0].querySelector('.task-title').textContent).toBe('Task 1');
+      expect(taskItems[0].querySelector('.task-title').textContent).toBe(
+        'Task 1'
+      );
     });
 
     it('should show all tasks when filter is cleared', () => {
       mockElements.filterText.value = 'Task 1';
       mockElements.filterText.dispatchEvent(new Event('input'));
-      
+
       mockElements.filterText.value = '';
       mockElements.filterText.dispatchEvent(new Event('input'));
-      
+
       const taskItems = mockElements.list.querySelectorAll('li.task-item');
       expect(taskItems).toHaveLength(2);
     });
@@ -294,8 +298,12 @@ describe('todo-dom', () => {
     });
 
     it('should update export link with CSV data', () => {
-      expect(mockElements.exportLink.getAttribute('href')).toContain('data:text/csv');
-      expect(mockElements.exportLink.getAttribute('download')).toBe('todos.csv');
+      expect(mockElements.exportLink.getAttribute('href')).toContain(
+        'data:text/csv'
+      );
+      expect(mockElements.exportLink.getAttribute('download')).toBe(
+        'todos.csv'
+      );
     });
 
     it('should include task data in CSV', () => {
@@ -316,26 +324,26 @@ describe('todo-dom', () => {
       // Mock add function to throw error
       const originalConsoleError = console.error;
       console.error = vi.fn();
-      
+
       // This should trigger an error in the add function
       mockElements.inputTitle.value = 'Test task';
       const submitEvent = new Event('submit');
       mockElements.form.dispatchEvent(submitEvent);
-      
+
       // The error should be handled gracefully
       expect(mockElements.errorBox.style.display).toBe('none');
-      
+
       console.error = originalConsoleError;
     });
 
     it('should clear error message on successful submission', () => {
       mockElements.errorBox.style.display = 'block';
       mockElements.errorBox.textContent = 'Previous error';
-      
+
       mockElements.inputTitle.value = 'Test task';
       const submitEvent = new Event('submit');
       mockElements.form.dispatchEvent(submitEvent);
-      
+
       expect(mockElements.errorBox.style.display).toBe('none');
     });
   });
@@ -363,7 +371,7 @@ describe('todo-dom', () => {
     it('should set proper IDs on interactive elements', () => {
       const checkbox = mockElements.list.querySelector('.task-toggle');
       const deleteButton = mockElements.list.querySelector('.task-delete');
-      
+
       expect(checkbox.id).toBe('todo-toggle-test-uuid-123');
       expect(deleteButton.id).toBe('todo-delete-test-uuid-123');
     });
