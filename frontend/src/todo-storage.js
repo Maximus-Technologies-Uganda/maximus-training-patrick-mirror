@@ -17,6 +17,14 @@ export function save(raw, key = 'todos') {
     if (typeof window === 'undefined' || !window.localStorage) return;
     window.localStorage.setItem(String(key), String(raw));
   } catch (_err) {
-    // ignore storage errors
+    // Signal storage issues to the application layer without throwing
+    try {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        const evt = new CustomEvent('todo:storage-error', {
+          detail: { message: 'Storage quota exceeded or unavailable' },
+        });
+        window.dispatchEvent(evt);
+      }
+    } catch (_ignored) {}
   }
 }

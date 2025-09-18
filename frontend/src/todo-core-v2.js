@@ -190,23 +190,23 @@ export function filter(state, query = {}, deps = {}) {
  * @param {Array} state
  */
 export function exportCsv(state) {
-  const header = ['id', 'title', 'due', 'priority', 'done'];
-  const lines = [header.join(',')];
+  // Keep header stable and normalized to \n newlines; prefix with UTF-8 BOM for Excel compatibility
+  const lines = [['id', 'title', 'due', 'priority', 'done'].join(',')];
   for (const t of state) {
     const row = [
-      String(t.id),
+      csvEscape(String(t.id)),
       csvEscape(String(t.title ?? '')),
-      t.due instanceof Date ? ymd(t.due) : '',
-      String(t.priority ?? 'med'),
-      String(Boolean(t.done)),
+      csvEscape(t.due instanceof Date ? ymd(t.due) : ''),
+      csvEscape(String(t.priority ?? 'med')),
+      csvEscape(String(Boolean(t.done))),
     ];
     lines.push(row.join(','));
   }
-  return lines.join('\n');
+  return '\uFEFF' + lines.join('\n');
 }
 
 function csvEscape(s) {
-  const needs = /[",\n]/.test(s);
+  const needs = /[",\n\r]/.test(s);
   if (!needs) return s;
   return '"' + s.replace(/"/g, '""') + '"';
 }
