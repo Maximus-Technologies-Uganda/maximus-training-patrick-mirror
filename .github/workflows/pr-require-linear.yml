@@ -1,0 +1,35 @@
+# .github/workflows/pr-require-linear.yml
+name: Require Linear on PRs
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  check-linear:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || "";
+            const lines = body.split(/\r?\n/);
+            const labelRe = /^\s*[-*]?\s*(?:\*\*|__)?\s*Linear\s*:(?:\*\*|__)?\s*(.+)$/i;
+            const keyRe = /\b[A-Z]{2,}-\d+\b/g;
+            const urlRe = /https?:\/\/(?:www\.)?linear\.app\/\S+/i;
+
+            let ok = false;
+            for (const line of lines) {
+              const m = line.match(labelRe);
+              if (!m) continue;
+              const rest = m[1];
+              if (urlRe.test(rest) || keyRe.test(rest)) {
+                ok = true;
+                break;
+              }
+            }
+
+            if (!ok) {
+              core.setFailed("PR body must include a 'Linear:' line with a full URL or at least one bare key (e.g., DEV-123). Examples: 'Linear: DEV-123' or 'Linear: Closes DEV-123, DEV-124'.");
+            } else {
+              core.notice('Linear reference found.');
+            }
