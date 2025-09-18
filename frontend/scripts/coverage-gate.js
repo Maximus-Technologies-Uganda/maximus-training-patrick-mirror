@@ -4,9 +4,10 @@
 // - src/todo-core*.{js,ts}: statements >= 55
 // - other src/**/*.js|ts: statements >= 40
 
-import { readFile } from 'node:fs/promises';
+import { readFile, appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 function toPosix(filePath) {
   return filePath.replace(/\\/g, '/');
@@ -32,9 +33,38 @@ function isExplicitlyIgnored(posixPath) {
 
 async function main() {
   try {
-    const summaryPath = path.resolve(process.cwd(), 'coverage', 'coverage-summary.json');
+    // Pin to frontend/coverage/coverage-summary.json regardless of cwd
+    const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+    const frontendRoot = path.resolve(scriptDir, '..');
+    const summaryPath = path.resolve(frontendRoot, 'coverage', 'coverage-summary.json');
     const raw = await readFile(summaryPath, 'utf-8');
     const summary = JSON.parse(raw);
+
+    // If running in GitHub Actions, append a job summary table with total coverage
+    const stepSummaryPath = process.env.GITHUB_STEP_SUMMARY;
+    if (stepSummaryPath && summary?.total) {
+      const totals = summary.total;
+      const metrics = ['statements', 'branches', 'functions', 'lines'];
+      const rows = metrics.map((name) => {
+        const metric = totals?.[name] || {};
+        const covered = metric.covered ?? 0;
+        const total = metric.total ?? 0;
+        const pct = typeof metric.pct === 'number' ? metric.pct.toFixed(2) : '0.00';
+        const label = name.charAt(0).toUpperCase() + name.slice(1);
+        return `| ${label} | ${covered} | ${total} | ${pct}% |`;
+      }).join('\n');
+
+      const markdown = [
+        '### Coverage Summary',
+        '',
+        '| Metric | Covered | Total | % |',
+        '| :-- | --: | --: | --: |',
+        rows,
+        '',
+      ].join('\n');
+
+      await appendFile(stepSummaryPath, `${markdown}\n`, 'utf-8');
+    }
 
     const results = [];
     for (const [key, metrics] of Object.entries(summary)) {

@@ -58,7 +58,9 @@ npm run test:run -- --coverage
 
 ## Live Demo
 
-🚀 **Try the To-Do Mini Project live**: [https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/todo.html](https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/todo.html)
+🚀 **Try the To-Do Mini Project live**: [https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/frontend/todo.html](https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/frontend/todo.html)
+
+![Screenshot](./docs/screenshot.png)
 
 Features:
 - Add, toggle, and delete tasks
@@ -69,7 +71,7 @@ Features:
 
 ## Test Coverage
 
-📊 **Coverage Report**: [frontend/coverage/lcov-report/index.html](frontend/coverage/lcov-report/index.html)
+📊 **Coverage Report**: [./frontend/coverage/lcov-report/index.html](./frontend/coverage/lcov-report/index.html)
 
 - **Core modules**: ≥55% statement coverage required
 - **UI modules**: ≥40% statement coverage required
