@@ -12,5 +12,8 @@ test('CSV export link exists with filename', async ({ page }) => {
   await page.getByLabel('Title').fill('CSV item');
   await page.getByRole('button', { name: 'Add' }).click();
   const href = await page.locator('#export-csv').getAttribute('href');
+  const decoded = decodeURIComponent(href.split(',')[1] || '');
   expect(href).toMatch(/^data:text\/csv/);
+  // Ensure BOM prefix for Excel compatibility
+  expect(decoded.charCodeAt(0)).toBe(0xfeff);
 });

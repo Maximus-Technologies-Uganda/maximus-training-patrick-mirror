@@ -27,11 +27,13 @@ describe('todo-core-v2.serialization & CSV', () => {
     ];
     const csv = exportCsv(state);
     const lines = csv.split('\n');
-    expect(lines[0]).toBe('id,title,due,priority,done');
+    expect(lines[0].replace(/^\uFEFF/, '')).toBe('id,title,due,priority,done');
     expect(lines).toHaveLength(1 + state.length);
     expect(csv).not.toContain('\r\n');
     // spot-check quoting of commas/quotes
     expect(csv).toContain('"Needs, quoting ""here"""');
+    // BOM should be present for Excel compatibility
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
   });
 
   it('serialize() outputs versioned envelope and deserialize() round-trips', () => {

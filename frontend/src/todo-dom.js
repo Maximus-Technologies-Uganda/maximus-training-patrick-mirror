@@ -65,14 +65,24 @@ export function initTodoDom(doc = document, deps = {}) {
     try {
       const raw = load();
       if (raw) {
+        // Detect corrupted JSON to show a user-facing message
+        try {
+          JSON.parse(String(raw));
+        } catch (_e) {
+          state = [];
+          showError('Corrupted data detected. Starting with empty list.');
+          return;
+        }
         const loaded = deserialize(raw);
         if (Array.isArray(loaded)) {
           state = loaded;
         } else {
+          state = [];
           showError('Corrupted data detected. Starting with empty list.');
         }
       }
-    } catch (err) {
+    } catch (_err) {
+      state = [];
       showError('Failed to load saved data. Starting with empty list.');
     }
   }
@@ -82,8 +92,9 @@ export function initTodoDom(doc = document, deps = {}) {
     try {
       const serialized = serialize(state);
       save(serialized);
-    } catch (err) {
-      // Silently ignore save errors to avoid disrupting user experience
+    } catch (_err) {
+      // Show a non-blocking message if storage is unavailable or quota exceeded
+      showError('Unable to save changes (storage may be full).');
     }
   }
 
@@ -92,6 +103,15 @@ export function initTodoDom(doc = document, deps = {}) {
     errorBox.textContent = message || '';
     errorBox.style.display = message ? 'block' : 'none';
   }
+
+  // Listen for storage quota errors and surface a user-facing message
+  try {
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('todo:storage-error', () => {
+        showError('Unable to save changes (storage may be full).');
+      });
+    }
+  } catch (_e) {}
 
   function currentQuery() {
     /** @type {{ text?: string, dueType?: 'today'|'tomorrow'|'overdue'|'all', priority?: 'low'|'med'|'high'|'all' }} */
@@ -127,6 +147,96 @@ export function initTodoDom(doc = document, deps = {}) {
   // Track if we need to rebuild the entire DOM
   let needsFullRender = true;
 
+  function createListItem(t) {
+    const li = doc.createElement('li');
+    li.className = 'task-item';
+    if (t.done) li.classList.add('completed');
+    li.dataset.taskId = String(t.id);
+    li.dataset.priority = t.priority || 'med';
+    li.dataset.done = String(t.done);
+    li.dataset.due = t.due instanceof Date ? ymd(t.due) : '';
+    li.dataset.title = String(t.title || '').toLowerCase();
+
+    const cb = doc.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = Boolean(t.done);
+    cb.className = 'task-toggle';
+    cb.id = `todo-toggle-${t.id}`;
+    cb.setAttribute('aria-label', `Toggle ${t.title}`);
+    cb.addEventListener('change', () => {
+      state = toggle(state, t.id);
+      saveState();
+      const updated = state.find((x) => x.id === t.id);
+      const nowDone = Boolean(updated?.done);
+      li.dataset.done = String(nowDone);
+      if (nowDone) {
+        li.classList.add('completed');
+      } else {
+        li.classList.remove('completed');
+      }
+      // Apply current filter to update visibility
+      applyFilters();
+      // focus next actionable control
+      const visibleItems = Array.from(
+        list.querySelectorAll('li.task-item:not(.hidden)')
+      );
+      const currentIndex = visibleItems.indexOf(li);
+      focusIntent = {
+        focusIndex: Math.min(currentIndex + 1, visibleItems.length - 1),
+      };
+      handleFocusIntent();
+    });
+
+    const title = doc.createElement('span');
+    title.className = 'task-title';
+    title.textContent = t.title;
+    title.tabIndex = -1; // programmatic focus target
+
+    const meta = doc.createElement('span');
+    meta.className = 'task-meta';
+    const parts = [];
+    if (t.due instanceof Date) parts.push(ymd(t.due));
+    parts.push(t.priority === 'high' ? 'High' : t.priority === 'low' ? 'Low' : 'Med');
+    meta.textContent = `(${parts.join(' · ')})`;
+
+    const del = doc.createElement('button');
+    del.type = 'button';
+    del.id = `todo-delete-${t.id}`;
+    del.className = 'task-delete';
+    del.setAttribute('aria-label', `Delete ${t.title}`);
+    del.textContent = 'Delete';
+    del.addEventListener('click', () => {
+      // compute target index for focus after delete
+      const visibleItems = Array.from(
+        list.querySelectorAll('li.task-item:not(.hidden)')
+      );
+      const pos = visibleItems.indexOf(li);
+      state = remove(state, t.id);
+      saveState();
+      li.remove(); // Remove from DOM
+      // Re-apply filters and update status after deletion
+      applyFilters();
+      // Next item at same index if exists, else previous, else list container
+      const nextVisibleItems = Array.from(
+        list.querySelectorAll('li.task-item:not(.hidden)')
+      );
+      if (nextVisibleItems.length === 0) {
+        focusIntent = { focusListContainer: true };
+      } else if (pos < nextVisibleItems.length) {
+        focusIntent = { focusIndex: pos };
+      } else {
+        focusIntent = { focusIndex: nextVisibleItems.length - 1 };
+      }
+      handleFocusIntent();
+    });
+
+    li.appendChild(cb);
+    li.appendChild(title);
+    li.appendChild(meta);
+    li.appendChild(del);
+    return li;
+  }
+
   function render() {
     if (!list) return;
 
@@ -136,99 +246,7 @@ export function initTodoDom(doc = document, deps = {}) {
     // If we need a full render (state changes), rebuild everything
     if (needsFullRender) {
       list.innerHTML = '';
-
-      state.forEach((t, idx) => {
-        const li = doc.createElement('li');
-        li.className = 'task-item';
-        if (t.done) li.classList.add('completed');
-        li.dataset.taskId = String(t.id);
-        li.dataset.priority = t.priority || 'med';
-        li.dataset.done = String(t.done);
-        li.dataset.due = t.due instanceof Date ? ymd(t.due) : '';
-        li.dataset.title = t.title.toLowerCase();
-
-        const cb = doc.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = Boolean(t.done);
-        cb.className = 'task-toggle';
-        cb.id = `todo-toggle-${t.id}`;
-        cb.setAttribute('aria-label', `Toggle ${t.title}`);
-        cb.addEventListener('change', () => {
-          const beforeId = t.id;
-          state = toggle(state, t.id);
-          saveState();
-          // Update the data attribute
-          li.dataset.done = String(!t.done);
-          if (t.done) {
-            li.classList.remove('completed');
-          } else {
-            li.classList.add('completed');
-          }
-          // Apply current filter to update visibility
-          applyFilters();
-          // focus next actionable control
-          const visibleItems = Array.from(
-            list.querySelectorAll('li.task-item:not(.hidden)')
-          );
-          const currentIndex = visibleItems.indexOf(li);
-          focusIntent = {
-            focusIndex: Math.min(currentIndex + 1, visibleItems.length - 1),
-          };
-          handleFocusIntent();
-        });
-
-        const title = doc.createElement('span');
-        title.className = 'task-title';
-        title.textContent = t.title;
-        title.tabIndex = -1; // programmatic focus target
-
-        const meta = doc.createElement('span');
-        meta.className = 'task-meta';
-        const parts = [];
-        if (t.due instanceof Date) parts.push(ymd(t.due));
-        parts.push(
-          t.priority === 'high' ? 'High' : t.priority === 'low' ? 'Low' : 'Med'
-        );
-        meta.textContent = `(${parts.join(' · ')})`;
-
-        const del = doc.createElement('button');
-        del.type = 'button';
-        del.id = `todo-delete-${t.id}`;
-        del.className = 'task-delete';
-        del.setAttribute('aria-label', `Delete ${t.title}`);
-        del.textContent = 'Delete';
-        del.addEventListener('click', () => {
-          // compute target index for focus after delete
-          const visibleItems = Array.from(
-            list.querySelectorAll('li.task-item:not(.hidden)')
-          );
-          const pos = visibleItems.indexOf(li);
-          state = remove(state, t.id);
-          saveState();
-          li.remove(); // Remove from DOM
-          // Re-apply filters and update status after deletion
-          applyFilters();
-          // Next item at same index if exists, else previous, else list container
-          const nextVisibleItems = Array.from(
-            list.querySelectorAll('li.task-item:not(.hidden)')
-          );
-          if (nextVisibleItems.length === 0) {
-            focusIntent = { focusListContainer: true };
-          } else if (pos < nextVisibleItems.length) {
-            focusIntent = { focusIndex: pos };
-          } else {
-            focusIntent = { focusIndex: nextVisibleItems.length - 1 };
-          }
-          handleFocusIntent();
-        });
-
-        li.appendChild(cb);
-        li.appendChild(title);
-        li.appendChild(meta);
-        li.appendChild(del);
-        list.appendChild(li);
-      });
-
+      state.forEach((t) => list.appendChild(createListItem(t)));
       needsFullRender = false;
     }
 
@@ -312,10 +330,17 @@ export function initTodoDom(doc = document, deps = {}) {
       state = next;
       saveState();
       if (inputTitle) inputTitle.value = '';
+      // Append only the new item for performance
+      if (list) {
+        const added = state[state.length - 1];
+        list.appendChild(createListItem(added));
+      }
+      // Re-apply filters and update CSV
+      applyFilters();
+      updateExportCsv();
       // After adding, return focus to the title input for quick entry
       focusIntent = { focusAddField: true };
-      needsFullRender = true; // Trigger full render for new items
-      render();
+      handleFocusIntent();
     } catch (err) {
       if (err && typeof err.message === 'string') {
         showError(err.message);
