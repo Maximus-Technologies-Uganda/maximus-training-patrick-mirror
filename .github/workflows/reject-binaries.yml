@@ -1,0 +1,29 @@
+name: Reject Large Binaries
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-file-sizes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for large files
+        run: |
+          echo "Checking for files larger than 5MB..."
+          large_files=$(find . -type f -size +5M -not -path './.git/*' -not -path './node_modules/*' -not -path './coverage/*' -not -path './test-results/*' -not -path './playwright-report/*')
+          
+          if [ -n "$large_files" ]; then
+            echo "❌ Found files larger than 5MB:"
+            echo "$large_files"
+            echo ""
+            echo "Please remove these large files from the repository."
+            echo "Consider using Git LFS for large files that need to be tracked."
+            exit 1
+          else
+            echo "✅ No files larger than 5MB found."
+          fi
+
