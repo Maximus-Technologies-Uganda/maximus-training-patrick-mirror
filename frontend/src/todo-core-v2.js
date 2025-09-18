@@ -5,7 +5,7 @@
  * Lowercase, trim, collapse internal whitespace.
  * @param {string} title
  */
-function normalizeTitle(title) {
+export function normalizeTitle(title) {
   return String(title || '')
     .trim()
     .replace(/\s+/g, ' ')
@@ -21,6 +21,32 @@ function ymd(d) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Format a Date to YYYY-MM-DD string in a specific IANA time zone.
+ * Falls back to local if no timeZone provided.
+ * @param {Date} d
+ * @param {string|undefined} timeZone
+ */
+function ymdInZone(d, timeZone) {
+  if (!timeZone) return ymd(d);
+  try {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = fmt.formatToParts(d);
+    const year = parts.find((p) => p.type === 'year')?.value || String(d.getFullYear());
+    const month = parts.find((p) => p.type === 'month')?.value || String(d.getMonth() + 1).padStart(2, '0');
+    const day = parts.find((p) => p.type === 'day')?.value || String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (_err) {
+    // If the environment doesn't support the timeZone, fall back to local
+    return ymd(d);
+  }
 }
 
 /**
@@ -117,12 +143,13 @@ export function remove(state, id) {
 export function filter(state, query = {}, deps = {}) {
   const { text, dueType, priority } = query;
   const clock = deps.clock || (() => new Date());
+  const timeZone = deps.timeZone;
 
   const now = clock();
-  const today = ymd(now);
+  const today = ymdInZone(now, timeZone);
   const tomorrowDate = new Date(now.getTime());
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrow = ymd(tomorrowDate);
+  const tomorrow = ymdInZone(tomorrowDate, timeZone);
 
   const textNorm = text ? normalizeTitle(text) : '';
   const priorityNorm = priority && priority !== 'all' ? priority : null;
@@ -135,7 +162,7 @@ export function filter(state, query = {}, deps = {}) {
   function matchesDue(t) {
     if (!dueType || dueType === 'all') return true;
     if (t.due == null) return false; // exclude null when filtering by a specific dueType
-    const dueYmd = ymd(new Date(t.due));
+    const dueYmd = ymdInZone(new Date(t.due), timeZone);
     if (dueType === 'today') return dueYmd === today;
     if (dueType === 'tomorrow') return dueYmd === tomorrow;
     if (dueType === 'overdue') return dueYmd < today;
@@ -191,7 +218,8 @@ export function serialize(state) {
     priority: normalizePriority(t.priority),
     done: Boolean(t.done),
   }));
-  return JSON.stringify(wire);
+  const envelope = { schemaVersion: 1, data: wire };
+  return JSON.stringify(envelope);
 }
 
 /**
@@ -201,15 +229,24 @@ export function serialize(state) {
  */
 export function deserialize(raw) {
   try {
-    const data = JSON.parse(String(raw ?? ''));
-    if (!Array.isArray(data)) return [];
+    const parsed = JSON.parse(String(raw ?? ''));
+    // Back-compat: allow array (old schema) or {schemaVersion,data}
+    let data = null;
+    if (Array.isArray(parsed)) {
+      data = parsed;
+    } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.data)) {
+      const schemaVersion = parsed.schemaVersion;
+      if (schemaVersion !== 1) {
+        // Future-proofing: unknown versions fallback to reading known shape if possible
+      }
+      data = parsed.data;
+    } else {
+      return [];
+    }
     return data.map((t) => ({
       id: t.id,
       title: String(t.title ?? ''),
-      due:
-        t.due == null
-          ? null
-          : new Date(`${String(t.due)}T00:00:00`),
+      due: t.due == null ? null : new Date(`${String(t.due)}T00:00:00`),
       priority: normalizePriority(t.priority),
       done: Boolean(t.done),
     }));

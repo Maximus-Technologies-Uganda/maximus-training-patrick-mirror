@@ -31,14 +31,17 @@ describe('todo-core-v2.serialization & CSV', () => {
     expect(csv).toContain('"Needs, quoting ""here"""');
   });
 
-  it('serialize() and deserialize() round-trip todos and preserve dates', () => {
+  it('serialize() outputs versioned envelope and deserialize() round-trips', () => {
     const input = [
       mk('a', 'A', { due: new Date('2025-01-01T03:04:05'), priority: 'high' }),
       mk('b', 'B', { due: null, priority: 'med', done: true }),
     ];
     const raw = serialize(input);
+    const parsed = JSON.parse(raw);
+    expect(parsed.schemaVersion).toBe(1);
+    expect(Array.isArray(parsed.data)).toBe(true);
     // due should be stored as date-only strings for stability
-    expect(raw).toMatch(/"due":"2025-01-01"/);
+    expect(parsed.data[0].due).toBe('2025-01-01');
 
     const out = deserialize(raw);
     expect(out).toHaveLength(2);
