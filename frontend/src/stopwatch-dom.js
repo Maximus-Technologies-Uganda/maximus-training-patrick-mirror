@@ -84,5 +84,3 @@ export function initStopwatch(doc = document, win = window) {
 }
 
 export default { initStopwatch };
-
-

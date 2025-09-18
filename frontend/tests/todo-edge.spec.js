@@ -24,8 +24,12 @@ test.describe('To-Do - edge behavior', () => {
       const fixed = new Date('2025-03-10T09:00:00');
       const OriginalDate = Date;
       class FakeDate extends OriginalDate {
-        constructor(...args) { super(...(args.length ? args : [fixed])); }
-        static now() { return fixed.getTime(); }
+        constructor(...args) {
+          super(...(args.length ? args : [fixed]));
+        }
+        static now() {
+          return fixed.getTime();
+        }
       }
       // @ts-ignore
       window.Date = FakeDate;
@@ -45,8 +49,10 @@ test.describe('To-Do - edge behavior', () => {
     await page.check('#filter-due-today');
     // Wait a bit for the filter to be applied
     await page.waitForTimeout(100);
-    const items = page.locator('#task-list .task-item .task-title');
-    
+    const items = page.locator(
+      '#task-list .task-item:not(.hidden) .task-title'
+    );
+
     await expect(items).toHaveCount(1);
     await expect(items.first()).toHaveText('Due today');
   });
@@ -63,5 +69,3 @@ test.describe('To-Do - edge behavior', () => {
     await expect(page.locator('#task-list .task-item')).toHaveCount(0);
   });
 });
-
-

@@ -20,5 +20,3 @@ export function save(raw, key = 'todos') {
     // ignore storage errors
   }
 }
-
-

@@ -104,5 +104,3 @@ export default {
   filterExpenses,
   calculateTotal,
 };
-
-

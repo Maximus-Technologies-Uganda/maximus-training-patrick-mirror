@@ -5,7 +5,9 @@ test.describe('Quote - edge behavior', () => {
     await page.goto('/');
   });
 
-  test('case-insensitive author filtering (einstein vs EINSTEIN)', async ({ page }) => {
+  test('case-insensitive author filtering (einstein vs EINSTEIN)', async ({
+    page,
+  }) => {
     await page.fill('#author-input', 'einstein');
     await page.click('#search-button');
     // Either we get an Einstein quote or a friendly error if none exist
@@ -24,7 +26,9 @@ test.describe('Quote - edge behavior', () => {
       let seed = 42;
       Math.random = () => {
         // xorshift32
-        seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; // eslint-disable-line no-bitwise
+        seed ^= seed << 13;
+        seed ^= seed >>> 17;
+        seed ^= seed << 5; // eslint-disable-line no-bitwise
         const n = (seed >>> 0) / 0xffffffff; // 0..1
         return n;
       };
@@ -44,7 +48,9 @@ test.describe('Quote - edge behavior', () => {
     await page.fill('#author-input', 'no-such-author-xyz');
     await page.click('#search-button');
     await expect(page.locator('#error')).toBeVisible();
-    await expect(page.locator('#quote-text')).toHaveText('"No quotes available"');
+    await expect(page.locator('#quote-text')).toHaveText(
+      '"No quotes available"'
+    );
   });
 });
 
@@ -56,7 +62,9 @@ test.describe('Quote page edge cases', () => {
     await page.waitForSelector('#author-input');
   });
 
-  test('case-insensitive filtering matches author regardless of casing (DEV-193.1)', async ({ page }) => {
+  test('case-insensitive filtering matches author regardless of casing (DEV-193.1)', async ({
+    page,
+  }) => {
     // Perform search twice to ensure UI loaded quotes
     for (const query of ['einstein', 'EINSTEIN']) {
       await page.fill('#author-input', query);
@@ -71,7 +79,9 @@ test.describe('Quote page edge cases', () => {
     }
   });
 
-  test('deterministic randomness with mocked Math.random (DEV-193.2)', async ({ page }) => {
+  test('deterministic randomness with mocked Math.random (DEV-193.2)', async ({
+    page,
+  }) => {
     await page.addInitScript(() => {
       // Force Math.random to a fixed value for deterministic selection
       // eslint-disable-next-line no-undef
@@ -89,16 +99,22 @@ test.describe('Quote page edge cases', () => {
     expect(first).toBe(second);
   });
 
-  test('no-results state renders friendly message (DEV-193.3)', async ({ page }) => {
+  test('no-results state renders friendly message (DEV-193.3)', async ({
+    page,
+  }) => {
     await page.fill('#author-input', 'nonexistent author 12345');
     await page.click('#search-button');
     await expect(page.locator('#error')).toBeVisible();
     await expect(page.locator('#error')).toContainText('No quotes found');
-    await expect(page.locator('#quote-text')).toContainText('No quotes available');
+    await expect(page.locator('#quote-text')).toContainText(
+      'No quotes available'
+    );
     await expect(page.locator('#quote-author')).toContainText('System');
   });
 
-  test('author fallback displays "Unknown" when missing (DEV-193.4)', async ({ page }) => {
+  test('author fallback displays "Unknown" when missing (DEV-193.4)', async ({
+    page,
+  }) => {
     // Intercept quotes and provide an item with missing author
     await page.route('**/quotes.json', (route) => {
       route.fulfill({
@@ -123,5 +139,3 @@ test.describe('Quote page edge cases', () => {
     expect(authorText).toMatch(/Unknown|System/i);
   });
 });
-
-

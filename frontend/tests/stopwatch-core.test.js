@@ -1,4 +1,12 @@
-import { createState, start, stop, reset, getElapsedMs, formatElapsed, toCsv } from '../src/stopwatch-core.js';
+import {
+  createState,
+  start,
+  stop,
+  reset,
+  getElapsedMs,
+  formatElapsed,
+  toCsv,
+} from '../src/stopwatch-core.js';
 
 describe('stopwatch-core', () => {
   it.each([
@@ -35,5 +43,3 @@ describe('stopwatch-core', () => {
     expect(csv.split('\n')[0]).toBe('elapsed_ms,elapsed_formatted');
   });
 });
-
-

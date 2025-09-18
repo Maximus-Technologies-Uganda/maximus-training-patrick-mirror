@@ -13,14 +13,19 @@ describe('stopwatch-dom', () => {
 
     const fakeWin = {
       _fn: null,
-      setInterval(fn) { this._fn = fn; return 1; },
+      setInterval(fn) {
+        this._fn = fn;
+        return 1;
+      },
       clearInterval() {},
     };
 
     // Deterministic clock
     vi.spyOn(Date, 'now').mockReturnValue(0);
     const api = initStopwatch(document, fakeWin);
-    expect(document.querySelector('#timer-display').textContent).toBe('00:00.000');
+    expect(document.querySelector('#timer-display').textContent).toBe(
+      '00:00.000'
+    );
     expect(document.querySelector('#btn-toggle').textContent).toBe('Start');
 
     // Start at t=1000ms
@@ -31,16 +36,22 @@ describe('stopwatch-dom', () => {
     // Tick to t=1500ms
     Date.now.mockReturnValue(1500);
     fakeWin._fn && fakeWin._fn();
-    expect(document.querySelector('#timer-display').textContent).toBe('00:00.500');
+    expect(document.querySelector('#timer-display').textContent).toBe(
+      '00:00.500'
+    );
 
     // Stop at t=2000ms
     Date.now.mockReturnValue(2000);
     document.querySelector('#btn-toggle').click();
-    expect(document.querySelector('#timer-display').textContent).toBe('00:01.000');
+    expect(document.querySelector('#timer-display').textContent).toBe(
+      '00:01.000'
+    );
 
     // Reset
     document.querySelector('#btn-reset').click();
-    expect(document.querySelector('#timer-display').textContent).toBe('00:00.000');
+    expect(document.querySelector('#timer-display').textContent).toBe(
+      '00:00.000'
+    );
 
     // Export path (ensure it runs without error)
     // Polyfill createObjectURL for JSDOM
@@ -60,5 +71,3 @@ describe('stopwatch-dom', () => {
     api.render(0);
   });
 });
-
-

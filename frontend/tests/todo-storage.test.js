@@ -132,7 +132,10 @@ describe('todo-storage', () => {
 
       save(testData, 'custom-key');
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('custom-key', testData);
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'custom-key',
+        testData
+      );
     });
 
     it('should convert non-string values to string', () => {
@@ -140,7 +143,10 @@ describe('todo-storage', () => {
 
       save(testData);
 
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('todos', '[object Object]');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'todos',
+        '[object Object]'
+      );
     });
 
     it('should handle setItem errors gracefully', () => {
@@ -157,7 +163,10 @@ describe('todo-storage', () => {
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith('todos', 'null');
 
       save(undefined);
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('todos', 'undefined');
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+        'todos',
+        'undefined'
+      );
     });
   });
 });

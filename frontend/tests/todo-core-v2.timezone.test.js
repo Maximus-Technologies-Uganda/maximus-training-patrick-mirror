@@ -22,23 +22,39 @@ describe('todo-core-v2.filter timezone windows (Africa/Kampala, UTC+3)', () => {
       return;
     }
     // Task due at Kampala midnight for 2025-03-11 (which is 2025-03-10T21:00:00Z)
-    const task = mk('mid', 'Midnight Kampala', { due: new Date('2025-03-10T21:00:00Z') });
+    const task = mk('mid', 'Midnight Kampala', {
+      due: new Date('2025-03-10T21:00:00Z'),
+    });
     const state = [task];
 
     // Just before midnight in Kampala: 2025-03-10T23:59:00+03:00 => 2025-03-10T20:59:00Z
     const beforeMidnight = new Date('2025-03-10T20:59:00Z');
-    const outBeforeToday = filter(state, { dueType: 'today' }, { clock: () => beforeMidnight, timeZone: tz });
-    const outBeforeTomorrow = filter(state, { dueType: 'tomorrow' }, { clock: () => beforeMidnight, timeZone: tz });
-    expect(outBeforeToday.map(t => t.id)).toEqual([]);
-    expect(outBeforeTomorrow.map(t => t.id)).toEqual(['mid']);
+    const outBeforeToday = filter(
+      state,
+      { dueType: 'today' },
+      { clock: () => beforeMidnight, timeZone: tz }
+    );
+    const outBeforeTomorrow = filter(
+      state,
+      { dueType: 'tomorrow' },
+      { clock: () => beforeMidnight, timeZone: tz }
+    );
+    expect(outBeforeToday.map((t) => t.id)).toEqual([]);
+    expect(outBeforeTomorrow.map((t) => t.id)).toEqual(['mid']);
 
     // Just after midnight in Kampala: 2025-03-11T00:01:00+03:00 => 2025-03-10T21:01:00Z
     const afterMidnight = new Date('2025-03-10T21:01:00Z');
-    const outAfterToday = filter(state, { dueType: 'today' }, { clock: () => afterMidnight, timeZone: tz });
-    const outAfterTomorrow = filter(state, { dueType: 'tomorrow' }, { clock: () => afterMidnight, timeZone: tz });
-    expect(outAfterToday.map(t => t.id)).toEqual(['mid']);
-    expect(outAfterTomorrow.map(t => t.id)).toEqual([]);
+    const outAfterToday = filter(
+      state,
+      { dueType: 'today' },
+      { clock: () => afterMidnight, timeZone: tz }
+    );
+    const outAfterTomorrow = filter(
+      state,
+      { dueType: 'tomorrow' },
+      { clock: () => afterMidnight, timeZone: tz }
+    );
+    expect(outAfterToday.map((t) => t.id)).toEqual(['mid']);
+    expect(outAfterTomorrow.map((t) => t.id)).toEqual([]);
   });
 });
-
-

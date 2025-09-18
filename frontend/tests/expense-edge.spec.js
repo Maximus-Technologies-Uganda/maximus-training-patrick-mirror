@@ -5,7 +5,7 @@ const EXPENSE_HTML = '/expense.html';
 test.describe('Expense - edge behavior', () => {
   test.beforeEach(async ({ page }) => {
     // Mock expenses endpoint with a crafted dataset
-    await page.route('../expense/expenses.json', async route => {
+    await page.route('../expense/expenses.json', async (route) => {
       const data = [
         { id: 1, amount: 10.001, category: 'groceries', date: '2025-01-01' },
         { id: 2, amount: 10 / 3, category: 'groceries', date: '2025-01-31' },
@@ -13,12 +13,18 @@ test.describe('Expense - edge behavior', () => {
         { id: 4, amount: 5, category: 'transport', date: '2025-01-15' },
         { id: 5, amount: 0, category: 'utilities', date: '2025-02-01' },
       ];
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(data),
+      });
     });
     await page.goto(EXPENSE_HTML);
   });
 
-  test('month parsing with case variants and invalid input', async ({ page }) => {
+  test('month parsing with case variants and invalid input', async ({
+    page,
+  }) => {
     // The UI uses <input type="month"> with canonical YYYY-MM, so simulate parsing by filling valid & invalid
     await page.fill('#month-filter', '2025-01');
     await page.waitForTimeout(50);
@@ -63,10 +69,14 @@ test.describe('Expense - edge behavior', () => {
     await expect(last).toHaveText('$3.33');
   });
 
-  test('date boundaries (first and last day of month/year)', async ({ page }) => {
+  test('date boundaries (first and last day of month/year)', async ({
+    page,
+  }) => {
     await page.fill('#month-filter', '2025-01');
     await page.waitForTimeout(50);
-    const texts = await page.locator('#expenses-table tbody tr td:first-child').allTextContents();
+    const texts = await page
+      .locator('#expenses-table tbody tr td:first-child')
+      .allTextContents();
     expect(texts.join('\n')).toMatch(/Jan 1, 2025/);
     expect(texts.join('\n')).toMatch(/Jan 31, 2025/);
   });

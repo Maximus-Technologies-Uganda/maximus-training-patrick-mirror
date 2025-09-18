@@ -8,11 +8,17 @@ test.describe('Stopwatch - timer stability and reset', () => {
       let now = 0;
       const OriginalDate = Date;
       class FakeDate extends OriginalDate {
-        constructor(...args) { super(...(args.length ? args : [new OriginalDate(now)])); }
-        static now() { return now; }
+        constructor(...args) {
+          super(...(args.length ? args : [new OriginalDate(now)]));
+        }
+        static now() {
+          return now;
+        }
       }
       // @ts-ignore
-      window.__advanceMs = (ms) => { now += ms; };
+      window.__advanceMs = (ms) => {
+        now += ms;
+      };
       // @ts-ignore
       window.Date = FakeDate;
     });
@@ -29,5 +35,3 @@ test.describe('Stopwatch - timer stability and reset', () => {
     await expect(page.locator('#timer-display')).toHaveText('00:00.000');
   });
 });
-
-
