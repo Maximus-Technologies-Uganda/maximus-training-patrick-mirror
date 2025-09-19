@@ -5,6 +5,7 @@ function toInt(value, fallback) {
 
 function loadConfigFromEnv() {
   return {
+    port: toInt(process.env.PORT, 3000),
     jsonLimit: process.env.JSON_LIMIT || '256kb',
     rateLimitWindowMs: toInt(process.env.RATE_LIMIT_WINDOW_MS, 60 * 1000),
     rateLimitMax: toInt(process.env.RATE_LIMIT_MAX, 100)
