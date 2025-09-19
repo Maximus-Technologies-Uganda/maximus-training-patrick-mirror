@@ -1,6 +1,9 @@
 // Interface documentation for PostsRepository
 // Methods: create(post), getById(id), list(page, pageSize), replace(id, post), update(id, partial), delete(id), count()
 
+// Note: Do NOT require SqlitePostsRepository at module load to avoid requiring
+// optional native dependency when not needed. We'll require lazily below.
+
 class InMemoryPostsRepository {
   constructor() {
     this.postsById = new Map();
@@ -46,6 +49,17 @@ class InMemoryPostsRepository {
 }
 
 function createRepository() {
+  const backend = (process.env.POSTS_REPOSITORY || '').toLowerCase();
+  if (backend === 'sqlite') {
+    let SqlitePostsRepository;
+    try {
+      ({ SqlitePostsRepository } = require('./SqlitePostsRepository'));
+    } catch (err) {
+      throw new Error('POSTS_REPOSITORY=sqlite but better-sqlite3 is not installed. Install optional dependency better-sqlite3.');
+    }
+    const dbFile = process.env.DB_FILE || undefined;
+    return new SqlitePostsRepository(dbFile);
+  }
   return new InMemoryPostsRepository();
 }
 

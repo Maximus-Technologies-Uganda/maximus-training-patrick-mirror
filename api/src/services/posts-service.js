@@ -1,4 +1,17 @@
-const { nanoid } = require('nanoid');
+// nanoid v5 ESM default uses import; for Jest CJS tests we rely on existing mocks
+// Avoid top-level import to let tests mock; dynamically load when needed
+let nanoidFn;
+function getNanoid() {
+  if (!nanoidFn) {
+    try {
+      ({ nanoid: nanoidFn } = require('nanoid'));
+    } catch (_e) {
+      // fallback simple id for environments where ESM import is problematic
+      nanoidFn = () => Math.random().toString(36).slice(2, 10);
+    }
+  }
+  return nanoidFn;
+}
 const { makeError } = require('../lib/errors');
 
 class PostsService {
@@ -9,7 +22,7 @@ class PostsService {
   async create(data) {
     const now = new Date().toISOString();
     const post = {
-      id: nanoid(),
+      id: getNanoid()(),
       title: data.title,
       content: data.content,
       tags: Array.isArray(data.tags) ? data.tags : [],

@@ -17,11 +17,15 @@
   "dependencies": {
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
+    "cors": "^2.8.5",
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "nanoid": "^5.1.5",
     "openapi3-ts": "^4.5.0",
     "zod": "^4.1.9"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
