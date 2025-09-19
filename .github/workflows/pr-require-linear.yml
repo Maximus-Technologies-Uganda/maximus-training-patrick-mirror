@@ -13,7 +13,7 @@ jobs:
           script: |
             const body = context.payload.pull_request.body || "";
             const lines = body.split(/\r?\n/);
-            const labelRe = /^\s*[-*]?\s*(?:\*\*|__)?\s*Linear\s*:(?:\*\*|__)?\s*(.+)$/i;
+            const labelRe = /^\s*[-*]?\s*(?:\*\*|__)?\s*Linear(?:\s+Issues?)?\s*:(?:\*\*|__)?\s*(.+)$/i;
             const keyRe = /\b[A-Z]{2,}-\d+\b/g;
             const urlRe = /https?:\/\/(?:www\.)?linear\.app\/\S+/i;
 
@@ -29,7 +29,7 @@ jobs:
             }
 
             if (!ok) {
-              core.setFailed("PR body must include a 'Linear:' line with a full URL or at least one bare key (e.g., DEV-123). Examples: 'Linear: DEV-123' or 'Linear: Closes DEV-123, DEV-124'.");
+              core.setFailed("PR body must include a 'Linear:' or 'Linear Issues:' line with a full URL or at least one bare key (e.g., DEV-123). Examples: 'Linear: DEV-123' or 'Linear Issues: Closes DEV-123, DEV-124'.");
             } else {
               core.notice('Linear reference found.');
             }

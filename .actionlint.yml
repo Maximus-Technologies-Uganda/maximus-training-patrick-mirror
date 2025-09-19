@@ -1,0 +1,3 @@
+secrets:
+  - LINEAR_API_KEY
+  - LINEAR_TEAM_ID
