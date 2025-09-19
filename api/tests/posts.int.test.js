@@ -1,4 +1,8 @@
-jest.mock('nanoid', () => ({ nanoid: () => 'test-id' }));
+jest.mock('nanoid', () => {
+  let counter = 0;
+  const gen = () => `test-id-${++counter}`;
+  return { nanoid: gen };
+});
 const request = require('supertest');
 const { createApp } = require('../src/app');
 const { loadConfigFromEnv } = require('../src/config');
@@ -83,6 +87,97 @@ describe('GET /posts', () => {
     expect(res.body.pageSize).toBe(1);
     expect(res.body.items.length).toBe(1);
     expect(typeof res.body.hasNextPage).toBe('boolean');
+  });
+
+  it('paginates across pages and sets hasNextPage correctly', async () => {
+    const app = makeApp();
+    // create 5 posts
+    for (let i = 0; i < 5; i++) {
+      const r = await request(app).post('/posts').send({ title: 'T' + i, content: 'C' + i });
+      expect(r.status).toBe(201);
+    }
+    const p1 = await request(app).get('/posts?page=1&pageSize=2');
+    expect(p1.status).toBe(200);
+    expect(p1.body.items.length).toBe(2);
+    expect(p1.body.hasNextPage).toBe(true);
+    const p2 = await request(app).get('/posts?page=2&pageSize=2');
+    expect(p2.status).toBe(200);
+    expect(p2.body.items.length).toBe(2);
+    expect(p2.body.hasNextPage).toBe(true);
+    const p3 = await request(app).get('/posts?page=3&pageSize=2');
+    expect(p3.status).toBe(200);
+    expect(p3.body.items.length).toBe(1);
+    expect(p3.body.hasNextPage).toBe(false);
+  });
+
+  it('enforces page/pageSize bounds with 400 errors', async () => {
+    const app = makeApp();
+    const r1 = await request(app).get('/posts?page=0');
+    expect(r1.status).toBe(400);
+    expect(r1.body).toMatchObject({ code: 'validation_error' });
+    const r2 = await request(app).get('/posts?pageSize=0');
+    expect(r2.status).toBe(400);
+    const r3 = await request(app).get('/posts?pageSize=101');
+    expect(r3.status).toBe(400);
+  });
+});
+
+describe('PUT /posts and PATCH /posts/:id', () => {
+  it('PUT replaces the entire post and returns 200', async () => {
+    const app = makeApp();
+    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+    expect(created.status).toBe(201);
+    const putRes = await request(app)
+      .put(`/posts/${created.body.id}`)
+      .send({ title: 'New', content: 'NewC' });
+    expect(putRes.status).toBe(200);
+    expect(putRes.body).toEqual({
+      id: created.body.id,
+      title: 'New',
+      content: 'NewC',
+      tags: [],
+      published: false,
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String)
+    });
+  });
+
+  it('PUT returns 404 when id is missing', async () => {
+    const app = makeApp();
+    const res = await request(app).put('/posts/missing').send({ title: 'T', content: 'C' });
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT returns 400 on invalid body', async () => {
+    const app = makeApp();
+    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+    expect(created.status).toBe(201);
+    const res = await request(app).put(`/posts/${created.body.id}`).send({ title: '' });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: 'validation_error' });
+  });
+
+  it('PATCH updates subset of fields and returns 200', async () => {
+    const app = makeApp();
+    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+    const res = await request(app).patch(`/posts/${created.body.id}`).send({ title: 'T2' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ id: created.body.id, title: 'T2', content: 'C' });
+  });
+
+  it('PATCH returns 404 when id is missing', async () => {
+    const app = makeApp();
+    const res = await request(app).patch('/posts/missing').send({ title: 'X' });
+    expect(res.status).toBe(404);
+  });
+
+  it('PATCH returns 400 when body is empty or invalid', async () => {
+    const app = makeApp();
+    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+    const resEmpty = await request(app).patch(`/posts/${created.body.id}`).send({});
+    expect(resEmpty.status).toBe(400);
+    const resInvalid = await request(app).patch(`/posts/${created.body.id}`).send({ title: '' });
+    expect(resInvalid.status).toBe(400);
   });
 });
 
