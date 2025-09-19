@@ -1,5 +1,6 @@
 const express = require('express');
 const helmet = require('helmet');
+const cors = require('cors');
 const morgan = require('morgan');
 const { errorHandler } = require('./middleware/error-handler');
 const { createRateLimiter } = require('./middleware/rate-limit');
@@ -11,6 +12,7 @@ const { createHealthRoutes } = require('./routes/health');
 function createApp(config, repository) {
   const app = express();
   app.use(helmet());
+  app.use(cors());
   app.use(express.json({ limit: config.jsonLimit }));
   app.use(morgan('combined'));
   app.use(createRateLimiter(config));
