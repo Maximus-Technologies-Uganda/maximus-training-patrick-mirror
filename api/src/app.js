@@ -6,6 +6,7 @@ const { createRateLimiter } = require('./middleware/rate-limit');
 const { createPostsController } = require('./controllers/posts-controller');
 const { PostsService } = require('./services/posts-service');
 const { createPostsRoutes } = require('./routes/posts-routes');
+const { createHealthRoutes } = require('./routes/health');
 
 function createApp(config, repository) {
   const app = express();
@@ -15,7 +16,7 @@ function createApp(config, repository) {
   app.use(createRateLimiter(config));
 
   // Health
-  app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
+  app.use('/', createHealthRoutes());
 
   // Posts
   const postsService = new PostsService(repository);
