@@ -79,8 +79,13 @@ jobs:
             });
             const json = await res.json();
             core.info('Linear response: ' + JSON.stringify(json));
+            const gqlErrors = Array.isArray(json.errors) ? json.errors.map(e => e.message).join('; ') : '';
+            if (gqlErrors) {
+              core.setFailed('Linear GraphQL error: ' + gqlErrors);
+              return;
+            }
             if (!json.data?.issueCreate?.success) {
-              core.setFailed('Failed to create Linear issue: ' + (json.data?.issueCreate?.error || JSON.stringify(json)));
+              core.setFailed('Failed to create Linear issue: ' + JSON.stringify(json));
               return;
             }
             const url = json.data.issueCreate.issue.url;
