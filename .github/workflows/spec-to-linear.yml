@@ -49,7 +49,6 @@ jobs:
                 issueCreate(input: $input) {
                   success
                   issue { id identifier url title }
-                  error
                 }
               }
             `;
