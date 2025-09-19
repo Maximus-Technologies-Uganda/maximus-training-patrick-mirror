@@ -51,6 +51,13 @@ describe('OpenAPI contract - /posts', () => {
     expect(res.status).toBe(200);
     expect(res).toSatisfyApiSpec();
   });
+
+  it('GET /posts invalid query matches 400 spec', async () => {
+    const app = makeApp();
+    const res = await request(app).get('/posts?page=0');
+    expect(res.status).toBe(400);
+    expect(res).toSatisfyApiSpec();
+  });
 });
 
 describe('OpenAPI contract - /posts/{id}', () => {

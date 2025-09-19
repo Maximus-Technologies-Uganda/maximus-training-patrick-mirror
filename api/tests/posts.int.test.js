@@ -49,6 +49,15 @@ describe('POST /posts', () => {
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({ code: 'validation_error' });
   });
+
+  it('rejects unknown fields with 400', async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post('/posts')
+      .send({ title: 'T', content: 'C', extra: 'nope' });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: 'validation_error' });
+  });
 });
 
 describe('GET /posts', () => {

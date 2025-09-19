@@ -18,6 +18,7 @@ describe('Rate limiting', () => {
     // Next one should be rate limited
     const res = await request(app).get('/health');
     expect(res.status).toBe(429);
+    expect(res.body).toMatchObject({ code: 'rate_limit_exceeded', message: expect.any(String) });
     // standardHeaders true -> RateLimit headers present
     expect(res.headers['ratelimit-limit']).toBeDefined();
     expect(res.headers['ratelimit-remaining']).toBeDefined();

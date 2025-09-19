@@ -1,26 +1,17 @@
 const { makeError } = require('../lib/errors');
-const { PostCreate, PostUpdate, ListQuery } = require('../validation/posts-schemas');
 
 function createPostsController(postsService) {
   return {
     async list(req, res, next) {
       try {
-        const parsed = ListQuery.safeParse(req.query);
-        if (!parsed.success) {
-          return next(makeError('validation_error', 'Invalid query parameters', parsed.error.flatten()));
-        }
-        const { page, pageSize } = parsed.data;
+        const { page, pageSize } = req.validatedQuery || req.query;
         const result = await postsService.list(page, pageSize);
         res.json({ page, pageSize, hasNextPage: result.hasNextPage, items: result.items });
       } catch (err) { next(err); }
     },
     async create(req, res, next) {
       try {
-        const parsed = PostCreate.safeParse(req.body);
-        if (!parsed.success) {
-          return next(makeError('validation_error', 'Invalid request body', parsed.error.flatten()));
-        }
-        const created = await postsService.create(parsed.data);
+        const created = await postsService.create(req.body);
         res.status(201).location(`/posts/${created.id}`).json(created);
       } catch (err) { next(err); }
     },
@@ -32,21 +23,13 @@ function createPostsController(postsService) {
     },
     async replace(req, res, next) {
       try {
-        const parsed = PostCreate.safeParse(req.body);
-        if (!parsed.success) {
-          return next(makeError('validation_error', 'Invalid request body', parsed.error.flatten()));
-        }
-        const updated = await postsService.replace(req.params.id, parsed.data);
+        const updated = await postsService.replace(req.params.id, req.body);
         res.json(updated);
       } catch (err) { next(err); }
     },
     async update(req, res, next) {
       try {
-        const parsed = PostUpdate.safeParse(req.body);
-        if (!parsed.success) {
-          return next(makeError('validation_error', 'Invalid request body', parsed.error.flatten()));
-        }
-        const updated = await postsService.update(req.params.id, parsed.data);
+        const updated = await postsService.update(req.params.id, req.body);
         res.json(updated);
       } catch (err) { next(err); }
     },

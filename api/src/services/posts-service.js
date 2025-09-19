@@ -41,6 +41,10 @@ class PostsService {
   }
 
   async list(page, pageSize) {
+    // Defensive bounds check at service layer to ensure invariants even if callers forget
+    if (!Number.isInteger(page) || !Number.isInteger(pageSize) || page < 1 || pageSize < 1 || pageSize > 100) {
+      throw makeError('validation_error', 'Invalid pagination parameters');
+    }
     const items = await this.repository.list(page, pageSize);
     const total = await this.repository.count();
     const start = (page - 1) * pageSize;
