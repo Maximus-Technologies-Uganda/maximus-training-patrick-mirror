@@ -1,86 +1,97 @@
-Param(
-  [Parameter(Mandatory = $true)]
-  [string]$Json
+#!/usr/bin/env pwsh
+# Create a new feature (moved to powershell/)
+[CmdletBinding()]
+param(
+    [switch]$Json,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$FeatureDescription
 )
+$ErrorActionPreference = 'Stop'
 
-# Parse JSON input or accept raw string
-$description = $null
+if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
+    Write-Error "Usage: ./create-new-feature.ps1 [-Json] <feature description>"; exit 1
+}
+$featureDesc = ($FeatureDescription -join ' ').Trim()
+
 try {
-  $obj = $Json | ConvertFrom-Json -ErrorAction Stop
-  if ($obj -is [string]) {
-    $description = [string]$obj
-  } elseif ($obj.PSObject.Properties.Name -contains 'description') {
-    $description = [string]$obj.description
-  } else {
-    $description = $Json
-  }
+    $top = git rev-parse --show-toplevel 2>$null
+    if ($top) {
+        $repoRoot = $top.Trim()
+    } else {
+        $repoRoot = (Get-Location).Path
+    }
 } catch {
-  $description = $Json
-}
-
-function New-Slug([string]$text) {
-  if ([string]::IsNullOrWhiteSpace($text)) { return "feature" }
-  $t = $text.ToLowerInvariant()
-  $t = [regex]::Replace($t, "[^a-z0-9]+", "-")
-  $t = $t.Trim("-")
-  if ($t.Length -gt 64) { $t = $t.Substring(0, 64).Trim("-") }
-  return $t
-}
-
-$slug = New-Slug $description
-$date = Get-Date -Format "yyyy-MM-dd"
-$branchName = "spec/$date-$slug"
-
-try {
-  $top = git rev-parse --show-toplevel 2>$null
-  if ($top) {
-    $repoRoot = $top.Trim()
-  } else {
     $repoRoot = (Get-Location).Path
-  }
-} catch {
-  $repoRoot = (Get-Location).Path
 }
-$specDirRoot = Join-Path $repoRoot ".specify"
-$specsDir = Join-Path $specDirRoot "specs"
-$templateDir = Join-Path $specDirRoot "templates"
-$templatePath = Join-Path $templateDir "spec-template.md"
-if (-not (Test-Path $specsDir)) { New-Item -ItemType Directory -Path $specsDir -Force | Out-Null }
+$specsDir = Join-Path $repoRoot 'specs'
+New-Item -ItemType Directory -Path $specsDir -Force | Out-Null
 
-$fileName = "$date-$slug.md"
-$specFile = Join-Path $specsDir $fileName
-
-# Initialize spec file using template if present
-if (-not (Test-Path $specFile)) {
-  if (Test-Path $templatePath) {
-    Copy-Item -Path $templatePath -Destination $specFile -Force
-  } else {
-    New-Item -ItemType File -Path $specFile -Force | Out-Null
-  }
+$highest = 0
+if (Test-Path $specsDir) {
+    Get-ChildItem -Path $specsDir -Directory | ForEach-Object {
+        if ($_.Name -match '^(\d{3})') {
+            $num = [int]$matches[1]
+            if ($num -gt $highest) { $highest = $num }
+        }
+    }
 }
+$next = $highest + 1
+$featureNum = ('{0:000}' -f $next)
 
-# Ensure git repository and switch to branch
+$branchName = $featureDesc.ToLower() -replace '[^a-z0-9]', '-' -replace '-{2,}', '-' -replace '^-', '' -replace '-$', ''
+$words = ($branchName -split '-') | Where-Object { $_ } | Select-Object -First 3
+$branchName = "$featureNum-$([string]::Join('-', $words))"
+
+# Ensure we are inside a git repository; initialize if needed
 $insideRepo = $false
 try {
-  $insideRepoOut = git rev-parse --is-inside-work-tree 2>$null
-  if ($insideRepoOut -match "true") { $insideRepo = $true }
+    $insideRepoOut = git rev-parse --is-inside-work-tree 2>$null
+    if ($insideRepoOut -match 'true') { $insideRepo = $true }
 } catch { $insideRepo = $false }
-
 if (-not $insideRepo) {
-  git init | Out-Null
+    git init | Out-Null
 }
 
-try {
-  git checkout -b $branchName 2>$null | Out-Null
-} catch {
-  try { git checkout $branchName 2>$null | Out-Null } catch { git checkout --orphan $branchName 2>$null | Out-Null }
+# Safely create or switch to the branch
+# 1) If branch exists, checkout it
+# 2) Else, if repo has commits, try -b; fallback to --orphan
+# 3) Else, use --orphan for empty repos
+git rev-parse --verify $branchName 2>$null | Out-Null
+$branchExists = ($LASTEXITCODE -eq 0)
+
+git rev-parse --verify HEAD 2>$null | Out-Null
+$hasCommit = ($LASTEXITCODE -eq 0)
+
+if ($branchExists) {
+    git checkout $branchName 2>$null | Out-Null
+} else {
+    if ($hasCommit) {
+        git checkout -b $branchName 2>$null | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            git checkout --orphan $branchName 2>$null | Out-Null
+        }
+    } else {
+        git checkout --orphan $branchName 2>$null | Out-Null
+    }
 }
 
-# Output machine-readable result
-$result = [ordered]@{
-  BRANCH_NAME = $branchName
-  SPEC_FILE   = (Resolve-Path $specFile).Path
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to create or switch to branch '$branchName'"; exit 1
 }
-$result | ConvertTo-Json -Depth 5
 
- 
+$featureDir = Join-Path $specsDir $branchName
+New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
+
+$template = Join-Path $repoRoot '.specify/templates/spec-template.md'
+if (-not (Test-Path $template)) { $template = Join-Path $repoRoot 'templates/spec-template.md' }
+$specFile = Join-Path $featureDir 'spec.md'
+if (Test-Path $template) { Copy-Item $template $specFile -Force } else { New-Item -ItemType File -Path $specFile | Out-Null }
+
+if ($Json) {
+    $obj = [PSCustomObject]@{ BRANCH_NAME = $branchName; SPEC_FILE = $specFile; FEATURE_NUM = $featureNum }
+    $obj | ConvertTo-Json -Compress
+} else {
+    Write-Output "BRANCH_NAME: $branchName"
+    Write-Output "SPEC_FILE: $specFile"
+    Write-Output "FEATURE_NUM: $featureNum"
+}
