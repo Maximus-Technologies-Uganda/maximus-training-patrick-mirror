@@ -27,7 +27,8 @@
           "200": {
             "description": "List of posts",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostList" } } }
-          }
+          },
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       },
       "post": {
@@ -112,9 +113,15 @@
         "additionalProperties": false
       },
       "PostUpdate": {
-        "allOf": [
-          { "$ref": "#/components/schemas/PostCreate" }
-        ]
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "content": { "type": "string", "minLength": 1, "maxLength": 10000 },
+          "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 40 }, "maxItems": 20 },
+          "published": { "type": "boolean" }
+        }
       },
       "PostList": {
         "type": "object",
