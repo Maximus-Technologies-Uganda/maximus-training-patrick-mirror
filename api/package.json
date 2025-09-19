@@ -26,8 +26,9 @@
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "eslint": "^9.35.0",
-    "nodemon": "^3.1.10",
     "jest": "^29.7.0",
+    "jest-openapi": "^0.14.2",
+    "nodemon": "^3.1.10",
     "supertest": "^7.0.0"
   }
 }
