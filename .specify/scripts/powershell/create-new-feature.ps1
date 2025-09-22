@@ -56,23 +56,37 @@ if (-not $insideRepo) {
 # 1) If branch exists, checkout it
 # 2) Else, if repo has commits, try -b; fallback to --orphan
 # 3) Else, use --orphan for empty repos
-git rev-parse --verify $branchName 2>$null | Out-Null
-$branchExists = ($LASTEXITCODE -eq 0)
+try {
+    git rev-parse --verify $branchName 2>$null | Out-Null
+    $branchExists = ($LASTEXITCODE -eq 0)
+} catch {
+    $branchExists = $false
+}
 
-git rev-parse --verify HEAD 2>$null | Out-Null
-$hasCommit = ($LASTEXITCODE -eq 0)
+try {
+    git rev-parse --verify HEAD 2>$null | Out-Null
+    $hasCommit = ($LASTEXITCODE -eq 0)
+} catch {
+    $hasCommit = $false
+}
 
-if ($branchExists) {
-    git checkout $branchName 2>$null | Out-Null
-} else {
-    if ($hasCommit) {
-        git checkout -b $branchName 2>$null | Out-Null
-        if ($LASTEXITCODE -ne 0) {
+${prevEAP} = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    if ($branchExists) {
+        git checkout $branchName 2>$null | Out-Null
+    } else {
+        if ($hasCommit) {
+            git checkout -b $branchName 2>$null | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                git checkout --orphan $branchName 2>$null | Out-Null
+            }
+        } else {
             git checkout --orphan $branchName 2>$null | Out-Null
         }
-    } else {
-        git checkout --orphan $branchName 2>$null | Out-Null
     }
+} finally {
+    $ErrorActionPreference = ${prevEAP}
 }
 
 if ($LASTEXITCODE -ne 0) {
