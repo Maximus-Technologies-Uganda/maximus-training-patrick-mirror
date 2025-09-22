@@ -15,9 +15,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
-    "cors": "^2.8.5",
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "nanoid": "^5.1.5",
@@ -29,10 +29,17 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
+    "@types/cors": "^2.8.19",
+    "@types/helmet": "^0.0.48",
+    "@types/jest": "^30.0.0",
+    "@types/morgan": "^1.9.10",
+    "@types/supertest": "^6.0.3",
     "eslint": "^9.35.0",
     "jest": "^29.7.0",
     "jest-openapi": "^0.14.2",
     "nodemon": "^3.1.10",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.4.4",
+    "typescript": "^5.9.2"
   }
 }
