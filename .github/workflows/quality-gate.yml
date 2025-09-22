@@ -45,7 +45,11 @@ jobs:
           echo "### Frontend Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+          if [ -f coverage/coverage-summary.json ]; then
+            cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '{}' >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '```'
 
@@ -129,7 +133,11 @@ jobs:
           echo "### API Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+          if [ -f coverage/coverage-summary.json ]; then
+            cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '{}' >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '```'
 
