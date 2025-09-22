@@ -1,0 +1,260 @@
+name: Spec Sync to Linear (Full Auto)
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  sync:
+    if: ${{ github.event.pull_request.merged == true && contains(github.event.pull_request.title, '[SPEC]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine feature directory
+        id: feature_dir
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            // Try to infer feature directory from PR title/body or changed files
+            const pr = context.payload.pull_request;
+            const title = pr.title || '';
+            const body = pr.body || '';
+            const re = /specs\/(\d{3}[^\s/]+)\//i;
+            let m = title.match(re) || body.match(re);
+
+            if (!m) {
+              // Fallback: find first changed path under specs/**/tasks.md
+              const base = pr.base.sha;
+              const head = pr.merge_commit_sha || pr.head.sha;
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100
+              });
+              const hit = files.find(f => /(^|\/)specs\/[^/]+\/tasks\.md$/i.test(f.filename));
+              if (hit) {
+                const mm = hit.filename.match(/^specs\/([^/]+)\//i);
+                if (mm) m = [, mm[1]]; // eslint-disable-line no-sparse-arrays
+              }
+            }
+
+            if (!m) {
+              core.setFailed('Unable to determine feature directory under specs/. Ensure PR references specs/<feature>/');
+              return;
+            }
+
+            const featureDir = `specs/${m[1]}`;
+            core.notice(`Feature directory: ${featureDir}`);
+            return featureDir;
+
+      - name: Sync tasks to Linear
+        id: sync
+        uses: actions/github-script@v7
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+          FEATURE_DIR: ${{ steps.feature_dir.outputs.result }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const featureDir = process.env.FEATURE_DIR;
+            if (!featureDir) {
+              core.setFailed('Missing FEATURE_DIR');
+              return;
+            }
+
+            const tasksPath = path.join(featureDir, 'tasks.md');
+            const linearPath = path.join(featureDir, 'linear.yml');
+
+            if (!fs.existsSync(tasksPath)) {
+              core.setFailed(`tasks.md not found at ${tasksPath}`);
+              return;
+            }
+
+            // Minimal YAML reader/writer for our simple schema
+            function readLinearYaml(filePath) {
+              if (!fs.existsSync(filePath)) return { parentIssueId: null, tasks: [] };
+              const raw = fs.readFileSync(filePath, 'utf8');
+              const lines = raw.split(/\r?\n/);
+              let parentIssueId = null;
+              const tasks = [];
+              let inTasks = false;
+              let current = null;
+              for (const line of lines) {
+                if (/^\s*#/.test(line)) continue;
+                const mParent = line.match(/^parentIssueId:\s*(null|"([^"]*)"|'([^']*)'|([^#\s]+))/);
+                if (mParent) {
+                  const v = mParent[1];
+                  if (v === 'null') parentIssueId = null; else parentIssueId = (mParent[2] ?? mParent[3] ?? mParent[4] ?? '').trim();
+                  continue;
+                }
+                if (/^tasks:\s*/.test(line)) { inTasks = true; continue; }
+                if (!inTasks) continue;
+                const mItemStr = line.match(/^\s*-\s*("([^"]*)"|'([^']*)'|([^#].*?))\s*$/);
+                if (mItemStr) {
+                  const s = (mItemStr[2] ?? mItemStr[3] ?? mItemStr[4] ?? '').trim();
+                  if (s && !/^title\s*:/.test(s)) { tasks.push({ title: s, issueId: null }); current = null; continue; }
+                }
+                const mTitle = line.match(/^\s*-\s*title:\s*("([^"]*)"|'([^']*)'|(.+))$/);
+                if (mTitle) {
+                  const title = (mTitle[2] ?? mTitle[3] ?? mTitle[4] ?? '').trim();
+                  current = { title, issueId: null };
+                  tasks.push(current);
+                  continue;
+                }
+                const mIssue = line.match(/^\s*issueId:\s*(null|"([^"]*)"|'([^']*)'|([^#\s]+))/);
+                if (mIssue && current) {
+                  const v = mIssue[1];
+                  current.issueId = v === 'null' ? null : (mIssue[2] ?? mIssue[3] ?? mIssue[4] ?? '').trim();
+                }
+              }
+              return { parentIssueId, tasks };
+            }
+
+            function writeLinearYaml(doc) {
+              const lines = [];
+              lines.push(`parentIssueId: ${doc.parentIssueId ? JSON.stringify(doc.parentIssueId) : 'null'}`);
+              lines.push('tasks:');
+              for (const t of doc.tasks || []) {
+                const title = t.title ?? '';
+                const id = t.issueId ?? null;
+                lines.push('  - title: ' + JSON.stringify(title));
+                lines.push('    issueId: ' + (id ? JSON.stringify(id) : 'null'));
+              }
+              lines.push('');
+              return lines.join('\n');
+            }
+
+            // Read or initialize linear.yml
+            let linearDoc = readLinearYaml(linearPath);
+
+            // Extract task titles from tasks.md (lines like "- [ ] T001 ..." or "- [x] ...")
+            const tasksMd = fs.readFileSync(tasksPath, 'utf8');
+            const lines = tasksMd.split(/\r?\n/);
+            const titleFromLine = (line) => {
+              // Only capture lines with a checkbox
+              const m = line.match(/^\s*[-*]\s*\[(?: |x|X)\]\s*(.+)$/);
+              if (m) return m[1].trim();
+              return null;
+            };
+
+            const desiredTitles = [];
+            for (const line of lines) {
+              const t = titleFromLine(line);
+              if (!t) continue;
+              // Stop at section headers etc.
+              if (/^#|^---$/.test(t)) continue;
+              desiredTitles.push(t);
+            }
+
+            // Normalize existing tasks in linear.yml to objects { title, issueId? }
+            const existing = new Map();
+            for (const item of linearDoc.tasks) {
+              if (item == null) continue;
+              if (typeof item === 'string') {
+                existing.set(item, { title: item });
+              } else if (typeof item === 'object' && typeof item.title === 'string') {
+                existing.set(item.title, { title: item.title, issueId: item.issueId ?? null });
+              }
+            }
+
+            // Prepare new list preserving known issueIds by exact title match
+            const mergedTasks = desiredTitles.map(title => ({ title, issueId: existing.get(title)?.issueId ?? null }));
+
+            // Helper to call Linear GraphQL
+            async function gql(query, variables) {
+              if (!process.env.LINEAR_API_KEY) throw new Error('Missing LINEAR_API_KEY secret');
+              const res = await fetch('https://api.linear.app/graphql', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': process.env.LINEAR_API_KEY
+                },
+                body: JSON.stringify({ query, variables })
+              });
+              const json = await res.json();
+              if (json.errors?.length) {
+                throw new Error(json.errors.map(e => e.message).join('; '));
+              }
+              return json.data;
+            }
+
+            // Ensure parent issue exists
+            let parentIssueId = linearDoc.parentIssueId || null;
+            if (!parentIssueId) {
+              if (!process.env.LINEAR_TEAM_ID) throw new Error('Missing LINEAR_TEAM_ID secret');
+              const pr = context.payload.pull_request;
+              const cleanedTitle = (pr.title || '').replace(/\[SPEC\]\s*/gi, '').trim();
+              const parentTitle = cleanedTitle || `Spec ${pr.number}`;
+              const parentDescription = [
+                'Created automatically from merged spec PR.',
+                `Source PR: ${pr.html_url}`,
+                `Author: @${pr.user?.login}`,
+                `Merged At: ${pr.merged_at}`
+              ].join('\n');
+
+              const createIssueMutation = `
+                mutation CreateIssue($input: IssueCreateInput!) {
+                  issueCreate(input: $input) { success issue { id identifier url } }
+                }
+              `;
+
+              const data = await gql(createIssueMutation, {
+                input: { title: parentTitle, description: parentDescription, teamId: process.env.LINEAR_TEAM_ID }
+              });
+
+              if (!data?.issueCreate?.success) throw new Error('Failed to create parent Linear issue');
+              parentIssueId = data.issueCreate.issue.id;
+              linearDoc.parentIssueId = parentIssueId;
+              core.notice(`Created parent Linear issue: ${data.issueCreate.issue.identifier}`);
+            }
+
+            // Create missing child issues
+            const createChildMutation = `
+              mutation CreateIssue($input: IssueCreateInput!) {
+                issueCreate(input: $input) { success issue { id identifier url } }
+              }
+            `;
+
+            for (const task of mergedTasks) {
+              if (task.issueId) continue;
+              const title = task.title;
+              const data = await gql(createChildMutation, {
+                input: {
+                  title,
+                  teamId: process.env.LINEAR_TEAM_ID,
+                  parentId: parentIssueId
+                }
+              });
+              if (!data?.issueCreate?.success) throw new Error(`Failed to create child issue for: ${title}`);
+              task.issueId = data.issueCreate.issue.id;
+              core.notice(`Created child Linear issue: ${data.issueCreate.issue.identifier} for task: ${title}`);
+            }
+
+            // Write back updated linear.yml (objects with title and issueId)
+            linearDoc.tasks = mergedTasks.map(t => ({ title: t.title, issueId: t.issueId || null }));
+            const newYaml = writeLinearYaml(linearDoc);
+            fs.writeFileSync(linearPath, newYaml, 'utf8');
+            core.notice(`Updated ${linearPath}`);
+
+      - name: Commit updated linear.yml
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(ci): sync spec tasks to Linear"
+          file_pattern: "specs/**/linear.yml"
+          branch: main
+
+

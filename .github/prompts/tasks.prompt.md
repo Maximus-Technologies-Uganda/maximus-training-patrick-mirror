@@ -2,7 +2,9 @@
 description: Generate an actionable, dependency-ordered tasks.md for the feature based on available design artifacts.
 ---
 
-Given the context provided as an argument, do this:
+Given the context provided as an argument, do this (produce TWO outputs in the feature directory):
+1) A fully generated `tasks.md`
+2) A corresponding `linear.yml` derived from `tasks.md` using `.specify/templates/linear-template.yml` as the base
 
 1. Run `.specify/scripts/powershell/check-task-prerequisites.ps1 -Json` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute.
 2. Load and analyze available design documents:
@@ -52,6 +54,14 @@ Given the context provided as an argument, do this:
    - Clear file paths for each task
    - Dependency notes
    - Parallel execution guidance
+
+8. Create or update FEATURE_DIR/linear.yml with:
+   - Use `.specify/templates/linear-template.yml` as the base if the file does not exist
+   - Keep `parentIssueId: null` (do NOT attempt to populate)
+   - Under `tasks:`, add one list item per task title from tasks.md
+     - If a task contains an ID prefix like `T001`, keep it in the title as-is
+     - Items may be plain strings (titles) or objects with the shape `{ title: "..." }`
+   - Preserve any existing `issueId` values when updating (match by exact title)
 
 Context for task generation: $ARGUMENTS
 
