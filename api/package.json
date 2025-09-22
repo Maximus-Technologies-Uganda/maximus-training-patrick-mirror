@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "start": "node src/server.js",
+    "dev": "ts-node-dev --respawn --prefer-ts-exts --transpile-only src/server.ts",
+    "start": "node dist/server.js",
     "lint": "eslint .",
     "test": "jest --runInBand",
     "test:watch": "jest --watch"
@@ -40,6 +40,7 @@
     "nodemon": "^3.1.10",
     "supertest": "^7.0.0",
     "ts-jest": "^29.4.4",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
   }
 }
