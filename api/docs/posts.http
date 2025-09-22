@@ -1,0 +1,22 @@
+GET http://localhost:3001/health
+
+###
+
+GET http://localhost:3001/posts
+
+###
+
+POST http://localhost:3001/posts
+Content-Type: application/json
+
+{
+  "title": "Hello World",
+  "content": "This is my first post."
+}
+
+###
+
+# Manually replace 'your-post-id-here' with a real ID from a previous response.
+GET http://localhost:3001/posts/your-post-id-here
+
+
