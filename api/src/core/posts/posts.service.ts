@@ -22,6 +22,8 @@ export class PostsService {
     const post: Post = {
       id: randomUUID(),
       ...data,
+      tags: Array.isArray((data as any).tags) ? (data as any).tags : [],
+      published: (data as any).published ?? false,
       createdAt: now,
       updatedAt: now,
     };
