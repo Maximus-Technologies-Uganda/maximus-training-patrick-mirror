@@ -81,6 +81,31 @@ describe('Posts API Integration Tests', () => {
       expect(getRes3.status).toBe(404);
     });
   });
+
+  describe('Rate Limiting', () => {
+    it('should return a 429 Too Many Requests error after exceeding the limit', async () => {
+      // Build an app instance with the default limiter threshold (100)
+      // using the JS factory to avoid TS module resolution issues in tests.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { createApp } = require('../src/app');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { loadConfigFromEnv } = require('../src/config');
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { createRepository } = require('../src/repositories/posts-repository');
+      const base = loadConfigFromEnv();
+      const config = { ...base, rateLimitMax: 100, rateLimitWindowMs: 15 * 60 * 1000 };
+      const repository = createRepository();
+      const api = createApp(config, repository);
+
+      const promises: Array<Promise<supertest.Response>> = [];
+      for (let i = 0; i < 101; i++) {
+        promises.push(supertest(api).get('/health'));
+      }
+      await Promise.all(promises);
+      const res = await supertest(api).get('/health');
+      expect(res.status).toBe(429);
+    });
+  });
 });
 
 
