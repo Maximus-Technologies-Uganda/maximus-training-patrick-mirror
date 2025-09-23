@@ -11,7 +11,8 @@ export function validate(schema: ZodSchema): RequestHandler {
       await schema.parseAsync(req.body);
       next();
     } catch (error) {
-      next(error);
+      const details = (error as any)?.errors ?? undefined;
+      next({ code: "validation_error", message: "Invalid request body", details } as any);
     }
   };
 }

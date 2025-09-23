@@ -32,9 +32,13 @@ describe("PostsService", () => {
   });
 
   describe("list", () => {
-    it("should return an empty array when there are no posts", async () => {
-      const items = await service.list({ page: 1, pageSize: 10 });
-      expect(items).toEqual([]);
+    it("should return an empty paginated response when there are no posts", async () => {
+      const result = await service.list({ page: 1, pageSize: 10 });
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items).toEqual([]);
+      expect(result.totalItems).toBe(0);
+      expect(result.totalPages).toBe(0);
+      expect(result.currentPage).toBe(1);
     });
 
     it("should return a paginated list of posts correctly", async () => {
@@ -43,13 +47,22 @@ describe("PostsService", () => {
       }
 
       const page1 = await service.list({ page: 1, pageSize: 2 });
-      expect(page1.map((p) => p.title)).toEqual(["T1", "T2"]);
+      expect(page1.items.map((p) => p.title)).toEqual(["T1", "T2"]);
+      expect(page1.totalItems).toBe(5);
+      expect(page1.totalPages).toBe(3);
+      expect(page1.currentPage).toBe(1);
 
       const page2 = await service.list({ page: 2, pageSize: 2 });
-      expect(page2.map((p) => p.title)).toEqual(["T3", "T4"]);
+      expect(page2.items.map((p) => p.title)).toEqual(["T3", "T4"]);
+      expect(page2.totalItems).toBe(5);
+      expect(page2.totalPages).toBe(3);
+      expect(page2.currentPage).toBe(2);
 
       const page3 = await service.list({ page: 3, pageSize: 2 });
-      expect(page3.map((p) => p.title)).toEqual(["T5"]);
+      expect(page3.items.map((p) => p.title)).toEqual(["T5"]);
+      expect(page3.totalItems).toBe(5);
+      expect(page3.totalPages).toBe(3);
+      expect(page3.currentPage).toBe(3);
     });
   });
 

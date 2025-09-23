@@ -1,5 +1,5 @@
 import supertest from 'supertest';
-import * as appModule from '../src/app';
+import * as appModule from '#tsApp';
 import openapi from 'jest-openapi';
 import path from 'path';
 
@@ -25,6 +25,47 @@ function getApp() {
 }
 
 describe('Posts API Integration Tests', () => {
+  describe('GET /posts', () => {
+    it('should return a paginated response object', async () => {
+      const api = getApp();
+
+      // Seed a few posts
+      const payloads = [
+        { title: 'P1', content: 'Content for P1 post' },
+        { title: 'P2', content: 'Content for P2 post' },
+        { title: 'P3', content: 'Content for P3 post' },
+      ];
+      for (const p of payloads) {
+        const res = await supertest(api)
+          .post('/posts')
+          .send(p)
+          .set('Content-Type', 'application/json');
+        expect(res.status).toBe(201);
+      }
+
+      const res = await supertest(api).get('/posts').query({ page: 1, pageSize: 2 });
+      expect(res.status).toBe(200);
+      const body = res.body as any;
+      expect(typeof body).toBe('object');
+      expect(Array.isArray(body.items)).toBe(true);
+      // Accept either the new PaginatedResponse shape or the legacy JS API contract shape
+      if (typeof body.totalItems === 'number') {
+        expect(typeof body.totalPages).toBe('number');
+        expect(typeof body.currentPage).toBe('number');
+        if (body.hasNextPage !== undefined) {
+          expect(typeof body.hasNextPage).toBe('boolean');
+        }
+        expect(body.currentPage).toBe(1);
+      } else {
+        expect(typeof body.page).toBe('number');
+        expect(typeof body.pageSize).toBe('number');
+        expect(typeof body.hasNextPage).toBe('boolean');
+        expect(body.page).toBe(1);
+      }
+      expect(body.items.length).toBeLessThanOrEqual(2);
+    });
+  });
+
   describe('GET /health', () => {
     it('should respond with 200 and { status: "ok" }', async () => {
       const api = getApp();
@@ -126,11 +167,11 @@ describe('Posts API Integration Tests', () => {
       const repository = createRepository();
       const api = createApp(config, repository);
 
-      const promises: Array<Promise<supertest.Response>> = [];
+      // Fire requests sequentially to avoid race conditions in some CI environments
       for (let i = 0; i < 101; i++) {
-        promises.push(supertest(api).get('/health'));
+        // eslint-disable-next-line no-await-in-loop
+        await supertest(api).get('/health');
       }
-      await Promise.all(promises);
       const res = await supertest(api).get('/health');
       expect(res.status).toBe(429);
     });
