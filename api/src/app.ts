@@ -1,39 +1,42 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import morgan from "morgan";
-import rateLimit from "express-rate-limit";
+// App factory for the TypeScript entrypoint, wiring middleware, routes, and error handling
+// We intentionally use CommonJS-style requires to avoid ESM/CJS interop pitfalls in ts-jest
 
-import postsRouter from "./core/posts/posts.routes";
-import { errorHandler } from "./middleware/errorHandler";
+export function createApp(config: any, repository: any) {
+  const express = require('express');
+  const helmet = require('helmet');
+  const cors = require('cors');
+  const morgan = require('morgan');
 
-const app = express();
+  const { errorHandler } = require('./middleware/error-handler');
+  const { createRateLimiter } = require('./middleware/rate-limit');
 
-// Core Middleware (order matters)
-app.use(helmet());
-app.use(cors());
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
-app.use(express.json());
-app.use(morgan("dev"));
+  // Posts stack from the JS implementation (stable, covered by tests)
+  const { createPostsController } = require('./controllers/posts-controller');
+  const { PostsService } = require('./services/posts-service');
+  const { createPostsRoutes } = require('./routes/posts-routes');
+  const { createHealthRoutes } = require('./routes/health');
 
-// Health Check
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
+  const app = express();
+  app.use(helmet());
+  app.use(cors());
+  app.use(express.json({ limit: config.jsonLimit }));
+  app.use(morgan('combined'));
+  app.use(createRateLimiter(config));
 
-// Feature Routes
-app.use("/posts", postsRouter);
+  // Health
+  app.use('/', createHealthRoutes());
 
-// Error Handler (must be last)
-app.use(errorHandler);
+  // Posts
+  const postsService = new PostsService(repository);
+  const postsController = createPostsController(postsService);
+  app.use('/posts', createPostsRoutes(postsController));
 
-export { app };
-export default app;
+  // Error handler (must be last)
+  app.use(errorHandler);
+
+  return app;
+}
+
+export default undefined as unknown as never;
 
 

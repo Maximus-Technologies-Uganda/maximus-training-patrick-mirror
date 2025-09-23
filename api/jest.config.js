@@ -4,4 +4,7 @@ module.exports = {
   preset: "ts-jest",
   collectCoverage: true,
   coverageReporters: ["json", "json-summary", "lcov", "text-summary"],
+  moduleNameMapper: {
+    '^#tsApp$': '<rootDir>/src/app.ts',
+  },
 };

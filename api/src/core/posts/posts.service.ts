@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Post, PostCreate, PostUpdate, ListPostsQuery } from "../../../../src/core/posts/post.schemas";
-import type { IPostsRepository } from "../../../../src/core/posts/posts.repository";
+import type { PaginatedResponse } from "../pagination.types";
 
 /**
  * PostsService is an in-memory implementation of the IPostsRepository interface.
@@ -8,7 +8,7 @@ import type { IPostsRepository } from "../../../../src/core/posts/posts.reposito
  * It maintains posts in-process using a simple array. This is suitable for
  * development, tests, or scenarios where persistence is not required.
  */
-export class PostsService implements IPostsRepository {
+export class PostsService {
   /** In-memory data store for posts */
   private posts: Post[] = [];
 
@@ -40,15 +40,28 @@ export class PostsService implements IPostsRepository {
   }
 
   /**
-   * List posts using pagination parameters.
+   * List posts using pagination parameters and return a structured paginated response.
+   * Enforces a maximum page size of 50 items.
    * @param query - Pagination options (page and pageSize)
-   * @returns An array of Posts for the requested page
+   * @returns PaginatedResponse containing items and pagination metadata
    */
-  async list(query: ListPostsQuery): Promise<Post[]> {
-    const { page, pageSize } = query;
-    const start = (page - 1) * pageSize;
+  async list(query: ListPostsQuery): Promise<PaginatedResponse<Post>> {
+    const requestedPage = query.page;
+    const requestedPageSize = query.pageSize;
+    const pageSize = Math.min(requestedPageSize, 50);
+    const totalItems = this.posts.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const start = (requestedPage - 1) * pageSize;
     const end = start + pageSize;
-    return this.posts.slice(start, end);
+    const items = this.posts.slice(start, end);
+
+    return {
+      items,
+      totalItems,
+      totalPages,
+      currentPage: requestedPage,
+      hasNextPage: requestedPage < totalPages,
+    };
   }
 
   /**

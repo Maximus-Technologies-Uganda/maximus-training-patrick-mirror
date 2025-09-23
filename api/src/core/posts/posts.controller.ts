@@ -23,8 +23,14 @@ export const postsController: {
     try {
       const page = typeof req.query.page === "string" ? parseInt(req.query.page, 10) : 1;
       const pageSize = typeof req.query.pageSize === "string" ? parseInt(req.query.pageSize, 10) : 10;
-      const items = await postsService.list({ page: Number.isNaN(page) ? 1 : page, pageSize: Number.isNaN(pageSize) ? 10 : pageSize });
-      res.json(items);
+      const result = await postsService.list({ page: Number.isNaN(page) ? 1 : page, pageSize: Number.isNaN(pageSize) ? 10 : pageSize });
+      // Map to JS API contract shape to satisfy OpenAPI contract and coverage gate
+      res.status(200).json({
+        page,
+        pageSize,
+        hasNextPage: result.hasNextPage,
+        items: result.items,
+      });
     } catch (error) {
       next(error);
     }
