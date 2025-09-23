@@ -1,5 +1,10 @@
 import supertest from 'supertest';
 import * as appModule from '../src/app';
+import openapi from 'jest-openapi';
+import path from 'path';
+
+const apiSpecPath = path.resolve(__dirname, '..', 'openapi.json');
+openapi(apiSpecPath);
 
 function getApp() {
   const mod: any = appModule as any;
@@ -26,6 +31,7 @@ describe('Posts API Integration Tests', () => {
       const res = await supertest(api).get('/health');
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ status: 'ok' });
+      expect(res).toSatisfyApiSpec();
     });
   });
 
@@ -52,11 +58,13 @@ describe('Posts API Integration Tests', () => {
       expect(createRes.status).toBe(201);
       expect(typeof createRes.body.id).toBe('string');
       const id: string = createRes.body.id;
+      expect(createRes).toSatisfyApiSpec();
 
       // READ
       const getRes1 = await supertest(api).get(`/posts/${id}`);
       expect(getRes1.status).toBe(200);
       expect(getRes1.body).toMatchObject({ id, ...createPayload });
+      expect(getRes1).toSatisfyApiSpec();
 
       // UPDATE
       const patchPayload = { content: 'This content has been updated by the integration test.' };
@@ -66,15 +74,18 @@ describe('Posts API Integration Tests', () => {
         .set('Content-Type', 'application/json');
       expect(patchRes.status).toBe(200);
       expect(patchRes.body).toMatchObject({ id, ...createPayload, ...patchPayload });
+      expect(patchRes).toSatisfyApiSpec();
 
       // VERIFY UPDATE
       const getRes2 = await supertest(api).get(`/posts/${id}`);
       expect(getRes2.status).toBe(200);
       expect(getRes2.body).toMatchObject({ id, ...createPayload, ...patchPayload });
+      expect(getRes2).toSatisfyApiSpec();
 
       // DELETE
       const deleteRes = await supertest(api).delete(`/posts/${id}`);
       expect(deleteRes.status).toBe(204);
+      expect(deleteRes).toSatisfyApiSpec();
 
       // VERIFY DELETE
       const getRes3 = await supertest(api).get(`/posts/${id}`);
