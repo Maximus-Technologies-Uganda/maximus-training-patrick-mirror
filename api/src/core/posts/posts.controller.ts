@@ -13,7 +13,7 @@ export const postsController: {
   async create(req, res, next) {
     try {
       const created = await postsService.create(req.body);
-      res.status(201).json(created);
+      res.status(201).location(`/posts/${created.id}`).json(created);
     } catch (error) {
       next(error);
     }

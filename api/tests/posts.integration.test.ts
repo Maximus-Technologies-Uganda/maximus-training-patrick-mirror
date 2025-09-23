@@ -56,6 +56,7 @@ describe('Posts API Integration Tests', () => {
         .send(createPayload)
         .set('Content-Type', 'application/json');
       expect(createRes.status).toBe(201);
+      expect(createRes.headers['location']).toMatch(/^\/posts\/[A-Za-z0-9_-]+$/);
       expect(typeof createRes.body.id).toBe('string');
       const id: string = createRes.body.id;
       expect(createRes).toSatisfyApiSpec();
@@ -90,6 +91,23 @@ describe('Posts API Integration Tests', () => {
       // VERIFY DELETE
       const getRes3 = await supertest(api).get(`/posts/${id}`);
       expect(getRes3.status).toBe(404);
+    });
+
+    it('should return a 4xx error for requests with unknown fields', async () => {
+      const api = getApp();
+      const payload = {
+        title: 'Valid Title',
+        content: 'Valid content for the post.',
+        unknownField: 'test',
+      };
+
+      const res = await supertest(api)
+        .post('/posts')
+        .send(payload)
+        .set('Content-Type', 'application/json');
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.status).toBeLessThan(500);
     });
   });
 
