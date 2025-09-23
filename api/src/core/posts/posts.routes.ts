@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { postsController } from "./posts.controller";
-import { validate } from "../../middleware/validate.ts";
+import { validate } from "../../middleware/validate";
 import { PostCreateSchema, PostUpdateSchema } from "../../../../src/core/posts/post.schemas";
 
 const router = Router();
