@@ -21,13 +21,13 @@ export const PostSchema = z.object({
  * PostCreateSchema: Input schema for creating a post.
  * Omits server-generated fields: id, createdAt, updatedAt.
  */
-export const PostCreateSchema = PostSchema.omit({ id: true, createdAt: true, updatedAt: true });
+export const PostCreateSchema = PostSchema.omit({ id: true, createdAt: true, updatedAt: true }).strict();
 
 /**
  * PostUpdateSchema: Input schema for updating a post.
  * All fields are optional but at least one must be provided.
  */
-export const PostUpdateSchema = PostCreateSchema.partial().refine(
+export const PostUpdateSchema = PostCreateSchema.partial().strict().refine(
   (value) => Object.values(value).some((v) => v !== undefined),
   {
     message: "At least one field must be provided",
