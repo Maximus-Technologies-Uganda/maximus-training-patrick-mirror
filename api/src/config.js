@@ -1,11 +1,4 @@
-// Load environment variables from a .env file if present
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  require('dotenv').config();
-} catch (_e) {
-  // dotenv is optional in some environments; ignore if unavailable
-}
-
+// Keep JS implementation for CommonJS consumers; TS imports use config.ts directly.
 function toInt(value, fallback) {
   const n = parseInt(value, 10);
   return Number.isFinite(n) ? n : fallback;

@@ -1,4 +1,4 @@
-const { makeError } = require('../lib/errors');
+ 
 
 function createPostsController(postsService) {
   return {

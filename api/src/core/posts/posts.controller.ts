@@ -21,15 +21,20 @@ export const postsController: {
 
   async list(req, res, next) {
     try {
-      const page = typeof req.query.page === "string" ? parseInt(req.query.page, 10) : 1;
-      const pageSize = typeof req.query.pageSize === "string" ? parseInt(req.query.pageSize, 10) : 10;
-      const result = await postsService.list({ page: Number.isNaN(page) ? 1 : page, pageSize: Number.isNaN(pageSize) ? 10 : pageSize });
-      // Map to JS API contract shape to satisfy OpenAPI contract and coverage gate
+      const q = (req as any).validatedQuery ?? req.query;
+      const page = typeof q.page === "number" ? q.page : (typeof q.page === "string" ? parseInt(q.page, 10) : 1);
+      const pageSize = typeof q.pageSize === "number" ? q.pageSize : (typeof q.pageSize === "string" ? parseInt(q.pageSize, 10) : 10);
+      const safePage = Number.isFinite(page) && page >= 1 ? page : 1;
+      const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? pageSize : 10;
+      const result = await postsService.list({ page: safePage, pageSize: safePageSize });
       res.status(200).json({
-        page,
-        pageSize,
-        hasNextPage: result.hasNextPage,
         items: result.items,
+        totalItems: result.totalItems,
+        totalPages: result.totalPages,
+        currentPage: result.currentPage,
+        page: result.currentPage,
+        hasNextPage: result.hasNextPage,
+        pageSize: result.pageSize,
       });
     } catch (error) {
       next(error);

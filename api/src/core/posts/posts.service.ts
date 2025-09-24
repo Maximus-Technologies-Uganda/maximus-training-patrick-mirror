@@ -21,9 +21,10 @@ export class PostsService {
     const now = new Date();
     const post: Post = {
       id: randomUUID(),
-      ...data,
-      tags: Array.isArray((data as any).tags) ? (data as any).tags : [],
-      published: (data as any).published ?? false,
+      title: data.title,
+      content: data.content,
+      tags: data.tags ?? [],
+      published: data.published ?? false,
       createdAt: now,
       updatedAt: now,
     };
@@ -50,10 +51,14 @@ export class PostsService {
   async list(query: ListPostsQuery): Promise<PaginatedResponse<Post>> {
     const requestedPage = query.page;
     const requestedPageSize = query.pageSize;
-    const pageSize = Math.min(requestedPageSize, 50);
+    // Enforce pagination bounds defensively at the service layer
+    const maxPageSize = 100;
+    const pageSize = Math.min(Math.max(requestedPageSize, 1), maxPageSize);
+    const currentPage = Math.max(requestedPage, 1);
+
     const totalItems = this.posts.length;
-    const totalPages = Math.ceil(totalItems / pageSize);
-    const start = (requestedPage - 1) * pageSize;
+    const totalPages = pageSize > 0 ? Math.ceil(totalItems / pageSize) : 0;
+    const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
     const items = this.posts.slice(start, end);
 
@@ -61,8 +66,9 @@ export class PostsService {
       items,
       totalItems,
       totalPages,
-      currentPage: requestedPage,
-      hasNextPage: requestedPage < totalPages,
+      currentPage,
+      hasNextPage: currentPage < totalPages,
+      pageSize,
     };
   }
 

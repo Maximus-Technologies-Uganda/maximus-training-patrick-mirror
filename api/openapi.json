@@ -130,7 +130,10 @@
           "page": { "type": "integer", "minimum": 1 },
           "pageSize": { "type": "integer", "minimum": 1 },
           "hasNextPage": { "type": "boolean" },
-          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Post" } }
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Post" } },
+          "totalItems": { "type": "integer", "minimum": 0 },
+          "totalPages": { "type": "integer", "minimum": 0 },
+          "currentPage": { "type": "integer", "minimum": 1 }
         },
         "additionalProperties": false
       },

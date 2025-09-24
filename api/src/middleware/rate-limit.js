@@ -1,5 +1,5 @@
 const rateLimit = require('express-rate-limit');
-const { makeError } = require('../lib/errors');
+ 
 
 function createRateLimiter(config) {
   return rateLimit({

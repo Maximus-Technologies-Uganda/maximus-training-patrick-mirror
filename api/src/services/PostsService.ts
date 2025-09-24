@@ -81,6 +81,7 @@ export class PostsService implements IPostsService {
       totalPages,
       currentPage: page,
       hasNextPage,
+      pageSize,
     };
   }
 
