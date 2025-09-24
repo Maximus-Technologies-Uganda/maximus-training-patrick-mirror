@@ -2,7 +2,10 @@ const { statusByCode } = require('../lib/errors');
 
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, _req, res, _next) {
-  const status = statusByCode[err.code] || 500;
+  // Allow explicit status codes set upstream (e.g., from libraries)
+  const explicit = err.status || err.statusCode;
+  const mapped = statusByCode[err.code];
+  const status = explicit || mapped || 500;
   res.status(status).json({
     code: err.code || 'internal_error',
     message: err.message || 'Internal Server Error',
