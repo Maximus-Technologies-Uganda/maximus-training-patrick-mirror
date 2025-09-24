@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const { errorHandler } = require('./middleware/error-handler');
 const { createRateLimiter } = require('./middleware/rate-limit');
+const { notFoundHandler } = require('./middleware/not-found');
 const { createPostsController } = require('./controllers/posts-controller');
 const { PostsService } = require('./services/posts-service');
 const { createPostsRoutes } = require('./routes/posts-routes');
@@ -36,6 +37,8 @@ function createApp(config, repository) {
     });
   }
 
+  // 404 handler for unmatched routes
+  app.use(notFoundHandler);
   // Error handler
   app.use(errorHandler);
 

@@ -5,6 +5,7 @@ function createRateLimiter(config) {
   return rateLimit({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
+    // Include RateLimit headers per RFC standard
     standardHeaders: true,
     legacyHeaders: false,
     handler: (_req, res, _next, options) => {

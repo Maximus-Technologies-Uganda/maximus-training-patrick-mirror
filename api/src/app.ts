@@ -9,6 +9,7 @@ export function createApp(config: any, repository: any) {
 
   const { errorHandler } = require('./middleware/error-handler');
   const { createRateLimiter } = require('./middleware/rate-limit');
+  const { notFoundHandler } = require('./middleware/not-found');
 
   // Posts stack from the JS implementation (stable, covered by tests)
   const { createPostsController } = require('./controllers/posts-controller');
@@ -43,6 +44,7 @@ export function createApp(config: any, repository: any) {
   }
 
   // Error handler (must be last)
+  app.use(notFoundHandler);
   app.use(errorHandler);
 
   return app;
