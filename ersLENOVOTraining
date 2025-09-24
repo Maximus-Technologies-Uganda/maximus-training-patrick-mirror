@@ -1,0 +1,119 @@
+[33mcommit 2acba3e0e399619db4c3f785c88e68d448718080[m
+Author: patrick.zizinga@maximusglobal.net <patrick.zizinga@maximusglobal.net>
+Date:   Wed Sep 24 13:17:12 2025 +0300
+
+    test: add pagination and validation edge cases
+
+ .actionlint                                        |     4 [32m+[m
+ .actionlint.yml                                    |     3 [32m+[m
+ .cursor/commands/plan.md                           |    36 [32m+[m
+ .cursor/commands/specify.md                        |    12 [32m+[m
+ .cursor/commands/tasks.md                          |    58 [32m+[m
+ .editorconfig                                      |    20 [32m+[m
+ .gitattributes                                     |   Bin [31m0[m -> [32m998[m bytes
+ .github/CODEOWNERS                                 |     4 [32m+[m
+ .github/prompts/plan.prompt.md                     |    36 [32m+[m
+ .github/prompts/specify.prompt.md                  |    12 [32m+[m
+ .github/prompts/tasks.prompt.md                    |    68 [32m+[m
+ .github/pull_request_template.md                   |    48 [32m+[m
+ .github/workflows/binary-guard.yml                 |    52 [32m+[m
+ .github/workflows/ci.yml                           |   274 [32m+[m
+ .github/workflows/generate-lockfile.yml            |    39 [32m+[m
+ .github/workflows/mirror.yml                       |   102 [32m+[m
+ .github/workflows/pages-deploy.yml                 |    59 [32m+[m
+ .github/workflows/pr-require-linear.yml            |    36 [32m+[m
+ .github/workflows/quality-gate.yml                 |   188 [32m+[m
+ .github/workflows/reject-binaries.yml              |    29 [32m+[m
+ .github/workflows/review-packet-manual.yml         |     9 [32m+[m
+ .github/workflows/review-packet.yml                |   315 [32m+[m
+ .github/workflows/spec-sync-to-linear.yml          |   260 [32m+[m
+ .gitignore                                         |   Bin [31m0[m -> [32m1220[m bytes
+ .nojekyll                                          |     0
+ .nvmrc                                             |     3 [32m+[m
+ .specify/memory/constitution.md                    |    62 [32m+[m
+ .specify/memory/constitution_update_checklist.md   |    85 [32m+[m
+ .../powershell/check-task-prerequisites.ps1        |    35 [32m+[m
+ .specify/scripts/powershell/common.ps1             |    65 [32m+[m
+ .specify/scripts/powershell/create-new-feature.ps1 |   111 [32m+[m
+ .specify/scripts/powershell/get-feature-paths.ps1  |    15 [32m+[m
+ .specify/scripts/powershell/setup-plan.ps1         |    22 [32m+[m
+ .../scripts/powershell/update-agent-context.ps1    |   101 [32m+[m
+ ...haped-blog-posts-rest-api-the-api-must-inclu.md |   158 [32m+[m
+ .specify/templates/agent-file-template.md          |    23 [32m+[m
+ .specify/templates/linear-template.yml             |     4 [32m+[m
+ .specify/templates/plan-template.md                |   238 [32m+[m
+ .specify/templates/spec-template.md                |   116 [32m+[m
+ .specify/templates/tasks-template.md               |   127 [32m+[m
+ .vscode/settings.json                              |     6 [32m+[m
+ CHANGELOG.md                                       |   160 [32m+[m
+ CONTRIBUTING.md                                    |    26 [32m+[m
+ HANDOFF.md                                         |    32 [32m+[m
+ PR_BODY.md                                         |    41 [32m+[m
+ README.md                                          |   113 [32m+[m
+ TESTING.md                                         |    25 [32m+[m
+ api/tests/posts.int.test.js                        |   215 [32m+[m
+ api/tests/posts.integration.test.ts                |   215 [32m+[m
+ assets/index-De3XciNN.js                           |     1 [32m+[m
+ assets/index-P0ZsZ6yg.js                           |     1 [32m+[m
+ assets/screenshot-app.png                          |   Bin [31m0[m -> [32m68[m bytes
+ cli-error-handling-example.js                      |    92 [32m+[m
+ docs/screenshot.png                                |   Bin [31m0[m -> [32m322127[m bytes
+ expense/README.md                                  |   170 [32m+[m
+ expense/coverage/coverage-final.json               |     2 [32m+[m
+ expense/coverage/lcov-report/base.css              |   224 [32m+[m
+ expense/coverage/lcov-report/block-navigation.js   |    87 [32m+[m
+ expense/coverage/lcov-report/core.js.html          |   280 [32m+[m
+ expense/coverage/lcov-report/favicon.png           |   Bin [31m0[m -> [32m445[m bytes
+ expense/coverage/lcov-report/index.html            |   116 [32m+[m
+ expense/coverage/lcov-report/index.js.html         |   619 [32m+[m
+ expense/coverage/lcov-report/prettify.css          |     1 [32m+[m
+ expense/coverage/lcov-report/prettify.js           |     2 [32m+[m
+ expense/coverage/lcov-report/sort-arrow-sprite.png |   Bin [31m0[m -> [32m138[m bytes
+ expense/coverage/lcov-report/sorter.js             |   210 [32m+[m
+ expense/coverage/lcov.info                         |   108 [32m+[m
+ expense/expenses.json                              |    32 [32m+[m
+ expense/jest.config.js                             |    11 [32m+[m
+ expense/node_modules/.bin/browserslist             |    16 [32m+[m
+ expense/node_modules/.bin/browserslist.cmd         |    17 [32m+[m
+ expense/node_modules/.bin/browserslist.ps1         |    28 [32m+[m
+ expense/node_modules/.bin/create-jest              |    16 [32m+[m
+ expense/node_modules/.bin/create-jest.cmd          |    17 [32m+[m
+ expense/node_modules/.bin/create-jest.ps1          |    28 [32m+[m
+ expense/node_modules/.bin/esparse                  |    16 [32m+[m
+ expense/node_modules/.bin/esparse.cmd              |    17 [32m+[m
+ expense/node_modules/.bin/esparse.ps1              |    28 [32m+[m
+ expense/node_modules/.bin/esvalidate               |    16 [32m+[m
+ expense/node_modules/.bin/esvalidate.cmd           |    17 [32m+[m
+ expense/node_modules/.bin/esvalidate.ps1           |    28 [32m+[m
+ expense/node_modules/.bin/import-local-fixture     |    16 [32m+[m
+ expense/node_modules/.bin/import-local-fixture.cmd |    17 [32m+[m
+ expense/node_modules/.bin/import-local-fixture.ps1 |    28 [32m+[m
+ expense/node_modules/.bin/jest                     |    16 [32m+[m
+ expense/node_modules/.bin/jest.cmd                 |    17 [32m+[m
+ expense/node_modules/.bin/jest.ps1                 |    28 [32m+[m
+ expense/node_modules/.bin/js-yaml                  |    16 [32m+[m
+ expense/node_modules/.bin/js-yaml.cmd              |    17 [32m+[m
+ expense/node_modules/.bin/js-yaml.ps1              |    28 [32m+[m
+ expense/node_modules/.bin/jsesc                    |    16 [32m+[m
+ expense/node_modules/.bin/jsesc.cmd                |    17 [32m+[m
+ expense/node_modules/.bin/jsesc.ps1                |    28 [32m+[m
+ expense/node_modules/.bin/json5                    |    16 [32m+[m
+ expense/node_modules/.bin/json5.cmd                |    17 [32m+[m
+ expense/node_modules/.bin/json5.ps1                |    28 [32m+[m
+ expense/node_modules/.bin/node-which               |    16 [32m+[m
+ expense/node_modules/.bin/node-which.cmd           |    17 [32m+[m
+ expense/node_modules/.bin/node-which.ps1           |    28 [32m+[m
+ expense/node_modules/.bin/parser                   |    16 [32m+[m
+ expense/node_modules/.bin/parser.cmd               |    17 [32m+[m
+ expense/node_modules/.bin/parser.ps1               |    28 [32m+[m
+ expense/node_modules/.bin/resolve                  |    16 [32m+[m
+ expense/node_modules/.bin/resolve.cmd              |    17 [32m+[m
+ expense/node_modules/.bin/resolve.ps1              |    28 [32m+[m
+ expense/node_modules/.bin/semver                   |    16 [32m+[m
+ expense/node_modules/.bin/semver.cmd               |    17 [32m+[m
+ expense/node_modules/.bin/semver.ps1               |    28 [32m+[m
+ expense/node_modules/.bin/update-browserslist-db   |    16 [32m+[m
+ .../node_modules/.bin/update-browserslist-db.cmd   |    17 [32m+[m
+ .../node_modules/.bin/update-browserslist-db.ps1   |    28 [32m+[m
+ expense/node_modules/.package-lock.json            |  3634 [32m+++++[m
+ ex

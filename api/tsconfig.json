@@ -15,7 +15,11 @@
       "#tsApp": ["src/app.ts"]
     }
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "tests/types/**/*.d.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }
 

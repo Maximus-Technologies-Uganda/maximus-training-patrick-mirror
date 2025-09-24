@@ -15,7 +15,11 @@
     "pages:docs": "node scripts/publish-docs.js"
   },
   "devDependencies": {
-    "c8": "^9.1.0"
+    "@eslint/js": "^9.36.0",
+    "@types/jest": "^30.0.0",
+    "c8": "^9.1.0",
+    "eslint": "^9.36.0",
+    "globals": "^16.4.0"
   },
   "dependencies": {
     "zod": "^4.1.11"

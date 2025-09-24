@@ -1,6 +1,5 @@
 const { statusByCode } = require('../lib/errors');
 
-// eslint-disable-next-line no-unused-vars
 function errorHandler(err, _req, res, _next) {
   // Allow explicit status codes set upstream (e.g., from libraries)
   const explicit = err.status || err.statusCode;

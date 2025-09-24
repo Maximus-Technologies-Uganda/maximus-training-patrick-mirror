@@ -1,8 +1,8 @@
 import supertest from 'supertest';
 import * as appModule from '#tsApp';
-import path from 'path';
+// jest-openapi now initialised globally via tests/jest.setup.js
 
-function getApp() {
+async function resolveApp() {
   const mod: any = appModule as any;
   if (mod.default && typeof mod.default === 'function' && typeof mod.default.use === 'function') return mod.default;
   if (mod.app && typeof mod.app.use === 'function') return mod.app;
@@ -23,7 +23,7 @@ function getApp() {
 describe('Posts API Integration Tests', () => {
   describe('GET /posts', () => {
     it('should return a paginated response object', async () => {
-      const api = getApp();
+      const api = await resolveApp();
 
       // Seed a few posts
       const payloads = [
@@ -41,30 +41,21 @@ describe('Posts API Integration Tests', () => {
 
       const res = await supertest(api).get('/posts').query({ page: 1, pageSize: 2 });
       expect(res.status).toBe(200);
-      const body = res.body as any;
+      const body = res.body;
       expect(typeof body).toBe('object');
       expect(Array.isArray(body.items)).toBe(true);
-      // Accept either the new PaginatedResponse shape or the legacy JS API contract shape
-      if (typeof body.totalItems === 'number') {
-        expect(typeof body.totalPages).toBe('number');
-        expect(typeof body.currentPage).toBe('number');
-        if (body.hasNextPage !== undefined) {
-          expect(typeof body.hasNextPage).toBe('boolean');
-        }
-        expect(body.currentPage).toBe(1);
-      } else {
-        expect(typeof body.page).toBe('number');
-        expect(typeof body.pageSize).toBe('number');
-        expect(typeof body.hasNextPage).toBe('boolean');
-        expect(body.page).toBe(1);
-      }
+      expect(typeof body.totalItems).toBe('number');
+      expect(typeof body.totalPages).toBe('number');
+      expect(typeof body.currentPage).toBe('number');
+      expect(typeof body.hasNextPage).toBe('boolean');
+      expect(body.currentPage).toBe(1);
       expect(body.items.length).toBeLessThanOrEqual(2);
     });
   });
 
   describe('GET /health', () => {
     it('should respond with 200 and { status: "ok" }', async () => {
-      const api = getApp();
+      const api = await resolveApp();
       const res = await supertest(api).get('/health');
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ status: 'ok' });
@@ -74,7 +65,7 @@ describe('Posts API Integration Tests', () => {
 
   describe('POST /posts', () => {
     it('should return a 4xx client error for invalid input', async () => {
-      const api = getApp();
+      const api = await resolveApp();
       const res = await supertest(api)
         .post('/posts')
         .send({})
@@ -85,7 +76,7 @@ describe('Posts API Integration Tests', () => {
     });
 
     it('should handle the full CRUD lifecycle of a post', async () => {
-      const api = getApp();
+      const api = await resolveApp();
       // CREATE
       const createPayload = { title: 'Integration Title', content: 'This is the integration test content.' };
       const createRes = await supertest(api)
@@ -131,7 +122,7 @@ describe('Posts API Integration Tests', () => {
     });
 
     it('should return a 4xx error for requests with unknown fields', async () => {
-      const api = getApp();
+      const api = await resolveApp();
       const payload = {
         title: 'Valid Title',
         content: 'Valid content for the post.',

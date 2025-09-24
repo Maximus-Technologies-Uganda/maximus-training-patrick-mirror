@@ -5,7 +5,7 @@ const os = require('os');
 let SqlitePostsRepository;
 try {
   ({ SqlitePostsRepository } = require('../src/repositories/SqlitePostsRepository'));
-} catch (_e) {
+} catch {
   // skip all tests if better-sqlite3 is unavailable
   describe('SqlitePostsRepository', () => {
     it.skip('skipped because better-sqlite3 is not installed', () => {});

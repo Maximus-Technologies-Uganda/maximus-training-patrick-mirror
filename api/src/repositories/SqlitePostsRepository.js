@@ -1,7 +1,7 @@
 let Database;
 try {
   Database = require('better-sqlite3');
-} catch (_e) {
+} catch {
   throw new Error('better-sqlite3 is not installed. Install it or set POSTS_REPOSITORY=inmemory');
 }
 const fs = require('fs');
@@ -121,7 +121,7 @@ class SqlitePostsRepository {
     try {
       const parsed = JSON.parse(tagsText);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (_e) {
+    } catch {
       return [];
     }
   }

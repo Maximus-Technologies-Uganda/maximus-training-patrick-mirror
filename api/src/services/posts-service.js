@@ -5,7 +5,7 @@ function getNanoid() {
   if (!nanoidFn) {
     try {
       ({ nanoid: nanoidFn } = require('nanoid'));
-    } catch (_e) {
+    } catch {
       // fallback simple id for environments where ESM import is problematic
       nanoidFn = () => Math.random().toString(36).slice(2, 10);
     }

@@ -102,7 +102,7 @@ function createRepository() {
     let SqlitePostsRepository;
     try {
       ({ SqlitePostsRepository } = require('./SqlitePostsRepository'));
-    } catch (err) {
+    } catch {
       throw new Error('POSTS_REPOSITORY=sqlite but better-sqlite3 is not installed. Install optional dependency better-sqlite3.');
     }
     const dbFile = process.env.DB_FILE || undefined;
