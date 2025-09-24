@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest",
     "test:coverage": "jest --coverage",
+    "test:oas": "node ./scripts/validate-openapi.mjs ./openapi.json",
     "build": "tsc -p tsconfig.json",
     "start": "node src/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts"
@@ -21,16 +22,20 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@hyperjump/json-schema": "^1.10.3",
+    "@apidevtools/openapi-schemas": "^2.1.0",
+    "@hyperjump/oas-schema-validator": "^0.9.0",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.24",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "jest": "^29.7.0",
     "jest-openapi": "^0.14.2",
+    "oas-validator": "^5.0.8",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"
   }
 }
-
-

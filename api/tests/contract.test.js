@@ -15,7 +15,7 @@ function makeApp() {
 }
 
 beforeAll(() => {
-  const specPath = path.join(__dirname, '..', '..', 'specs', '002-posts-api', 'contracts', 'openapi.yml');
+  const specPath = path.join(__dirname, '..', 'openapi.json');
   jestOpenAPI(specPath);
 });
 

@@ -4,6 +4,7 @@ module.exports = {
   preset: "ts-jest",
   collectCoverage: true,
   coverageReporters: ["json", "json-summary", "lcov", "text-summary"],
+  setupFilesAfterEnv: ["<rootDir>/tests/jest.setup.js"],
   globals: {
     'ts-jest': {
       isolatedModules: true,

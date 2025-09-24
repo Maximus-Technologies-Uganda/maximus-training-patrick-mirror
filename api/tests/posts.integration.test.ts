@@ -1,10 +1,6 @@
 import supertest from 'supertest';
 import * as appModule from '#tsApp';
-import openapi from 'jest-openapi';
 import path from 'path';
-
-const apiSpecPath = path.resolve(__dirname, '..', 'openapi.json');
-openapi(apiSpecPath);
 
 function getApp() {
   const mod: any = appModule as any;
