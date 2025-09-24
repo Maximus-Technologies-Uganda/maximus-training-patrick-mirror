@@ -25,6 +25,17 @@ function createApp(config, repository) {
   const postsController = createPostsController(postsService);
   app.use('/posts', createPostsRoutes(postsController));
 
+  // In development, expose the OpenAPI spec directly from the repo as the source of truth
+  if (process.env.NODE_ENV !== 'production') {
+    const path = require('path');
+    const specPath = path.join(__dirname, '..', 'openapi.json');
+    app.get('/openapi.json', (_req, res) => {
+      res.set('Cache-Control', 'no-store');
+      res.type('application/json');
+      res.sendFile(specPath);
+    });
+  }
+
   // Error handler
   app.use(errorHandler);
 
