@@ -1,9 +1,160 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { SWRConfig } from "swr";
 
-export default function PostsPageClient(): JSX.Element {
-  return <div data-testid="posts-page-client" />;
+import LiveRegion from "./LiveRegion";
+import NewPostForm from "./NewPostForm";
+import PageSizeSelect from "./PageSizeSelect";
+import PaginationControls from "./PaginationControls";
+import PostsList from "./PostsList";
+import SearchInput from "./SearchInput";
+import { usePostsList } from "../src/lib/swr";
+
+export default function PostsPageClient({
+  page: initialPage = 1,
+  pageSize: initialPageSize = 10,
+  q: initialQ = "",
+}: {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+}): JSX.Element {
+  const [page, setPage] = useState<number>(initialPage);
+  const [pageSize, setPageSize] = useState<number>(initialPageSize);
+  const [q, setQ] = useState<string>(initialQ);
+
+  // Initialize from URL on mount
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const nextPage = Number(url.searchParams.get("page") ?? String(initialPage));
+      const nextPageSize = Number(
+        url.searchParams.get("pageSize") ?? String(initialPageSize),
+      );
+      const nextQ = url.searchParams.get("q") ?? initialQ;
+      setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1);
+      setPageSize(
+        Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 10,
+      );
+      setQ(nextQ);
+    } catch {}
+  }, [initialPage, initialPageSize, initialQ]);
+
+  // Sync internal state with browser navigation (back/forward)
+  useEffect(() => {
+    const onPopState = (): void => {
+      try {
+        const url = new URL(window.location.href);
+        const p = Number(url.searchParams.get("page") ?? "1");
+        const ps = Number(url.searchParams.get("pageSize") ?? "10");
+        const qParam = url.searchParams.get("q") ?? "";
+        setPage(Number.isFinite(p) && p > 0 ? p : 1);
+        setPageSize(Number.isFinite(ps) && ps > 0 ? ps : 10);
+        setQ(qParam);
+      } catch {}
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const { data, isLoading, error } = usePostsList({ page, pageSize });
+
+  const statusMessage = useMemo(() => {
+    return isLoading ? "Loading posts…" : "";
+  }, [isLoading]);
+
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    // Focus heading after page change for a11y
+    headingRef.current?.focus();
+  }, [page, pageSize]);
+
+  const pushQuery = (next: { page?: number; pageSize?: number; q?: string }): void => {
+    const url = new URL(window.location.href);
+    const newPage = next.page ?? page;
+    const newPageSize = next.pageSize ?? pageSize;
+    const newQ = next.q ?? q;
+    url.searchParams.set("page", String(newPage));
+    url.searchParams.set("pageSize", String(newPageSize));
+    if (newQ) url.searchParams.set("q", newQ);
+    else url.searchParams.delete("q");
+    window.history.pushState({}, "", `${url.pathname}?${url.searchParams.toString()}`);
+  };
+
+  const onChangePage = (nextPage: number): void => {
+    setPage(nextPage);
+    pushQuery({ page: nextPage });
+  };
+  const onChangePageSize = (nextSize: number): void => {
+    setPage(1);
+    setPageSize(nextSize);
+    pushQuery({ page: 1, pageSize: nextSize });
+  };
+  const onChangeQ = (nextQ: string): void => {
+    setQ(nextQ);
+    pushQuery({ q: nextQ });
+  };
+
+  const filteredItems = useMemo(() => {
+    const items = data?.items ?? [];
+    const query = q.trim().toLowerCase();
+    if (!query) return items;
+    return items.filter(
+      (p) =>
+        p.title.toLowerCase().includes(query) ||
+        p.content.toLowerCase().includes(query),
+    );
+  }, [data?.items, q]);
+
+  // Keep SWR cache stable across renders for this page instance
+  const cacheRef = useRef<Map<unknown, unknown> | null>(null);
+  if (!cacheRef.current) cacheRef.current = new Map<unknown, unknown>();
+  const swrValue = useMemo(() => ({ provider: () => cacheRef.current as Map<unknown, unknown> }), []);
+
+  return (
+    <SWRConfig value={swrValue}>
+      <main className="mx-auto max-w-3xl p-4">
+      <LiveRegion message={statusMessage} />
+
+      <h1
+        ref={headingRef}
+        tabIndex={-1}
+        className="text-2xl font-bold text-gray-900"
+      >
+        Posts
+      </h1>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <PageSizeSelect pageSize={pageSize} onChange={onChangePageSize} />
+        <SearchInput value={q} onChange={onChangeQ} />
+      </div>
+
+      <div className="mt-6">
+        <NewPostForm pageSize={pageSize} />
+      </div>
+
+      <section className="mt-6" aria-label="Posts list">
+        {error ? (
+          <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-red-800">
+            Error loading posts. Please try again.
+          </div>
+        ) : isLoading ? (
+          <p className="text-gray-600">Loading…</p>
+        ) : (
+          <PostsList items={filteredItems} />
+        )}
+      </section>
+
+      <PaginationControls
+        page={page}
+        hasNextPage={Boolean(data?.hasNextPage)}
+        onChangePage={onChangePage}
+      />
+      </main>
+    </SWRConfig>
+  );
 }
 
 

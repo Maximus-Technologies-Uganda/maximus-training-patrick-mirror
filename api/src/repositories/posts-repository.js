@@ -10,7 +10,7 @@ function getNanoid() {
   if (!nanoidFn) {
     try {
       ({ nanoid: nanoidFn } = require('nanoid'));
-    } catch (_e) {
+    } catch {
       nanoidFn = () => Math.random().toString(36).slice(2, 10);
     }
   }

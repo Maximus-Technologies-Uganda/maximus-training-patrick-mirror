@@ -48,13 +48,13 @@ Reference contracts: `C:\Users\LENOVO\Training\api\openapi.json`, `C:\Users\LENO
 - [X] T015 [P] Implement SWR fetcher and keys in `C:\Users\LENOVO\Training\frontend-next\src\lib\swr.ts` (`usePostsList({page,pageSize})`, `mutatePostsPage1`).
 
 ## Phase 3.4: UI Components and Pages (Read-only list with SWR)
-- [ ] T016 Create App Router route file `C:\Users\LENOVO\Training\frontend-next\app\posts\page.tsx` (server shell) that reads `searchParams` and renders client component with props.
-- [ ] T017 [P] Create client component `C:\Users\LENOVO\Training\frontend-next\components\PostsPageClient.tsx` using SWR read-only list with loading/empty/error/success and live region announcements.
-- [ ] T018 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\PostsList.tsx` that renders list items with truncated content (~200 chars) and accessible structure.
-- [ ] T019 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\PaginationControls.tsx` wiring URL updates and disabling per `hasNextPage` and page=1.
-- [ ] T020 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\PageSizeSelect.tsx` that updates pageSize and resets to page=1 with URL sync.
-- [ ] T021 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\SearchInput.tsx` with debounced (~300ms) filter and URL `q` sync.
-- [ ] T022 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\LiveRegion.tsx` to announce loading/errors/success.
+- [X] T016 Create App Router route file `C:\Users\LENOVO\Training\frontend-next\app\posts\page.tsx` (server shell) that reads `searchParams` and renders client component with props.
+- [X] T017 [P] Create client component `C:\Users\LENOVO\Training\frontend-next\components\PostsPageClient.tsx` using SWR read-only list with loading/empty/error/success and live region announcements.
+- [X] T018 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\PostsList.tsx` that renders list items with truncated content (~200 chars) and accessible structure.
+- [X] T019 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\PaginationControls.tsx` wiring URL updates and disabling per `hasNextPage` and page=1.
+- [X] T020 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\PageSizeSelect.tsx` that updates pageSize and resets to page=1 with URL sync.
+- [X] T021 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\SearchInput.tsx` with debounced (~300ms) filter and URL `q` sync.
+- [X] T022 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\LiveRegion.tsx` to announce loading/errors/success.
 
 ## Phase 3.5: Create Form and SWR mutate
 - [ ] T023 Implement `C:\Users\LENOVO\Training\frontend-next\components\NewPostForm.tsx` with zod client validation (title/content required), POST to API, on 201 clear form, focus success alert, and `mutate` list for page 1; handle 400+ errors with inline alert preserving input.
