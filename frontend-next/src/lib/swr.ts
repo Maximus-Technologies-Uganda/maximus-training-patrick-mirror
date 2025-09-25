@@ -32,8 +32,15 @@ export function usePostsList(params?: {
   const page = params?.page ?? 1;
   const pageSize = params?.pageSize ?? 10;
   const key = postsListKey(page, pageSize);
-  const { data, isLoading, error } = useSWR<PostList>(key, (url) =>
-    fetchJson(url, PostListSchema),
+  const { data, isLoading, error } = useSWR<PostList>(
+    key,
+    (url) => fetchJson(url, PostListSchema),
+    {
+      revalidateOnMount: true,
+      revalidateIfStale: false,
+      dedupingInterval: 0,
+      shouldRetryOnError: false,
+    },
   );
   return { data, isLoading, error };
 }

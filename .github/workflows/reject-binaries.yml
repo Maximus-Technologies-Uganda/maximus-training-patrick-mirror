@@ -14,7 +14,12 @@ jobs:
       - name: Check for large files
         run: |
           echo "Checking for files larger than 5MB..."
-          large_files=$(find . -type f -size +5M -not -path './.git/*' -not -path './node_modules/*' -not -path './coverage/*' -not -path './test-results/*' -not -path './playwright-report/*')
+          large_files=$(find . -type f -size +5M \
+            -not -path './.git/*' \
+            -not -path '*/node_modules/*' \
+            -not -path '*/coverage/*' \
+            -not -path '*/test-results/*' \
+            -not -path '*/playwright-report/*')
           
           if [ -n "$large_files" ]; then
             echo "❌ Found files larger than 5MB:"
