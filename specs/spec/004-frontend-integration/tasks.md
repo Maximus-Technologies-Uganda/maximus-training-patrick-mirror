@@ -43,9 +43,9 @@ Reference contracts: `C:\Users\LENOVO\Training\api\openapi.json`, `C:\Users\LENO
 - [ ] T012 [P] A11y tests: axe checks for `/posts` page states (loading, empty, error, success) in `C:\Users\LENOVO\Training\frontend-next\src\tests\a11y\posts.a11y.test.ts` ensuring labels, roles, focus management, and live regions.
 
 ## Phase 3.3: Core Types and Data Layer (ONLY after tests are failing)
-- [ ] T013 [P] Define types with zod for `Post`, `PostList`, `PostCreate` in `C:\Users\LENOVO\Training\frontend-next\src\lib\schemas.ts` and export TypeScript types.
-- [ ] T014 [P] Implement API util `getBaseUrl()` reading `NEXT_PUBLIC_API_URL` with validation in `C:\Users\LENOVO\Training\frontend-next\src\lib\config.ts`.
-- [ ] T015 [P] Implement SWR fetcher and keys in `C:\Users\LENOVO\Training\frontend-next\src\lib\swr.ts` (`usePostsList({page,pageSize})`, `mutatePostsPage1`).
+- [X] T013 [P] Define types with zod for `Post`, `PostList`, `PostCreate` in `C:\Users\LENOVO\Training\frontend-next\src\lib\schemas.ts` and export TypeScript types.
+- [X] T014 [P] Implement API util `getBaseUrl()` reading `NEXT_PUBLIC_API_URL` with validation in `C:\Users\LENOVO\Training\frontend-next\src\lib\config.ts`.
+- [X] T015 [P] Implement SWR fetcher and keys in `C:\Users\LENOVO\Training\frontend-next\src\lib\swr.ts` (`usePostsList({page,pageSize})`, `mutatePostsPage1`).
 
 ## Phase 3.4: UI Components and Pages (Read-only list with SWR)
 - [ ] T016 Create App Router route file `C:\Users\LENOVO\Training\frontend-next\app\posts\page.tsx` (server shell) that reads `searchParams` and renders client component with props.
