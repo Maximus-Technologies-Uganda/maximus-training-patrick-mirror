@@ -25,11 +25,11 @@ description: Generate an actionable, dependency-ordered tasks.md for the feature
 - Include exact absolute file paths in descriptions
 
 ## Phase 3.1: Setup
-- [ ] T001 Initialize Next.js App Router TS project in `C:\Users\LENOVO\Training\frontend-next` (npx create-next-app@latest with App Router, TypeScript, ESLint) and add deps: `swr`, `zod`. Configure `package.json` scripts for `build`, `dev`, `lint`, `test`.
-- [ ] T002 [P] Create `.env.example` in `C:\Users\LENOVO\Training\frontend-next\.env.example` with `NEXT_PUBLIC_API_URL=http://localhost:3000` and brief notes; add `.env.local` to `.gitignore`.
-- [ ] T003 [P] Configure ESLint/Prettier for Next.js TS in `C:\Users\LENOVO\Training\frontend-next\` and ensure CI-friendly `npm run lint`.
-- [ ] T004 [P] Add Vitest + React Testing Library setup in `C:\Users\LENOVO\Training\frontend-next\vitest.config.ts` and `src/test/setup.ts`; add `jsdom` environment.
-- [ ] T005 [P] Add Playwright config in `C:\Users\LENOVO\Training\frontend-next\playwright.config.ts` with a11y axe check helper (smoke-level for `/posts`).
+- [X] T001 Initialize Next.js App Router TS project in `C:\Users\LENOVO\Training\frontend-next` (npx create-next-app@latest with App Router, TypeScript, ESLint) and add deps: `swr`, `zod`. Configure `package.json` scripts for `build`, `dev`, `lint`, `test`.
+- [X] T002 [P] Create `.env.example` in `C:\Users\LENOVO\Training\frontend-next\.env.example` with `NEXT_PUBLIC_API_URL=http://localhost:3000` and brief notes; add `.env.local` to `.gitignore`.
+- [X] T003 [P] Configure ESLint/Prettier for Next.js TS in `C:\Users\LENOVO\Training\frontend-next\` and ensure CI-friendly `npm run lint`.
+- [X] T004 [P] Add Vitest + React Testing Library setup in `C:\Users\LENOVO\Training\frontend-next\vitest.config.ts` and `src/test/setup.ts`; add `jsdom` environment.
+- [X] T005 [P] Add Playwright config in `C:\Users\LENOVO\Training\frontend-next\playwright.config.ts` with a11y axe check helper (smoke-level for `/posts`).
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 Reference contracts: `C:\Users\LENOVO\Training\api\openapi.json`, `C:\Users\LENOVO\Training\specs\002-posts-api\contracts\openapi.yml`
