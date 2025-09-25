@@ -34,13 +34,13 @@ description: Generate an actionable, dependency-ordered tasks.md for the feature
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 Reference contracts: `C:\Users\LENOVO\Training\api\openapi.json`, `C:\Users\LENOVO\Training\specs\002-posts-api\contracts\openapi.yml`
 
-- [ ] T006 [P] Contract test for `GET /posts` shape using MSW in `C:\Users\LENOVO\Training\frontend-next\src\tests\contracts\posts.get.contract.test.ts` validating `PostList` schema fields and pagination params.
-- [ ] T007 [P] Contract test for `POST /posts` shape using MSW in `C:\Users\LENOVO\Training\frontend-next\src\tests\contracts\posts.post.contract.test.ts` validating `201` with `Post` and `Location` header surfaced via fetch/mutate.
-- [ ] T008 [P] Integration test: list initial load, loading → success/empty/error states in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.list.int.test.ts` per spec scenarios 1–3.
-- [ ] T009 [P] Integration test: pagination and URL sync (`page`, `pageSize`) in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.pagination.int.test.ts` per scenarios 6–7.
-- [ ] T010 [P] Integration test: client-side search filter on current page in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.search.int.test.ts` per scenario 8.
-- [ ] T011 [P] Integration test: create happy path + cache mutate and focus to success alert in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.create.int.test.ts` per scenarios 4–5.
-- [ ] T012 [P] A11y tests: axe checks for `/posts` page states (loading, empty, error, success) in `C:\Users\LENOVO\Training\frontend-next\src\tests\a11y\posts.a11y.test.ts` ensuring labels, roles, focus management, and live regions.
+- [X] T006 [P] Contract test for `GET /posts` shape using MSW in `C:\Users\LENOVO\Training\frontend-next\src\tests\contracts\posts.get.contract.test.ts` validating `PostList` schema fields and pagination params.
+- [X] T007 [P] Contract test for `POST /posts` shape using MSW in `C:\Users\LENOVO\Training\frontend-next\src\tests\contracts\posts.post.contract.test.ts` validating `201` with `Post` and `Location` header surfaced via fetch/mutate.
+- [X] T008 [P] Integration test: list initial load, loading → success/empty/error states in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.list.int.test.tsx` per spec scenarios 1–3.
+- [X] T009 [P] Integration test: pagination and URL sync (`page`, `pageSize`) in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.pagination.int.test.tsx` per scenarios 6–7.
+- [X] T010 [P] Integration test: client-side search filter on current page in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.search.int.test.tsx` per scenario 8.
+- [X] T011 [P] Integration test: create happy path + cache mutate and focus to success alert in `C:\Users\LENOVO\Training\frontend-next\src\tests\integration\posts.create.int.test.tsx` per scenarios 4–5.
+- [X] T012 [P] A11y tests: axe checks for `/posts` page states (loading, empty, error, success) in `C:\Users\LENOVO\Training\frontend-next\src\tests\a11y\posts.a11y.test.tsx` ensuring labels, roles, focus management, and live regions.
 
 ## Phase 3.3: Core Types and Data Layer (ONLY after tests are failing)
 - [ ] T013 [P] Define types with zod for `Post`, `PostList`, `PostCreate` in `C:\Users\LENOVO\Training\frontend-next\src\lib\schemas.ts` and export TypeScript types.
