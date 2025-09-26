@@ -57,8 +57,8 @@ Reference contracts: `C:\Users\LENOVO\Training\api\openapi.json`, `C:\Users\LENO
 - [X] T022 [P] Create `C:\Users\LENOVO\Training\frontend-next\components\LiveRegion.tsx` to announce loading/errors/success.
 
 ## Phase 3.5: Create Form and SWR mutate
-- [ ] T023 Implement `C:\Users\LENOVO\Training\frontend-next\components\NewPostForm.tsx` with zod client validation (title/content required), POST to API, on 201 clear form, focus success alert, and `mutate` list for page 1; handle 400+ errors with inline alert preserving input.
-- [ ] T024 Wire `NewPostForm` into `/posts` page, ensure success path keeps page on 1 and triggers list refresh.
+- [X] T023 Implement `C:\Users\LENOVO\Training\frontend-next\components\NewPostForm.tsx` with zod client validation (title/content required), POST to API, on 201 clear form, focus success alert, and `mutate` list for page 1; handle 400+ errors with inline alert preserving input.
+- [X] T024 Wire `NewPostForm` into `/posts` page, ensure success path keeps page on 1 and triggers list refresh.
 
 ## Phase 3.6: Polish, Static Export, and Docs
 - [ ] T025 [P] Add README section in `C:\Users\LENOVO\Training\frontend-next\README.md` documenting deployment decision (GH Pages), env var, and run scripts; link contracts.
