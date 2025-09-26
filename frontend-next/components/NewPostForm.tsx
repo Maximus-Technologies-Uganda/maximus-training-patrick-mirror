@@ -13,8 +13,10 @@ const FormSchema = z.object({
 
 export default function NewPostForm({
   pageSize,
+  onSuccess,
 }: {
   pageSize: number;
+  onSuccess?: () => void;
 }): JSX.Element {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -45,6 +47,8 @@ export default function NewPostForm({
       // Delay focus until after state commit
       setTimeout(() => successRef.current?.focus(), 0);
       await mutatePostsPage1(pageSize);
+      // Notify parent so it can reset pagination and URL
+      onSuccess?.();
     } else {
       setError("Failed to create post");
     }

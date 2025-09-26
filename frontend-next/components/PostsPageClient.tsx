@@ -97,6 +97,14 @@ export default function PostsPageClient({
     pushQuery({ q: nextQ });
   };
 
+  const onCreateSuccess = (): void => {
+    // Reset to first page so the new post is visible and URL stays in sync
+    if (page !== 1) {
+      setPage(1);
+      pushQuery({ page: 1 });
+    }
+  };
+
   const filteredItems = useMemo(() => {
     const items = data?.items ?? [];
     const query = q.trim().toLowerCase();
@@ -132,7 +140,7 @@ export default function PostsPageClient({
       </div>
 
       <div className="mt-6">
-        <NewPostForm pageSize={pageSize} />
+        <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
       </div>
 
       <section className="mt-6" aria-label="Posts list">
