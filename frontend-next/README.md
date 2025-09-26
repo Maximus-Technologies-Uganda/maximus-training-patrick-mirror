@@ -1,5 +1,48 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Deployment: GitHub Pages (Static Export)
+
+This app is configured for static export and deployment to GitHub Pages.
+
+### Environment Variables
+
+- `NEXT_PUBLIC_API_URL` (required): Base URL of the Posts API (e.g., `http://localhost:3000`).
+  - Copy `.env.example` to `.env.local` and customize as needed.
+
+### Scripts
+
+- `npm run build`: Build the app.
+- `npm run export`: Export static HTML to `out/` for GitHub Pages.
+- `npm run lint`: Lint the project.
+- `npm test`: Run unit/integration tests.
+
+### Next.js Configuration
+
+`next.config.ts` includes:
+
+```ts
+export default {
+  output: "export",
+  images: { unoptimized: true },
+};
+```
+
+### Deploy Steps
+
+1. Ensure `NEXT_PUBLIC_API_URL` is reachable from the Pages site (CORS allowed).
+2. Build and export:
+   ```bash
+   npm run build && npm run export
+   ```
+3. Publish the `out/` directory to GitHub Pages (e.g., via Actions or manual).
+
+### API Contracts
+
+Contracts and reference OpenAPI files live in:
+
+- `../api/openapi.json`
+- `../specs/002-posts-api/contracts/openapi.yml`
+
 ## Getting Started
 
 First, run the development server:

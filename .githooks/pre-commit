@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+
+// Prevent committing vendored/build artifacts
+// Blocks: node_modules/, coverage/, lcov-report/, .next/, dist/, build/
+// Works on any platform as a plain Node script pre-commit hook.
+
+const { execSync } = require('node:child_process');
+
+function getStagedFiles() {
+  try {
+    const out = execSync('git diff --cached --name-only', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return out.split(/\r?\n/).filter(Boolean);
+  } catch (_e) {
+    return [];
+  }
+}
+
+const blockedPatterns = [
+  /(^|\/)node_modules\//,
+  /(^|\/)coverage\//,
+  /(^|\/)lcov-report\//,
+  /(^|\/)\.next\//,
+  /(^|\/)dist\//,
+  /(^|\/)build\//,
+];
+
+const staged = getStagedFiles();
+const offending = staged.filter((f) => blockedPatterns.some((rx) => rx.test(f)));
+
+if (offending.length > 0) {
+  console.error('\n❌ Vendored/build artifacts detected in staged changes. Commit blocked.');
+  console.error('Do not commit node_modules, coverage, or build outputs.');
+  console.error('\nOffending paths:');
+  offending.slice(0, 200).forEach((p) => console.error(` - ${p}`));
+  if (offending.length > 200) {
+    console.error(` ... and ${offending.length - 200} more`);
+  }
+  console.error('\nTo untrack accidentally added files:');
+  console.error('  git restore --staged .');
+  console.error('  git rm -r --cached <path>  # e.g., api/node_modules, api/coverage');
+  console.error('  echo "Use .gitignore and reinstall via your package manager."');
+  process.exit(1);
+}
+
+process.exit(0);
+
+

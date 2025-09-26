@@ -17,7 +17,7 @@ export default function NewPostForm({
 }: {
   pageSize: number;
   onSuccess?: () => void;
-}): JSX.Element {
+}): React.ReactElement {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -99,5 +99,3 @@ export default function NewPostForm({
     </form>
   );
 }
-
-

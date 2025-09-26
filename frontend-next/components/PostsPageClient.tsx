@@ -19,7 +19,7 @@ export default function PostsPageClient({
   page?: number;
   pageSize?: number;
   q?: string;
-}): JSX.Element {
+}): React.ReactElement {
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
   const [q, setQ] = useState<string>(initialQ);
@@ -164,5 +164,3 @@ export default function PostsPageClient({
     </SWRConfig>
   );
 }
-
-
