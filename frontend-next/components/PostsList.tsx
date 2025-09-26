@@ -9,7 +9,7 @@ function truncate(text: string, max = 200): string {
   return text.slice(0, max).trimEnd() + "…";
 }
 
-export default function PostsList({ items }: { items: Post[] }): JSX.Element {
+export default function PostsList({ items }: { items: Post[] }): React.ReactElement {
   if (!items.length) {
     return (
       <p className="text-gray-600" aria-live="polite">

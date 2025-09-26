@@ -6,7 +6,7 @@ export default function LiveRegion({
   message,
 }: {
   message: string;
-}): JSX.Element {
+}): React.ReactElement {
   return (
     <div role="status" aria-live="polite" className="sr-only">
       {message}

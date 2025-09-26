@@ -10,7 +10,7 @@ export default function PageSizeSelect({
 }: {
   pageSize: number;
   onChange: (nextSize: number) => void;
-}): JSX.Element {
+}): React.ReactElement {
   return (
     <label className="text-sm text-gray-700">
       Page size

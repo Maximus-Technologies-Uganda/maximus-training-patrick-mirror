@@ -6,7 +6,7 @@ export default function Page({
   searchParams,
 }: {
   searchParams?: { [key: string]: string | string[] | undefined };
-}): JSX.Element {
+}): React.ReactElement {
   const rawPage = Array.isArray(searchParams?.page)
     ? searchParams?.page[0]
     : (searchParams?.page as string | undefined);

@@ -8,7 +8,7 @@ export default function SearchInput({
 }: {
   value: string;
   onChange: (next: string) => void;
-}): JSX.Element {
+}): React.ReactElement {
   const [input, setInput] = useState<string>(value);
   const timer = useRef<number | null>(null);
 

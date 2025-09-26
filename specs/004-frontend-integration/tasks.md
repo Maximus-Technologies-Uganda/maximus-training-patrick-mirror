@@ -61,12 +61,12 @@ Reference contracts: `C:\Users\LENOVO\Training\api\openapi.json`, `C:\Users\LENO
 - [X] T024 Wire `NewPostForm` into `/posts` page, ensure success path keeps page on 1 and triggers list refresh.
 
 ## Phase 3.6: Polish, Static Export, and Docs
-- [ ] T025 [P] Add README section in `C:\Users\LENOVO\Training\frontend-next\README.md` documenting deployment decision (GH Pages), env var, and run scripts; link contracts.
-- [ ] T026 [P] Configure Next static export: add `next.config.mjs` with `output: 'export'`; add `npm run export` in `C:\Users\LENOVO\Training\frontend-next\package.json`.
-- [ ] T027 [P] Add minimal 404 and root redirect to `/posts` if needed in `C:\Users\LENOVO\Training\frontend-next\app\page.tsx`.
-- [ ] T028 Run and fix lint: `npm run lint` in `C:\Users\LENOVO\Training\frontend-next` and address issues.
-- [ ] T029 Run unit/integration tests and ensure a11y checks pass locally: `npm test`.
-- [ ] T030 Build and export static site: `npm run build && npm run export`.
+- [X] T025 [P] Add README section in `C:\Users\LENOVO\Training\frontend-next\README.md` documenting deployment decision (GH Pages), env var, and run scripts; link contracts.
+- [X] T026 [P] Configure Next static export: add `next.config.ts` with `output: 'export'`; add `npm run export` in `C:\Users\LENOVO\Training\frontend-next\package.json`.
+- [X] T027 [P] Add minimal 404 and root redirect to `/posts` if needed in `C:\Users\LENOVO\Training\frontend-next\src\app\page.tsx`.
+- [X] T028 Run and fix lint: `npm run lint` in `C:\Users\LENOVO\Training\frontend-next` and address issues.
+- [X] T029 Run unit/integration tests and ensure a11y checks pass locally: `npm test`.
+- [X] T030 Build and export static site: `npm run build` (static `out/` produced via `output: 'export'`).
 
 ## Dependencies
 - Setup (T001–T005) before Tests (T006–T012).

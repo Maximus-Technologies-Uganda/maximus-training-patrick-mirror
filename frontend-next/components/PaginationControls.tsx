@@ -10,7 +10,7 @@ export default function PaginationControls({
   page: number;
   hasNextPage: boolean;
   onChangePage: (nextPage: number) => void;
-}): JSX.Element {
+}): React.ReactElement {
   const onPrev = (): void => {
     if (page > 1) onChangePage(page - 1);
   };
