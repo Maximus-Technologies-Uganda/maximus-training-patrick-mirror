@@ -5,6 +5,15 @@
   "engines": {
     "node": ">=18"
   },
+  "workspaces": [
+    "frontend",
+    "frontend-next",
+    "api",
+    "quote",
+    "todo",
+    "expense",
+    "stopwatch"
+  ],
   "scripts": {
     "test": "node scripts/run-tests.js",
     "test:quote": "node quote/tests/test.js",
@@ -29,7 +38,8 @@
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.1.0",
     "glob": "^7.2.3",
-    "prettier": "^3.3.3"
+    "prettier": "^3.3.3",
+    "jsdom": "^27.0.0"
   },
   "dependencies": {
     "zod": "^4.1.11"

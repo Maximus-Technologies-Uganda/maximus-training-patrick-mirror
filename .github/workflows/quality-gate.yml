@@ -15,7 +15,29 @@ on:
       - '.github/workflows/quality-gate.yml'
 
 jobs:
+  install-root-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - name: Install root dependencies
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          # Use npm install for better workspace compatibility
+          echo "Installing root and workspace dependencies"
+          npm install --no-audit --no-fund
+
   frontend-next-coverage:
+    needs: install-root-deps
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,15 +51,23 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'frontend-next/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
-      - name: Install frontend-next deps (npm ci)
-        working-directory: frontend-next
-        run: npm ci
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          # Install root and workspace dependencies
+          npm install --no-audit --no-fund
+          # Ensure frontend-next has its dependencies
+          cd frontend-next
+          npm ci
 
       - name: Run frontend-next tests with coverage
         working-directory: frontend-next
-        run: npm run test:ci --silent
+        run: npm run test:ci
 
       - name: Upload frontend-next coverage artifact
         if: always()
@@ -110,6 +140,7 @@ jobs:
           path: coverage-table.md
 
   api-coverage:
+    needs: install-root-deps
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -123,17 +154,32 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'api/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
-      - name: Install API deps (npm ci, omit optional)
-        working-directory: api
-        run: npm ci --omit=optional
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          # Install root and workspace dependencies
+          npm install --no-audit --no-fund
+          # Ensure API has its dependencies
+          cd api
+          npm ci
+
+      - name: Debug available api scripts
+        run: |
+          node -e "const p=require('./api/package.json');console.log('scripts',p.scripts)" | cat
+          ls -la api
+          ls -la api/node_modules/.bin || true
+          node -e "console.log(process.cwd())"
 
       - name: Run API tests with coverage (in-memory repo)
         working-directory: api
         env:
           POSTS_REPOSITORY: inmemory
-        run: npm test -- --coverage --coverageReporters=lcov --coverageReporters=json-summary --silent
+        run: npm run test:ci
 
       - name: Upload API coverage artifact
         if: always()
@@ -219,7 +265,10 @@ jobs:
           node-version: '20'
 
       - name: Install root deps for scripts
-        run: npm ci --omit=optional
+        run: |
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          npm install --no-audit --no-fund --omit=optional
 
       - name: Download coverage artifacts from prior jobs
         uses: actions/download-artifact@v4
