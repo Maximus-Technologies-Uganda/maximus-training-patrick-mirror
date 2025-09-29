@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
+    "test:ci": "vitest run --coverage",
     "export": "next export"
   },
   "dependencies": {
@@ -38,6 +39,7 @@
     "msw": "^2.11.3",
     "prettier": "^3.6.2",
     "typescript": "^5",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4"
   }
 }

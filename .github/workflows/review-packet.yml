@@ -112,8 +112,9 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install frontend-next deps (workspace from repo root)
+        working-directory: .
+        run: npm ci --workspace=frontend-next
 
       - name: Run tests with coverage (Vitest)
         run: npm run test -- --coverage
@@ -132,9 +133,53 @@ jobs:
             frontend/eslint.config.*
             frontend/vitest.config.*
 
+  test-frontend-next:
+    name: Frontend Next tests & coverage
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-next
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend-next/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend-next tests with coverage
+        working-directory: .
+        run: npm run test:ci --workspace=frontend-next
+
+      - name: Stage coverage for artifact
+        run: |
+          mkdir -p ../stage/coverage-frontend-next
+          [ -d coverage ] && cp -R coverage/. ../stage/coverage-frontend-next/ || true
+
+      - name: Upload frontend-next coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend-next
+          if-no-files-found: error
+          path: |
+            stage/coverage-frontend-next/**
+
+      - name: Upload Playwright report (if present)
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-frontend-next
+          if-no-files-found: ignore
+          path: |
+            frontend-next/playwright-report/**
+
   assemble:
     name: Assemble review packet
-    needs: [discover, frontend]
+    needs: [discover, frontend, test-frontend-next]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
@@ -192,6 +237,14 @@ jobs:
                 fi
               fi
             done
+          fi
+
+      - name: Consolidate Playwright reports (frontend-next)
+        run: |
+          mkdir -p review-artifacts
+          if [ -d "_dl/playwright-report-frontend-next" ]; then
+            mkdir -p "review-artifacts/playwright-frontend-next"
+            cp -R "_dl/playwright-report-frontend-next/." "review-artifacts/playwright-frontend-next/" || true
           fi
 
       - name: Serial fallback (always run if no coverage artifacts found)
