@@ -13,7 +13,9 @@ export default defineConfig({
     setupFiles: "./src/test/setup.ts",
     exclude: ["node_modules/**", "tests/playwright/**"],
     coverage: {
-      reporter: ["text", "html"],
+      provider: "v8",
+      reporter: ["text", "html", "json-summary"],
+      reportsDirectory: "./coverage",
     },
   },
 });

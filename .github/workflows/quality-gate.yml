@@ -4,16 +4,18 @@ on:
   push:
     paths:
       - 'frontend/**'
+      - 'frontend-next/**'
       - 'api/**'
       - '.github/workflows/quality-gate.yml'
   pull_request:
     paths:
       - 'frontend/**'
+      - 'frontend-next/**'
       - 'api/**'
       - '.github/workflows/quality-gate.yml'
 
 jobs:
-  frontend-coverage:
+  frontend-next-coverage:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,22 +29,30 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: 'frontend/package-lock.json'
+          cache-dependency-path: 'frontend-next/package-lock.json'
 
-      - name: Install frontend deps (npm ci)
-        working-directory: frontend
+      - name: Install frontend-next deps (npm ci)
+        working-directory: frontend-next
         run: npm ci
 
-      - name: Run frontend tests with coverage
-        working-directory: frontend
-        run: npm run test:run --silent -- --coverage
+      - name: Run frontend-next tests with coverage
+        working-directory: frontend-next
+        run: npm run test:ci --silent
+
+      - name: Upload frontend-next coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend-next
+          path: |
+            frontend-next/coverage/**
 
       - name: Add coverage to job summary
         if: always()
-        working-directory: frontend
+        working-directory: frontend-next
         shell: bash
         run: |
-          echo "### Frontend Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "### frontend-next Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '```json' >> "$GITHUB_STEP_SUMMARY"
           if [ -f coverage/coverage-summary.json ]; then
@@ -54,17 +64,17 @@ jobs:
           echo '```'
 
       - name: Read coverage summary
-        id: coverage
+        id: coverage_frontend_next
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const path = require('path');
-          const summaryPath = path.join(process.cwd(), 'frontend', 'coverage', 'coverage-summary.json');
+          const summaryPath = path.join(process.cwd(), 'frontend-next', 'coverage', 'coverage-summary.json');
           if (!fs.existsSync(summaryPath)) {
-            console.error('ERROR: Coverage summary not found at frontend/coverage/coverage-summary.json. Ensure Vitest runs with coverage.');
+            console.error('ERROR: Coverage summary not found at frontend-next/coverage/coverage-summary.json. Ensure Vitest runs with coverage.');
             try {
-              console.log('Listing frontend/coverage directory for diagnostics:');
-              console.log(fs.readdirSync(path.join(process.cwd(), 'frontend', 'coverage')).join('\n'));
+              console.log('Listing frontend-next/coverage directory for diagnostics:');
+              console.log(fs.readdirSync(path.join(process.cwd(), 'frontend-next', 'coverage')).join('\n'));
             } catch (e) {
               console.log('No coverage directory present.');
             }
@@ -83,7 +93,7 @@ jobs:
             if (typeof t.pct === 'number') return String(t.pct) + '%';
             return 'no files collected';
           }
-          const rows = [['Target','Statements %'], ['Frontend', statementsPct(summary)]];
+          const rows = [['Target','Statements %'], ['frontend-next', statementsPct(summary)]];
           const pad = (arr, widths) => arr.map((c,i)=>String(c).padEnd(widths[i])).join(' | ');
           const widths = rows[0].map((_,i)=>Math.max(...rows.map(r=>String(r[i]).length)));
           let table = `| ${pad(rows[0], widths)} |\n| ${widths.map(w=>'-'.repeat(w)).join(' | ')} |\n`;
@@ -96,7 +106,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          header: coverage-report
+          header: coverage-report-frontend-next
           path: coverage-table.md
 
   api-coverage:
@@ -124,6 +134,14 @@ jobs:
         env:
           POSTS_REPOSITORY: inmemory
         run: npm test -- --coverage --coverageReporters=lcov --coverageReporters=json-summary --silent
+
+      - name: Upload API coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api
+          path: |
+            api/coverage/**
 
       - name: Add coverage to job summary
         if: always()
@@ -186,3 +204,68 @@ jobs:
         with:
           header: api-coverage-report
           path: api-coverage-table.md
+
+  aggregate-coverage:
+    name: Aggregate monorepo coverage and summarize
+    runs-on: ubuntu-latest
+    needs: [frontend-next-coverage, api-coverage]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root deps for scripts
+        run: npm ci --omit=optional
+
+      - name: Download coverage artifacts from prior jobs
+        uses: actions/download-artifact@v4
+        with:
+          path: _dl
+        continue-on-error: true
+
+      - name: Move downloaded coverage into expected locations
+        shell: bash
+        run: |
+          # Place any downloaded coverage into their package directories if needed
+          # We only rely on local runs here; if artifacts are absent, we proceed.
+          mkdir -p frontend-next/coverage api/coverage || true
+          # If upstream jobs also wrote coverage directly in the workspace, nothing to do
+          # Otherwise, attempt to copy from artifacts
+          if [ -d "_dl/coverage-frontend-next/frontend-next/coverage" ]; then
+            cp -R _dl/coverage-frontend-next/frontend-next/coverage/. frontend-next/coverage/ || true
+          fi
+          if [ -d "_dl/coverage-api/api/coverage" ]; then
+            cp -R _dl/coverage-api/api/coverage/. api/coverage/ || true
+          fi
+
+      - name: Normalize coverage (monorepo)
+        run: npm run coverage:normalize
+
+      - name: Summarize coverage totals (monorepo and frontend-next)
+        shell: bash
+        run: |
+          echo "### Monorepo Coverage Totals" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f coverage/coverage-summary.json ]; then
+            cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '{"note":"no aggregated coverage found"}' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "\n### frontend-next Coverage Totals" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f frontend-next/coverage/coverage-summary.json ]; then
+            cat frontend-next/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '{"note":"no frontend-next coverage found"}' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

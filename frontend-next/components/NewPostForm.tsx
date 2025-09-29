@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import { getBaseUrl } from "../src/lib/config";
@@ -24,6 +24,13 @@ export default function NewPostForm({
   const [success, setSuccess] = useState<string | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
+  // Focus the success alert after it is rendered
+  useEffect(() => {
+    if (success) {
+      successRef.current?.focus();
+    }
+  }, [success]);
+
   const onSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError(null);
@@ -44,8 +51,6 @@ export default function NewPostForm({
       setTitle("");
       setContent("");
       setSuccess("Created successfully");
-      // Delay focus until after state commit
-      setTimeout(() => successRef.current?.focus(), 0);
       await mutatePostsPage1(pageSize);
       // Notify parent so it can reset pagination and URL
       onSuccess?.();
