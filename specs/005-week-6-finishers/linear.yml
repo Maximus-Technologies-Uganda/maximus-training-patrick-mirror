@@ -1,0 +1,263 @@
+parentIssueId: null
+tasks:
+  - id: T000
+    title: Preflight: enforce branching and PR policy compliance
+    description: Verify branch name spec/005-week-6-finishers and PR merge policy
+    paths:
+      - C:/Users/LENOVO/Training/scripts/ci/preflight-branch-check.js
+    dependsOn: []
+  - id: T001
+    title: Configure monorepo linting and formatting
+    description: Ensure consistent ESLint/Prettier across workspaces and repo-level scripts
+    paths:
+      - C:/Users/LENOVO/Training/frontend/eslint.config.js
+      - C:/Users/LENOVO/Training/frontend-next/eslint.config.mjs
+      - C:/Users/LENOVO/Training/api/eslint.config.mjs
+    dependsOn: []
+
+  - id: T002
+    title: Normalize test and coverage outputs
+    description: Standardize vitest coverage reporters and capture paths for gate
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/vitest.config.ts
+      - C:/Users/LENOVO/Training/scripts/run-tests.js
+    dependsOn: []
+
+  - id: T003
+    title: Add Quality Gate scripts scaffold
+    description: Create aggregator and Review Packet builders with a manifest template
+    paths:
+      - C:/Users/LENOVO/Training/scripts/quality-gate/aggregate-results.js
+      - C:/Users/LENOVO/Training/scripts/quality-gate/build-review-packet.js
+      - C:/Users/LENOVO/Training/scripts/quality-gate/manifest.json.template
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T004
+    title: Type-check gating across workspaces
+    description: Run tsc --noEmit for frontend-next and api; gate on failures
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/tsconfig.json
+      - C:/Users/LENOVO/Training/api/tsconfig.json
+      - C:/Users/LENOVO/Training/scripts/quality-gate/check-types.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T010
+    title: Contract test GET /health
+    description: Validate 200 schema { status: "ok" }
+    paths:
+      - C:/Users/LENOVO/Training/api/tests/contract.test.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T011
+    title: Contract test GET /posts
+    description: Validate 200 PostList schema and 400 error schema
+    paths:
+      - C:/Users/LENOVO/Training/api/tests/contract.test.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T012
+    title: Contract test POST /posts
+    description: Validate 201 Post schema, Location header, and 400 error
+    paths:
+      - C:/Users/LENOVO/Training/api/tests/contract.test.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T013
+    title: Contract test GET /posts/{id}
+    description: Validate 200 Post and 404 error schema
+    paths:
+      - C:/Users/LENOVO/Training/api/tests/contract.test.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T014
+    title: Contract test PUT /posts/{id}
+    description: Validate 200 Post, 400 invalid body, and 404
+    paths:
+      - C:/Users/LENOVO/Training/api/tests/contract.test.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T015
+    title: Contract test PATCH /posts/{id}
+    description: Validate 200 Post, 400 invalid body, and 404
+    paths:
+      - C:/Users/LENOVO/Training/api/tests/contract.test.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T016
+    title: Contract test DELETE /posts/{id}
+    description: Validate 204 and 404
+    paths:
+      - C:/Users/LENOVO/Training/api/tests/contract.test.js
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T020
+    title: A11y scan for /posts list
+    description: Axe checks with wcag2a/wcag2aa must have zero critical/serious violations
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/tests/playwright/posts.a11y.spec.ts
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T021
+    title: A11y scan for create post form
+    description: Axe checks on create form route; zero critical/serious violations
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/tests/playwright/create-post.a11y.spec.ts
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T022
+    title: E2E: demo primary flows load
+    description: Home, posts list, and create post load+submit without errors
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/tests/playwright/demo.flows.spec.ts
+    dependsOn:
+      - T001
+      - T002
+
+  - id: T030
+    title: Implement Quality Gate aggregator and decision logic
+    description: Aggregate tests/coverage, enforce thresholds, include type-check results, and gate a11y/contract
+    paths:
+      - C:/Users/LENOVO/Training/scripts/quality-gate/aggregate-results.js
+    dependsOn:
+      - T004
+      - T010
+      - T011
+      - T012
+      - T013
+      - T014
+      - T015
+      - T016
+      - T020
+      - T021
+      - T022
+
+  - id: T031
+    title: Build Review Packet with manifest
+    description: Include a11y, contract, security, governance, and coverage summaries
+    paths:
+      - C:/Users/LENOVO/Training/scripts/quality-gate/build-review-packet.js
+      - C:/Users/LENOVO/Training/docs/
+    dependsOn:
+      - T030
+
+  - id: T032
+    title: CI contract validation wiring for frontend-next
+    description: Validate frontend HTTP interactions against api/openapi.json
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/tests/openapi.validation.test.ts
+    dependsOn:
+      - T010
+      - T011
+      - T012
+      - T013
+      - T014
+      - T015
+      - T016
+
+  - id: T033
+    title: CI a11y wiring and reporting
+    description: Persist Playwright HTML reports into Review Packet
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/playwright.config.ts
+    dependsOn:
+      - T020
+      - T021
+
+  - id: T034
+    title: Publish PR checks for gate and dimensions
+    description: Publish checks for tests, coverage, a11y, contract, security, governance and overall gate
+    paths:
+      - C:/Users/LENOVO/Training/scripts/quality-gate/publish-checks.js
+    dependsOn:
+      - T030
+
+  - id: T035
+    title: Post PR summary with key metrics
+    description: Post summary comment referencing api/openapi.json and the demo URL
+    paths:
+      - C:/Users/LENOVO/Training/scripts/quality-gate/post-pr-summary.js
+    dependsOn:
+      - T031
+      - T044
+
+  - id: T040
+    title: Deploy live demo from default branch
+    description: Produce public demo URL and reference it in manifest
+    paths:
+      - C:/Users/LENOVO/Training/frontend-next/next.config.ts
+    dependsOn:
+      - T031
+
+  - id: T044
+    title: Finalize Review Packet manifest with demo URL
+    description: Patch manifest/index to include live demo URL after deployment
+    paths:
+      - C:/Users/LENOVO/Training/scripts/quality-gate/build-review-packet.js
+    dependsOn:
+      - T031
+      - T040
+
+  - id: T041
+    title: Update README with Run & Try section
+    description: Add local steps, required config (NEXT_PUBLIC_APP_URL), and demo link
+    paths:
+      - C:/Users/LENOVO/Training/README.md
+    dependsOn:
+      - T044
+
+  - id: T042
+    title: Governance report generation
+    description: Verify README Run & Try, CHANGELOG entry, main protections; add report with evidence
+    paths:
+      - C:/Users/LENOVO/Training/CHANGELOG.md
+      - C:/Users/LENOVO/Training/README.md
+    dependsOn:
+      - T044
+
+  - id: T043
+    title: Publish final Week-6 release notes
+    description: Tag and release with links to artifacts
+    paths:
+      - C:/Users/LENOVO/Training/CHANGELOG.md
+    dependsOn:
+      - T042
+
+  - id: T050
+    title: Wire dependency audit in CI for all workspaces
+    description: Fail on high/critical; capture summary into Review Packet
+    paths:
+      - C:/Users/LENOVO/Training/
+    dependsOn:
+      - T031
+
+  - id: T051
+    title: Create SECURITY_EXCEPTIONS.md and policy
+    description: Owner, mitigation plan, mentor approval evidence, 90-day review
+    paths:
+      - C:/Users/LENOVO/Training/SECURITY_EXCEPTIONS.md
+    dependsOn:
+      - T050
+
+

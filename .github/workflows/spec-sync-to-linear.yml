@@ -256,5 +256,6 @@ jobs:
           commit_message: "chore(ci): sync spec tasks to Linear"
           file_pattern: "specs/**/linear.yml"
           branch: main
+          token: ${{ secrets.PAT_TOKEN }}
 
 
