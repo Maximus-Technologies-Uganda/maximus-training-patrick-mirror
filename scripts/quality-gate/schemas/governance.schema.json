@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "governance.schema.json",
+  "title": "Governance Report",
+  "type": "object",
+  "properties": {
+    "passed": { "type": "boolean" },
+    "reasons": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "approvedExceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dimension": { "type": "string", "enum": ["coverage", "tests", "typecheck", "a11y", "contract", "security", "governance"] },
+          "scope": { "type": "string" },
+          "approved": { "type": "boolean" },
+          "approvedBy": { "type": "string" },
+          "approvedAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "ticket": { "type": "string" },
+          "waiveAll": { "type": "boolean" },
+          "waiveAllCurrentFindings": { "type": "boolean" },
+          "allowLevels": { "type": "array", "items": { "type": "string" } },
+          "allowImpacts": { "type": "array", "items": { "type": "string" } },
+          "allowBreaking": { "type": "boolean" },
+          "allowCoverageBelowThreshold": { "type": "boolean" }
+        },
+        "required": ["dimension", "approved"]
+      },
+      "default": []
+    }
+  },
+  "required": ["passed"]
+}
+
+

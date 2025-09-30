@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "coverage.schema.json",
+  "title": "Coverage Summary",
+  "type": "object",
+  "properties": {
+    "total": {
+      "type": "object",
+      "properties": {
+        "lines": { "type": "object", "properties": { "pct": { "type": "number" } }, "required": ["pct"] },
+        "statements": { "type": "object", "properties": { "pct": { "type": "number" } }, "required": ["pct"] },
+        "branches": { "type": "object", "properties": { "pct": { "type": "number" } }, "required": ["pct"] },
+        "functions": { "type": "object", "properties": { "pct": { "type": "number" } }, "required": ["pct"] }
+      },
+      "required": ["lines", "statements", "branches", "functions"]
+    }
+  },
+  "required": ["total"],
+  "additionalProperties": true
+}
+
+

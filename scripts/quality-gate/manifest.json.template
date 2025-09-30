@@ -1,0 +1,22 @@
+{
+  "$schema": "./schemas/manifest.schema.json",
+  "inputs": {
+    "coverage": "../../coverage/coverage-summary.json",
+    "tests": "../../test-results/summary.json",
+    "typecheck": "../../typecheck/results.json",
+    "a11y": "../../a11y/report.json",
+    "contract": "../../contract/report.json",
+    "security": "../../security/audit-summary.json",
+    "governance": "../../governance/report.json"
+  },
+  "required": ["coverage", "tests", "typecheck", "a11y", "contract", "security", "governance"],
+  "thresholds": {
+    "coverage": { "statements": 60, "branches": 50, "functions": 55 },
+    "a11y": { "denyImpacts": ["critical", "serious"] },
+    "contract": { "allowBreaking": false },
+    "security": { "denyLevels": ["high", "critical"] }
+  },
+  "notes": "Template paths are relative to this file at scripts/quality-gate/."
+}
+
+
