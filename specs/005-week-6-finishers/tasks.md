@@ -99,11 +99,11 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - File: `C:/Users/LENOVO/Training/scripts/quality-gate/build-review-packet.js`
   - Include a11y report, contract report, security audit summary, governance report; write `docs/ReviewPacket/*`.
 
-- [ ] T032 [P] CI contract validation wiring for frontend-next
+- [X] T032 [P] CI contract validation wiring for frontend-next
   - File: `C:/Users/LENOVO/Training/frontend-next/tests/openapi.validation.test.ts`
   - Validate frontend HTTP client requests/responses against `api/openapi.json`.
 
-- [ ] T033 [P] CI a11y wiring and reporting
+- [X] T033 [P] CI a11y wiring and reporting
   - File: `C:/Users/LENOVO/Training/frontend-next/playwright.config.ts`
   - Ensure HTML reporter artifacts are persisted into Review Packet.
 

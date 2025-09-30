@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SWRConfig } from "swr";
+import type { Cache, SWRConfiguration } from "swr";
 
 import LiveRegion from "./LiveRegion";
 import NewPostForm from "./NewPostForm";
@@ -10,6 +11,24 @@ import PaginationControls from "./PaginationControls";
 import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
 import { usePostsList } from "../src/lib/swr";
+
+function createSWRCache(): Cache<any> {
+  const map = new Map<string, any>();
+  return {
+    get(key: string) {
+      return map.get(key);
+    },
+    set(key: string, value: any) {
+      map.set(key, value);
+    },
+    delete(key: string) {
+      map.delete(key);
+    },
+    keys() {
+      return map.keys();
+    },
+  };
+}
 
 export default function PostsPageClient({
   page: initialPage = 1,
@@ -116,10 +135,10 @@ export default function PostsPageClient({
     );
   }, [data?.items, q]);
 
-  // Keep SWR cache stable across renders for this page instance
-  const cacheRef = useRef<Map<unknown, unknown> | null>(null);
-  if (!cacheRef.current) cacheRef.current = new Map<unknown, unknown>();
-  const swrValue = useMemo(() => ({ provider: () => cacheRef.current as Map<unknown, unknown> }), []);
+  // Keep SWR cache stable across renders for this page instance (keys must be strings per SWR types)
+  const cacheRef = useRef<Cache<any> | null>(null);
+  if (!cacheRef.current) cacheRef.current = createSWRCache();
+  const swrValue = useMemo<SWRConfiguration>(() => ({ provider: () => cacheRef.current as Cache<any> }), []);
 
   return (
     <SWRConfig value={swrValue}>

@@ -11,6 +11,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/test/setup.ts",
+    environmentMatchGlobs: [["tests/openapi.validation.test.ts", "node"]],
     exclude: ["node_modules/**", "tests/playwright/**"],
     coverage: {
       provider: "v8",
