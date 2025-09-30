@@ -43,7 +43,7 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - New Files: `C:/Users/LENOVO/Training/scripts/quality-gate/aggregate-results.js`, `C:/Users/LENOVO/Training/scripts/quality-gate/build-review-packet.js`, `C:/Users/LENOVO/Training/scripts/quality-gate/manifest.json.template`
   - Purpose: Aggregate results from `frontend-next` and existing packages; prepare Review Packet.
 
-- [ ] T004 [P] Type-check gating across workspaces
+- [X] T004 [P] Type-check gating across workspaces
   - Files: `C:/Users/LENOVO/Training/frontend-next/tsconfig.json`, `C:/Users/LENOVO/Training/api/tsconfig.json`, `C:/Users/LENOVO/Training/scripts/quality-gate/check-types.js`
   - Run `tsc --noEmit` for `frontend-next` and `api`; gate on failures and capture results for Review Packet.
 

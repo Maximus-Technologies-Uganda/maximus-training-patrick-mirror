@@ -125,6 +125,8 @@ When creating this spec from a user prompt:
 - **FR-014 Observability of gates**: Gate outcomes and reasons (tests, coverage, a11y, contract, security, governance) MUST be visible in PR checks and within the Review Packet without requiring access to external systems.
 - **FR-015 Time-to-feedback**: The end-to-end CI for the Quality Gate SHOULD complete in under 10 minutes to support contributor productivity, measured from CI start to gate decision as surfaced in PR checks.
 
+- **FR-016 Type-check gate**: CI MUST run TypeScript type-checking for `frontend-next` and `api` using their workspace `tsconfig` files, and the Quality Gate MUST fail when any type errors are present. A type-check report with the total error count MUST be included in the Review Packet and surfaced in PR checks. Exceptions MUST follow the Exception policy (FR-012).
+
 ### Key Entities (include if feature involves data)
 - **Quality Gate**: The policy defining mandatory checks and pass/fail criteria for PRs.
 - **Review Packet**: A collected set of human-readable reports for a given run: test results, coverage, a11y report, API contract report, security audit summary, governance report, and a top-level manifest/index with the demo URL and contract source-of-truth reference.
