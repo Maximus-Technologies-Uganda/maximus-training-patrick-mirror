@@ -225,9 +225,106 @@ jobs:
           path: |
             frontend-next/playwright-report/**
 
+  a11y:
+    name: Frontend Next a11y
+    runs-on: ubuntu-latest
+    needs: install-root-deps
+    defaults:
+      run:
+        working-directory: frontend-next
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend-next/package-lock.json
+
+      - name: Install monorepo deps (root)
+        working-directory: .
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          if ! npm ci; then
+            npm install --workspaces --no-audit --no-fund --ignore-scripts
+          fi
+          npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
+          npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
+
+      - name: Install Playwright browsers
+        run: npx --yes playwright install --with-deps
+
+      - name: Build and serve static export
+        run: |
+          npm run build -- --no-lint
+          nohup npx --yes http-server out -p 3000 -s &
+          echo "Waiting for app..." && npx --yes wait-on http://localhost:3000
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_BASE_PATH: ""
+
+      - name: Run a11y Playwright tests
+        run: npx playwright test --reporter=list,html
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Upload a11y HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-html-report
+          path: frontend-next/docs/ReviewPacket/a11y/html
+
+      - name: Upload a11y JSON report (for Review Packet)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-json-report
+          path: a11y/report.json
+
+  contract:
+    name: Frontend Next contract
+    runs-on: ubuntu-latest
+    needs: install-root-deps
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend-next/package-lock.json
+
+      - name: Install monorepo deps (root)
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          if ! npm ci; then
+            npm install --workspaces --no-audit --no-fund --ignore-scripts
+          fi
+          npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
+          npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
+
+      - name: Run frontend-next contract validation test
+        run: npm --workspaces --workspace=frontend-next run test:contract
+
+      - name: Upload contract report (for Review Packet)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-report
+          path: contract/report.json
+
   assemble:
     name: Assemble review packet
-    needs: [discover, frontend, test-frontend-next]
+    needs: [discover, frontend, test-frontend-next, a11y, contract]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:

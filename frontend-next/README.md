@@ -11,8 +11,7 @@ This app is configured for static export and deployment to GitHub Pages.
 
 ### Scripts
 
-- `npm run build`: Build the app.
-- `npm run export`: Export static HTML to `out/` for GitHub Pages.
+- `npm run build`: Build the app and export static HTML to `out/` for GitHub Pages.
 - `npm run lint`: Lint the project.
 - `npm test`: Run unit/integration tests.
 
@@ -32,7 +31,7 @@ export default {
 1. Ensure `NEXT_PUBLIC_API_URL` is reachable from the Pages site (CORS allowed).
 2. Build and export:
    ```bash
-   npm run build && npm run export
+   npm run build
    ```
 3. Publish the `out/` directory to GitHub Pages (e.g., via Actions or manual).
 
