@@ -95,7 +95,7 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - File: `C:/Users/LENOVO/Training/scripts/quality-gate/aggregate-results.js`
   - Aggregate unit/integration tests and coverage including `frontend-next`; enforce coverage thresholds (statements ≥ 60%, branches ≥ 50%, functions ≥ 55%); include type-check results; FAIL the gate on a11y or contract violations; compute a single PASS/FAIL across tests, coverage, a11y, contract, security audit, and governance.
 
-- [ ] T031 Build Review Packet with manifest
+- [X] T031 Build Review Packet with manifest
   - File: `C:/Users/LENOVO/Training/scripts/quality-gate/build-review-packet.js`
   - Include a11y report, contract report, security audit summary, governance report; write `docs/ReviewPacket/*`.
 
@@ -141,8 +141,8 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - Files: workspace `package.json` scripts; CI workflow references
   - Fail on high/critical; capture summary into Review Packet.
 
-- [ ] T051 Create `SECURITY_EXCEPTIONS.md` and exception template
-  - File: `C:/Users/LENOVO/Training/SECURITY_EXCEPTIONS.md`
+- [ ] T051 Create `WAIVERS.md` and exception template
+  - File: `C:/Users/LENOVO/Training/WAIVERS.md`
   - Include owner, mitigation plan, mentor approval evidence, 90-day review cadence.
 
 ## Phase 6: Polish
