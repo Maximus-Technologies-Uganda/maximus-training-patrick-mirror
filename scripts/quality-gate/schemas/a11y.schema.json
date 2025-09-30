@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "a11y.schema.json",
+  "title": "A11y Report",
+  "type": "object",
+  "properties": {
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "impact": { "type": "string", "enum": ["minor", "moderate", "serious", "critical"] },
+          "description": { "type": "string" }
+        },
+        "required": ["impact"]
+      },
+      "default": []
+    }
+  },
+  "required": ["violations"]
+}
+
+

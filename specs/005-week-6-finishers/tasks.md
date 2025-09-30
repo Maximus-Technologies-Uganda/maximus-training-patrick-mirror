@@ -91,7 +91,7 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - Validate home, posts list, and create post (load + submit) render without errors.
 
 ## Phase 3: Core Implementation
-- [ ] T030 Implement Quality Gate aggregator and decision logic
+- [X] T030 Implement Quality Gate aggregator and decision logic
   - File: `C:/Users/LENOVO/Training/scripts/quality-gate/aggregate-results.js`
   - Aggregate unit/integration tests and coverage including `frontend-next`; enforce coverage thresholds (statements ≥ 60%, branches ≥ 50%, functions ≥ 55%); include type-check results; FAIL the gate on a11y or contract violations; compute a single PASS/FAIL across tests, coverage, a11y, contract, security audit, and governance.
 

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tests.schema.json",
+  "title": "Test Summary",
+  "type": "object",
+  "properties": {
+    "total": { "type": "integer", "minimum": 0 },
+    "passed": { "type": "integer", "minimum": 0 },
+    "failed": { "type": "integer", "minimum": 0 }
+  },
+  "required": ["failed"],
+  "additionalProperties": true
+}
+
+
