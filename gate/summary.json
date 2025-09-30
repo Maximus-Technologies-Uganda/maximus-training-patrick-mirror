@@ -1,0 +1,70 @@
+{
+  "decision": "FAIL",
+  "failures": [
+    "coverage",
+    "tests",
+    "a11y",
+    "contract",
+    "security",
+    "governance"
+  ],
+  "thresholds": {
+    "coverage": {
+      "statements": 60,
+      "branches": 50,
+      "functions": 55
+    },
+    "a11y": "no critical/serious",
+    "contract": "no breaking mismatches",
+    "security": "no high/critical"
+  },
+  "requiredDimensions": [
+    "coverage",
+    "tests",
+    "typecheck",
+    "a11y",
+    "contract",
+    "security",
+    "governance"
+  ],
+  "results": {
+    "coverage": {
+      "passed": false,
+      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\coverage\\coverage-summary.json",
+      "metrics": null
+    },
+    "tests": {
+      "passed": false,
+      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\test-results\\summary.json",
+      "metrics": null
+    },
+    "typecheck": {
+      "passed": true,
+      "reason": "Type-check passed",
+      "metrics": {
+        "errors": 0
+      }
+    },
+    "a11y": {
+      "passed": false,
+      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\a11y\\report.json",
+      "metrics": null
+    },
+    "contract": {
+      "passed": false,
+      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\contract\\report.json",
+      "metrics": null
+    },
+    "security": {
+      "passed": false,
+      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\security\\audit-summary.json",
+      "metrics": null
+    },
+    "governance": {
+      "passed": false,
+      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\governance\\report.json",
+      "metrics": null
+    }
+  },
+  "generatedAt": "2025-09-30T09:24:40.763Z"
+}

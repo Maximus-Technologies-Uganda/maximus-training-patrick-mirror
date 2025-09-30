@@ -24,7 +24,9 @@
     "pages:docs": "node scripts/publish-docs.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "coverage:normalize": "node scripts/normalize-coverage.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "node scripts/quality-gate/check-types.js",
+    "typecheck:bail": "node scripts/quality-gate/check-types.js --bail"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

@@ -1,0 +1,30 @@
+{
+  "errors": 0,
+  "warnings": 0,
+  "projects": [
+    {
+      "name": "frontend-next",
+      "skipped": false,
+      "errors": 0,
+      "warnings": 0,
+      "durationMs": 109,
+      "exitCode": 1,
+      "command": "C:\\Program Files\\nodejs\\node.exe C:\\Users\\LENOVO\\Training\\frontend-next\\node_modules\\typescript\\lib\\tsc.js -p C:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
+    },
+    {
+      "name": "api",
+      "skipped": false,
+      "errors": 0,
+      "warnings": 0,
+      "durationMs": 106,
+      "exitCode": 1,
+      "command": "C:\\Program Files\\nodejs\\node.exe C:\\Users\\LENOVO\\Training\\api\\node_modules\\typescript\\lib\\tsc.js -p C:\\Users\\LENOVO\\Training\\api\\tsconfig.json --noEmit"
+    }
+  ],
+  "generatedAt": "2025-09-30T09:24:29.360Z",
+  "specRefs": {
+    "tasks": "C:\\Users\\LENOVO\\Training\\specs\\005-week-6-finishers\\tasks.md",
+    "plan": "C:\\Users\\LENOVO\\Training\\specs\\005-week-6-finishers\\plan.md",
+    "spec": "C:\\Users\\LENOVO\\Training\\specs\\005-week-6-finishers\\spec.md"
+  }
+}
