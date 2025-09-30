@@ -12,7 +12,7 @@ description: Execute the implementation planning workflow using the plan templat
 - **Accessibility (a11y)**: CI a11y checks on `frontend-next` for the main posts list and create post form. Threshold: zero critical and zero serious violations. Failures block the gate and appear in PR checks and the Review Packet.
 - **API Contract Validation**: CI validates `frontend-next` requests/responses against the OpenAPI source of truth. Any breaking mismatches fail the gate and are included in PR checks and the Review Packet.
 - **Governance & Release**: Governance checklist verified (ownership, templates, protections, changelog). Final Week-6 release published with notes and links to artifacts.
-- **Security Audit**: Dependency audit runs in CI on PRs and default branch. Zero high/critical issues, or time-bound, mentor-approved exceptions recorded in `SECURITY_EXCEPTIONS.md`.
+- **Security Audit**: Dependency audit runs in CI on PRs and default branch. Zero high/critical issues, or time-bound, mentor-approved exceptions recorded in `WAIVERS.md`.
 
 **Tech stack confirmation (monorepo)**
 - **Frontend**: `frontend-next` (Next.js, TypeScript, modern web tooling), unit/integration tests, e2e capability.
@@ -64,7 +64,7 @@ description: Execute the implementation planning workflow using the plan templat
 
 5) Security Audit & Exceptions
    - Run dependency audit across workspaces on PR/default.
-   - Remediate issues or document exceptions in `SECURITY_EXCEPTIONS.md` with mentor approval and a 90-day review. Each exception record MUST include: an owner, mitigation plan, PR-level evidence (either a Mentor review approval or an explicit "Exception Approved" comment referencing the exception), and a link in the PR to the exception entry.
+- Remediate issues or document exceptions in `WAIVERS.md` with mentor approval and a 90-day review. Each exception record MUST include: an owner, mitigation plan, PR-level evidence (either a Mentor review approval or an explicit "Exception Approved" comment referencing the exception), and a link in the PR to the exception entry.
 
 ### Risks, assumptions, mitigations
 - **Flaky checks**: Add retry/stabilization; monitor flake rate.
