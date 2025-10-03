@@ -3,7 +3,7 @@ import type { IPostsRepository } from '../repositories/posts.repository';
 import { NotFoundError } from '../errors/NotFoundError';
 
 // Reuse types from shared core schema definitions for strong typing
-import type { Post, PostCreate, PostUpdate, ListPostsQuery } from '../../../src/core/posts/post.schemas';
+import type { Post, PostCreate, PostUpdate, ListPostsQuery } from '../core/posts/post.schemas';
 import type { PaginatedResponse } from '../core/pagination.types';
 
 /**

@@ -1,0 +1,102 @@
+name: CI/CD - Test then Deploy
+
+on:
+  # Trigger on pushes to the main branch
+  push:
+    branches:
+      - "main"
+  
+  # Trigger on pull requests targeting the main branch
+  pull_request:
+    branches:
+      - "main"
+
+  # Allow manual triggering from the GitHub Actions UI
+  workflow_dispatch:
+
+permissions:
+  contents: 'read'
+  id-token: 'write' # Required for Workload Identity Federation
+
+env:
+  PROJECT_ID: 'proj-app-dev'
+  REGION: 'africa-south1'
+
+jobs:
+  test:
+    name: Quality Gate - Run All Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout code'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Set up Node.js'
+        uses: 'actions/setup-node@v4'
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 'Install API Dependencies'
+        run: npm ci
+        working-directory: ./api
+
+      - name: 'Run API Tests'
+        run: npm test
+        working-directory: ./api
+      
+      - name: 'Install Frontend Dependencies'
+        run: npm ci
+        working-directory: ./frontend-next
+
+      - name: 'Run Frontend Unit & Coverage Tests'
+        run: npm run test:ci
+        working-directory: ./frontend-next
+      
+      - name: 'Install Playwright Browsers'
+        run: npx playwright install --with-deps
+        working-directory: ./frontend-next
+        
+      - name: 'Run Frontend A11y & E2E Tests'
+        run: npx playwright test
+        working-directory: ./frontend-next
+
+      - name: 'Upload Review Packet Artifact'
+        if: always() # Always upload artifacts, even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-packet
+          path: |
+            frontend-next/coverage/
+            frontend-next/playwright-report/
+
+  deploy:
+    name: Deploy to Cloud Run
+    needs: test # Deploy only if the test job succeeds
+    # Deploy on push to main, or when manually dispatched
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Checkout code'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Authenticate to Google Cloud'
+        id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}'
+
+      - name: 'Install gcloud CLI'
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 471.0.0'
+
+      - name: 'Submit monolithic build to Google Cloud Build'
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            .
+

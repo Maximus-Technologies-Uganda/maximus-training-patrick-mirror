@@ -1,20 +1,16 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const isProduction = process.env.NODE_ENV === "production";
-// Infer repository name from GitHub Actions env or allow manual override
-const inferredRepoName = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "Training";
-const configuredBasePath = process.env.NEXT_BASE_PATH ?? (isProduction ? `/${inferredRepoName}` : "");
-
+/** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
-  // Enable static HTML export for GitHub Pages deployment
-  output: "export",
-  // Ensure images work without the Next Image Optimization server
+  // This is the most important line for your Docker build.
+  output: "standalone",
+
+  // Good practice for Docker deployments.
   images: { unoptimized: true },
-  // Ensure pages and assets are served from the GitHub Pages subdirectory
-  basePath: configuredBasePath || undefined,
-  assetPrefix: configuredBasePath ? `${configuredBasePath}/` : undefined,
-  // Silence monorepo root inference warning in this workspace
+  
+  // Necessary if you are in a monorepo (e.g., with a `packages` or `libs` folder).
+  // If `frontend-next` is your root, you can safely remove this line.
   outputFileTracingRoot: path.join(__dirname, ".."),
 };
 

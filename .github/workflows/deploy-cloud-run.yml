@@ -1,0 +1,92 @@
+name: Submit Full Deploy to Cloud Build
+
+on:
+  push:
+    branches: [ main, development, 'feat/**' ]
+    paths:
+      - 'frontend-next/**'
+      - '.github/workflows/deploy-cloud-run.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: proj-app-dev
+  REGION: africa-south1
+  AR_REPOSITORY: cloud-run-images
+  SERVICE_NAME: maximus-training-frontend
+  WORKLOAD_IDENTITY_PROVIDER: projects/673209018655/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  PROD_API_SECRET_NAME: prod-api-url
+
+jobs:
+  submit-build:
+    name: Submit Cloud Build Job
+    runs-on: ubuntu-latest
+    concurrency:
+      group: frontend-cloudbuild-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          token_format: access_token
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify Artifact Registry permissions
+        run: |
+          set -euo pipefail
+          SA="github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
+          REPO="${{ env.AR_REPOSITORY }}"
+          REGION="${{ env.REGION }}"
+          PROJECT="${{ env.PROJECT_ID }}"
+          echo "Checking Artifact Registry repo '${REPO}' in '${REGION}' for SA '${SA}'"
+          gcloud artifacts repositories describe "${REPO}" --location="${REGION}" --project="${PROJECT}"
+          ACCESS_TOKEN=$(gcloud auth print-access-token --impersonate-service-account="${SA}")
+          RESOURCE="projects/${PROJECT}/locations/${REGION}/repositories/${REPO}"
+          RESP=$(curl -s -X POST \
+            -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"permissions":["artifactregistry.repositories.uploadArtifacts"]}' \
+            "https://artifactregistry.googleapis.com/v1/${RESOURCE}:testIamPermissions")
+          echo "$RESP"
+          if echo "$RESP" | grep -q 'artifactregistry.repositories.uploadArtifacts'; then
+            echo "Service account has uploadArtifacts permission"
+          else
+            echo "Service account lacks uploadArtifacts permission on ${REPO}" >&2
+            exit 1
+          fi
+
+      - name: Submit Cloud Build (full deploy)
+        run: |
+          set -euo pipefail
+          # Try to read from GCP Secret Manager; if missing, fall back to GitHub Secret PROD_API_URL
+          if API_URL_VALUE=$(gcloud secrets versions access latest --secret="${{ env.PROD_API_SECRET_NAME }}" --project="${{ env.PROJECT_ID }}" 2>/dev/null); then
+            echo "Using API URL from Secret Manager"
+          else
+            echo "Secret Manager value not found; falling back to GitHub secret"
+            API_URL_VALUE='${{ secrets.PROD_API_URL }}'
+            if [ -z "$API_URL_VALUE" ]; then
+              echo "No API URL available from Secret Manager or GitHub secrets" >&2
+              exit 1
+            fi
+          fi
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --service-account="projects/${{ env.PROJECT_ID }}/serviceAccounts/github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+            --substitutions=_REGION=${{ env.REGION }},_AR_REPOSITORY=${{ env.AR_REPOSITORY }},_FRONTEND_SERVICE_NAME=${{ env.SERVICE_NAME }},_API_SERVICE_NAME=maximus-training-api,_PROD_API_URL=$API_URL_VALUE \
+            .
+

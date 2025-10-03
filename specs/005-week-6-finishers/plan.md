@@ -23,7 +23,7 @@ description: Execute the implementation planning workflow using the plan templat
 - Feature spec: `specs/005-week-6-finishers/spec.md`
 - Plan: `specs/005-week-6-finishers/plan.md`
 - Contract source of truth: `api/openapi.json` (optionally cross-referenced by spec contracts where applicable)
-- Demo hosting: Vercel (as clarified in spec)
+- Demo hosting: GCP Cloud Run (as clarified in spec)
 - Do not commit `node_modules` or coverage artifacts; generate in CI only.
 
 ### Testing Strategy

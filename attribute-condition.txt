@@ -1,0 +1,1 @@
+(assertion.repository=="Maximus-Technologies-Uganda/Maximus-Wealth" || assertion.repository=="Maximus-Technologies-Uganda/maximus-training-patrick-mirror") && (assertion.ref=="refs/heads/development" || assertion.event_name=="pull_request")

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Post, PostCreate, PostUpdate, ListPostsQuery } from "../../../../src/core/posts/post.schemas";
+import type { Post, PostCreate, PostUpdate, ListPostsQuery } from "./post.schemas";
 import type { PaginatedResponse } from "../pagination.types";
 
 /**

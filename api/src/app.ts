@@ -45,4 +45,13 @@ app.use(errorHandler);
 export { app };
 export default app;
 
+// Compatibility factory used by server.ts (TS) and server.js (CJS) callers
+// to mirror the CommonJS createApp export shape used elsewhere.
+// The current codebase constructs a singleton Express app without
+// configuration or repository injection, so we simply return that instance.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createApp(_config?: any, _repository?: any) {
+  return app;
+}
+
 

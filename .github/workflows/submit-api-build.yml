@@ -1,0 +1,43 @@
+name: Submit API to Cloud Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: proj-app-dev
+  REGION: africa-south1
+  AR_REPOSITORY: cloud-run-images
+  SERVICE_NAME: maximus-training-api
+  WORKLOAD_IDENTITY_PROVIDER: projects/673209018655/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+
+jobs:
+  submit-build:
+    name: Submit Cloud Build Job (API)
+    runs-on: ubuntu-latest
+    concurrency:
+      group: api-cloudbuild-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          token_format: access_token
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Skip - API now built via root cloudbuild.yaml
+        run: echo "API build is handled by the full deploy pipeline."
+

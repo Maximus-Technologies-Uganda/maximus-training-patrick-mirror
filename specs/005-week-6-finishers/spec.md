@@ -113,7 +113,7 @@ When creating this spec from a user prompt:
 - **FR-002 Metrics in PR**: CI MUST post a PR summary with pass/fail and key metrics (tests, coverage, a11y, contract) and attach a Review Packet artifact containing detailed reports.
 - **FR-003 Coverage baseline**: The Quality Gate MUST enforce a documented minimum coverage baseline for `frontend-next`: statements ≥ 60%, branches ≥ 50%, functions ≥ 55%.
 - **FR-004 Review Packet contents**: The Review Packet MUST include at minimum: test results summary, coverage summary, accessibility report, API contract validation report, security audit summary, governance report, and a top-level manifest/index that references the live demo URL and the API contract source of truth.
-- **FR-005 Demo availability**: A public live demo hosted on Vercel MUST be produced on default branch updates and referenced in the README.
+- **FR-005 Demo availability**: A public live demo hosted on GCP Cloud Run MUST be produced on default branch updates and referenced in the README.
 - **FR-006 README Run & Try**: The README MUST include a "Run & Try" section explaining how to run locally and linking the demo; it MUST mention any required configuration (e.g., public API base URL) without prescribing specific tooling.
 - **FR-007 Accessibility gate**: Automated accessibility checks MUST run in CI on the main posts list and the create post form, and FAIL the gate on any critical or serious violations.
 - **FR-008 API contract gate**: CI MUST validate the frontend’s API usage against the OpenAPI contract and FAIL the gate on breaking mismatches; the contract source of truth MUST be referenced in both the PR summary and the Review Packet manifest (e.g., `api/openapi.json`, `specs/002-posts-api/contracts/openapi.yml`).
@@ -165,7 +165,7 @@ When creating this spec from a user prompt:
 ---
 
 ## Notes & Clarifications
-- Demo hosting and URL ownership: Demo hosted on Vercel.
+- Demo hosting and URL ownership: Demo hosted on GCP Cloud Run.
 - Coverage baselines for `frontend-next`: statements 60%, branches 50%, functions 55%.
 - Accessibility scope: main posts list and create post form. Threshold: zero critical or serious violations.
 - API contract source/version policy: OpenAPI in repo is source of truth; version pinning unchanged by this spec.
