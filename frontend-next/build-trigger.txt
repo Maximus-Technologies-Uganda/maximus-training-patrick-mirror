@@ -1,0 +1,4 @@
+trigger: frontend cloud build via GitHub Actions (rerun)
+triggered at 2025-10-02T16:56:46.6583036+03:00
+triggered at 2025-10-02T19:49:55.6399549+03:00
+triggered unified deploy at 2025-10-02T21:13:36.8116116+03:00

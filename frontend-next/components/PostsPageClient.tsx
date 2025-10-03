@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SWRConfig } from "swr";
 import type { Cache, SWRConfiguration } from "swr";
+import type { State } from "swr/_internal";
 
 import LiveRegion from "./LiveRegion";
 import NewPostForm from "./NewPostForm";
@@ -12,13 +13,16 @@ import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
 import { usePostsList } from "../src/lib/swr";
 
-function createSWRCache(): Cache<any> {
-  const map = new Map<string, any>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SWRCacheValue = State<unknown, any>;
+
+function createSWRCache(): Cache<unknown> {
+  const map = new Map<string, SWRCacheValue>();
   return {
     get(key: string) {
       return map.get(key);
     },
-    set(key: string, value: any) {
+    set(key: string, value: SWRCacheValue) {
       map.set(key, value);
     },
     delete(key: string) {
@@ -136,9 +140,9 @@ export default function PostsPageClient({
   }, [data?.items, q]);
 
   // Keep SWR cache stable across renders for this page instance (keys must be strings per SWR types)
-  const cacheRef = useRef<Cache<any> | null>(null);
+  const cacheRef = useRef<Cache<unknown> | null>(null);
   if (!cacheRef.current) cacheRef.current = createSWRCache();
-  const swrValue = useMemo<SWRConfiguration>(() => ({ provider: () => cacheRef.current as Cache<any> }), []);
+  const swrValue = useMemo<SWRConfiguration>(() => ({ provider: () => cacheRef.current as Cache<unknown> }), []);
 
   return (
     <SWRConfig value={swrValue}>

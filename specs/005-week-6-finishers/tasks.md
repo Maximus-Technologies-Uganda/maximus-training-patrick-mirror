@@ -116,15 +116,18 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - Post a PR comment summarizing pass/fail and key metrics; reference `C:/Users/LENOVO/Training/api/openapi.json` and the live demo URL.
 
 ## Phase 4: Demo, README, Governance, Release
-- [ ] T040 Deploy live demo from default branch
-  - Files: `C:/Users/LENOVO/Training/frontend-next/next.config.ts`, CI workflow (paths only referenced here)
-  - Produce public URL; surface in Review Packet manifest.
+- [X] T039 Deploy API to GCP Cloud Run (backend)
+  - Files: `C:/Users/LENOVO/Training/api/Dockerfile`, `C:/Users/LENOVO/Training/.github/workflows/deploy-api-cloud-run.yml`
+  - Output: Public Cloud Run service URL for API; `/health` verified.
+- [X] T040 Deploy live demo to GCP Cloud Run from default branch
+  - Files: `C:/Users/LENOVO/Training/frontend-next/next.config.ts`, `C:/Users/LENOVO/Training/.github/workflows/deploy-cloud-run.yml`
+  - Produce public Cloud Run service URL; surface in Review Packet manifest.
 
-- [ ] T044 Finalize Review Packet manifest with demo URL
+- [ ] T044 Finalize Review Packet manifest with Cloud Run demo URL
   - File: `C:/Users/LENOVO/Training/scripts/quality-gate/build-review-packet.js`
-  - Patch the manifest/index to include the live demo URL after deployment (depends on T031 and T040).
+  - Patch the manifest/index to include the live GCP Cloud Run service URL after deployment (depends on T031 and T040).
 
-- [ ] T041 Update README with Run & Try section
+- [X] T041 Update README with Run & Try section
   - File: `C:/Users/LENOVO/Training/README.md`
   - Include local run steps, required configuration (e.g., `NEXT_PUBLIC_APP_URL`), and demo link.
 
@@ -166,7 +169,8 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
 - T030 depends on T004, T010–T016, T020–T022
 - T031 depends on T030
 - T034 depends on T030
-- T040 depends on T031
+- T039 depends on T031
+- T040 depends on T039 and T031
 - T044 depends on T031 and T040
 - T035 depends on T031 and T044
 - T041 depends on T044

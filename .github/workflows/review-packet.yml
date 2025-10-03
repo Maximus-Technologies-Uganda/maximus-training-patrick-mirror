@@ -1,16 +1,19 @@
 name: Review Packet
 
 on:
+  # Only build on main for pushes to avoid duplicate runs with PRs
   push:
     branches:
       - main
-      - 'patrick/**'   # adjust if you want fewer branches
-      - 'feat/**'
-      - 'ci/**'
   pull_request:
     branches:
       - '**'
   workflow_dispatch:
+
+# Ensure only one workflow runs per branch/PR at a time
+concurrency:
+  group: review-packet-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   install-root-deps:
@@ -254,18 +257,9 @@ jobs:
           fi
           npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
           npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
-
-      - name: Install Playwright browsers
-        run: npx --yes playwright install --with-deps
-
-      - name: Build and serve static export
-        run: |
-          npm run build -- --no-lint
-          nohup npx --yes http-server out -p 3000 -s &
-          echo "Waiting for app..." && npx --yes wait-on http://localhost:3000
-        env:
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
-          NEXT_BASE_PATH: ""
+      
+      - name: Install Playwright (Chromium only)
+        run: npx --yes playwright install chromium
 
       - name: Run a11y Playwright tests
         run: npx playwright test --reporter=list,html

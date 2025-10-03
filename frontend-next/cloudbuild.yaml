@@ -1,0 +1,114 @@
+substitutions:
+  _SERVICE_NAME: maximus-training-frontend
+  _REGION: africa-south1
+  _AR_REPOSITORY: cloud-run-images
+  _PROD_API_URL: https://api.example.com
+  _SERVICE_ACCOUNT: ""
+  _ALLOW_UNAUTH: "false"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+steps:
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Debug Context
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        set -euxo pipefail
+        echo "Project: ${PROJECT_ID}"
+        gcloud --version
+        gcloud auth list
+        gcloud config list
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Ensure Artifact Registry
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        set -euxo pipefail
+        gcloud artifacts repositories describe "${_AR_REPOSITORY}" --location="${_REGION}" \
+          || gcloud artifacts repositories create "${_AR_REPOSITORY}" --repository-format=docker --location="${_REGION}" --description="Cloud Run images" \
+          || echo "Repo ensure step failed (permissions?); continuing."
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Build Image
+    env:
+      - DOCKER_BUILDKIT=1
+    args:
+      - build
+      - '--progress=plain'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
+      - '-f'
+      - 'frontend-next/Dockerfile'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=${_PROD_API_URL}'
+      - 'frontend-next'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: Push Image
+    args:
+      - push
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Deploy to Cloud Run
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        set -euxo pipefail
+        DEPLOY_ARGS=(run deploy "${_SERVICE_NAME}" \
+          --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}" \
+          --project="${PROJECT_ID}" \
+          --region="${_REGION}" \
+          --platform=managed \
+          --port=3000 \
+          --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1" \
+          --memory=512Mi \
+          --cpu=1 \
+          --min-instances=0 \
+          --max-instances=10 \
+          --timeout=300s \
+          --ingress=all)
+        if [ "${_ALLOW_UNAUTH}" = "true" ]; then
+          DEPLOY_ARGS+=(--allow-unauthenticated)
+        fi
+        if [ -n "${_SERVICE_ACCOUNT}" ]; then
+          DEPLOY_ARGS+=(--service-account="${_SERVICE_ACCOUNT}")
+        fi
+        gcloud --verbosity=debug "${DEPLOY_ARGS[@]}"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Verify Frontend
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        set -euxo pipefail
+        if [ "${_ALLOW_UNAUTH}" != "true" ]; then
+          echo "Service is private; skipping anonymous HTTP verification."
+          exit 0
+        fi
+        SERVICE_URL=$(gcloud run services describe "${_SERVICE_NAME}" --project "${PROJECT_ID}" --region "${_REGION}" --format='value(status.url)')
+        echo "Service URL: $$SERVICE_URL"
+        sleep 10
+        for i in {1..20}; do
+          CODE=$(curl -s -L --connect-timeout 5 --max-time 10 -o /dev/null -w "%{http_code}" "$$SERVICE_URL") || true
+          if [ "$$CODE" = "200" ] || [ "$$CODE" = "301" ] || [ "$$CODE" = "302" ]; then
+            echo "Frontend responding (HTTP $$CODE)"
+            exit 0
+          fi
+          echo "Attempt $$i: HTTP $$CODE; retrying..."
+          sleep 5
+        done
+        echo "Verification failed"
+        exit 1
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
+
+timeout: '1200s'
