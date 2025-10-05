@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "ts-node-dev --respawn --prefer-ts-exts --transpile-only src/server.ts",
+    "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "eslint .",
     "test": "jest --runInBand",

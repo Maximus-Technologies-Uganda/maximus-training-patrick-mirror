@@ -16,5 +16,8 @@ scripts
 .vscode
 **/*.test.*
 **/*.spec.*
+!tsconfig.json
+!src
+!openapi.json
 
 

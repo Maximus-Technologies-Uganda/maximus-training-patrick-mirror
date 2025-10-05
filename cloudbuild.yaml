@@ -48,13 +48,18 @@ steps:
   # Build and deploy API first
   - name: 'gcr.io/cloud-builders/docker'
     id: Build API Image
+    entrypoint: bash
+    env:
+      - DOCKER_BUILDKIT=1
     args:
-      - build
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_API_SERVICE_NAME}:${BUILD_ID}'
-      - '-f'
-      - 'api/Dockerfile'
-      - 'api'
+      - -ceu
+      - |
+        set -euxo pipefail
+        docker build \
+          --progress=plain \
+          -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_API_SERVICE_NAME}:${BUILD_ID}" \
+          -f api/Dockerfile \
+          api
 
   - name: 'gcr.io/cloud-builders/docker'
     id: Push API Image
@@ -118,6 +123,7 @@ steps:
         echo "Building frontend with NEXT_PUBLIC_API_URL=$$API_URL"
         docker build \
           --progress=plain \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
           -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
           -f frontend-next/Dockerfile \
           --build-arg NEXT_PUBLIC_API_URL="$$API_URL" \

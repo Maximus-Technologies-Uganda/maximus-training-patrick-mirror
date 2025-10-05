@@ -26,7 +26,11 @@
     "coverage:normalize": "node scripts/normalize-coverage.js",
     "format": "prettier --write .",
     "typecheck": "node scripts/quality-gate/check-types.js",
-    "typecheck:bail": "node scripts/quality-gate/check-types.js --bail"
+    "typecheck:bail": "node scripts/quality-gate/check-types.js --bail",
+    "build": "npm run build:frontend-next && npm run build:frontend && npm run build:api",
+    "build:frontend-next": "npm --workspace frontend-next ci --no-audit --no-fund && npm exec -w frontend-next next build",
+    "build:frontend": "npm --workspace frontend ci --no-audit --no-fund && npm exec -w frontend vite build",
+    "build:api": "npm --workspace api ci --no-audit --no-fund && npm --workspace api run build"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
