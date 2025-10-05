@@ -1,20 +1,25 @@
 # syntax=docker/dockerfile:1
 
 FROM node:20 AS builder
-WORKDIR /app
+WORKDIR /repo
 
-# Install dependencies (skip optional native deps to keep image small and builds fast)
-COPY package*.json ./
-RUN npm ci --omit=optional
+# Copy monorepo manifests so npm can resolve workspace dependencies
+COPY package.json package-lock.json ./
+COPY api/package.json ./api/package.json
 
-# Build TypeScript
-COPY tsconfig.json ./
-COPY src ./src
-COPY openapi.json ./openapi.json
-RUN npx tsc -p tsconfig.json
+# Install only the API workspace dependencies
+RUN npm ci --workspace api --include-workspace-root=false --omit=optional
 
-# Prune dev and optional dependencies for runtime
+# Copy API source needed for the build
+COPY api/tsconfig.json ./api/tsconfig.json
+COPY api/openapi.json ./api/openapi.json
+COPY api/src ./api/src
+
+# Build the API source
+WORKDIR /repo/api
+RUN npm run build
 RUN npm prune --omit=dev --omit=optional
+
 
 # ---- Runtime ----
 FROM gcr.io/distroless/nodejs20
@@ -23,15 +28,18 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 # Copy production node_modules and built artifacts
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /repo/api/node_modules ./node_modules
+COPY --from=builder /repo/api/dist ./dist
 
 # Ensure OpenAPI spec is available at runtime where app expects it
 # App resolves spec via path.join(__dirname, "..", "openapi.json") → /app/openapi.json
-COPY --from=builder /app/openapi.json ./openapi.json
+COPY --from=builder /repo/api/openapi.json ./openapi.json
 
 # Include JS utilities not emitted by TypeScript build (used by errorHandler)
-COPY --from=builder /app/src/lib/errors.js ./dist/lib/errors.js
+COPY --from=builder /repo/api/src/lib/errors.js ./dist/lib/errors.js
+
+# Preserve package metadata for runtime tooling
+COPY --from=builder /repo/api/package.json ./package.json
 
 EXPOSE 8080
 USER nonroot
