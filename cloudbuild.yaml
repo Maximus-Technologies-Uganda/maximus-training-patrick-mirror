@@ -5,7 +5,7 @@ substitutions:
   _FRONTEND_SERVICE_NAME: maximus-training-frontend
   _SERVICE_ACCOUNT: ""
   _ALLOW_UNAUTH_API: "false"
-  _ALLOW_UNAUTH_FRONTEND: "true"
+  _ALLOW_UNAUTH_FRONTEND: "false"
   _API_MEMORY: 512Mi
   _API_CPU: '1'
   _API_MIN_INSTANCES: '0'
@@ -59,7 +59,7 @@ steps:
           --progress=plain \
           -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_API_SERVICE_NAME}:${BUILD_ID}" \
           -f api/Dockerfile \
-          api
+          .
 
   - name: 'gcr.io/cloud-builders/docker'
     id: Push API Image
@@ -127,7 +127,7 @@ steps:
           -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
           -f frontend-next/Dockerfile \
           --build-arg NEXT_PUBLIC_API_URL="$$API_URL" \
-          frontend-next
+          .
 
   - name: 'gcr.io/cloud-builders/docker'
     id: Push Frontend Image
@@ -171,15 +171,28 @@ steps:
       - -ceu
       - |
         set -euxo pipefail
-        if [ "${_ALLOW_UNAUTH_FRONTEND}" != "true" ]; then
-          echo "Frontend is private; skipping anonymous HTTP verification."
-          exit 0
-        fi
         SERVICE_URL=$(gcloud run services describe "${_FRONTEND_SERVICE_NAME}" --project "${PROJECT_ID}" --region "${_REGION}" --format='value(status.url)')
+        if [ -z "$$SERVICE_URL" ]; then
+          echo "Failed to resolve frontend service URL" >&2
+          exit 1
+        fi
         echo "Service URL: $$SERVICE_URL"
         sleep 10
+        if [ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ]; then
+          echo "Frontend allows unauthenticated access; verifying anonymously."
+          AUTH_HEADER=()
+        else
+          echo "Frontend is private; verifying with an identity token."
+          AUDIENCE="${_FRONTEND_AUDIENCE:-$$SERVICE_URL}"
+          TOKEN=$(gcloud auth print-identity-token --audiences="$$AUDIENCE")
+          if [ -z "$$TOKEN" ]; then
+            echo "Failed to mint identity token" >&2
+            exit 1
+          fi
+          AUTH_HEADER=(-H "Authorization: Bearer $$TOKEN")
+        fi
         for i in {1..20}; do
-          CODE=$(curl -s -L --connect-timeout 5 --max-time 10 -o /dev/null -w "%{http_code}" "$$SERVICE_URL") || true
+          CODE=$(curl -s -L --connect-timeout 5 --max-time 10 "${AUTH_HEADER[@]}" -o /dev/null -w "%{http_code}" "$$SERVICE_URL") || true
           if [ "$$CODE" = "200" ] || [ "$$CODE" = "301" ] || [ "$$CODE" = "302" ]; then
             echo "Frontend responding (HTTP $$CODE)"
             exit 0
