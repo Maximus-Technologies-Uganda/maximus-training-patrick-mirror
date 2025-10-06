@@ -36,8 +36,9 @@ RUN groupadd --system --gid 1001 nodejs \
 # The destination `./` is crucial for placing files in `/app`
 COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/.next/standalone ./
 # Place static assets relative to the standalone server location
-COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/public ./public
+COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/.next/static ./frontend-next/.next/static
+COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/public ./frontend-next/public
+WORKDIR /app/frontend-next
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 USER nextjs
 EXPOSE 3000

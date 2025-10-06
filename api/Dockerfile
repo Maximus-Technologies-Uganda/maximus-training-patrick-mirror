@@ -18,7 +18,7 @@ COPY api/src ./api/src
 # Build the API source
 WORKDIR /repo/api
 RUN npm run build
-RUN npm prune --omit=dev --omit=optional
+WORKDIR /repo
 
 
 # ---- Runtime ----
@@ -28,7 +28,7 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 # Copy production node_modules and built artifacts
-COPY --from=builder /repo/api/node_modules ./node_modules
+COPY --from=builder /repo/node_modules ./node_modules
 COPY --from=builder /repo/api/dist ./dist
 
 # Ensure OpenAPI spec is available at runtime where app expects it
