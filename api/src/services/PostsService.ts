@@ -1,10 +1,11 @@
-import { nanoid } from 'nanoid';
-import type { IPostsRepository } from '../repositories/posts.repository';
-import { NotFoundError } from '../errors/NotFoundError';
+import { nanoid } from "nanoid";
+import type { IPostsRepository } from "../repositories/posts.repository";
+import type { PostRecord } from "../repositories/posts-repository";
+import { NotFoundError } from "../errors/NotFoundError";
 
 // Reuse types from shared core schema definitions for strong typing
-import type { Post, PostCreate, PostUpdate, ListPostsQuery } from '../core/posts/post.schemas';
-import type { PaginatedResponse } from '../core/pagination.types';
+import type { Post, PostCreate, PostUpdate, ListPostsQuery } from "../core/posts/post.schemas";
+import type { PaginatedResponse } from "../core/pagination.types";
 
 /**
  * Service layer responsible for business rules around Posts.
@@ -72,7 +73,7 @@ export class PostsService implements IPostsService {
     const start = (page - 1) * pageSize;
     const hasNextPage = start + itemsStored.length < total;
 
-    const items = itemsStored.map((p: any) => this.mapStoredToDomain(p));
+    const items = itemsStored.map((p) => this.mapStoredToDomain(p));
     const totalPages = pageSize === 0 ? 0 : Math.ceil(total / pageSize);
 
     return {
@@ -91,14 +92,14 @@ export class PostsService implements IPostsService {
     if (!existing) throw new NotFoundError({ id });
     const nowIso = new Date().toISOString();
 
-    const replaced = {
+    const replaced: Post = {
       id: existing.id,
       title: data.title,
       content: data.content,
       tags: Array.isArray(data.tags) ? [...data.tags] : [],
       published: data.published ?? false,
       createdAt: existing.createdAt,
-      updatedAt: nowIso,
+      updatedAt: new Date(nowIso),
     };
 
     await this.repository.replace(id, replaced);
@@ -111,7 +112,7 @@ export class PostsService implements IPostsService {
     if (!existing) throw new NotFoundError({ id });
     const nowIso = new Date().toISOString();
 
-    const merged = {
+    const merged: any = {
       ...existing,
       ...(partial.title !== undefined ? { title: partial.title } : {}),
       ...(partial.content !== undefined ? { content: partial.content } : {}),
@@ -132,7 +133,7 @@ export class PostsService implements IPostsService {
     if (!ok) throw new NotFoundError({ id });
   }
 
-  private mapStoredToDomain(stored: any): Post {
+  private mapStoredToDomain(stored: PostRecord): Post {
     return {
       id: String(stored.id),
       title: String(stored.title),

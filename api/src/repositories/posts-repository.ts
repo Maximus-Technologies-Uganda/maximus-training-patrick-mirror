@@ -38,8 +38,8 @@ export class InMemoryPostsRepository {
       content: String(post.content || ''),
       tags: Array.isArray(post.tags) ? post.tags.map(String) : [],
       published: Boolean(post.published ?? false),
-      createdAt: (post.createdAt as any) || nowIso,
-      updatedAt: (post.updatedAt as any) || nowIso,
+      createdAt: post.createdAt ?? nowIso,
+      updatedAt: post.updatedAt ?? nowIso,
     };
     this.postsById.set(toStore.id, deepClone(toStore));
     return deepClone(toStore);
@@ -81,11 +81,10 @@ export class InMemoryPostsRepository {
   }
 }
 
-export function createRepository() {
+export async function createRepository() {
   const backend = (process.env.POSTS_REPOSITORY || '').toLowerCase();
   if (backend === 'sqlite') {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { SqlitePostsRepository } = require('./SqlitePostsRepository');
+    const { SqlitePostsRepository } = await import('./SqlitePostsRepository');
     const dbFile = process.env.DB_FILE || undefined;
     return new SqlitePostsRepository(dbFile);
   }

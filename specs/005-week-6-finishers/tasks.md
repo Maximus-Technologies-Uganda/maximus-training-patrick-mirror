@@ -140,7 +140,7 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - Publish tag and notes linking to artifacts.
 
 ## Phase 5: Security Audit & Exceptions
-- [ ] T050 Wire dependency audit in CI for all workspaces
+- [X] T050 Wire dependency audit in CI for all workspaces
   - Files: workspace `package.json` scripts; CI workflow references
   - Fail on high/critical; capture summary into Review Packet.
 

@@ -1,16 +1,12 @@
-// Export validation helpers for controllers to invoke and format errors
-// Thin wrappers that delegate to existing JS validators to keep single source of truth
+import type { RequestHandler } from "express";
+import type { ZodSchema } from "zod";
 
-export type Validator = (schema: any) => (req: any, res: any, next: any) => void;
+import { validateBody as validateBodyTs, validateQuery as validateQueryTs } from "./validate";
 
-export const validateBody: Validator = (schema: any) => {
-  const js = require('./validate');
-  return js.validateBody(schema);
-};
+export type Validator = (schema: ZodSchema) => RequestHandler;
 
-export const validateQuery: Validator = (schema: any) => {
-  const js = require('./validate');
-  return js.validateQuery(schema);
-};
+export const validateBody: Validator = (schema) => validateBodyTs(schema);
+
+export const validateQuery: Validator = (schema) => validateQueryTs(schema);
 
 

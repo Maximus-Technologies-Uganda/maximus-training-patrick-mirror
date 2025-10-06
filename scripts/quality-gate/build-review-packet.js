@@ -172,7 +172,7 @@ function zipWithArchiverOrCli() {
     const isWindows = process.platform === "win32";
     return new Promise((resolve, reject) => {
       if (isWindows) {
-        const cmd = `Compress-Archive -Path \"${REVIEW_DIR}\\*\" -DestinationPath \"${ZIP_PATH}\" -Force`;
+        const cmd = `Compress-Archive -Path "${path.join(REVIEW_DIR, '*')}" -DestinationPath "${ZIP_PATH}" -Force`;
         const ps = childProcess.spawn("powershell.exe", ["-NoProfile", "-Command", cmd], { stdio: "inherit" });
         ps.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`Compress-Archive exit ${code}`))));
       } else {

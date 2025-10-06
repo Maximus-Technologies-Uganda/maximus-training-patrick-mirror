@@ -1,13 +1,4 @@
-import 'jest';
-
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toSatisfyApiSpec(): R;
-    }
-  }
-}
-
+// Removed custom matcher extension for jest-openapi, since the library was removed
 export {};
 
 

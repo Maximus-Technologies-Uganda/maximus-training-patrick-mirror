@@ -61,7 +61,9 @@ export default function PostsPageClient({
         Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 10,
       );
       setQ(nextQ);
-    } catch {}
+    } catch (_error) {
+      // Ignore malformed URL values; fall back to defaults.
+    }
   }, [initialPage, initialPageSize, initialQ]);
 
   // Sync internal state with browser navigation (back/forward)
@@ -75,7 +77,9 @@ export default function PostsPageClient({
         setPage(Number.isFinite(p) && p > 0 ? p : 1);
         setPageSize(Number.isFinite(ps) && ps > 0 ? ps : 10);
         setQ(qParam);
-      } catch {}
+      } catch (_error) {
+        // Ignore malformed URL values during history navigation.
+      }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -142,47 +146,52 @@ export default function PostsPageClient({
   // Keep SWR cache stable across renders for this page instance (keys must be strings per SWR types)
   const cacheRef = useRef<Cache<unknown> | null>(null);
   if (!cacheRef.current) cacheRef.current = createSWRCache();
-  const swrValue = useMemo<SWRConfiguration>(() => ({ provider: () => cacheRef.current as Cache<unknown> }), []);
+  const swrValue = useMemo<SWRConfiguration>(
+    () => ({
+      provider: () => cacheRef.current as Cache<unknown>,
+    }),
+    [],
+  );
 
   return (
     <SWRConfig value={swrValue}>
       <main className="mx-auto max-w-3xl p-4">
-      <LiveRegion message={statusMessage} />
+        <LiveRegion message={statusMessage} />
 
-      <h1
-        ref={headingRef}
-        tabIndex={-1}
-        className="text-2xl font-bold text-gray-900"
-      >
-        Posts
-      </h1>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-2xl font-bold text-gray-900"
+        >
+          Posts
+        </h1>
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <PageSizeSelect pageSize={pageSize} onChange={onChangePageSize} />
-        <SearchInput value={q} onChange={onChangeQ} />
-      </div>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <PageSizeSelect pageSize={pageSize} onChange={onChangePageSize} />
+          <SearchInput value={q} onChange={onChangeQ} />
+        </div>
 
-      <div className="mt-6">
-        <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
-      </div>
+        <div className="mt-6">
+          <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
+        </div>
 
-      <section className="mt-6" aria-label="Posts list">
-        {error ? (
-          <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-red-800">
-            Error loading posts. Please try again.
-          </div>
-        ) : isLoading ? (
-          <p className="text-gray-600">Loading…</p>
-        ) : (
-          <PostsList items={filteredItems} />
-        )}
-      </section>
+        <section className="mt-6" aria-label="Posts list">
+          {error ? (
+            <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-red-800">
+              Error loading posts. Please try again.
+            </div>
+          ) : isLoading ? (
+            <p className="text-gray-600">Loading…</p>
+          ) : (
+            <PostsList items={filteredItems} />
+          )}
+        </section>
 
-      <PaginationControls
-        page={page}
-        hasNextPage={Boolean(data?.hasNextPage)}
-        onChangePage={onChangePage}
-      />
+        <PaginationControls
+          page={page}
+          hasNextPage={Boolean(data?.hasNextPage)}
+          onChangePage={onChangePage}
+        />
       </main>
     </SWRConfig>
   );

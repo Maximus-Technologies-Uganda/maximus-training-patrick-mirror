@@ -28,7 +28,7 @@ test.describe('Quote - edge behavior', () => {
         // xorshift32
         seed ^= seed << 13;
         seed ^= seed >>> 17;
-        seed ^= seed << 5; // eslint-disable-line no-bitwise
+        seed ^= seed << 5;  
         const n = (seed >>> 0) / 0xffffffff; // 0..1
         return n;
       };
@@ -84,9 +84,9 @@ test.describe('Quote page edge cases', () => {
   }) => {
     await page.addInitScript(() => {
       // Force Math.random to a fixed value for deterministic selection
-      // eslint-disable-next-line no-undef
+       
       window.__origRandom = Math.random;
-      // eslint-disable-next-line no-undef
+       
       Math.random = () => 0.12345;
     });
     await page.reload();

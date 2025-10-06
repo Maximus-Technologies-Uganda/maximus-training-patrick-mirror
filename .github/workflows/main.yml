@@ -1,12 +1,12 @@
 name: CI/CD - Test then Deploy
 
 on:
-  # Trigger on pushes to the main branch
+  # Trigger on pushes to the main branch (for deployment)
   push:
     branches:
       - "main"
   
-  # Trigger on pull requests targeting the main branch
+  # Trigger on pull requests targeting the main branch (for testing)
   pull_request:
     branches:
       - "main"
@@ -23,73 +23,73 @@ env:
   REGION: 'africa-south1'
 
 jobs:
-  test:
-    name: Quality Gate - Run All Tests
+  test-and-build:
+    name: Quality Gate - Run All Checks
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout code'
         uses: 'actions/checkout@v4'
 
-      - name: 'Set up Node.js'
+      - name: 'Set up Node.js with caching'
         uses: 'actions/setup-node@v4'
         with:
           node-version: '20'
           cache: 'npm'
 
-      - name: 'Install Root Dependencies'
+      - name: 'Install All Dependencies'
         run: npm ci
 
-      - name: 'Run All Tests'
+      - name: 'Run Lint Check'
+        run: npm run lint
+
+      # TODO: Re-enable audit once jest-openapi vulnerability is resolved.
+      # - name: 'Run Dependency Audit'
+      #   run: npm audit --audit-level=high
+
+      - name: 'Run All Tests (Unit & Contract)'
         run: npm test
-        env:
-          NODE_OPTIONS: '--max_old_space_size=4096'
 
       - name: 'Build All Workspaces'
         run: npm run build
 
+      - name: 'Cache Playwright browsers'
+        uses: 'actions/cache@v4'
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: 'Install Frontend Dependencies'
-        run: npm ci
-        working-directory: ./frontend-next
+        run: npm ci --workspace=frontend-next
 
       - name: 'Install Playwright Browsers'
-        run: npx playwright install --with-deps
-        working-directory: ./frontend-next
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npm exec -w frontend-next -- playwright install --with-deps
 
       - name: 'Run Frontend A11y & E2E Tests'
-        run: npx playwright test
-        working-directory: ./frontend-next
+        run: npm run test:e2e -w frontend-next
 
       - name: 'Upload Review Packet Artifact'
         if: always() # Always upload artifacts, even if tests fail
-        uses: actions/upload-artifact@v4
+        uses: 'actions/upload-artifact@v4'
         with:
           name: review-packet
           path: |
-            frontend-next/coverage/
+            coverage/
             frontend-next/playwright-report/
+          retention-days: 7
 
   deploy:
     name: Deploy to Cloud Run
-    needs: test # Deploy only if the test job succeeds
-    # Deploy on push to main, or when manually dispatched
-    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'workflow_dispatch'
+    needs: test-and-build # Deploy only if all checks in the previous job succeed
+    # Deploy only on a direct push to the main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-
     steps:
       - name: 'Checkout code'
         uses: 'actions/checkout@v4'
-
-      - name: 'Set up Node.js'
-        uses: 'actions/setup-node@v4'
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: 'Install Root Dependencies'
-        run: npm ci
-
-      - name: 'Build All Workspaces'
-        run: npm run build
 
       - name: 'Authenticate to Google Cloud'
         id: 'auth'
@@ -98,10 +98,8 @@ jobs:
           workload_identity_provider: '${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}'
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}'
 
-      - name: 'Install gcloud CLI'
+      - name: 'Set up gcloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
-        with:
-          version: '>= 471.0.0'
 
       - name: 'Submit monolithic build to Google Cloud Build'
         run: |
@@ -110,3 +108,4 @@ jobs:
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
             .
+

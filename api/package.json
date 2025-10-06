@@ -13,6 +13,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
@@ -39,7 +40,7 @@
     "eslint": "^9.35.0",
     "globals": "^16.4.0",
     "jest": "^29.7.0",
-    "jest-openapi": "^0.14.2",
+    "@stoplight/spectral-cli": "^6.14.1",
     "nodemon": "^3.1.10",
     "supertest": "^7.0.0",
     "ts-jest": "^29.4.4",

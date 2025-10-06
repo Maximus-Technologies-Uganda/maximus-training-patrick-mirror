@@ -11,7 +11,7 @@ module.exports = {
   },
   collectCoverage: true,
   coverageReporters: ["json", "json-summary", "lcov", "text-summary"],
-  setupFilesAfterEnv: ["<rootDir>/tests/jest.setup.js"],
+  testPathIgnorePatterns: ["<rootDir>/dist/"],
   moduleNameMapper: {
     '^#tsApp$': '<rootDir>/src/app.ts',
   },
