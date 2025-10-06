@@ -57,82 +57,96 @@ function writeExpenses(expenses) {
   fs.writeFileSync(expensesFilePath, JSON.stringify(expenses, null, 2));
 }
 
-const parsedCli = parseCliArgs(process.argv);
-if (parsedCli.filePathOverride) {
-  expensesFilePath = parsedCli.filePathOverride;
-}
-let command = parsedCli.command;
-let args = parsedCli.args;
-let expenses = readExpenses();
+function runCli() {
+  const parsedCli = parseCliArgs(process.argv);
+  if (parsedCli.filePathOverride) {
+    expensesFilePath = parsedCli.filePathOverride;
+  }
+  const command = parsedCli.command;
+  const args = parsedCli.args;
+  const expenses = readExpenses();
 
-if (command === 'add') {
-  const description = args[0];
-  const amount = parseFloat(args[1]);
-  const category = args[2];
+  if (command === 'add') {
+    const description = args[0];
+    const amount = parseFloat(args[1]);
+    const category = args[2];
 
-  if (!description || isNaN(amount) || !category) {
-    console.error('Error: Please provide a description, amount, and category.');
-    console.error('Example: node expense-tracker.js add "Coffee" 4.50 "food"');
+    if (!description || Number.isNaN(amount) || !category) {
+      console.error('Error: Please provide a description, amount, and category.');
+      console.error('Example: node expense-tracker.js add "Coffee" 4.50 "food"');
+      return;
+    }
+
+    if (!Number.isFinite(amount)) {
+      console.error('Error: Amount must be a finite number.');
+      return;
+    }
+
+    if (amount < 0) {
+      console.error('Error: Amount must be non-negative.');
+      return;
+    }
+
+    const newExpense = {
+      description,
+      amount,
+      category,
+      date: new Date().toISOString(),
+    };
+
+    expenses.push(newExpense);
+    writeExpenses(expenses);
+    console.log('Expense added successfully.');
     return;
   }
 
-  if (!Number.isFinite(amount)) {
-    console.error('Error: Amount must be a finite number.');
-    return;
-  }
+  if (command === 'list') {
+    if (expenses.length === 0) {
+      console.log('No expenses recorded.');
+      return;
+    }
 
-  if (amount < 0) {
-    console.error('Error: Amount must be non-negative.');
-    return;
-  }
-
-  const newExpense = {
-    description: description,
-    amount: amount,
-    category: category,
-    date: new Date().toISOString()
-  };
-
-  expenses.push(newExpense);
-  writeExpenses(expenses);
-  console.log('Expense added successfully.');
-
-} else if (command === 'list') {
-  if (expenses.length === 0) {
-    console.log('No expenses recorded.');
-  } else {
     console.log('--- Your Expenses ---');
-    expenses.forEach(expense => {
+    expenses.forEach((expense) => {
       const displayDate = new Date(expense.date).toLocaleDateString();
       console.log(`- ${expense.description} (${expense.category}): $${expense.amount.toFixed(2)} on ${displayDate}`);
     });
     console.log('---------------------');
+    return;
   }
 
-} else if (command === 'total') {
-  const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  console.log(`Total expenses: $${total.toFixed(2)}`);
+  if (command === 'total') {
+    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    console.log(`Total expenses: $${total.toFixed(2)}`);
+    return;
+  }
 
-} else if (command === 'report') {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  if (command === 'report') {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const recentExpenses = expenses.filter(expense => new Date(expense.date) >= sevenDaysAgo);
+    const recentExpenses = expenses.filter((expense) => new Date(expense.date) >= sevenDaysAgo);
 
-  if (recentExpenses.length === 0) {
-    console.log('No expenses in the last 7 days.');
-  } else {
+    if (recentExpenses.length === 0) {
+      console.log('No expenses in the last 7 days.');
+      return;
+    }
+
     console.log('--- Weekly Expense Report ---');
     let total = 0;
-    recentExpenses.forEach(expense => {
+    recentExpenses.forEach((expense) => {
       total += expense.amount;
       const displayDate = new Date(expense.date).toLocaleDateString();
       console.log(`- ${expense.description} (${expense.category}): $${expense.amount.toFixed(2)} on ${displayDate}`);
     });
     console.log('---------------------------');
     console.log(`Total for the last 7 days: $${total.toFixed(2)}`);
+    return;
   }
 
-} else {
   console.log('Unknown command. Use: add, list, total, or report.');
+}
+
+if (require.main === module) {
+  runCli();
 }

@@ -25,9 +25,9 @@ let repoName = process.env.GITHUB_REPOSITORY ? process.env.GITHUB_REPOSITORY.spl
 if (!repoName) {
   try {
     const remoteUrl = execSync('git config --get remote.origin.url', { cwd: repoRoot }).toString().trim();
-    const match = remoteUrl.match(/[:\/]([^\/]+)\.git$/);
-    if (match) repoName = match[1];
-  } catch {}
+    const match = remoteUrl.match(/[:/](?<name>[^/]+)\.git$/);
+    if (match && match.groups) repoName = match.groups.name;
+  } catch (_error) {}
 }
 const appBase = repoName ? `/${repoName}/` : '/';
 run('npm run build', frontendDir, { APP_BASE: appBase });
@@ -43,7 +43,7 @@ for (const name of readdirSync(distDir)) {
 }
 
 // Add .nojekyll to ensure underscored files are served
-try { writeFileSync(join(docsDir, '.nojekyll'), ''); } catch {}
+try { writeFileSync(join(docsDir, '.nojekyll'), ''); } catch (_error) {}
 
 console.log('Docs published to', docsDir);
 

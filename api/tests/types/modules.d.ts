@@ -8,17 +8,19 @@ declare module "../src/config.js" {
 }
 
 declare module "../src/repositories/posts-repository.js" {
+  import type { PostRecord, createRepository as createRepositoryTs } from "../src/repositories/posts-repository";
+
   export class InMemoryPostsRepository {
     constructor();
-    create(post: any): Promise<any>;
-    getById(id: string): Promise<any>;
-    list(page: number, pageSize: number): Promise<any[]>;
-    replace(id: string, post: any): Promise<boolean>;
-    update(id: string, partial: any): Promise<any>;
+    create(post: Partial<PostRecord>): Promise<PostRecord>;
+    getById(id: string): Promise<PostRecord | null>;
+    list(page: number, pageSize: number): Promise<PostRecord[]>;
+    replace(id: string, post: PostRecord): Promise<boolean>;
+    update(id: string, partial: Partial<PostRecord>): Promise<PostRecord | null>;
     delete(id: string): Promise<boolean>;
     count(): Promise<number>;
   }
-  export function createRepository(): any;
+  export function createRepository(): ReturnType<typeof createRepositoryTs>;
 }
 
 

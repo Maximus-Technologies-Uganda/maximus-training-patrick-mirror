@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import type { ListPostsQuery } from "./post.schemas";
 import { PostsService } from "./posts.service";
 
 const postsService = new PostsService();
@@ -21,7 +22,7 @@ export const postsController: {
 
   async list(req, res, next) {
     try {
-      const q = (req as any).validatedQuery ?? req.query;
+      const q = (req as typeof req & { validatedQuery?: ListPostsQuery }).validatedQuery ?? req.query;
       const page = typeof q.page === "number" ? q.page : (typeof q.page === "string" ? parseInt(q.page, 10) : 1);
       const pageSize = typeof q.pageSize === "number" ? q.pageSize : (typeof q.pageSize === "string" ? parseInt(q.pageSize, 10) : 10);
       const safePage = Number.isFinite(page) && page >= 1 ? page : 1;

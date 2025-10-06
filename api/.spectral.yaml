@@ -1,0 +1,7 @@
+extends:
+  - spectral:oas
+rules:
+  # Allow Info object description to be optional in this repo
+  info-description: off
+  # Keep recommended severity defaults; customize as needed later
+
