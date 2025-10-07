@@ -78,15 +78,15 @@ description: Generate an actionable, dependency-ordered tasks.md for the Week 6 
   - Validate 204; 404 not found.
 
 ### Frontend a11y and integration/e2e per spec
-- [ ] T020 [P] A11y scan for /posts list
+- [X] T020 [P] A11y scan for /posts list
   - File: `C:/Users/LENOVO/Training/frontend-next/tests/playwright/posts.a11y.spec.ts`
   - Ensure zero critical/serious violations using axe with `wcag2a` and `wcag2aa` tags.
 
-- [ ] T021 [P] A11y scan for create post form
+- [X] T021 [P] A11y scan for create post form
   - File: `C:/Users/LENOVO/Training/frontend-next/tests/playwright/create-post.a11y.spec.ts`
   - Navigate to create form route; assert zero critical/serious violations.
 
-- [ ] T022 [P] E2E: demo primary flows load
+- [X] T022 [P] E2E: demo primary flows load
   - File: `C:/Users/LENOVO/Training/frontend-next/tests/playwright/demo.flows.spec.ts`
   - Validate home, posts list, and create post (load + submit) render without errors.
 
