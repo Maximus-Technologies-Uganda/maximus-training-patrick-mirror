@@ -1,22 +1,15 @@
 name: CI/CD - Test then Deploy
 
 on:
-  # Trigger on pushes to the main branch (for deployment)
   push:
-    branches:
-      - "main"
-  
-  # Trigger on pull requests targeting the main branch (for testing)
+    branches: ["main"]
   pull_request:
-    branches:
-      - "main"
-
-  # Allow manual triggering from the GitHub Actions UI
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
   contents: 'read'
-  id-token: 'write' # Required for Workload Identity Federation
+  id-token: 'write'
   pull-requests: 'write'
 
 env:
@@ -35,7 +28,7 @@ jobs:
         uses: 'actions/setup-node@v4'
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'npm' # <-- T061: Caches npm dependencies
 
       - name: 'Install All Dependencies'
         run: npm ci
@@ -54,7 +47,7 @@ jobs:
 
       - name: 'Extract Test Coverage'
         id: coverage
-        if: always()
+        if: always() && steps.tests.outcome == 'success'
         run: |
           FILE=""
           if [ -f coverage/coverage-summary.json ]; then
@@ -67,19 +60,22 @@ jobs:
           if command -v jq >/dev/null 2>&1 && [ -n "$FILE" ]; then
             PCT=$(jq -r '.total.lines.pct // .total.statements.pct // empty' "$FILE")
             if [ -n "$PCT" ]; then
-              echo "line_pct=${PCT}%" >> $GITHUB_OUTPUT
+              echo "summary=${PCT}%" >> $GITHUB_OUTPUT
             else
-              echo "line_pct=N/A" >> $GITHUB_OUTPUT
+              echo "summary=N/A" >> $GITHUB_OUTPUT
             fi
           else
-            echo "line_pct=N/A" >> $GITHUB_OUTPUT
+            echo "summary=N/A" >> $GITHUB_OUTPUT
           fi
 
       - name: 'Build All Workspaces'
         id: build
         run: npm run build
 
-      - name: 'Cache Playwright browsers'
+      - name: 'Ensure frontend-next dependencies'
+        run: npm ci --workspace=frontend-next
+
+      - name: 'Cache Playwright browsers' # <-- T061: Caches Playwright binaries
         uses: 'actions/cache@v4'
         id: playwright-cache
         with:
@@ -88,31 +84,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
 
-      - name: 'Install Frontend Dependencies'
-        run: npm ci --workspace=frontend-next
-
       - name: 'Install Playwright Browsers'
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npm exec -w frontend-next -- playwright install --with-deps
+        run: |
+          npx --yes --package=@playwright/test -- playwright install --with-deps
 
       - name: 'Run Frontend A11y & E2E Tests'
         id: e2e
         run: npm run test:e2e -w frontend-next
 
       - name: 'Generate PR Summary Report'
-        if: always() # Generate summary even if earlier steps failed
+        if: always()
         run: |
-          echo "# Quality Gate Summary" > pr-summary.md
+          echo "### 🛡️ Quality Gate Summary" > pr-summary.md
           echo "" >> pr-summary.md
-          echo "- Overall Job Status: ${{ job.status }}" >> pr-summary.md
-          echo "" >> pr-summary.md
-          echo "| Check | Status |" >> pr-summary.md
+          echo "| Check | Result |" >> pr-summary.md
           echo "|---|---|" >> pr-summary.md
-          echo "| Lint | ${{ steps.lint.outcome }} |" >> pr-summary.md
-          echo "| Tests | ${{ steps.tests.outcome }} |" >> pr-summary.md
-          echo "| Test Coverage | ${{ steps.coverage.outputs.line_pct }} |" >> pr-summary.md
-          echo "| Build | ${{ steps.build.outcome }} |" >> pr-summary.md
-          echo "| E2E | ${{ steps.e2e.outcome }} |" >> pr-summary.md
+          echo "| **Lint** | ${{ steps.lint.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
+          echo "| **Unit & Contract Tests** | ${{ steps.tests.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
+          echo "| **Test Coverage** | \`${{ steps.coverage.outputs.summary || 'N/A' }}\` |" >> pr-summary.md
+          echo "| **Production Build** | ${{ steps.build.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
+          echo "| **E2E & A11y Tests** | ${{ steps.e2e.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
+          echo "" >> pr-summary.md
+          echo "**Overall Status: ${{ job.status == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}**" >> pr-summary.md
 
       - name: 'Post PR Summary Comment'
         if: always() && github.event_name == 'pull_request'
@@ -120,20 +114,29 @@ jobs:
         with:
           path: pr-summary.md
 
+      - name: 'Create Review Packet Manifest' # <-- T044: Creates the manifest file
+        if: always()
+        run: |
+          echo '{' > manifest.json
+          echo '  "commitSha": "${{ github.sha }}",' >> manifest.json
+          echo '  "runId": "${{ github.run_id }}",' >> manifest.json
+          echo '  "timestamp": "'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'"' >> manifest.json
+          echo '}' >> manifest.json
+
       - name: 'Upload Review Packet Artifact'
-        if: always() # Always upload artifacts, even if tests fail
+        if: always()
         uses: 'actions/upload-artifact@v4'
         with:
           name: review-packet
           path: |
+            manifest.json # <-- T044: Includes the manifest in the artifact
             coverage/
             frontend-next/playwright-report/
           retention-days: 7
 
   deploy:
     name: Deploy to Cloud Run
-    needs: test-and-build # Deploy only if all checks in the previous job succeed
-    # Deploy only on a direct push to the main branch
+    needs: test-and-build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
