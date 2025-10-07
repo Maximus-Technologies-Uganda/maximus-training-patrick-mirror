@@ -17,6 +17,7 @@ on:
 permissions:
   contents: 'read'
   id-token: 'write' # Required for Workload Identity Federation
+  pull-requests: 'write'
 
 env:
   PROJECT_ID: 'proj-app-dev'
@@ -40,6 +41,7 @@ jobs:
         run: npm ci
 
       - name: 'Run Lint Check'
+        id: lint
         run: npm run lint
 
       # TODO: Re-enable audit once jest-openapi vulnerability is resolved.
@@ -47,9 +49,11 @@ jobs:
       #   run: npm audit --audit-level=high
 
       - name: 'Run All Tests (Unit & Contract)'
+        id: tests
         run: npm test
 
       - name: 'Build All Workspaces'
+        id: build
         run: npm run build
 
       - name: 'Cache Playwright browsers'
@@ -69,7 +73,28 @@ jobs:
         run: npm exec -w frontend-next -- playwright install --with-deps
 
       - name: 'Run Frontend A11y & E2E Tests'
+        id: e2e
         run: npm run test:e2e -w frontend-next
+
+      - name: 'Generate PR Summary Report'
+        if: always() # Generate summary even if earlier steps failed
+        run: |
+          echo "# Quality Gate Summary" > pr-summary.md
+          echo "" >> pr-summary.md
+          echo "- Overall Job Status: ${{ job.status }}" >> pr-summary.md
+          echo "" >> pr-summary.md
+          echo "| Check | Status |" >> pr-summary.md
+          echo "|---|---|" >> pr-summary.md
+          echo "| Lint | ${{ steps.lint.outcome }} |" >> pr-summary.md
+          echo "| Tests | ${{ steps.tests.outcome }} |" >> pr-summary.md
+          echo "| Build | ${{ steps.build.outcome }} |" >> pr-summary.md
+          echo "| E2E | ${{ steps.e2e.outcome }} |" >> pr-summary.md
+
+      - name: 'Post PR Summary Comment'
+        if: always() && github.event_name == 'pull_request'
+        uses: 'marocchino/sticky-pull-request-comment@v2'
+        with:
+          path: pr-summary.md
 
       - name: 'Upload Review Packet Artifact'
         if: always() # Always upload artifacts, even if tests fail
