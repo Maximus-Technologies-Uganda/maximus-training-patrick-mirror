@@ -10,7 +10,7 @@
     "test": "vitest",
     "test:ci": "vitest run --coverage",
     "test:contract": "vitest run --coverage tests/openapi.validation.test.ts",
-    "test:e2e": "npx playwright test"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "15.5.4",

@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 import path from "path";
 
 export default defineConfig({
-  testDir: "./tests/playwright",
+  testDir: "./tests",
+  testMatch: ["**/*.spec.ts"],
   // Start the Next.js app for E2E/a11y tests
   webServer: {
     command: "npm run dev -- --port=3000",
