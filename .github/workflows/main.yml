@@ -128,8 +128,9 @@ jobs:
         uses: 'actions/upload-artifact@v4'
         with:
           name: review-packet
+          # T044: Includes the manifest in the artifact
           path: |
-            manifest.json # <-- T044: Includes the manifest in the artifact
+            manifest.json
             coverage/
             frontend-next/playwright-report/
           retention-days: 7
