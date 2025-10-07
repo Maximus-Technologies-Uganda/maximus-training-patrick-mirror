@@ -52,6 +52,29 @@ jobs:
         id: tests
         run: npm test
 
+      - name: 'Extract Test Coverage'
+        id: coverage
+        if: always()
+        run: |
+          FILE=""
+          if [ -f coverage/coverage-summary.json ]; then
+            FILE="coverage/coverage-summary.json"
+          elif [ -f api/coverage/coverage-summary.json ]; then
+            FILE="api/coverage/coverage-summary.json"
+          elif [ -f frontend-next/coverage/coverage-summary.json ]; then
+            FILE="frontend-next/coverage/coverage-summary.json"
+          fi
+          if command -v jq >/dev/null 2>&1 && [ -n "$FILE" ]; then
+            PCT=$(jq -r '.total.lines.pct // .total.statements.pct // empty' "$FILE")
+            if [ -n "$PCT" ]; then
+              echo "line_pct=${PCT}%" >> $GITHUB_OUTPUT
+            else
+              echo "line_pct=N/A" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "line_pct=N/A" >> $GITHUB_OUTPUT
+          fi
+
       - name: 'Build All Workspaces'
         id: build
         run: npm run build
@@ -87,6 +110,7 @@ jobs:
           echo "|---|---|" >> pr-summary.md
           echo "| Lint | ${{ steps.lint.outcome }} |" >> pr-summary.md
           echo "| Tests | ${{ steps.tests.outcome }} |" >> pr-summary.md
+          echo "| Test Coverage | ${{ steps.coverage.outputs.line_pct }} |" >> pr-summary.md
           echo "| Build | ${{ steps.build.outcome }} |" >> pr-summary.md
           echo "| E2E | ${{ steps.e2e.outcome }} |" >> pr-summary.md
 
