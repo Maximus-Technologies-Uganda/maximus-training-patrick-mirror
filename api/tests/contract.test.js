@@ -85,6 +85,19 @@ describe('OpenAPI contract - /posts/{id}', () => {
     expect(res.status).toBe(200);
   });
 
+  it('PUT /posts/:id not found matches spec', async () => {
+    const app = await makeApp();
+    const res = await request(app).put('/posts/missing').send({ title: 'New', content: 'Text' });
+    expect(res.status).toBe(404);
+  });
+
+  it('PUT /posts/:id invalid body matches spec', async () => {
+    const app = await makeApp();
+    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
+    const res = await request(app).put('/posts/test-id').send({ title: '' });
+    expect(res.status).toBe(400);
+  });
+
   it('PATCH /posts/:id validation error matches spec', async () => {
     const app = await makeApp();
     const res = await request(app).patch('/posts/test-id').send({});
@@ -96,6 +109,12 @@ describe('OpenAPI contract - /posts/{id}', () => {
     await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
     const res = await request(app).patch('/posts/test-id').send({ title: 'Updated' });
     expect(res.status).toBe(200);
+  });
+
+  it('PATCH /posts/:id not found matches spec', async () => {
+    const app = await makeApp();
+    const res = await request(app).patch('/posts/missing').send({ title: 'Updated' });
+    expect(res.status).toBe(404);
   });
 
   it('DELETE /posts/:id success matches spec', async () => {
