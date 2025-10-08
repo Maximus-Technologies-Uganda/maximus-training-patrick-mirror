@@ -21,8 +21,14 @@ async function fetchJson<T>(url: string, schema: z.ZodType<T>): Promise<T> {
 
 // SWR key builder
 function postsListKey(page: number, pageSize: number): string {
-  const base = getBaseUrl();
-  return `${base}/posts?page=${page}&pageSize=${pageSize}`;
+  // Route Handler serves at /api/posts to avoid exposing service endpoints to the client
+  const base = typeof window === "undefined" ? getBaseUrl() : "";
+  const path = "/api/posts"; // client uses relative URL; server can still compute absolute
+  const url = new URL(path, base || "http://localhost");
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("pageSize", String(pageSize));
+  // If base is empty (browser), return relative path; otherwise absolute for SSR
+  return base ? url.toString() : `${path}?${url.searchParams.toString()}`;
 }
 
 export function usePostsList(params?: {

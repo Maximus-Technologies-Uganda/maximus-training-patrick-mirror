@@ -221,6 +221,15 @@ jobs:
           path: |
             frontend-next/playwright-report/**
 
+      - name: Upload screenshots for frontend-next
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-frontend-next
+          if-no-files-found: ignore
+          path: |
+            docs/ReviewPacket/screenshots/frontend-next/**
+
   a11y:
     name: Frontend Next a11y
     runs-on: ubuntu-latest

@@ -6,12 +6,12 @@ import { describe, it } from "vitest";
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+// Route Handlers proxy at /api/posts; stub those endpoints directly for tests
 
 describe("Integration: Client-side search filter", () => {
   it("filters items on the current page by title/content", async () => {
     server.use(
-      http.get(`${baseUrl}/posts`, () => {
+      http.get("*/api/posts", () => {
         return HttpResponse.json(
           {
             page: 1,

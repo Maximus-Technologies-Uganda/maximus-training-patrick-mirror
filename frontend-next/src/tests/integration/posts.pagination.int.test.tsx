@@ -7,12 +7,12 @@ import { describe, it } from "vitest";
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+// Route Handlers proxy at /api/posts; stub those endpoints directly for tests
 
 describe("Integration: Pagination and URL sync", () => {
   it("navigates to page 2 and updates URL query and focus", async () => {
     server.use(
-      http.get(`${baseUrl}/posts`, ({ request }) => {
+      http.get("*/api/posts", ({ request }) => {
         const url = new URL(request.url);
         const page = Number(url.searchParams.get("page") ?? "1");
         const pageSize = Number(url.searchParams.get("pageSize") ?? "10");

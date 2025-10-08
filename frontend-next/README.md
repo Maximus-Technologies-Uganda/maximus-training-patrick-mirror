@@ -1,78 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) application configured for SSR on Cloud Run with server Route Handlers.
 
-## Deployment: GitHub Pages (Static Export)
+## Live Demos
 
-This app is configured for static export and deployment to GitHub Pages.
+- Production (Cloud Run, `africa-south1`): [Update after deploy – URL appears in Actions job summary]
 
-### Environment Variables
+## Run & Try (Next.js)
 
-- `NEXT_PUBLIC_API_URL` (required): Base URL of the Posts API (e.g., `http://localhost:3000`).
-  - Copy `.env.example` to `.env.local` and customize as needed.
+The browser makes calls to relative routes like `/api/posts`. Server Route Handlers proxy these calls to the upstream API using server-only configuration—no secrets are exposed to the client.
 
-### Scripts
+### Environment
 
-- `npm run build`: Build the app and export static HTML to `out/` for GitHub Pages.
-- `npm run lint`: Lint the project.
-- `npm test`: Run unit/integration tests.
+| Variable | Scope | Example | Purpose |
+|---|---|---|---|
+| `NEXT_PUBLIC_API_URL` | Local dev and SSR fallback | `http://localhost:3000` | Base URL for the API when running locally; also used by SSR if `API_BASE_URL` is not set. |
+| `API_BASE_URL` | Server-only (Cloud Run) | `https://maximus-training-api-xxxxx-africa-south1.run.app` | Upstream API base URL used by server Route Handlers. |
+| `API_SERVICE_TOKEN` | Server-only (optional) | `eyJ...` | Optional bearer token sent as `Authorization: Bearer <token>` for service-to-service calls. |
+| `PORT` | Runtime (container) | `8080` | Provided by Cloud Run; the app binds to this port. |
+
+### Local Development
+
+1. Start the API (in another terminal):
+   ```bash
+   # from repo root
+   npm --workspace api run dev
+   # API listens on http://localhost:3000 by default
+   ```
+2. Start the frontend:
+   ```bash
+   # from repo root or ./frontend-next
+   cd frontend-next
+   set NEXT_PUBLIC_API_URL=http://localhost:3000 # PowerShell
+   # or: export NEXT_PUBLIC_API_URL=http://localhost:3000 (bash)
+   npm run dev
+   ```
+3. Visit http://localhost:3000/posts
+
+### Build & Deploy (Cloud Run)
+
+- GitHub Actions workflow: `.github/workflows/deploy-cloud-run.yml`
+  - Trigger: push to `main`
+  - Submits `cloudbuild.yaml` which:
+    - Builds and pushes images to Artifact Registry
+    - Deploys `maximus-training-frontend` in `africa-south1` with `min-instances=1`
+    - Sets `API_BASE_URL` and binds to port `8080`
+  - The job writes the Cloud Run service URL to the GitHub Job Summary
 
 ### Next.js Configuration
 
-`next.config.ts` includes:
+`next.config.ts` (SSR + standalone for Cloud Run):
 
 ```ts
-export default {
-  output: "export",
+import type { NextConfig } from "next";
+import path from "path";
+
+const nextConfig: NextConfig = {
+  output: "standalone",
   images: { unoptimized: true },
+  outputFileTracingRoot: path.join(__dirname, ".."),
 };
+
+export default nextConfig;
 ```
-
-### Deploy Steps
-
-1. Ensure `NEXT_PUBLIC_API_URL` is reachable from the Pages site (CORS allowed).
-2. Build and export:
-   ```bash
-   npm run build
-   ```
-3. Publish the `out/` directory to GitHub Pages (e.g., via Actions or manual).
 
 ### API Contracts
 
-Contracts and reference OpenAPI files live in:
-
 - `../api/openapi.json`
-- `../specs/002-posts-api/contracts/openapi.yml`
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

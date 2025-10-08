@@ -13,7 +13,7 @@ substitutions:
   _API_TIMEOUT: 300s
   _FRONTEND_MEMORY: 512Mi
   _FRONTEND_CPU: '1'
-  _FRONTEND_MIN_INSTANCES: '0'
+  _FRONTEND_MIN_INSTANCES: '1'
   _FRONTEND_MAX_INSTANCES: '10'
   _FRONTEND_TIMEOUT: 300s
 
@@ -120,13 +120,12 @@ steps:
       - |
         set -euxo pipefail
         API_URL=$(cat api_url.txt)
-        echo "Building frontend with NEXT_PUBLIC_API_URL=$$API_URL"
+        echo "Building frontend image (Route Handlers mode; no client NEXT_PUBLIC_API_URL)"
         docker build \
           --progress=plain \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
           -f frontend-next/Dockerfile \
-          --build-arg NEXT_PUBLIC_API_URL="$$API_URL" \
           .
 
   - name: 'gcr.io/cloud-builders/docker'
@@ -148,8 +147,8 @@ steps:
           --project="${PROJECT_ID}" \
           --region="${_REGION}" \
           --platform=managed \
-          --port=3000 \
-          --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,NEXT_PUBLIC_API_URL=$$API_URL" \
+          --port=8080 \
+          --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$$API_URL" \
           --memory="${_FRONTEND_MEMORY}" \
           --cpu="${_FRONTEND_CPU}" \
           --min-instances="${_FRONTEND_MIN_INSTANCES}" \
