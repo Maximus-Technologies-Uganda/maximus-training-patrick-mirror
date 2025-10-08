@@ -318,3 +318,8 @@ jobs:
           fi
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Append frontend-next coverage totals table
+        shell: bash
+        run: |
+          node frontend-next/scripts/print-coverage-summary.mjs frontend-next >> "$GITHUB_STEP_SUMMARY" || true

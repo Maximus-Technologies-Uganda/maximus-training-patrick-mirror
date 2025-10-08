@@ -176,7 +176,7 @@ jobs:
             frontend/eslint.config.*
             frontend/vitest.config.*
 
-  test-frontend-next:
+  packet-frontend-next:
     name: Frontend Next tests & coverage
     runs-on: ubuntu-latest
     needs: install-root-deps
@@ -190,27 +190,20 @@ jobs:
           cache: npm
           cache-dependency-path: frontend-next/package-lock.json
 
-      - name: Install monorepo deps (root)
-        shell: bash
-        run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          if ! npm ci; then
-            npm install --workspaces --no-audit --no-fund --ignore-scripts
-          fi
-          npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
-          npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
-          # Extra: ensure frontend-next deps are linked
-          npm --workspaces --workspace=frontend-next install --no-audit --no-fund --ignore-scripts || true
+      - name: Install dependencies (frontend-next)
+        working-directory: frontend-next
+        run: npm ci
 
-      - name: Run frontend-next tests with coverage
-        run: npm --workspaces --workspace=frontend-next run test:ci
+      - name: Run tests with coverage (frontend-next)
+        working-directory: frontend-next
+        run: npm run test:ci
 
       - name: Stage coverage for artifact
         run: |
           mkdir -p stage/coverage-frontend-next
-          [ -d frontend-next/coverage ] && cp -R frontend-next/coverage/. stage/coverage-frontend-next/ || true
+          # Copy only required files for T004
+          [ -f frontend-next/coverage/coverage-summary.json ] && cp frontend-next/coverage/coverage-summary.json stage/coverage-frontend-next/ || true
+          [ -f frontend-next/coverage/lcov.info ] && cp frontend-next/coverage/lcov.info stage/coverage-frontend-next/ || true
 
       - name: Upload frontend-next coverage artifact
         uses: actions/upload-artifact@v4
@@ -280,6 +273,15 @@ jobs:
           name: a11y-json-report
           path: a11y/report.json
 
+      - name: Upload Playwright test-results (screenshots)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-frontend-next
+          if-no-files-found: ignore
+          path: |
+            frontend-next/test-results/**
+
   contract:
     name: Frontend Next contract
     runs-on: ubuntu-latest
@@ -318,7 +320,7 @@ jobs:
 
   assemble:
     name: Assemble review packet
-    needs: [discover, frontend, test-frontend-next, a11y, contract]
+    needs: [discover, frontend, packet-frontend-next, a11y, contract]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
