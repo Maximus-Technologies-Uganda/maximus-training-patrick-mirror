@@ -17,15 +17,15 @@
 
 ## Phase 2 (PR 2): Cloud Run SSR Demo + README
 
-- [ ] T010 Verify `C:\Users\LENOVO\Training\frontend-next\Dockerfile` uses Next.js standalone output and `PORT` env; adjust as needed.
-- [ ] T011 Implement server Route Handler at `C:\Users\LENOVO\Training\frontend-next\src\app\api\posts\route.ts` that calls backend API with service identity; client fetches `/api/posts`.
-- [ ] T012 [P] Update any client components to use relative `/api/posts` instead of direct `NEXT_PUBLIC_API_URL`.
-- [ ] T013 Configure `C:\Users\LENOVO\Training\.github\workflows\deploy-cloud-run.yml` (or `cloudbuild.yaml`) for build → deploy:
+ - [X] T010 Verify `C:\Users\LENOVO\Training\frontend-next\Dockerfile` uses Next.js standalone output and `PORT` env; adjust as needed.
+- [X] T011 Implement server Route Handler at `C:\Users\LENOVO\Training\frontend-next\src\app\api\posts\route.ts` that calls backend API with service identity; client fetches `/api/posts`.
+- [X] T012 [P] Update any client components to use relative `/api/posts` instead of direct `NEXT_PUBLIC_API_URL`.
+- [X] T013 Configure `C:\Users\LENOVO\Training\.github\workflows\deploy-cloud-run.yml` (or `cloudbuild.yaml`) for build → deploy:
   - region `africa-south1`, service `maximus-training-frontend`, min-instances `1`, registry `gcr.io`.
-- [ ] T014 Add job summary step to echo Cloud Run URL upon deploy completion.
-- [ ] T015 Update `C:\Users\LENOVO\Training\frontend-next\README.md` with sections: `## Live Demos` (actual URL) and `## Run & Try (Next.js)` (env table; note server handlers).
-- [ ] T016 Capture screenshots of Loading → Data on `/posts` and store under `C:\Users\LENOVO\Training\docs\ReviewPacket\screenshots\frontend-next\`.
-- [ ] T017 Ensure Review Packet workflow uploads screenshots directory.
+- [X] T014 Add job summary step to echo Cloud Run URL upon deploy completion.
+- [X] T015 Update `C:\Users\LENOVO\Training\frontend-next\README.md` with sections: `## Live Demos` (actual URL) and `## Run & Try (Next.js)` (env table; note server handlers).
+- [X] T016 Capture screenshots of Loading → Data on `/posts` and store under `C:\Users\LENOVO\Training\docs\ReviewPacket\screenshots\frontend-next\`.
+- [X] T017 Ensure Review Packet workflow uploads screenshots directory.
 
 ## Phase 3 (PR 3): A11y Smokes + Client Contract Checks
 

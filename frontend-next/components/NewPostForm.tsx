@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
-import { getBaseUrl } from "../src/lib/config";
 import { mutatePostsPage1 } from "../src/lib/swr";
 
 const FormSchema = z.object({
@@ -41,8 +40,7 @@ export default function NewPostForm({
       return;
     }
 
-    const base = getBaseUrl();
-    const res = await fetch(`${base}/posts`, {
+    const res = await fetch(`/api/posts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, content, published: true, tags: [] }),

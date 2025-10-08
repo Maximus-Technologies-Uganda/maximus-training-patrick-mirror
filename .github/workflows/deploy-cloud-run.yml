@@ -2,7 +2,7 @@ name: Submit Full Deploy to Cloud Build
 
 on:
   push:
-    branches: [ main, development, 'feat/**' ]
+    branches: [ main ]
     paths:
       - 'frontend-next/**'
       - '.github/workflows/deploy-cloud-run.yml'
@@ -71,22 +71,26 @@ jobs:
       - name: Submit Cloud Build (full deploy)
         run: |
           set -euo pipefail
-          # Try to read from GCP Secret Manager; if missing, fall back to GitHub Secret PROD_API_URL
-          if API_URL_VALUE=$(gcloud secrets versions access latest --secret="${{ env.PROD_API_SECRET_NAME }}" --project="${{ env.PROJECT_ID }}" 2>/dev/null); then
-            echo "Using API URL from Secret Manager"
-          else
-            echo "Secret Manager value not found; falling back to GitHub secret"
-            API_URL_VALUE='${{ secrets.PROD_API_URL }}'
-            if [ -z "$API_URL_VALUE" ]; then
-              echo "No API URL available from Secret Manager or GitHub secrets" >&2
-              exit 1
-            fi
-          fi
           gcloud builds submit \
             --config=cloudbuild.yaml \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
             --service-account="projects/${{ env.PROJECT_ID }}/serviceAccounts/github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
-            --substitutions=_REGION=${{ env.REGION }},_AR_REPOSITORY=${{ env.AR_REPOSITORY }},_FRONTEND_SERVICE_NAME=${{ env.SERVICE_NAME }},_API_SERVICE_NAME=maximus-training-api,_PROD_API_URL=$API_URL_VALUE \
+            --substitutions=_REGION=${{ env.REGION }},_AR_REPOSITORY=${{ env.AR_REPOSITORY }},_FRONTEND_SERVICE_NAME=${{ env.SERVICE_NAME }},_API_SERVICE_NAME=maximus-training-api \
             .
+
+      - name: Write Cloud Run URL to Job Summary
+        run: |
+          set -euo pipefail
+          SERVICE_URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" --project "${{ env.PROJECT_ID }}" --region "${{ env.REGION }}" --format='value(status.url)')
+          if [ -z "$SERVICE_URL" ]; then
+            echo "Failed to resolve Cloud Run service URL" >&2
+            exit 1
+          fi
+          {
+            echo "## Cloud Run Deployment"
+            echo "- Region: ${{ env.REGION }}"
+            echo "- Service: ${{ env.SERVICE_NAME }}"
+            echo "- URL: $SERVICE_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
 

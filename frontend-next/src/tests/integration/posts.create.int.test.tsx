@@ -7,12 +7,12 @@ import { describe, it, expect } from "vitest";
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+// Route Handlers proxy at /api/posts; stub those endpoints directly for tests
 
 describe("Integration: create post and mutate cache", () => {
   it("creates successfully, clears form, focuses success alert, and refreshes list", async () => {
     server.use(
-      http.get(`${baseUrl}/posts`, () => {
+      http.get("*/api/posts", () => {
         return HttpResponse.json(
           {
             page: 1,
@@ -23,7 +23,7 @@ describe("Integration: create post and mutate cache", () => {
           { status: 200 },
         );
       }),
-      http.post(`${baseUrl}/posts`, async () => {
+      http.post("*/api/posts", async () => {
         const now = new Date().toISOString();
         return HttpResponse.json(
           {
@@ -35,7 +35,7 @@ describe("Integration: create post and mutate cache", () => {
             createdAt: now,
             updatedAt: now,
           },
-          { status: 201, headers: { Location: `${baseUrl}/posts/p-created-1` } },
+          { status: 201, headers: { Location: `/api/posts/p-created-1` } },
         );
       }),
     );
