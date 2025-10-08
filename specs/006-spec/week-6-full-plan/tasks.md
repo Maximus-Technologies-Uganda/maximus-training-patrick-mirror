@@ -5,14 +5,14 @@
 
 ## Phase 1 (PR 1): CI Gate & Review Packet Integration
 
-- [ ] T001 Update Review Packet workflow to add frontend-next job in `C:\Users\LENOVO\Training\.github\workflows\review-packet.yml` (job: `packet-frontend-next`).
-- [ ] T002 Configure job steps to run in `C:\Users\LENOVO\Training\frontend-next`: `npm ci`, `npm run test:ci`.
-- [ ] T003 Ensure coverage output path `C:\Users\LENOVO\Training\frontend-next\coverage\coverage-summary.json` and `lcov.info` are generated.
-- [ ] T004 Upload artifact named `coverage-frontend-next` with files: `coverage-summary.json`, `lcov.info`.
-- [ ] T005 Add Playwright report/screenshot upload steps: glob `C:\Users\LENOVO\Training\docs\ReviewPacket\a11y\html\**` and `C:\Users\LENOVO\Training\frontend-next\test-results\**`.
-- [ ] T006 Extend `C:\Users\LENOVO\Training\.github\workflows\quality-gate.yml` to parse `frontend-next` coverage from `C:\Users\LENOVO\Training\frontend-next\coverage\coverage-summary.json` and print totals in `$GITHUB_STEP_SUMMARY` under a distinct heading.
-- [ ] T007 [P] Add helper script if needed at `C:\Users\LENOVO\Training\frontend-next\scripts\print-coverage-summary.mjs` and call from Gate job.
-- [ ] T008 Ensure PR references Linear issue and this spec in PR body using `C:\Users\LENOVO\Training\PR_BODY.md` template.
+- [X] T001 Update Review Packet workflow to add frontend-next job in `C:\Users\LENOVO\Training\.github\workflows\review-packet.yml` (job: `packet-frontend-next`).
+- [X] T002 Configure job steps to run in `C:\Users\LENOVO\Training\frontend-next`: `npm ci`, `npm run test:ci`.
+- [X] T003 Ensure coverage output path `C:\Users\LENOVO\Training\frontend-next\coverage\coverage-summary.json` and `lcov.info` are generated.
+- [X] T004 Upload artifact named `coverage-frontend-next` with files: `coverage-summary.json`, `lcov.info`.
+- [X] T005 Add Playwright report/screenshot upload steps: glob `C:\Users\LENOVO\Training\docs\ReviewPacket\a11y\html\**` and `C:\Users\LENOVO\Training\frontend-next\test-results\**`.
+- [X] T006 Extend `C:\Users\LENOVO\Training\.github\workflows\quality-gate.yml` to parse `frontend-next` coverage from `C:\Users\LENOVO\Training\frontend-next\coverage\coverage-summary.json` and print totals in `$GITHUB_STEP_SUMMARY` under a distinct heading.
+- [X] T007 [P] Add helper script if needed at `C:\Users\LENOVO\Training\frontend-next\scripts\print-coverage-summary.mjs` and call from Gate job.
+- [X] T008 Ensure PR references Linear issue and this spec in PR body using `C:\Users\LENOVO\Training\PR_BODY.md` template.
 - [ ] T009 Merge and trigger `main` run; verify Packet shows `coverage-frontend-next` and Gate summary includes `frontend-next` block.
 
 ## Phase 2 (PR 2): Cloud Run SSR Demo + README
