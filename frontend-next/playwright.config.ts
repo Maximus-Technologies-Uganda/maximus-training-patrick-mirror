@@ -4,6 +4,8 @@ import path from "path";
 export default defineConfig({
   testDir: "./tests",
   testMatch: ["**/*.spec.ts"],
+  // Ignore Vitest contract tests; they are not Playwright tests
+  testIgnore: ["**/contract.*.spec.ts"],
   // Start the Next.js app for E2E/a11y tests
   webServer: {
     command: "npm run dev -- --port=3000",
@@ -26,6 +28,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
+    screenshot: "only-on-failure",
   },
   projects: [
     {

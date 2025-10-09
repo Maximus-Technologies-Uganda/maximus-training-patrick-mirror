@@ -308,6 +308,28 @@ jobs:
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
+          echo "\n### frontend-next A11y Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f a11y/report.json ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat a11y/report.json >> "$GITHUB_STEP_SUMMARY" || true
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '_No a11y report found (a11y/report.json)_' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "\n### frontend-next Contract Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f contract/report.json ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat contract/report.json >> "$GITHUB_STEP_SUMMARY" || true
+            echo '' >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '_No contract report found (contract/report.json)_' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
           echo "\n### frontend-next Coverage Totals" >> "$GITHUB_STEP_SUMMARY"
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '```json' >> "$GITHUB_STEP_SUMMARY"
