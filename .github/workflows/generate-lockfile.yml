@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   lockfile:
+    # T026: Disabled to avoid noisy automatic commits during governance cleanup
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

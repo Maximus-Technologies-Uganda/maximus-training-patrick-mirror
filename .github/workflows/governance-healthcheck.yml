@@ -1,0 +1,36 @@
+name: Governance Healthcheck
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  verify:
+    name: Verify workflows governance (T027)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate disabled workflows are guarded
+        shell: bash
+        run: |
+          set -euo pipefail
+          disabled=(
+            .github/workflows/ci.yml
+            .github/workflows/pages-deploy.yml
+            .github/workflows/main.yml
+            .github/workflows/generate-lockfile.yml
+          )
+          for f in "${disabled[@]}"; do
+            if [ -f "$f" ]; then
+              if ! grep -Eq "^\s*if:\s*\$\{\{\s*false\s*\}\}" "$f"; then
+                echo "::error file=$f::Missing job-level guard: if: ${{ false }} (T026)" >&2
+                exit 1
+              fi
+            fi
+          done
+          echo "Governance healthcheck passed: disabled workflows are correctly guarded."

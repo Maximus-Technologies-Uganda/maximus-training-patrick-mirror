@@ -18,6 +18,8 @@ env:
 
 jobs:
   test-and-build:
+    # T026: Disabled in favor of quality-gate.yml and review-packet.yml
+    if: ${{ false }}
     name: Quality Gate - Run All Checks
     runs-on: ubuntu-latest
     steps:
@@ -138,7 +140,8 @@ jobs:
   deploy:
     name: Deploy to Cloud Run
     needs: test-and-build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # T026: Disabled with test-and-build
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout code'
