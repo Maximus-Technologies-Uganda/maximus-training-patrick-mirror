@@ -32,17 +32,16 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid 1001 nextjs
 # Copy only the necessary standalone files from the builder stage
-# The destination `./` is crucial for placing files in `/app`
+# Place the standalone server at /app/server.js as expected by Next.js
 COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/.next/standalone ./
-# Place static assets relative to the standalone server location
+# Place static assets and public content in the paths expected by the standalone server (monorepo)
 COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/.next/static ./frontend-next/.next/static
 COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/public ./frontend-next/public
-WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 USER nextjs
 EXPOSE 8080
 # Healthcheck to see if the server is responding
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=5 \
   CMD sh -c 'curl -fsS http://localhost:${PORT:-8080}/ || exit 1'
-# Start the application (Next.js standalone outputs server.js at project root)
-CMD ["node", "server.js"]
+# Start the application from the monorepo app path inside standalone output
+CMD ["node", "frontend-next/server.js"]

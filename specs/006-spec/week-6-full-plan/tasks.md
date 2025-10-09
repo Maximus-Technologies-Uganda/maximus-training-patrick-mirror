@@ -29,13 +29,13 @@
 
 ## Phase 3 (PR 3): A11y Smokes + Client Contract Checks
 
-- [ ] T018 Add shared types file at `C:\Users\LENOVO\Training\frontend-next\src\lib\types\api.ts` with UI-used fields and error envelope shape.
-- [ ] T019 Create Playwright a11y tests for `/` and `/posts` in `C:\Users\LENOVO\Training\frontend-next\tests\a11y.home.spec.ts` and `...\tests\a11y.posts.spec.ts` using `@axe-core/playwright`.
-- [ ] T020 Ensure Playwright HTML reporter output persists to `C:\Users\LENOVO\Training\docs\ReviewPacket\a11y\html` (already configured); add screenshot capture on failure.
-- [ ] T021 [P] Create contract test success path `C:\Users\LENOVO\Training\frontend-next\tests\contract.success.spec.ts` validating `id`, `title`, `body`, `timestamps` with Zod.
-- [ ] T022 [P] Create contract test error path `C:\Users\LENOVO\Training\frontend-next\tests\contract.error.spec.ts` asserting `{ error: { code: number, message: string } }` for 400/404.
-- [ ] T023 Update Review Packet workflow to include Playwright reports and contract summaries in artifacts.
-- [ ] T024 Add Gate job steps to summarize a11y and contract results into `$GITHUB_STEP_SUMMARY` under `frontend-next` block.
+- [X] T018 Add shared types file at `C:\Users\LENOVO\Training\frontend-next\src\lib\types\api.ts` with UI-used fields and error envelope shape.
+ - [X] T019 Create Playwright a11y tests for `/` and `/posts` in `C:\Users\LENOVO\Training\frontend-next\tests\a11y.home.spec.ts` and `...\tests\a11y.posts.spec.ts` using `@axe-core/playwright`.
+- [X] T020 Ensure Playwright HTML reporter output persists to `C:\Users\LENOVO\Training\docs\ReviewPacket\a11y\html` (already configured); add screenshot capture on failure.
+- [X] T021 [P] Create contract test success path `C:\Users\LENOVO\Training\frontend-next\tests\contract.success.spec.ts` validating `id`, `title`, `body`, `timestamps` with Zod.
+- [X] T022 [P] Create contract test error path `C:\Users\LENOVO\Training\frontend-next\tests\contract.error.spec.ts` asserting `{ error: { code: number, message: string } }` for 400/404.
+- [X] T023 Update Review Packet workflow to include Playwright reports and contract summaries in artifacts.
+- [X] T024 Add Gate job steps to summarize a11y and contract results into `$GITHUB_STEP_SUMMARY` under `frontend-next` block.
 
 ## Phase 4 (PR 4): Governance Cleanup & Release
 

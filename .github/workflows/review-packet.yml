@@ -397,6 +397,36 @@ jobs:
             cp -R "_dl/playwright-report-frontend-next/." "review-artifacts/playwright-frontend-next/" || true
           fi
 
+      - name: Consolidate a11y and contract artifacts
+        run: |
+          mkdir -p review-artifacts
+          # a11y HTML report (Playwright)
+          if [ -d "_dl/a11y-html-report" ]; then
+            mkdir -p "review-artifacts/a11y/html"
+            cp -R "_dl/a11y-html-report/." "review-artifacts/a11y/html/" || true
+          fi
+          # a11y JSON report (axe summary)
+          if [ -f "_dl/a11y-json-report/a11y/report.json" ]; then
+            mkdir -p "review-artifacts/a11y"
+            cp "_dl/a11y-json-report/a11y/report.json" "review-artifacts/a11y/report.json" || true
+          elif [ -f "_dl/a11y/report.json" ]; then
+            mkdir -p "review-artifacts/a11y"
+            cp "_dl/a11y/report.json" "review-artifacts/a11y/report.json" || true
+          fi
+          # Playwright screenshots/test-results
+          if [ -d "_dl/playwright-test-results-frontend-next" ]; then
+            mkdir -p "review-artifacts/playwright-test-results-frontend-next"
+            cp -R "_dl/playwright-test-results-frontend-next/." "review-artifacts/playwright-test-results-frontend-next/" || true
+          fi
+          # Contract report (client contract summary)
+          if [ -f "_dl/contract-report/contract/report.json" ]; then
+            mkdir -p "review-artifacts/contract"
+            cp "_dl/contract-report/contract/report.json" "review-artifacts/contract/report.json" || true
+          elif [ -f "_dl/contract/report.json" ]; then
+            mkdir -p "review-artifacts/contract"
+            cp "_dl/contract/report.json" "review-artifacts/contract/report.json" || true
+          fi
+
       - name: Serial fallback (always run if no coverage artifacts found)
         shell: bash
         run: |
