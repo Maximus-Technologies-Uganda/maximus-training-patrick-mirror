@@ -39,10 +39,10 @@
 
 ## Phase 4 (PR 4): Governance Cleanup & Release
 
-- [ ] T025 Update private repo enforcement: keep `C:\Users\LENOVO\Training\.github\workflows\pr-require-linear.yml` and `spec-sync-to-linear.yml` enabled; ensure mirror repo only has `mirror.yml` publish.
-- [ ] T026 Disable failing/legacy workflows: e.g., `pages-deploy.yml`, unused `main.yml`, or others not `quality-gate.yml`/`review-packet.yml` (comment out or add `if: false` with note).
-- [ ] T027 Confirm Actions dashboard green on `main` by running core workflows and removing red noise.
-- [ ] T028 Tag release `v6.0.0` with notes linking: spec, Linear issue, Gate run, Packet, Cloud Run URL; update `C:\Users\LENOVO\Training\RELEASE-NOTES.md`.
+ - [X] T025 Update private repo enforcement: keep `C:\Users\LENOVO\Training\.github\workflows\pr-require-linear.yml` and `spec-sync-to-linear.yml` enabled; ensure mirror repo only has `mirror.yml` publish.
+ - [X] T026 Disable failing/legacy workflows: e.g., `pages-deploy.yml`, unused `main.yml`, or others not `quality-gate.yml`/`review-packet.yml` (comment out or add `if: false` with note).
+ - [X] T027 Confirm Actions dashboard green on `main` by running core workflows and removing red noise.
+ - [X] T028 Tag release `v6.0.0` with notes linking: spec, Linear issue, Gate run, Packet, Cloud Run URL; update `C:\Users\LENOVO\Training\RELEASE-NOTES.md`.
 - [ ] T029 Verify mirror receives publish-only pushes and does not run PR checks (review `C:\Users\LENOVO\Training\.github\workflows\mirror.yml`).
 
 ## Parallel Execution Guidance

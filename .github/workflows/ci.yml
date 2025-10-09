@@ -12,6 +12,8 @@ concurrency:
 
 jobs:
   test:
+    # T026: Disabled legacy CI in favor of quality-gate/review-packet
+    if: ${{ false }}
     strategy:
       fail-fast: false
       matrix:
@@ -135,7 +137,8 @@ jobs:
 
   package-artifacts:
     needs: test
-    if: always()
+    # T026: Disabled with test job
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

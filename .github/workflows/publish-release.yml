@@ -1,0 +1,52 @@
+name: Publish v6.0.0 Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve Cloud Run URL (best-effort)
+        id: cloudrun
+        shell: bash
+        run: |
+          url="${{ secrets.CLOUD_RUN_URL || vars.CLOUD_RUN_URL }}"
+          if [ -z "$url" ]; then
+            # Try to grep from README
+            url=$(grep -Eo 'https://[a-zA-Z0-9.-]+-africa-south1.run.app' -R frontend-next/README.md || true)
+          fi
+          echo "url=$url" >> $GITHUB_OUTPUT
+
+      - name: Prepare release notes
+        id: notes
+        shell: bash
+        env:
+          REPO: ${{ github.repository }}
+          CLOUD: ${{ steps.cloudrun.outputs.url }}
+          LINEAR: ${{ secrets.LINEAR_ISSUE_URL }}
+        run: |
+          set -euo pipefail
+          body=$(cat RELEASE-NOTES.md)
+          body=${body//'${REPO}'/$REPO}
+          body=${body//'{{CLOUD_RUN_URL}}'/${CLOUD:-'(set CLOUD_RUN_URL to populate)'}}
+          body=${body//'{{LINEAR_ISSUE_URL}}'/${LINEAR:-'(set LINEAR_ISSUE_URL to populate)'}}
+          printf '%s' "$body" > RELEASE-NOTES.rendered.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: RELEASE-NOTES.rendered.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+

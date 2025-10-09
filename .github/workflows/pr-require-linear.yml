@@ -1,36 +1,26 @@
-# .github/workflows/pr-require-linear.yml
-name: Require Linear on PRs
+name: PR requires Linear reference
+
 on:
   pull_request:
-    types: [opened, edited, synchronize]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 
 jobs:
-  check-linear:
-    if: ${{ !contains(github.event.pull_request.title, '[SPEC]') }}
+  require-linear-reference:
+    name: Require Linear reference
+    # Run only for non-draft PRs in private repositories (avoids mirror/public)
+    if: ${{ !github.event.pull_request.draft && github.event.repository.private == true }}
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
     steps:
-      - uses: actions/github-script@v7
-        with:
-          script: |
-            const body = context.payload.pull_request.body || "";
-            const lines = body.split(/\r?\n/);
-            const labelRe = /^\s*[-*]?\s*(?:\*\*|__)?\s*Linear(?:\s+Issues?)?\s*:(?:\*\*|__)?\s*(.+)$/i;
-            const keyRe = /\b[A-Z]{2,}-\d+\b/g;
-            const urlRe = /https?:\/\/(?:www\.)?linear\.app\/\S+/i;
-
-            let ok = false;
-            for (const line of lines) {
-              const m = line.match(labelRe);
-              if (!m) continue;
-              const rest = m[1];
-              if (urlRe.test(rest) || keyRe.test(rest)) {
-                ok = true;
-                break;
-              }
-            }
-
-            if (!ok) {
-              core.setFailed("PR body must include a 'Linear:' or 'Linear Issues:' line with a full URL or at least one bare key (e.g., DEV-123). Examples: 'Linear: DEV-123' or 'Linear Issues: Closes DEV-123, DEV-124'.");
-            } else {
-              core.notice('Linear reference found.');
-            }
+      - name: Check PR title/body for Linear reference
+        shell: bash
+        run: |
+          title="${{ github.event.pull_request.title || '' }}"
+          body="${{ github.event.pull_request.body || '' }}"
+          if echo "$title $body" | grep -Eiq '(LIN-[0-9]+|Linear[- ]?[0-9]+)'; then
+            echo "Linear reference found."
+          else
+            echo "::error::PR must reference a Linear issue (e.g., LIN-123) in title or body."
+            exit 1
+          fi
