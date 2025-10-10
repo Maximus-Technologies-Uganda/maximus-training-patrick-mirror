@@ -198,6 +198,19 @@ jobs:
         working-directory: frontend-next
         run: npm run test:ci
 
+      - name: Run contract tests (frontend-next)
+        working-directory: frontend-next
+        run: npm run test:contract
+
+      - name: Upload contract summary (frontend-next)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-frontend-next
+          if-no-files-found: ignore
+          path: |
+            contract/report.json
+
       - name: Stage coverage for artifact
         run: |
           mkdir -p stage/coverage-frontend-next
@@ -281,6 +294,16 @@ jobs:
         with:
           name: a11y-json-report
           path: a11y/report.json
+
+      - name: Upload a11y reports (combined)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-frontend-next
+          if-no-files-found: ignore
+          path: |
+            frontend-next/docs/ReviewPacket/a11y/html/**
+            a11y/report.json
 
       - name: Upload Playwright test-results (screenshots)
         if: always()
