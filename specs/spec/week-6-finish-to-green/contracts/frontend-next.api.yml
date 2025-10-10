@@ -1,0 +1,31 @@
+openapi: 3.0.0
+info:
+  title: frontend-next proxy API
+  version: 1.0.0
+paths:
+  /api/posts:
+    get:
+      summary: Fetch posts via server proxy
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      oneOf:
+                        - type: string
+                        - type: integer
+                    title:
+                      type: string
+                    body:
+                      type: string
+                  required: [id, title, body]
+        '502':
+          description: Bad gateway (backend unavailable)
+        '504':
+          description: Upstream timeout

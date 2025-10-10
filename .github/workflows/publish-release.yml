@@ -5,6 +5,15 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      cloud_run_url:
+        description: 'Cloud Run service URL (optional)'
+        required: false
+        type: string
+      linear_issue_url:
+        description: 'Linear issue URL to include (optional)'
+        required: false
+        type: string
 
 jobs:
   release:
@@ -16,9 +25,11 @@ jobs:
 
       - name: Resolve Cloud Run URL (best-effort)
         id: cloudrun
+        env:
+          CLOUD_INPUT: ${{ inputs.cloud_run_url }}
         shell: bash
         run: |
-          url="${{ secrets.CLOUD_RUN_URL || vars.CLOUD_RUN_URL }}"
+          url="${CLOUD_INPUT}"
           if [ -z "$url" ]; then
             # Try to grep from README
             url=$(grep -Eo 'https://[a-zA-Z0-9.-]+-africa-south1.run.app' -R frontend-next/README.md || true)
@@ -31,9 +42,11 @@ jobs:
         env:
           REPO: ${{ github.repository }}
           CLOUD: ${{ steps.cloudrun.outputs.url }}
-          LINEAR: ${{ secrets.LINEAR_ISSUE_URL }}
+          LINEAR_INPUT: ${{ inputs.linear_issue_url }}
+          LINEAR_SECRET: ${{ secrets.LINEAR_ISSUE_URL }}
         run: |
           set -euo pipefail
+          LINEAR="${LINEAR_INPUT:-$LINEAR_SECRET}"
           body=$(cat RELEASE-NOTES.md)
           body=${body//'${REPO}'/$REPO}
           body=${body//'{{CLOUD_RUN_URL}}'/${CLOUD:-'(set CLOUD_RUN_URL to populate)'}}
