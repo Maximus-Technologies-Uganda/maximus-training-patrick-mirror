@@ -276,6 +276,20 @@ jobs:
           path: _dl
         continue-on-error: true
 
+      - name: Download a11y artifact (frontend-next)
+        uses: actions/download-artifact@v4
+        with:
+          name: a11y-frontend-next
+          path: _dl/a11y-frontend-next
+        continue-on-error: true
+
+      - name: Download contract artifact (frontend-next)
+        uses: actions/download-artifact@v4
+        with:
+          name: contract-frontend-next
+          path: _dl/contract-frontend-next
+        continue-on-error: true
+
       - name: Move downloaded coverage into expected locations
         shell: bash
         run: |
@@ -307,6 +321,93 @@ jobs:
           fi
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Summarize a11y result (frontend-next)
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+          const repo = process.env.GITHUB_REPOSITORY;
+          const runId = process.env.GITHUB_RUN_ID;
+          const artifactUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+
+          const candidates = [
+            path.join(process.cwd(), '_dl', 'a11y-frontend-next', 'a11y', 'report.json'),
+            path.join(process.cwd(), '_dl', 'a11y', 'report.json'),
+            path.join(process.cwd(), 'a11y', 'report.json')
+          ];
+          const jsonPath = candidates.find(p => fs.existsSync(p));
+
+          let violationsCount = null;
+          if (jsonPath) {
+            try {
+              const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+              violationsCount = Array.isArray(data.violations) ? data.violations.length : null;
+            } catch (e) {
+              violationsCount = null;
+            }
+          }
+
+          const lines = [];
+          lines.push('### frontend-next A11y Result');
+          if (violationsCount === null) {
+            lines.push('_No a11y JSON report found; artifact or file missing._');
+            lines.push(`Artifact: [a11y-frontend-next](${artifactUrl})`);
+          } else {
+            const status = violationsCount === 0 ? 'PASS' : 'FAIL';
+            const label = violationsCount === 1 ? 'violation' : 'violations';
+            lines.push(`${status}: ${violationsCount} ${label}`);
+            lines.push(`Full HTML report: [a11y-frontend-next](${artifactUrl}) (open index.html inside artifact)`);
+          }
+          fs.appendFileSync(summaryFile, lines.join('\n') + '\n');
+          NODE
+
+      - name: Summarize contract result (frontend-next)
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+          const repo = process.env.GITHUB_REPOSITORY;
+          const runId = process.env.GITHUB_RUN_ID;
+          const artifactUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+
+          const candidates = [
+            path.join(process.cwd(), '_dl', 'contract-frontend-next', 'contract', 'report.json'),
+            path.join(process.cwd(), '_dl', 'contract', 'report.json'),
+            path.join(process.cwd(), 'contract', 'report.json')
+          ];
+          const jsonPath = candidates.find(p => fs.existsSync(p));
+
+          let passed = null, failed = null;
+          if (jsonPath) {
+            try {
+              const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+              // Heuristic: treat breakingMismatches > 0 as a failure of 1 check, else pass 1
+              if (typeof data.breakingMismatches === 'number') {
+                failed = data.breakingMismatches > 0 ? 1 : 0;
+                passed = data.breakingMismatches > 0 ? 0 : 1;
+              }
+            } catch (e) {
+              passed = null; failed = null;
+            }
+          }
+
+          const lines = [];
+          lines.push('### frontend-next Contract Result');
+          if (passed === null || failed === null) {
+            lines.push('_No contract JSON report found; artifact or file missing._');
+            lines.push(`Artifact: [contract-frontend-next](${artifactUrl})`);
+          } else {
+            const status = failed === 0 ? 'PASS' : 'FAIL';
+            lines.push(`${status}: ${passed} passed, ${failed} failed`);
+            lines.push(`Full report: [contract-frontend-next](${artifactUrl})`);
+          }
+          fs.appendFileSync(summaryFile, lines.join('\n') + '\n');
+          NODE
 
           echo "\n### frontend-next A11y Summary" >> "$GITHUB_STEP_SUMMARY"
           echo '' >> "$GITHUB_STEP_SUMMARY"
