@@ -59,9 +59,9 @@ Dependencies: none between T011–T015 other than workflow file edits; sequence 
 
 ## Phase 5 — Tag the Final Release
 
-- [ ] T020 Create and push git tag `v6.0.0`
-- [ ] T021 Draft release notes with links: spec, Linear issue, green CI run, live demo URL
-- [ ] T022 Publish release and verify links
+- [X] T020 Create and push git tag `v6.0.0`
+- [X] T021 Draft release notes with links: spec, Linear issue, green CI run, live demo URL
+- [X] T022 Publish release and verify links
 
 Dependencies: T020 before T021–T022.
 
