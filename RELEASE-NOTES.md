@@ -1,3 +1,23 @@
+# v6.0.1 – Week 6: Finish-to-Green follow-up
+
+This maintenance tag rolls forward the Week 6 Finish-to-Green release with finalized CI evidence links and artifact names. It does not change runtime code, only CI evidence surfacing and release metadata.
+
+## Evidence Links
+
+- Spec: `specs/spec/week-6-finish-to-green/spec.md`
+- Quality Gate runs (main): https://github.com/Maximus-Technologies-Uganda/Training/actions/workflows/quality-gate.yml?query=branch%3Amain
+- Review Packet runs (main): https://github.com/Maximus-Technologies-Uganda/Training/actions/workflows/review-packet.yml?query=branch%3Amain
+- Cloud Run demo URL: https://maximus-training-frontend-673209018655.africa-south1.run.app
+- Linear issue: https://linear.app/maximusglobal/issue/DEV-460/finish-to-green-for-frontend-next-week-6
+
+## Scope
+
+- CI: Upload Playwright a11y JSON+HTML as `a11y-frontend-next`.
+- CI: Upload frontend-next contract summary as `contract-frontend-next`.
+- Quality Gate: Append concise a11y and contract PASS/FAIL summaries with links to artifacts.
+
+---
+
 # v6.0.0 – Week 6: Finish-to-Green for frontend-next
 
 This release makes `frontend-next` first-class in CI with evidence, deploys the SSR demo to Cloud Run, adds a11y smokes and client-side contract checks, and completes governance cleanup.

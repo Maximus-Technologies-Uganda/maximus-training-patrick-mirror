@@ -253,6 +253,7 @@ jobs:
 
   aggregate-coverage:
     name: Aggregate monorepo coverage and summarize
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     needs: [frontend-next-coverage, api-coverage]
     steps:
@@ -309,6 +310,7 @@ jobs:
         run: npm run coverage:normalize
 
       - name: Summarize coverage totals (monorepo and frontend-next)
+        if: always()
         shell: bash
         run: |
           echo "### Monorepo Coverage Totals" >> "$GITHUB_STEP_SUMMARY"
@@ -323,6 +325,7 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Summarize a11y result (frontend-next)
+        if: always()
         shell: bash
         run: |
           node - <<'NODE'
@@ -365,6 +368,7 @@ jobs:
           NODE
 
       - name: Summarize contract result (frontend-next)
+        if: always()
         shell: bash
         run: |
           node - <<'NODE'
@@ -443,6 +447,7 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Append frontend-next coverage totals table
+        if: always()
         shell: bash
         run: |
           node frontend-next/scripts/print-coverage-summary.mjs frontend-next >> "$GITHUB_STEP_SUMMARY" || true
