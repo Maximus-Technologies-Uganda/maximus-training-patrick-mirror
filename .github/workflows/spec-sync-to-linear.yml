@@ -1,3 +1,70 @@
+fix/phase-1-data-fetching
+name: Spec → Linear sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'specs/**/spec.md'
+      - 'specs/**/plan.md'
+
+jobs:
+  sync-spec:
+    name: Sync spec to Linear
+    # Only run in private repos (mirror/public won't run)
+    if: ${{ github.event.repository.private == true }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install sync tool
+        run: |
+          npm --version
+          # Placeholder: install your private sync script if applicable
+          echo "Using repo script to sync"
+      - name: Export env for spec sync
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_SHA: ${{ github.sha }}
+          GH_REF_NAME: ${{ github.ref_name }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+          LINEAR_TEAM_KEY_VAR: ${{ vars.LINEAR_TEAM_KEY }}
+        shell: bash
+        run: |
+          echo "GITHUB_REPOSITORY=$GH_REPO" >> "$GITHUB_ENV"
+          echo "GITHUB_SHA=$GH_SHA" >> "$GITHUB_ENV"
+          echo "GITHUB_REF_NAME=$GH_REF_NAME" >> "$GITHUB_ENV"
+          echo "LINEAR_API_KEY=$LINEAR_API_KEY" >> "$GITHUB_ENV"
+          echo "LINEAR_TEAM_ID=$LINEAR_TEAM_ID" >> "$GITHUB_ENV"
+          if [ -n "$LINEAR_TEAM_KEY_VAR" ]; then
+            echo "LINEAR_TEAM_KEY=$LINEAR_TEAM_KEY_VAR" >> "$GITHUB_ENV"
+          fi
+
+      - name: Export LINEAR_TEAM_KEY from secrets if present (safe)
+        env:
+          KEY_NAME: LINEAR_TEAM_KEY
+        shell: bash
+        run: |
+          val="${{ secrets[env.KEY_NAME] }}"
+          if [ -n "$val" ]; then
+            echo "LINEAR_TEAM_KEY=$val" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run sync script
+        run: |
+          if [ -f .specify/scripts/node/spec-to-linear.mjs ]; then
+            node .specify/scripts/node/spec-to-linear.mjs
+          else
+            echo "No spec-to-linear script found; skipping without failure."
+          fi
+=======
 name: Spec → Linear sync
 
 on:
@@ -41,3 +108,4 @@ jobs:
           else
             echo "No spec-to-linear script found; skipping without failure."
           fi
+main
