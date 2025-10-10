@@ -16,6 +16,20 @@ import { usePostsList } from "../src/lib/swr";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SWRCacheValue = State<unknown, any>;
 
+function ErrorState(): React.ReactElement {
+  return (
+    <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-red-800">
+      Error loading posts. Please try again.
+    </div>
+  );
+}
+
+function EmptyState(): React.ReactElement {
+  return (
+    <p className="text-gray-600" aria-live="polite">No posts yet</p>
+  );
+}
+
 function createSWRCache(): Cache<unknown> {
   const map = new Map<string, SWRCacheValue>();
   return {
@@ -177,11 +191,11 @@ export default function PostsPageClient({
 
         <section className="mt-6" aria-label="Posts list">
           {error ? (
-            <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-red-800">
-              Error loading posts. Please try again.
-            </div>
+            <ErrorState />
           ) : isLoading ? (
             <p className="text-gray-600">Loading…</p>
+          ) : filteredItems.length === 0 ? (
+            <EmptyState />
           ) : (
             <PostsList items={filteredItems} />
           )}

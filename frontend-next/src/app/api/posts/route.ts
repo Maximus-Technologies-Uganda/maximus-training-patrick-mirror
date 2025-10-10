@@ -20,14 +20,46 @@ function buildBackendUrl(pathname: string, search: URLSearchParams): string {
   return url.toString();
 }
 
+async function fetchWithTimeoutAndRetry(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number = 5000,
+  retries: number = 1,
+): Promise<Response> {
+  let lastError: unknown = undefined;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...init, signal: controller.signal });
+      clearTimeout(timer);
+      // Retry on 5xx only; surface others immediately
+      if (res.status >= 500 && attempt < retries) {
+        continue;
+      }
+      return res;
+    } catch (error) {
+      clearTimeout(timer);
+      lastError = error;
+      if (attempt >= retries) break;
+    }
+  }
+  throw lastError ?? new Error("Request failed");
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = buildBackendUrl("/posts", request.nextUrl.searchParams);
   try {
-    const res = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: buildAuthHeaders(),
-      cache: "no-store",
-    });
+    const res = await fetchWithTimeoutAndRetry(
+      upstreamUrl,
+      {
+        method: "GET",
+        headers: buildAuthHeaders(),
+        cache: "no-store",
+      },
+      5000,
+      1,
+    );
 
     const contentType = res.headers.get("content-type") || "";
     const text = await res.text();
