@@ -1,0 +1,5 @@
+extends:
+  - spectral:oas
+
+rules:
+  # Add project-specific overrides if needed later

@@ -89,17 +89,12 @@ if ($hasGit) {
 $featureDir = Join-Path $specsDir $branchName
 New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
-$primaryTemplate = Join-Path $repoRoot 'templates/spec-template.md'
-$bundledTemplate = Join-Path $repoRoot '.specify/templates/spec-template.md'
+$template = Join-Path $repoRoot '.specify/templates/spec-template.md'
 $specFile = Join-Path $featureDir 'spec.md'
-
-# Prefer repository template; fall back to bundled template under .specify/templates
-if (Test-Path $primaryTemplate) {
-    Copy-Item $primaryTemplate $specFile -Force
-} elseif (Test-Path $bundledTemplate) {
-    Copy-Item $bundledTemplate $specFile -Force
-} else {
-    New-Item -ItemType File -Path $specFile | Out-Null
+if (Test-Path $template) { 
+    Copy-Item $template $specFile -Force 
+} else { 
+    New-Item -ItemType File -Path $specFile | Out-Null 
 }
 
 # Set the SPECIFY_FEATURE environment variable for the current session
