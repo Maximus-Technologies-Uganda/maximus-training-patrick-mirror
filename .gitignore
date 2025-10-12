@@ -77,4 +77,6 @@ stopwatch/tests/report.txt
 *.zip
 *.rar
 
+# Agent artifacts
+.cursor/
 
