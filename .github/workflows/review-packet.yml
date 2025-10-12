@@ -201,12 +201,8 @@ jobs:
           if-no-files-found: error
           path: |
             frontend/coverage/coverage-summary.json
+            frontend/coverage/lcov.info
             frontend/coverage/lcov-report/**
-            frontend/src/**
-            frontend/tests/**
-            frontend/package.json
-            frontend/eslint.config.*
-            frontend/vitest.config.*
 
   packet-frontend-next:
     name: Frontend Next tests & coverage
@@ -244,6 +240,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             contract/report.json
+      # Note: contract report is uploaded by the dedicated 'contract' job; to avoid duplication, the above step is removed.
 
       - name: Stage coverage for artifact
         run: |
@@ -326,19 +323,7 @@ jobs:
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 
-      - name: Upload a11y HTML report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: a11y-html-report
-          path: frontend-next/docs/ReviewPacket/a11y/html
-
-      - name: Upload a11y JSON report (for Review Packet)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: a11y-json-report
-          path: a11y/report.json
+      # Combine a11y artifacts into a single artifact to reduce duplication and upload overhead
 
       - name: Upload a11y reports (combined)
         if: always()
@@ -473,11 +458,19 @@ jobs:
         run: |
           mkdir -p review-artifacts
           # a11y HTML report (Playwright)
+          if [ -d "_dl/a11y-frontend-next/frontend-next/docs/ReviewPacket/a11y/html" ]; then
+            mkdir -p "review-artifacts/a11y/html"
+            cp -R "_dl/a11y-frontend-next/frontend-next/docs/ReviewPacket/a11y/html/." "review-artifacts/a11y/html/" || true
+          fi
           if [ -d "_dl/a11y-html-report" ]; then
             mkdir -p "review-artifacts/a11y/html"
             cp -R "_dl/a11y-html-report/." "review-artifacts/a11y/html/" || true
           fi
           # a11y JSON report (axe summary)
+          if [ -f "_dl/a11y-frontend-next/a11y/report.json" ]; then
+            mkdir -p "review-artifacts/a11y"
+            cp "_dl/a11y-frontend-next/a11y/report.json" "review-artifacts/a11y/report.json" || true
+          fi
           if [ -f "_dl/a11y-json-report/a11y/report.json" ]; then
             mkdir -p "review-artifacts/a11y"
             cp "_dl/a11y-json-report/a11y/report.json" "review-artifacts/a11y/report.json" || true
@@ -590,35 +583,21 @@ jobs:
           } >> review.md
           rm -f "$TMP_SUMMARY"
 
-      - name: Upload final artifact (review-packet)
+      - name: Prepare review-packet bundle
+        run: |
+          set -e
+          mkdir -p bundle/review-packet
+          cp -R review-artifacts bundle/review-packet/
+          cp review.md bundle/review-packet/
+      - name: Create zipped review packet
+        run: |
+          set -e
+          cd bundle
+          zip -r -9 review-packet.zip review-packet
+          ls -lh review-packet.zip
+      - name: Upload zipped Review Packet
         uses: actions/upload-artifact@v4
         with:
           name: review-packet
-          path: |
-            review.md
-            review-artifacts/**
-            CHANGELOG.md
-            README.md
-            .gitattributes
-            docs/**/*.md
-            helpers/**
-            expense/README.md
-            expense/package.json
-            expense/jest.config.*
-            todo/README.md
-            todo/package.json
-            todo/jest.config.*
-            stopwatch/README.md
-            stopwatch/package.json
-            stopwatch/jest.config.*
-            quote/README.md
-            quote/package.json
-            quote/jest.config.*
-            expense/src/**
-            todo/src/**
-            stopwatch/src/**
-            quote/src/**
-            expense/tests/**
-            todo/tests/**
-            stopwatch/tests/**
-            quote/tests/**
+          path: bundle/review-packet.zip
+

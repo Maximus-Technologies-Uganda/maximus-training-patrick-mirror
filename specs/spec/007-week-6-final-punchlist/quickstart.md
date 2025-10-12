@@ -5,16 +5,15 @@
 - API available (Cloud Run) with posts endpoint
 
 ## Configure Environment
-- Set `API_BASE_URL` locally (example):
-  - Windows PowerShell: `$env:API_BASE_URL='https://<your-api-domain>'`
-  - macOS/Linux: `export API_BASE_URL='https://<your-api-domain>'`
-- In Cloud Run (live), set `API_BASE_URL` on the `maximus-training-frontend` service via Console → Service → Variables & Secrets.
+ - Local (`frontend-next/.env.local`):
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8080
+   # Optional for local SSR:
+   # API_BASE_URL=http://localhost:8080
+   ```
+ - Live (Cloud Run): set `API_BASE_URL` on the `maximus-training-frontend` service via Console → Service → Variables & Secrets.
 
-feature/us1-fix-data-rendering
 > Important: `API_BASE_URL` is a required server-side variable for the initial server-rendered page load of `/posts`. If it is missing or incorrect in the live environment, the first paint may not contain posts and will rely on client-side fetching instead.
-
-=======
-main
 ## Run Locally
 - In `frontend-next/`: install deps and start dev server
   - `npm install`
@@ -24,4 +23,4 @@ main
 ## Verify
 - README links resolve to working Cloud Run URLs
 - `/posts` renders SSR posts without a persistent "Loading..." state
-- CI shows labeled "frontend-next Coverage" block and downloadable HTML artifacts
+- CI shows a labeled "frontend-next Coverage (with thresholds)" block and downloadable HTML artifacts

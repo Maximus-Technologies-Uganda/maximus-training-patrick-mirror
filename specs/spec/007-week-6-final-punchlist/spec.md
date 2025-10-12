@@ -60,7 +60,7 @@ A reviewer opens the CI job summary and a Review Packet to find a distinct cover
 
 **Acceptance Scenarios**:
 
-1. **Given** a completed CI run, **When** viewing the job summary, **Then** a section titled "frontend-next Coverage" is visible with the coverage summary.
+1. **Given** a completed CI run, **When** viewing the job summary, **Then** a section titled "frontend-next Coverage" (or "frontend-next Coverage (with thresholds)") is visible with the coverage summary.
 2. **Given** the Review Packet, **When** opening artifacts, **Then** the `coverage-frontend-next` HTML and the Playwright HTML report are present and viewable.
 
 ---
@@ -137,6 +137,6 @@ A maintainer views the Actions dashboard for `main` and sees only passing jobs; 
 
 - **SC-001**: On the live demo, the initial HTML response for `/posts` contains post content in 100% of test loads; the page does not remain on "Loading..." beyond a brief transitional flash (< 200 ms).
 - **SC-002**: `README.md` link check passes with 100% working links; the environment variable table contains `API_BASE_URL` with accurate description, and a new contributor can complete the "Run & Try" flow end-to-end in under 10 minutes.
-- **SC-003**: The CI Quality Gate summary visibly includes a block titled "frontend-next Coverage"; the Review Packet includes both the coverage HTML and Playwright HTML reports and they open successfully.
+- **SC-003**: The CI Quality Gate summary visibly includes a block titled "frontend-next Coverage" (the heading may include the suffix "(with thresholds)"); the Review Packet includes both the coverage HTML and Playwright HTML reports and they open successfully.
 - **SC-004**: The OpenAPI contract passes linting with 0 errors and 0 critical warnings; 100% of operations include `operationId`, description, tags, and defined 4xx error schemas.
 - **SC-005**: The Actions dashboard for `main` shows all-green required jobs for the latest run; `v6.0.0` is published and its notes link to the Week 6 spec, Quality Gate summary, Review Packet, and live demo URL.
