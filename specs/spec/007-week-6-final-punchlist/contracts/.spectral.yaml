@@ -1,5 +1,38 @@
 extends:
   - spectral:oas
 
+formats:
+  - oas3_1
+
 rules:
+  # Custom rule: every operation must have at least one tag
+  operation-tags:
+    description: Operations must include at least one tag
+    message: Operation is missing required tags array
+    severity: error
+    given: $.paths[*][*]
+    then:
+      field: tags
+      function: truthy
+
+  # Custom rule: every operation must have operationId
+  operation-has-operationId:
+    description: Operations must include operationId
+    message: Operation is missing required operationId
+    severity: error
+    given: $.paths[*][*]
+    then:
+      field: operationId
+      function: truthy
+
+  # Custom rule: every operation must have description
+  operation-has-description:
+    description: Operations must include description
+    message: Operation is missing required description
+    severity: error
+    given: $.paths[*][*]
+    then:
+      field: description
+      function: truthy
+
   # Add project-specific overrides if needed later

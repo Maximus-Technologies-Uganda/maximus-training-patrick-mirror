@@ -463,3 +463,14 @@ jobs:
         shell: bash
         run: |
           node frontend-next/scripts/print-coverage-summary.mjs frontend-next >> "$GITHUB_STEP_SUMMARY" || true
+
+  spectral-lint:
+    name: Spectral Lint (OpenAPI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Lint OpenAPI with Spectral
+        run: npx -y @stoplight/spectral-cli@6 lint specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml --ruleset specs/spec/007-week-6-final-punchlist/contracts/.spectral.yaml --fail-severity=error
