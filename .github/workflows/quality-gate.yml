@@ -27,6 +27,17 @@ jobs:
         run: npm ci
       - name: Link check README
         run: node scripts/link-check.js README.md
+  lint-workflows:
+    name: Lint GitHub workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-actionlint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          actionlint_flags: ".github/workflows/*.yml"
+          reporter: github-check
+          fail_level: error
   install-root-deps:
     runs-on: ubuntu-latest
     steps:
@@ -94,16 +105,18 @@ jobs:
         working-directory: frontend-next
         shell: bash
         run: |
-          echo "### frontend-next Coverage" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f coverage/coverage-summary.json ]; then
-            cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo '{}' >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### frontend-next Coverage"
+            echo
+            echo '```json'
+            if [ -f coverage/coverage-summary.json ]; then
+              cat coverage/coverage-summary.json
+            else
+              echo '{}'
+            fi
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Read coverage summary
         id: coverage_frontend_next
@@ -206,16 +219,18 @@ jobs:
         working-directory: api
         shell: bash
         run: |
-          echo "### API Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f coverage/coverage-summary.json ]; then
-            cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo '{}' >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```'
+          {
+            echo "### API Coverage Summary"
+            echo
+            echo '```json'
+            if [ -f coverage/coverage-summary.json ]; then
+              cat coverage/coverage-summary.json
+            else
+              echo '{}'
+            fi
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Read coverage summary
         id: api_coverage
@@ -312,10 +327,10 @@ jobs:
           # If upstream jobs also wrote coverage directly in the workspace, nothing to do
           # Otherwise, attempt to copy from artifacts
           if [ -d "_dl/coverage-frontend-next/frontend-next/coverage" ]; then
-            cp -R _dl/coverage-frontend-next/frontend-next/coverage/. frontend-next/coverage/ || true
+            cp -R "_dl/coverage-frontend-next/frontend-next/coverage/." "frontend-next/coverage/" || true
           fi
           if [ -d "_dl/coverage-api/api/coverage" ]; then
-            cp -R _dl/coverage-api/api/coverage/. api/coverage/ || true
+            cp -R "_dl/coverage-api/api/coverage/." "api/coverage/" || true
           fi
 
       - name: Normalize coverage (monorepo)
@@ -325,16 +340,18 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "### Monorepo Coverage Totals" >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f coverage/coverage-summary.json ]; then
-            cat coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo '{"note":"no aggregated coverage found"}' >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Monorepo Coverage Totals"
+            echo
+            echo '```json'
+            if [ -f coverage/coverage-summary.json ]; then
+              cat coverage/coverage-summary.json
+            else
+              echo '{"note":"no aggregated coverage found"}'
+            fi
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Summarize a11y result (frontend-next)
         if: always()
@@ -425,38 +442,43 @@ jobs:
           fs.appendFileSync(summaryFile, lines.join('\n') + '\n');
           NODE
 
-          echo "\n### frontend-next A11y Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f a11y/report.json ]; then
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat a11y/report.json >> "$GITHUB_STEP_SUMMARY" || true
-            echo '' >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo '_No a11y report found (a11y/report.json)_' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          {
+            echo
+            echo "### frontend-next A11y Summary"
+            echo
+            if [ -f a11y/report.json ]; then
+              echo '```json'
+              cat a11y/report.json || true
+              echo
+              echo '```'
+            else
+              echo '_No a11y report found (a11y/report.json)_'
+            fi
 
-          echo "\n### frontend-next Contract Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f contract/report.json ]; then
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat contract/report.json >> "$GITHUB_STEP_SUMMARY" || true
-            echo '' >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo '_No contract report found (contract/report.json)_' >> "$GITHUB_STEP_SUMMARY"
-          fi
+            echo
+            echo "### frontend-next Contract Summary"
+            echo
+            if [ -f contract/report.json ]; then
+              echo '```json'
+              cat contract/report.json || true
+              echo
+              echo '```'
+            else
+              echo '_No contract report found (contract/report.json)_'
+            fi
 
-          echo "\n### frontend-next Coverage Totals" >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f frontend-next/coverage/coverage-summary.json ]; then
-            cat frontend-next/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo '{"note":"no frontend-next coverage found"}' >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo
+            echo "### frontend-next Coverage Totals"
+            echo
+            echo '```json'
+            if [ -f frontend-next/coverage/coverage-summary.json ]; then
+              cat frontend-next/coverage/coverage-summary.json
+            else
+              echo '{"note":"no frontend-next coverage found"}'
+            fi
+            echo
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Append frontend-next coverage totals table
         if: always()

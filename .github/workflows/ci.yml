@@ -78,19 +78,37 @@ jobs:
       - name: Generate review.md
         shell: bash
         run: |
-          echo "# CI Review Packet" > review.md
-          echo "## Environment" >> review.md
-          node -v >> review.md
-          npm -v >> review.md
-          echo "" >> review.md
-          echo "## Test Results Summary" >> review.md
-          echo "- Expense app: $([ -d "expense/coverage" ] && echo "coverage generated" || echo "no coverage")" >> review.md
-          echo "- Todo app: $([ -d "todo/coverage" ] && echo "coverage generated" || echo "no coverage")" >> review.md
-          echo "- Stopwatch app: $([ -d "stopwatch/coverage" ] && echo "coverage generated" || echo "no coverage")" >> review.md
-          echo "- Quote app: $([ -d "quote/coverage" ] && echo "coverage generated" || echo "no coverage")" >> review.md
-          echo "" >> review.md
-          echo "## Commit Summary (last 10)" >> review.md
-          git log -n 10 --pretty=format:'- %h %ad %an — %s' --date=short >> review.md || echo "Git log unavailable" >> review.md
+          {
+            echo "# CI Review Packet"
+            echo "## Environment"
+            node -v
+            npm -v
+            echo
+            echo "## Test Results Summary"
+            if [ -d "expense/coverage" ]; then
+              echo "- Expense app: coverage generated"
+            else
+              echo "- Expense app: no coverage"
+            fi
+            if [ -d "todo/coverage" ]; then
+              echo "- Todo app: coverage generated"
+            else
+              echo "- Todo app: no coverage"
+            fi
+            if [ -d "stopwatch/coverage" ]; then
+              echo "- Stopwatch app: coverage generated"
+            else
+              echo "- Stopwatch app: no coverage"
+            fi
+            if [ -d "quote/coverage" ]; then
+              echo "- Quote app: coverage generated"
+            else
+              echo "- Quote app: no coverage"
+            fi
+            echo
+            echo "## Commit Summary (last 10)"
+            git log -n 10 --pretty=format:'- %h %ad %an — %s' --date=short || echo "Git log unavailable"
+          } > review.md
 
       - name: Upload expense coverage artifacts
         if: always()
@@ -235,7 +253,7 @@ jobs:
             echo "❌ WARNING: Some coverage artifacts are missing. Check the debug output above."
           fi
 
-          echo ""
+          printf '\n'
           echo "=== Final Review Packet Structure ==="
           find review-packet -type f | sort
 
@@ -244,21 +262,23 @@ jobs:
             cp downloaded-artifacts/review.md review-packet/ 2>/dev/null || true
             echo "✓ Copied existing review.md"
           else
-            echo "# CI Review Packet" > review-packet/review.md
-            echo "## Generated on $(date)" >> review-packet/review.md
-            echo "" >> review-packet/review.md
-            echo "## Coverage Reports Summary" >> review-packet/review.md
-            echo "- Expense app: $([ -f "review-packet/coverage-reports/expense/coverage-final.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
-            echo "- Todo app: $([ -f "review-packet/coverage-reports/todo/coverage-final.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
-            echo "- Stopwatch app: $([ -f "review-packet/coverage-reports/stopwatch/coverage-final.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
-            echo "- Quote app: $([ -f "review-packet/coverage-reports/quote/coverage-final.json" ] && echo "✓ Available" || echo "✗ Missing")" >> review-packet/review.md
-            echo "" >> review-packet/review.md
-            echo "## Environment Details" >> review-packet/review.md
-            echo "- CI Run: ${{ github.run_id }}" >> review-packet/review.md
-            echo "- Branch: ${{ github.ref_name }}" >> review-packet/review.md
-            echo "" >> review-packet/review.md
-            echo "## Note" >> review-packet/review.md
-            echo "This review packet contains coverage reports from all four applications." >> review-packet/review.md
+            {
+              echo "# CI Review Packet"
+              echo "## Generated on $(date)"
+              echo
+              echo "## Coverage Reports Summary"
+              if [ -f "review-packet/coverage-reports/expense/coverage-final.json" ]; then echo "- Expense app: ✓ Available"; else echo "- Expense app: ✗ Missing"; fi
+              if [ -f "review-packet/coverage-reports/todo/coverage-final.json" ]; then echo "- Todo app: ✓ Available"; else echo "- Todo app: ✗ Missing"; fi
+              if [ -f "review-packet/coverage-reports/stopwatch/coverage-final.json" ]; then echo "- Stopwatch app: ✓ Available"; else echo "- Stopwatch app: ✗ Missing"; fi
+              if [ -f "review-packet/coverage-reports/quote/coverage-final.json" ]; then echo "- Quote app: ✓ Available"; else echo "- Quote app: ✗ Missing"; fi
+              echo
+              echo "## Environment Details"
+              echo "- CI Run: ${{ github.run_id }}"
+              echo "- Branch: ${{ github.ref_name }}"
+              echo
+              echo "## Note"
+              echo "This review packet contains coverage reports from all four applications."
+            } > review-packet/review.md
           fi
 
       - name: Create review-packet.zip

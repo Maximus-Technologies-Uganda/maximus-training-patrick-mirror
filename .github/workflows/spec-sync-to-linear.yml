@@ -36,11 +36,13 @@ jobs:
           LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
         shell: bash
         run: |
-          echo "GITHUB_REPOSITORY=$GH_REPO" >> "$GITHUB_ENV"
-          echo "GITHUB_SHA=$GH_SHA" >> "$GITHUB_ENV"
-          echo "GITHUB_REF_NAME=$GH_REF_NAME" >> "$GITHUB_ENV"
-          echo "LINEAR_API_KEY=$LINEAR_API_KEY" >> "$GITHUB_ENV"
-          echo "LINEAR_TEAM_ID=$LINEAR_TEAM_ID" >> "$GITHUB_ENV"
+          {
+            printf 'GITHUB_REPOSITORY=%s\n' "$GH_REPO"
+            printf 'GITHUB_SHA=%s\n' "$GH_SHA"
+            printf 'GITHUB_REF_NAME=%s\n' "$GH_REF_NAME"
+            printf 'LINEAR_API_KEY=%s\n' "$LINEAR_API_KEY"
+            printf 'LINEAR_TEAM_ID=%s\n' "$LINEAR_TEAM_ID"
+          } >> "$GITHUB_ENV"
       - name: Run sync script
         run: |
           if [ -f .specify/scripts/node/spec-to-linear.mjs ]; then

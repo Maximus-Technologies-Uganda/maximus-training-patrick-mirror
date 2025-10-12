@@ -15,10 +15,11 @@ jobs:
     steps:
       - name: Check PR title/body for Linear reference
         shell: bash
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
         run: |
-          title="${{ github.event.pull_request.title || '' }}"
-          body="${{ github.event.pull_request.body || '' }}"
-          if echo "$title $body" | grep -Eiq '(LIN-[0-9]+|Linear[- ]?[0-9]+)'; then
+          if printf '%s %s' "$PR_TITLE" "$PR_BODY" | grep -Eiq '(LIN-[0-9]+|Linear[- ]?[0-9]+)'; then
             echo "Linear reference found."
           else
             echo "::error::PR must reference a Linear issue (e.g., LIN-123) in title or body."

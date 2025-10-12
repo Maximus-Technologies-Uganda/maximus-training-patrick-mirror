@@ -25,14 +25,14 @@ jobs:
             HEAD="${{ github.event.pull_request.head.sha }}"
             git diff --name-only --diff-filter=AM "$BASE" "$HEAD" > changed.txt || true
           else
-             BASE="${{ github.event.before || '' }}"
-             HEAD="${{ github.sha }}"
-             # If BASE is empty (e.g., first push), check the whole tree
-             if [[ -z "$BASE" ]]; then
-               git ls-files > changed.txt
-             else
-               git diff --name-only --diff-filter=AM "$BASE" "$HEAD" > changed.txt || true
-             fi
+            BASE="${{ github.event.before || '' }}"
+            HEAD="${{ github.sha }}"
+            # If BASE is empty (e.g., first push), check the whole tree
+            if [[ -z "$BASE" ]]; then
+              git ls-files > changed.txt
+            else
+              git diff --name-only --diff-filter=AM "$BASE" "$HEAD" > changed.txt || true
+            fi
           fi
 
           # Fallback: if still empty, list all files (e.g., local run)
@@ -40,16 +40,20 @@ jobs:
             git ls-files > changed.txt
           fi
 
-          echo "Changed files:" && wc -l changed.txt || true
+          echo "Changed files:"
+          wc -l changed.txt || true
           # Disallow any node_modules or coverage artifacts being added/modified
           # (ignore existing historical ones unless changed in this PR/push)
-          offending=$(grep -E "(^|/)node_modules/|(^|/)coverage/" changed.txt || true)
+          offending=$(grep -E '(^|/)node_modules/|(^|/)coverage/' changed.txt || true)
           if [[ -n "$offending" ]]; then
             echo "::error::Vendored artifacts detected in changes (node_modules/ or coverage/)." >&2
-            echo "$offending" | sed 's/^/- /'
-            echo "offending<<EOF" >> $GITHUB_OUTPUT
-            echo "$offending" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            # Prefix each offending path with a dash for readability
+            while IFS= read -r line; do printf -- '- %s\n' "$line"; done <<< "$offending"
+            {
+              echo 'offending<<EOF'
+              echo "$offending"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
             exit 1
           fi
           echo "No vendored artifacts in this change set."

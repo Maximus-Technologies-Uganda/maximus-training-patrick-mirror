@@ -2,8 +2,36 @@ name: Review Packet (Manual)
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ref (branch or commit) to build the review packet from'
+        required: true
+        type: string
+      include_apps:
+        description: 'Comma-separated app list to include (optional, default = auto-discover)'
+        required: false
+        type: string
+      skip_apps:
+        description: 'Comma-separated app list to exclude (optional)'
+        required: false
+        type: string
+      include_frontend:
+        description: 'Include frontend review packet tasks'
+        default: true
+        type: boolean
+      include_frontend_next:
+        description: 'Include frontend-next review packet tasks'
+        default: true
+        type: boolean
 
 jobs:
   call-main-workflow:
     uses: ./.github/workflows/review-packet.yml
+    secrets: inherit
+    with:
+      ref: ${{ inputs.ref }}
+      include_apps: ${{ inputs.include_apps }}
+      skip_apps: ${{ inputs.skip_apps }}
+      include_frontend: ${{ inputs.include_frontend }}
+      include_frontend_next: ${{ inputs.include_frontend_next }}
 
