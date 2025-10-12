@@ -48,10 +48,21 @@ function createSWRCache(): Cache<unknown> {
   };
 }
 
+function filterPostsByQuery<T extends { title: string; content: string }>(
+  items: T[],
+  query: string,
+): T[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return items;
+  return items.filter(
+    (p) => p.title.toLowerCase().includes(normalized) || p.content.toLowerCase().includes(normalized),
+  );
+}
+
 export default function PostsPageClient({
   page: initialPage = 1,
   pageSize: initialPageSize = 10,
-  q: initialQ = "",
+  q: incomingSearchQuery = "",
 }: {
   page?: number;
   pageSize?: number;
@@ -59,7 +70,7 @@ export default function PostsPageClient({
 }): React.ReactElement {
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
-  const [q, setQ] = useState<string>(initialQ);
+  const [searchQuery, setSearchQuery] = useState<string>(incomingSearchQuery);
 
   // Initialize from URL on mount
   useEffect(() => {
@@ -69,16 +80,16 @@ export default function PostsPageClient({
       const nextPageSize = Number(
         url.searchParams.get("pageSize") ?? String(initialPageSize),
       );
-      const nextQ = url.searchParams.get("q") ?? initialQ;
+      const nextQ = url.searchParams.get("q") ?? incomingSearchQuery;
       setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1);
       setPageSize(
         Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 10,
       );
-      setQ(nextQ);
+      setSearchQuery(nextQ);
     } catch (_error) {
       // Ignore malformed URL values; fall back to defaults.
     }
-  }, [initialPage, initialPageSize, initialQ]);
+  }, [initialPage, initialPageSize, incomingSearchQuery]);
 
   // Sync internal state with browser navigation (back/forward)
   useEffect(() => {
@@ -90,7 +101,7 @@ export default function PostsPageClient({
         const qParam = url.searchParams.get("q") ?? "";
         setPage(Number.isFinite(p) && p > 0 ? p : 1);
         setPageSize(Number.isFinite(ps) && ps > 0 ? ps : 10);
-        setQ(qParam);
+        setSearchQuery(qParam);
       } catch (_error) {
         // Ignore malformed URL values during history navigation.
       }
@@ -101,9 +112,7 @@ export default function PostsPageClient({
 
   const { data, isLoading, error } = usePostsList({ page, pageSize });
 
-  const statusMessage = useMemo(() => {
-    return isLoading ? "Loading posts…" : "";
-  }, [isLoading]);
+  const statusMessage = useMemo(() => (isLoading ? "Loading posts…" : ""), [isLoading]);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -112,11 +121,11 @@ export default function PostsPageClient({
     headingRef.current?.focus();
   }, [page, pageSize]);
 
-  const pushQuery = (next: { page?: number; pageSize?: number; q?: string }): void => {
+  const updateUrlQuery = (next: { page?: number; pageSize?: number; q?: string }): void => {
     const url = new URL(window.location.href);
     const newPage = next.page ?? page;
     const newPageSize = next.pageSize ?? pageSize;
-    const newQ = next.q ?? q;
+    const newQ = next.q ?? searchQuery;
     url.searchParams.set("page", String(newPage));
     url.searchParams.set("pageSize", String(newPageSize));
     if (newQ) url.searchParams.set("q", newQ);
@@ -126,36 +135,27 @@ export default function PostsPageClient({
 
   const onChangePage = (nextPage: number): void => {
     setPage(nextPage);
-    pushQuery({ page: nextPage });
+    updateUrlQuery({ page: nextPage });
   };
   const onChangePageSize = (nextSize: number): void => {
     setPage(1);
     setPageSize(nextSize);
-    pushQuery({ page: 1, pageSize: nextSize });
+    updateUrlQuery({ page: 1, pageSize: nextSize });
   };
-  const onChangeQ = (nextQ: string): void => {
-    setQ(nextQ);
-    pushQuery({ q: nextQ });
+  const onChangeSearchQuery = (nextQ: string): void => {
+    setSearchQuery(nextQ);
+    updateUrlQuery({ q: nextQ });
   };
 
   const onCreateSuccess = (): void => {
     // Reset to first page so the new post is visible and URL stays in sync
     if (page !== 1) {
       setPage(1);
-      pushQuery({ page: 1 });
+      updateUrlQuery({ page: 1 });
     }
   };
 
-  const filteredItems = useMemo(() => {
-    const items = data?.items ?? [];
-    const query = q.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter(
-      (p) =>
-        p.title.toLowerCase().includes(query) ||
-        p.content.toLowerCase().includes(query),
-    );
-  }, [data?.items, q]);
+  const filteredItems = useMemo(() => filterPostsByQuery(data?.items ?? [], searchQuery), [data?.items, searchQuery]);
 
   // Keep SWR cache stable across renders for this page instance (keys must be strings per SWR types)
   const cacheRef = useRef<Cache<unknown> | null>(null);
@@ -182,7 +182,7 @@ export default function PostsPageClient({
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <PageSizeSelect pageSize={pageSize} onChange={onChangePageSize} />
-          <SearchInput value={q} onChange={onChangeQ} />
+          <SearchInput value={searchQuery} onChange={onChangeSearchQuery} />
         </div>
 
         <div className="mt-6">

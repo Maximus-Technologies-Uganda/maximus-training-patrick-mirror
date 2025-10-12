@@ -7,7 +7,7 @@ This repository hosts a monorepo with a Node.js API (`api/`) and a Next.js app (
 - Frontend (Cloud Run): `https://maximus-training-frontend-673209018655.africa-south1.run.app`
 - API (Cloud Run): `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app`
 
-Replace `<hash>` and `<region>` with your actual deployment values. You can retrieve service URLs from the Cloud Run console or via:
+You can retrieve service URLs from the Cloud Run console or via:
 
 ```bash
 gcloud run services describe maximus-training-frontend --region <region> --format='value(status.url)'
@@ -66,6 +66,11 @@ Note on server-side configuration:
 - Both services are deployed with `--min-instances=1` to avoid cold starts.
 
 Cloud Build file: `cloudbuild.yaml`
+
+### Evidence and Reports
+
+- The Quality Gate job summary includes a section titled "frontend-next Coverage (with thresholds)" with the current coverage table.
+- The Review Packet artifacts include the `coverage-frontend-next` HTML coverage report and the Playwright HTML report.
 
 ## GitHub Actions
 
@@ -157,6 +162,8 @@ feature/us4-contract-hygiene
 =======
 main
 
+ - Canonical OpenAPI specification: [specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml](specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml)
+
 ### Running with Docker
 
 Build the container:
@@ -169,7 +176,7 @@ Run the container:
 docker run -p 3000:3000 nextjs-app:latest
 ```
 
-**Note:** For optimal Google Cloud Run deployment, consider changing `output: "export"` to `output: "standalone"` in `frontend-next/next.config.ts`.
+**Note:** For optimal Google Cloud Run deployment, use `output: "standalone"` in `frontend-next/next.config.ts`.
 
 Live Demo (frontend-next):
 
@@ -220,63 +227,4 @@ Relevant files and scripts:
 - `.specify/templates/*.md` (templates used by prompts)
 - `.specify/scripts/powershell/*.ps1` (helper scripts invoked by prompts)
 
-Frontend (unit tests with coverage):
-
-```bash
-cd frontend
-npm ci
-npm run test:run -- --coverage
-```
-
-## Live Demo
-
-🚀 **Try the To-Do Mini Project live**:
-
-![Screenshot](./docs/screenshot.png)
-
-Features:
-- Add, toggle, and delete tasks
-- Search and filter by due date and priority
-- Export tasks to CSV
-- Persistent storage with LocalStorage
-- Full accessibility support (WCAG AA)
-
-## Test Coverage
-
-📊 **Coverage Report**: [./frontend/coverage/lcov-report/index.html](./frontend/coverage/lcov-report/index.html)
-
-- **Core modules**: ≥55% statement coverage required
-- **UI modules**: ≥40% statement coverage required
-- **Overall coverage**: [Open coverage report](frontend/coverage/lcov-report/index.html)
-
-Coverage is enforced via CI with detailed per-file reporting and automated gates.
-
-## Deployment & Quality
-
-- UI preview:
-
-Local development server:
-
-```bash
-cd frontend
-npm ci
-npm run dev
-```
-
-## Coverage Index
-
-- Open the frontend HTML coverage index directly: [frontend/coverage/lcov-report/index.html](frontend/coverage/lcov-report/index.html)
-- CI posts a coverage summary for the frontend to the PR job summary and comments.
-- The full HTML coverage report is bundled in the "Review Packet" artifact from CI runs. Download the artifact from a run of the Review Packet workflow and open the coverage report inside (e.g., `frontend/coverage/lcov-report/index.html`).
-- Raw summary JSON path in CI: `frontend/coverage/coverage-summary.json`.
-- Coverage artifact (CI): See Actions artifacts named "review-packet".
-
-Local HTML report for the frontend:
-
-```bash
-cd frontend
-npm run test:run -- --coverage
-# then open coverage/lcov-report/index.html
-```
-
-Each package (`quote/`, `expense/`, `stopwatch/`, `todo/`) also produces coverage when running tests within that package.
+<!-- Removed legacy references to the separate Vite-based frontend project to avoid confusion with `frontend-next`. CI evidence for `frontend-next` is surfaced in the Quality Gate summary and Review Packet as noted above. -->
