@@ -38,6 +38,12 @@ function isSkippableUrl(urlString) {
     if (u.hostname === "0.0.0.0") return true;
     if (u.hostname === "::1") return true;
     if (/^127\./.test(u.hostname)) return true;
+    // Ignore known 403 from protected API base URL in README (publicly health-checkable endpoint may not exist)
+    if (
+      urlString ===
+      "https://maximus-training-api-wyb2jsgqyq-bq.a.run.app"
+    )
+      return true;
     return false;
   } catch {
     return false;

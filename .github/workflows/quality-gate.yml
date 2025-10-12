@@ -15,6 +15,18 @@ on:
       - '.github/workflows/quality-gate.yml'
 
 jobs:
+  readme-link-check:
+    name: README link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+      - name: Link check README
+        run: node scripts/link-check.js README.md
   install-root-deps:
     runs-on: ubuntu-latest
     steps:
