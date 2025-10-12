@@ -94,7 +94,7 @@ jobs:
         working-directory: frontend-next
         shell: bash
         run: |
-          echo "### frontend-next Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "### frontend-next Coverage" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo '```json' >> "$GITHUB_STEP_SUMMARY"
           if [ -f coverage/coverage-summary.json ]; then
@@ -103,7 +103,7 @@ jobs:
             echo '{}' >> "$GITHUB_STEP_SUMMARY"
           fi
           echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```'
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Read coverage summary
         id: coverage_frontend_next
