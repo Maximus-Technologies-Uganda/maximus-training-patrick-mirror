@@ -151,6 +151,11 @@ Environment variables:
 | `API_BASE_URL` | Server-only (Cloud Run) | `http://localhost:8080` | `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app` | Upstream API base URL used by server SSR and Route Handlers. Set on Cloud Run service env vars. |
 | `NEXT_PUBLIC_API_URL` | Client and SSR fallback | `http://localhost:8080` | (not required) | Base URL for API in local dev; SSR falls back to this if `API_BASE_URL` is unset. Prefer server proxy (`/api`) in production. |
 | `NEXT_PUBLIC_APP_URL` | CI/E2E usage | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | Public URL of the app for Playwright and link checks in CI. |
+feature/us4-contract-hygiene
+
+ - Canonical OpenAPI specification: [specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml](specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml)
+=======
+main
 
 ### Running with Docker
 
