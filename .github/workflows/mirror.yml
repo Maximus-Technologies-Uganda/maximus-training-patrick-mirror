@@ -29,7 +29,24 @@ jobs:
       group: mirror-sync
       cancel-in-progress: true
     steps:
+      - name: Check for mirror secret
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.MIRROR_PAT }}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping mirror: secrets.MIRROR_PAT not configured." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip mirroring when secret missing
+        if: steps.guard.outputs.enabled != 'true'
+        run: echo "Mirror job skipped because secrets.MIRROR_PAT is not set."
+
       - name: Checkout full history (with PAT)
+        if: steps.guard.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -37,6 +54,7 @@ jobs:
           token: ${{ secrets.MIRROR_PAT }}
 
       - name: Validate configuration (PAT only)
+        if: steps.guard.outputs.enabled == 'true'
         env:
           INPUT_SLUG: ${{ inputs.mirror_repo_slug }}
           INPUT_URL: ${{ inputs.mirror_repo_url }}
@@ -76,13 +94,14 @@ jobs:
         id: validate
 
       - name: Configure git
+        if: steps.guard.outputs.enabled == 'true'
         shell: bash
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
       # Preflight that the destination repo is reachable
       - name: Preflight auth to mirror (HTTPS)
-        if: steps.validate.outputs.auth == 'https'
+        if: steps.guard.outputs.enabled == 'true' && steps.validate.outputs.auth == 'https'
         shell: bash
         env:
           MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}
@@ -91,7 +110,7 @@ jobs:
           git -c protocol.version=2 ls-remote "https://github.com/${MIRROR_REPO_SLUG}.git" >/dev/null
 
       - name: Mirror push (HEAD to main via PAT)
-        if: steps.validate.outputs.auth == 'https'
+        if: steps.guard.outputs.enabled == 'true' && steps.validate.outputs.auth == 'https'
         shell: bash
         env:
           MIRROR_REPO_SLUG: ${{ steps.validate.outputs.slug }}

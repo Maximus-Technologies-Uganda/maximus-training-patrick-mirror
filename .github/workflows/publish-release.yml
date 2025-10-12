@@ -32,36 +32,24 @@ jobs:
           url="${CLOUD_INPUT}"
           if [ -z "$url" ]; then
             # Try to grep from README
-            url=$(grep -Eo 'https://[a-zA-Z0-9.-]+-africa-south1.run.app' -R frontend-next/README.md || true)
+            url=$(grep -Eo "https://[a-zA-Z0-9.-]+-africa-south1.run.app" -R frontend-next/README.md || true)
           fi
-          echo "url=$url" >> $GITHUB_OUTPUT
+          echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release notes
         id: notes
-        shell: bash
-fix/phase-1-data-fetching
-        run: |
-          set -euo pipefail
-          REPO="${{ github.repository }}"
-          CLOUD="${{ steps.cloudrun.outputs.url }}"
-          LINEAR_INPUT="${{ inputs.linear_issue_url }}"
-          # If a secret LINEAR_ISSUE_URL is configured, pick it up via env export step (optional)
-          LINEAR_SECRET_ENV="${LINEAR_ISSUE_URL:-}"
-          LINEAR="${LINEAR_INPUT:-$LINEAR_SECRET_ENV}"
-=======
         env:
           REPO: ${{ github.repository }}
           CLOUD: ${{ steps.cloudrun.outputs.url }}
           LINEAR_INPUT: ${{ inputs.linear_issue_url }}
-          LINEAR_SECRET: ${{ secrets.LINEAR_ISSUE_URL }}
+        shell: bash
         run: |
           set -euo pipefail
-          LINEAR="${LINEAR_INPUT:-$LINEAR_SECRET}"
-main
-          body=$(cat RELEASE-NOTES.md)
-          body=${body//'${REPO}'/$REPO}
-          body=${body//'{{CLOUD_RUN_URL}}'/${CLOUD:-'(set CLOUD_RUN_URL to populate)'}}
-          body=${body//'{{LINEAR_ISSUE_URL}}'/${LINEAR:-'(set LINEAR_ISSUE_URL to populate)'}}
+          LINEAR="${LINEAR_INPUT:-}"
+          body="$(cat RELEASE-NOTES.md)"
+          body=${body//"\${REPO}"/$REPO}
+          body=${body//"{{CLOUD_RUN_URL}}"/${CLOUD:-'(set CLOUD_RUN_URL to populate)'}}
+          body=${body//"{{LINEAR_ISSUE_URL}}"/${LINEAR:-'(set LINEAR_ISSUE_URL to populate)'}}
           printf '%s' "$body" > RELEASE-NOTES.rendered.md
 
       - name: Create GitHub Release
