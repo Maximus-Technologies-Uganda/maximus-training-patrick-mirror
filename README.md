@@ -47,6 +47,10 @@ npm run dev
 # App on http://localhost:3000
 ```
 
+Note on server-side configuration:
+
+> `API_BASE_URL` is required on the server (e.g., Cloud Run service env var) for the initial server-rendered request to `/posts` to fetch posts from the backend. Without it, SSR may not include post items on first paint. In local dev, SSR will fall back to `NEXT_PUBLIC_API_URL` if `API_BASE_URL` is not set, but production should always set `API_BASE_URL`.
+
 ## CI/CD Overview
 
 ### Stage 1: Tests (Quality Gate)
