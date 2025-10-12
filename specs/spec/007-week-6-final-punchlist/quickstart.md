@@ -10,6 +10,11 @@
   - macOS/Linux: `export API_BASE_URL='https://<your-api-domain>'`
 - In Cloud Run (live), set `API_BASE_URL` on the `maximus-training-frontend` service via Console → Service → Variables & Secrets.
 
+feature/us1-fix-data-rendering
+> Important: `API_BASE_URL` is a required server-side variable for the initial server-rendered page load of `/posts`. If it is missing or incorrect in the live environment, the first paint may not contain posts and will rely on client-side fetching instead.
+
+=======
+main
 ## Run Locally
 - In `frontend-next/`: install deps and start dev server
   - `npm install`

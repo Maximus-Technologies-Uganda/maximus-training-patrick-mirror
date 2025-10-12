@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Prefer a server-only base URL for backend calls; never expose secrets to the client
-const API_BASE_URL: string =
-  process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+// Use 8080 as a safe local fallback to avoid self-calls to the Next server on 3000
+const API_BASE_URL: string = process.env.API_BASE_URL ?? "http://localhost:8080";
 const API_SERVICE_TOKEN: string | undefined = process.env.API_SERVICE_TOKEN;
 
 function buildAuthHeaders(): Record<string, string> {
@@ -65,7 +65,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const text = await res.text();
     if (contentType.includes("application/json")) {
       try {
-        return NextResponse.json(JSON.parse(text), { status: res.status });
+        const data = JSON.parse(text);
+        // If the upstream returned an array (including empty array), pass it through as JSON
+        if (Array.isArray(data)) {
+          return NextResponse.json(data, { status: res.status });
+        }
+        // Fall through for non-array JSON payloads below to preserve content-type and body
       } catch {
         // Fall through to raw response if JSON parsing fails
       }
@@ -74,10 +79,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       status: res.status,
       headers: { "content-type": contentType || "text/plain" },
     });
-  } catch (_error) {
+  } catch (error) {
+    // Log the error for server-side observability without leaking sensitive details to clients
+    console.error("GET /api/posts upstream error", { upstreamUrl, error });
     return NextResponse.json(
-      { error: { code: 502, message: "Upstream fetch failed" } },
-      { status: 502 },
+      { error: { code: "UPSTREAM_FETCH_FAILED", message: "Failed to fetch posts" } },
+      { status: 500 },
     );
   }
 }
@@ -117,10 +124,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status: res.status,
       headers: { ...headers, "content-type": contentType || "text/plain" },
     });
-  } catch (_error) {
+  } catch (error) {
+    // Log the error for server-side observability without leaking sensitive details to clients
+    console.error("POST /api/posts upstream error", { upstreamUrl, error });
     return NextResponse.json(
-      { error: { code: 502, message: "Upstream create failed" } },
-      { status: 502 },
+      { error: { code: "UPSTREAM_CREATE_FAILED", message: "Failed to create post" } },
+      { status: 500 },
     );
   }
 }
