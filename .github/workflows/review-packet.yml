@@ -217,6 +217,15 @@ jobs:
           # Copy only required files for T004
           [ -f frontend-next/coverage/coverage-summary.json ] && cp frontend-next/coverage/coverage-summary.json stage/coverage-frontend-next/ || true
           [ -f frontend-next/coverage/lcov.info ] && cp frontend-next/coverage/lcov.info stage/coverage-frontend-next/ || true
+          # Include HTML coverage report directories if present
+          if [ -d frontend-next/coverage/lcov-report ]; then
+            mkdir -p stage/coverage-frontend-next/lcov-report
+            cp -R frontend-next/coverage/lcov-report/. stage/coverage-frontend-next/lcov-report/ || true
+          fi
+          if [ -d frontend-next/coverage/html ]; then
+            mkdir -p stage/coverage-frontend-next/html
+            cp -R frontend-next/coverage/html/. stage/coverage-frontend-next/html/ || true
+          fi
 
       - name: Upload frontend-next coverage artifact
         uses: actions/upload-artifact@v4
