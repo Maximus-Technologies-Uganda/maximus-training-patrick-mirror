@@ -4,8 +4,8 @@ This repository hosts a monorepo with a Node.js API (`api/`) and a Next.js app (
 
 ## Live Deployments
 
-- Frontend (Cloud Run): `https://maximus-training-frontend-<hash>-<region>-a.run.app`
-- API (Cloud Run): `https://maximus-training-api-<hash>-<region>-a.run.app`
+- Frontend (Cloud Run): `https://maximus-training-frontend-673209018655.africa-south1.run.app`
+- API (Cloud Run): `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app`
 
 Replace `<hash>` and `<region>` with your actual deployment values. You can retrieve service URLs from the Cloud Run console or via:
 
@@ -101,7 +101,7 @@ cd frontend-next && npm run test:ci
 
 # Training
 
-[![Review Packet](https://github.com/Maximus-Technologies-Uganda/Training/actions/workflows/review-packet.yml/badge.svg)](https://github.com/Maximus-Technologies-Uganda/Training/actions/workflows/review-packet.yml)
+[Quality Gate workflow](.github/workflows/quality-gate.yml)
 
 Monorepo containing multiple small apps and exercises (`quote/`, `expense/`, `stopwatch/`, `todo/`, `frontend/`, and more).
 
@@ -110,25 +110,47 @@ Monorepo containing multiple small apps and exercises (`quote/`, `expense/`, `st
 Prerequisites:
 
 - Node.js 18+
-- A running Posts API (default: `http://localhost:3000` from `api` workspace)
+- A running Posts API (default: `http://localhost:8080` from `api` workspace)
 
 Local steps:
 
-```bash
-cd frontend-next
-npm ci
-cp .env.example .env.local  # or create .env.local
-# Required environment variables
-# NEXT_PUBLIC_API_URL=http://localhost:3000
+1. Start the API service:
 
-npm run dev
-# Open http://localhost:3000
-```
+   ```bash
+   cd api
+   npm ci
+   npm run dev
+   # API listens on http://localhost:8080
+   ```
+
+2. Create the frontend env file:
+
+   ```env
+   # file: frontend-next/.env.local
+   NEXT_PUBLIC_API_URL=http://localhost:8080
+   ```
+
+3. Install dependencies and start the frontend:
+
+   ```bash
+   cd frontend-next
+   npm ci
+   npm run dev
+   # App on http://localhost:3000
+   ```
+
+4. Verify it works:
+
+   - Visit http://localhost:3000/posts
+   - You should see a list of posts. If not, ensure the API is running on http://localhost:8080 and that `NEXT_PUBLIC_API_URL` is set accordingly in `.env.local`.
 
 Environment variables:
 
-- `NEXT_PUBLIC_API_URL`: Base URL of the Posts API (required for the app)
-- `NEXT_PUBLIC_APP_URL`: Public URL of the app (used by Playwright a11y/e2e in CI)
+| Variable | Scope | Local example | Production example | Purpose |
+|---|---|---|---|---|
+| `API_BASE_URL` | Server-only (Cloud Run) | `http://localhost:8080` | `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app` | Upstream API base URL used by server SSR and Route Handlers. Set on Cloud Run service env vars. |
+| `NEXT_PUBLIC_API_URL` | Client and SSR fallback | `http://localhost:8080` | (not required) | Base URL for API in local dev; SSR falls back to this if `API_BASE_URL` is unset. Prefer server proxy (`/api`) in production. |
+| `NEXT_PUBLIC_APP_URL` | CI/E2E usage | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | Public URL of the app for Playwright and link checks in CI. |
 
 ### Running with Docker
 
@@ -146,7 +168,7 @@ docker run -p 3000:3000 nextjs-app:latest
 
 Live Demo (frontend-next):
 
-- Demo URL: https://<your-vercel-project>.vercel.app
+- Demo URL: https://maximus-training-frontend-673209018655.africa-south1.run.app
   - Once deployed from the default branch, this link will be referenced in the Review Packet manifest and PR summaries.
 
 ## Quickstart
@@ -203,7 +225,7 @@ npm run test:run -- --coverage
 
 ## Live Demo
 
-🚀 **Try the To-Do Mini Project live**: [https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/frontend/todo.html](https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/frontend/todo.html)
+🚀 **Try the To-Do Mini Project live**:
 
 ![Screenshot](./docs/screenshot.png)
 
@@ -220,16 +242,13 @@ Features:
 
 - **Core modules**: ≥55% statement coverage required
 - **UI modules**: ≥40% statement coverage required
-- **Overall coverage**: [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](frontend/coverage/lcov-report/index.html)
+- **Overall coverage**: [Open coverage report](frontend/coverage/lcov-report/index.html)
 
 Coverage is enforced via CI with detailed per-file reporting and automated gates.
 
 ## Deployment & Quality
 
-- Live deployment: https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/
 - UI preview:
-
-  [![Application UI](docs/assets/screenshot-app.png)](https://maximus-technologies-uganda.github.io/maximus-training-patrick-mirror/)
 
 Local development server:
 
