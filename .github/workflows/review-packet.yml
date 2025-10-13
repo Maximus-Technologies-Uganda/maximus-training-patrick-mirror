@@ -12,24 +12,24 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: 'Ref (branch or commit) to build the review packet from'
+        description: "Ref (branch or commit) to build the review packet from"
         required: false
         type: string
       include_apps:
-        description: 'Comma-separated app list to include (optional, default = auto-discover)'
+        description: "Comma-separated app list to include (optional, default = auto-discover)"
         required: false
         type: string
       skip_apps:
-        description: 'Comma-separated app list to exclude (optional)'
+        description: "Comma-separated app list to exclude (optional)"
         required: false
         type: string
       include_frontend:
-        description: 'Include frontend review packet tasks'
+        description: "Include frontend review packet tasks"
         required: false
         default: true
         type: boolean
       include_frontend_next:
-        description: 'Include frontend-next review packet tasks'
+        description: "Include frontend-next review packet tasks"
         required: false
         default: true
         type: boolean
@@ -60,7 +60,7 @@ jobs:
           npm config set audit false --location=project
           npm config set fund false --location=project
           echo "Attempting npm ci at repo root"
-          if ! npm ci; then
+          if ! npm ci --ignore-scripts; then
             echo "npm ci failed; falling back to npm install with workspaces"
             npm install --workspaces --no-audit --no-fund --ignore-scripts
           fi
@@ -112,7 +112,9 @@ jobs:
           node-version: '20'
 
       - name: Debug matrix app
-        run: echo "Running per_app for ${{ matrix.app }}"
+        run: echo "Running per_app for ${MATRIX_APP}"
+        env:
+          MATRIX_APP: ${{ matrix.app }}
 
       - name: Install (best-effort)
         shell: bash
@@ -185,7 +187,7 @@ jobs:
           set -e
           npm config set audit false --location=project
           npm config set fund false --location=project
-          if ! npm ci; then
+          if ! npm ci --ignore-scripts; then
             npm install --workspaces --no-audit --no-fund --ignore-scripts
           fi
           npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
@@ -366,7 +368,7 @@ jobs:
           set -e
           npm config set audit false --location=project
           npm config set fund false --location=project
-          if ! npm ci; then
+          if ! npm ci --ignore-scripts; then
             npm install --workspaces --no-audit --no-fund --ignore-scripts
           fi
           npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
@@ -422,7 +424,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: _dl
-          merge-multiple: true
         continue-on-error: true
 
       - name: Consolidate coverage artifacts
@@ -504,7 +505,7 @@ jobs:
           fi
 
           echo "No coverage artifacts found. Running serial fallback for all apps."
-          APPS=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsExists(d+'/package.json')||(fs.existsExists(d+'/src')&&fs.existsExists(d+'/tests'))||fs.existsExists(d+'/tests');}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
+          APPS=$(node -e "const fs=require('fs');const skip=new Set(['.git','.github','docs','helpers','labs','repos','node_modules']);const a=fs.readdirSync('.').filter(d=>{try{if(skip.has(d)||d.startsWith('.'))return false;const s=fs.statSync(d);if(!s.isDirectory())return false;return fs.existsSync(d+'/package.json')||(fs.existsSync(d+'/src')&&fs.existsSync(d+'/tests'))||fs.existsSync(d+'/tests');}catch(e){return false;}});process.stdout.write(JSON.stringify(a));")
           APPS_FILE=$(mktemp)
           printf '%s' "$APPS" > "$APPS_FILE"
           echo "Locally discovered apps: $APPS"

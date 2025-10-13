@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund --ignore-scripts
       - name: Link check README
         run: node scripts/link-check.js README.md
   lint-workflows:

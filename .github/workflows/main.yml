@@ -62,12 +62,12 @@ jobs:
           if command -v jq >/dev/null 2>&1 && [ -n "$FILE" ]; then
             PCT=$(jq -r '.total.lines.pct // .total.statements.pct // empty' "$FILE")
             if [ -n "$PCT" ]; then
-              echo "summary=${PCT}%" >> $GITHUB_OUTPUT
+              { echo "summary=${PCT}%"; } >> "$GITHUB_OUTPUT"
             else
-              echo "summary=N/A" >> $GITHUB_OUTPUT
+              { echo "summary=N/A"; } >> "$GITHUB_OUTPUT"
             fi
           else
-            echo "summary=N/A" >> $GITHUB_OUTPUT
+            { echo "summary=N/A"; } >> "$GITHUB_OUTPUT"
           fi
 
       - name: 'Build All Workspaces'
@@ -75,7 +75,7 @@ jobs:
         run: npm run build
 
       - name: 'Ensure frontend-next dependencies'
-        run: npm ci --workspace=frontend-next
+        run: npm ci --workspace="frontend-next"
 
       - name: 'Cache Playwright browsers' # <-- T061: Caches Playwright binaries
         uses: 'actions/cache@v4'
@@ -98,17 +98,19 @@ jobs:
       - name: 'Generate PR Summary Report'
         if: always()
         run: |
-          echo "### 🛡️ Quality Gate Summary" > pr-summary.md
-          echo "" >> pr-summary.md
-          echo "| Check | Result |" >> pr-summary.md
-          echo "|---|---|" >> pr-summary.md
-          echo "| **Lint** | ${{ steps.lint.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
-          echo "| **Unit & Contract Tests** | ${{ steps.tests.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
-          echo "| **Test Coverage** | \`${{ steps.coverage.outputs.summary || 'N/A' }}\` |" >> pr-summary.md
-          echo "| **Production Build** | ${{ steps.build.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
-          echo "| **E2E & A11y Tests** | ${{ steps.e2e.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> pr-summary.md
-          echo "" >> pr-summary.md
-          echo "**Overall Status: ${{ job.status == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}**" >> pr-summary.md
+          {
+            echo "### 🛡️ Quality Gate Summary"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| **Lint** | ${{ steps.lint.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |"
+            echo "| **Unit & Contract Tests** | ${{ steps.tests.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |"
+            echo "| **Test Coverage** | \`${{ steps.coverage.outputs.summary || 'N/A' }}\` |"
+            echo "| **Production Build** | ${{ steps.build.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |"
+            echo "| **E2E & A11y Tests** | ${{ steps.e2e.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |"
+            echo ""
+            echo "**Overall Status: ${{ job.status == 'success' && '✅ All checks passed' || '❌ Some checks failed' }}**"
+          } > pr-summary.md
 
       - name: 'Post PR Summary Comment'
         if: always() && github.event_name == 'pull_request'
@@ -119,11 +121,14 @@ jobs:
       - name: 'Create Review Packet Manifest' # <-- T044: Creates the manifest file
         if: always()
         run: |
-          echo '{' > manifest.json
-          echo '  "commitSha": "${{ github.sha }}",' >> manifest.json
-          echo '  "runId": "${{ github.run_id }}",' >> manifest.json
-          echo '  "timestamp": "'$(date -u +'%Y-%m-%dT%H:%M:%SZ')'"' >> manifest.json
-          echo '}' >> manifest.json
+          ts="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          cat > manifest.json <<EOF
+          {
+            "commitSha": "${{ github.sha }}",
+            "runId": "${{ github.run_id }}",
+            "timestamp": "${ts}"
+          }
+          EOF
 
       - name: 'Upload Review Packet Artifact'
         if: always()

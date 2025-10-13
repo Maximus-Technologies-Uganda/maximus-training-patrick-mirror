@@ -44,7 +44,7 @@ jobs:
           done < changed.txt
 
           if [ "$fail" = true ]; then
-            echo "\n❌ Large binary files detected (>2MB). Please remove or use Git LFS." >&2
+            printf '\n%s\n' '❌ Large binary files detected (>2MB). Please remove or use Git LFS.' >&2
             exit 1
           fi
           echo "✅ No large binaries introduced in this PR."

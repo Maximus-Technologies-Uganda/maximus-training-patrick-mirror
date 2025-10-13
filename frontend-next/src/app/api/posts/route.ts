@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Prefer a server-only base URL for backend calls; never expose secrets to the client
-// Use 8080 as a safe local fallback to avoid self-calls to the Next server on 3000
-const API_BASE_URL: string = process.env.API_BASE_URL ?? "http://localhost:8080";
+// Fallback to NEXT_PUBLIC_API_URL so server and client target the same host in local dev
+// Default to http://localhost:8080 to avoid self-referential loops to the Next dev server (3000)
+const API_BASE_URL: string =
+  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 const API_SERVICE_TOKEN: string | undefined = process.env.API_SERVICE_TOKEN;
 
 function buildAuthHeaders(): Record<string, string> {
