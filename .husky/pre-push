@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -e
+
+# Run type checks before pushing (bail on errors)
+echo "🧪 Running type checks..."
+npm run typecheck:bail
+
+# Run lint as a safety net (should be fast due to caching)
+echo "🔍 Running lint checks..."
+npm run lint

@@ -6,6 +6,8 @@ Auto-generated from all feature plans. Last updated: 2025-09-25
 - TypeScript 5.x, React 18, Next.js 14 (App Router) + `swr` for data fetching/cache, `zod` for form validation, `next`/`react`/`react-dom` (spec/004-frontend-integration)
 - N/A (frontend only) (spec/004-frontend-integration)
 - JavaScript/TypeScript + Next.js app (frontend‑next), Playwright (e2e), Vitest (unit), OpenAPI document for API (spec/007-week-6-final-punchlist)
+- N/A (migrations out of scope; ownerId attribute required at API boundary) (spec-auth-ownership-observability)
+- Node.js 20.x; TypeScript 5.x + jsonwebtoken (session signing/verification), cookie (parse/serialize cookies); existing API framework; Next.js 14.x (App Router) (spec-auth-ownership-observability)
 
 ## Project Structure
 ```
@@ -21,9 +23,9 @@ npm test; npm run lint
 TypeScript 5.x, React 18, Next.js 14 (App Router): Follow standard conventions
 
 ## Recent Changes
+- spec-auth-ownership-observability: Added Node.js 20.x; TypeScript 5.x + jsonwebtoken (session signing/verification), cookie (parse/serialize cookies); existing API framework; Next.js 14.x (App Router)
+- spec-auth-ownership-observability: Added N/A (migrations out of scope; ownerId attribute required at API boundary)
 - spec/007-week-6-final-punchlist: Added JavaScript/TypeScript + Next.js app (frontend‑next), Playwright (e2e), Vitest (unit), OpenAPI document for API
-- spec/004-frontend-integration: Added TypeScript 5.x, React 18, Next.js 14 (App Router) + `swr` for data fetching/cache, `zod` for form validation, `next`/`react`/`react-dom`
-- spec/004-frontend-integration: Added TypeScript 5.x, React 18, Next.js 14 (App Router) + `swr` for data fetching/cache, `zod` for form validation, `next`/`react`/`react-dom`
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

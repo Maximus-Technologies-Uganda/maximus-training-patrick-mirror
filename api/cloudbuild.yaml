@@ -9,7 +9,7 @@ substitutions:
   _TIMEOUT: 300s
   _INGRESS: all
   _SERVICE_ACCOUNT: ""
-  _ALLOW_UNAUTH: "false"
+  _ALLOW_UNAUTH: "true"
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -39,13 +39,17 @@ steps:
           || echo "Repo ensure step failed (permissions?); continuing."
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Image
+    entrypoint: bash
     args:
-      - build
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
-      - '-f'
-      - 'api/Dockerfile'
-      - 'api'
+      - -ceu
+      - |
+        set -euxo pipefail
+        cd api
+        docker build \
+          --progress=plain \
+          -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}" \
+          -f Dockerfile \
+          .
 
   - name: 'gcr.io/cloud-builders/docker'
     id: Push Image

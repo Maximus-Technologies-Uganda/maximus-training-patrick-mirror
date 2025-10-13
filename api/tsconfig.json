@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "strict": false,
     "outDir": "dist",
+    "rootDir": "src",
     "baseUrl": ".",
     "paths": {
       "#tsApp": ["src/app.ts"]
