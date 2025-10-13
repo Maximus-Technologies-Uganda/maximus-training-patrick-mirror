@@ -43,6 +43,9 @@ export default function NewPostForm({
     const res = await fetch(`/api/posts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      // Ensure HttpOnly session cookie is sent to the Next.js route handler
+      // which forwards it to the upstream API.
+      credentials: "include",
       body: JSON.stringify({ title, content, published: true, tags: [] }),
     });
     if (res.status === 201) {

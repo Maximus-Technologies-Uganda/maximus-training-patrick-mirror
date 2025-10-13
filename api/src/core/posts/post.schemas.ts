@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const PostSchema = z.object({
   id: z.string().uuid(),
+  ownerId: z.string().min(1),
   title: z.string().min(1).max(200),
   content: z.string().min(1).max(10000),
   tags: z.array(z.string().min(1).max(40)).max(20).default([]),

@@ -5,6 +5,9 @@ jest.mock('nanoid', () => {
 });
 const request = require('supertest');
 const { createApp } = require('../src/app');
+const { validToken } = require('./jwt.util.js');
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
+const cookie = (u) => `session=${validToken(u)}`;
 const { loadConfigFromEnv } = require('../src/config');
 const { createRepository } = require('../src/repositories/posts-repository');
 
@@ -22,6 +25,7 @@ describe('POST /posts', () => {
 
     const res = await request(app)
       .post('/posts')
+      .set('Cookie', cookie('user-A'))
       .send(payload)
       .set('Content-Type', 'application/json');
 
@@ -32,6 +36,7 @@ describe('POST /posts', () => {
       id: expect.any(String),
       title: payload.title,
       content: payload.content,
+      ownerId: 'user-A',
       tags: expect.any(Array),
       published: false,
       createdAt: expect.any(String),
@@ -43,6 +48,7 @@ describe('POST /posts', () => {
     const app = makeApp();
     const res = await request(app)
       .post('/posts')
+      .set('Cookie', cookie('user-A'))
       .send({})
       .set('Content-Type', 'application/json');
 
@@ -54,6 +60,7 @@ describe('POST /posts', () => {
     const app = makeApp();
     const res = await request(app)
       .post('/posts')
+      .set('Cookie', cookie('user-A'))
       .send({ title: 'T', content: 'C', extra: 'nope' });
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({ code: 'validation_error' });
@@ -64,8 +71,8 @@ describe('GET /posts', () => {
   it('returns a list including previously created posts', async () => {
     const app = makeApp();
 
-    const p1 = await request(app).post('/posts').send({ title: 'A', content: 'aaa' });
-    const p2 = await request(app).post('/posts').send({ title: 'B', content: 'bbb' });
+    const p1 = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'A', content: 'aaa' });
+    const p2 = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'B', content: 'bbb' });
 
     expect(p1.status).toBe(201);
     expect(p2.status).toBe(201);
@@ -87,8 +94,8 @@ describe('GET /posts', () => {
   it('supports pagination parameters', async () => {
     const app = makeApp();
 
-    await request(app).post('/posts').send({ title: 'A', content: 'aaa' });
-    await request(app).post('/posts').send({ title: 'B', content: 'bbb' });
+    await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'A', content: 'aaa' });
+    await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'B', content: 'bbb' });
 
     const res = await request(app).get('/posts?page=1&pageSize=1');
     expect(res.status).toBe(200);
@@ -102,7 +109,7 @@ describe('GET /posts', () => {
     const app = makeApp();
     // create 5 posts
     for (let i = 0; i < 5; i++) {
-      const r = await request(app).post('/posts').send({ title: 'T' + i, content: 'C' + i });
+      const r = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'T' + i, content: 'C' + i });
       expect(r.status).toBe(201);
     }
     const p1 = await request(app).get('/posts?page=1&pageSize=2');
@@ -134,13 +141,14 @@ describe('GET /posts', () => {
 describe('PUT /posts and PATCH /posts/:id', () => {
   it('PUT replaces the entire post and returns 200', async () => {
     const app = makeApp();
-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+    const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'T', content: 'C' });
     expect(created.status).toBe(201);
     const putRes = await request(app)
       .put(`/posts/${created.body.id}`)
+      .set('Cookie', cookie('user-A'))
       .send({ title: 'New', content: 'NewC' });
     expect(putRes.status).toBe(200);
-    expect(putRes.body).toEqual({
+    expect(putRes.body).toMatchObject({
       id: created.body.id,
       title: 'New',
       content: 'NewC',
@@ -153,39 +161,39 @@ describe('PUT /posts and PATCH /posts/:id', () => {
 
   it('PUT returns 404 when id is missing', async () => {
     const app = makeApp();
-    const res = await request(app).put('/posts/missing').send({ title: 'T', content: 'C' });
+    const res = await request(app).put('/posts/missing').set('Cookie', cookie('user-A')).send({ title: 'T', content: 'C' });
     expect(res.status).toBe(404);
   });
 
   it('PUT returns 400 on invalid body', async () => {
     const app = makeApp();
-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+    const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'T', content: 'C' });
     expect(created.status).toBe(201);
-    const res = await request(app).put(`/posts/${created.body.id}`).send({ title: '' });
+    const res = await request(app).put(`/posts/${created.body.id}`).set('Cookie', cookie('user-A')).send({ title: '' });
     expect(res.status).toBe(400);
     expect(res.body).toMatchObject({ code: 'validation_error' });
   });
 
   it('PATCH updates subset of fields and returns 200', async () => {
     const app = makeApp();
-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
-    const res = await request(app).patch(`/posts/${created.body.id}`).send({ title: 'T2' });
+    const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'T', content: 'C' });
+    const res = await request(app).patch(`/posts/${created.body.id}`).set('Cookie', cookie('user-A')).send({ title: 'T2' });
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ id: created.body.id, title: 'T2', content: 'C' });
   });
 
   it('PATCH returns 404 when id is missing', async () => {
     const app = makeApp();
-    const res = await request(app).patch('/posts/missing').send({ title: 'X' });
+    const res = await request(app).patch('/posts/missing').set('Cookie', cookie('user-A')).send({ title: 'X' });
     expect(res.status).toBe(404);
   });
 
   it('PATCH returns 400 when body is empty or invalid', async () => {
     const app = makeApp();
-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
-    const resEmpty = await request(app).patch(`/posts/${created.body.id}`).send({});
+    const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'T', content: 'C' });
+    const resEmpty = await request(app).patch(`/posts/${created.body.id}`).set('Cookie', cookie('user-A')).send({});
     expect(resEmpty.status).toBe(400);
-    const resInvalid = await request(app).patch(`/posts/${created.body.id}`).send({ title: '' });
+    const resInvalid = await request(app).patch(`/posts/${created.body.id}`).set('Cookie', cookie('user-A')).send({ title: '' });
     expect(resInvalid.status).toBe(400);
   });
 });

@@ -6,7 +6,7 @@ module.exports = {
     'ts-jest': {
       isolatedModules: true,
       diagnostics: false,
-      tsconfig: '<rootDir>/tsconfig.json',
+      tsconfig: '<rootDir>/tsconfig.test.json',
     },
   },
   collectCoverage: true,

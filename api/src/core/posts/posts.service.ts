@@ -1,66 +1,58 @@
-import { randomUUID } from "node:crypto";
+// Adapter shim to preserve legacy imports; no direct Express types needed here
 import type { Post, PostCreate, PostUpdate, ListPostsQuery } from "./post.schemas";
 import type { PaginatedResponse } from "../pagination.types";
+import type { IPostsRepository } from "../../repositories/posts.repository";
 
 /**
- * PostsService is an in-memory implementation of the IPostsRepository interface.
- *
- * It maintains posts in-process using a simple array. This is suitable for
- * development, tests, or scenarios where persistence is not required.
+ * PostsService was previously an in-memory store. It is now unused in favor of
+ * the DI-friendly service in ../../services/PostsService. This file exports a
+ * thin adapter to maintain existing imports if any remain.
  */
+import { PostsService as DomainService } from "../../services/PostsService";
+import { InMemoryPostsRepository } from "../../repositories/posts.repository";
+
 export class PostsService {
-  /** In-memory data store for posts */
-  private posts: Post[] = [];
+  private readonly impl: DomainService;
+  private readonly orderedIds: string[] = [];
 
-  /**
-   * Create a new Post and store it in memory.
-   * @param data - Validated input for creating a post
-   * @returns The newly created Post
-   */
-  async create(data: PostCreate): Promise<Post> {
-    const now = new Date();
-    const post: Post = {
-      id: randomUUID(),
-      title: data.title,
-      content: data.content,
-      tags: data.tags ?? [],
-      published: data.published ?? false,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.posts.push(post);
-    return post;
+  constructor(repository?: IPostsRepository) {
+    const repo = repository ?? (new InMemoryPostsRepository() as unknown as IPostsRepository);
+    this.impl = new DomainService(repo);
   }
 
-  /**
-   * Retrieve a Post by its unique identifier.
-   * @param id - The post id (UUID string)
-   * @returns The Post if found, otherwise null
-   */
+  async create(data: PostCreate & { ownerId?: string }): Promise<Post> {
+    const ownerId = data.ownerId ?? "unknown-owner";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const created = await this.impl.create({ ...(data as any), ownerId });
+    this.orderedIds.push(created.id);
+    return created;
+  }
+
   async getById(id: string): Promise<Post | null> {
-    const found = this.posts.find((p) => p.id === id) ?? null;
-    return found;
+    try {
+      return await this.impl.getById(id);
+    } catch {
+      return null;
+    }
   }
 
-  /**
-   * List posts using pagination parameters and return a structured paginated response.
-   * Enforces a maximum page size of 50 items.
-   * @param query - Pagination options (page and pageSize)
-   * @returns PaginatedResponse containing items and pagination metadata
-   */
   async list(query: ListPostsQuery): Promise<PaginatedResponse<Post>> {
     const requestedPage = query.page;
     const requestedPageSize = query.pageSize;
-    // Enforce pagination bounds defensively at the service layer
     const maxPageSize = 100;
     const pageSize = Math.min(Math.max(requestedPageSize, 1), maxPageSize);
     const currentPage = Math.max(requestedPage, 1);
 
-    const totalItems = this.posts.length;
+    const totalItems = this.orderedIds.length;
     const totalPages = pageSize > 0 ? Math.ceil(totalItems / pageSize) : 0;
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
-    const items = this.posts.slice(start, end);
+    const pageIds = this.orderedIds.slice(start, end);
+    const items: Post[] = [];
+    for (const id of pageIds) {
+      const p = await this.getById(id);
+      if (p) items.push(p);
+    }
 
     return {
       items,
@@ -72,36 +64,33 @@ export class PostsService {
     };
   }
 
-  /**
-   * Update an existing Post by id by merging provided fields.
-   * @param id - The post id (UUID string)
-   * @param data - Partial set of fields to update (at least one required)
-   * @returns The updated Post if found, otherwise null
-   */
-  async update(id: string, data: PostUpdate): Promise<Post | null> {
-    const index = this.posts.findIndex((p) => p.id === id);
-    if (index === -1) return null;
-
-    const existing = this.posts[index];
-    const updated: Post = {
-      ...existing,
-      ...data,
-      updatedAt: new Date(),
-    };
-    this.posts[index] = updated;
-    return updated;
+  async replace(id: string, data: PostCreate): Promise<Post | null> {
+    try {
+      const updated = await this.impl.replace(id, data);
+      return updated;
+    } catch {
+      return null;
+    }
   }
 
-  /**
-   * Delete a Post by its id.
-   * @param id - The post id (UUID string)
-   * @returns True if a post was deleted, false if no matching post existed
-   */
+  async update(id: string, data: PostUpdate): Promise<Post | null> {
+    try {
+      const updated = await this.impl.update(id, data);
+      return updated;
+    } catch {
+      return null;
+    }
+  }
+
   async delete(id: string): Promise<boolean> {
-    const index = this.posts.findIndex((p) => p.id === id);
-    if (index === -1) return false;
-    this.posts.splice(index, 1);
-    return true;
+    try {
+      await this.impl.delete(id);
+      const idx = this.orderedIds.indexOf(id);
+      if (idx !== -1) this.orderedIds.splice(idx, 1);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

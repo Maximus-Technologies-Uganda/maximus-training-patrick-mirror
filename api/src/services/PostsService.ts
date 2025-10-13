@@ -1,4 +1,4 @@
-import { nanoid } from "nanoid";
+import { randomUUID } from "node:crypto";
 import type { IPostsRepository } from "../repositories/posts.repository";
 import type { PostRecord } from "../repositories/posts-repository";
 import { NotFoundError } from "../errors/NotFoundError";
@@ -12,7 +12,7 @@ import type { PaginatedResponse } from "../core/pagination.types";
  * Adds defaults, timestamp management, validation, and domain errors on top of repository semantics.
  */
 export interface IPostsService {
-  create(data: PostCreate): Promise<Post>;
+  create(data: PostCreate & { ownerId: string }): Promise<Post>;
   getById(id: string): Promise<Post>;
   list(query: ListPostsQuery): Promise<PaginatedResponse<Post>>;
   replace(id: string, data: PostCreate): Promise<Post>;
@@ -28,11 +28,12 @@ export class PostsService implements IPostsService {
   }
 
   /** Create a post with defaults and timestamps. */
-  async create(data: PostCreate): Promise<Post> {
+  async create(data: PostCreate & { ownerId: string }): Promise<Post> {
     const nowIso = new Date().toISOString();
     // Defensive copy and defaults
     const toCreate = {
-      id: nanoid(),
+      id: randomUUID(),
+      ownerId: data.ownerId,
       title: data.title,
       content: data.content,
       tags: Array.isArray(data.tags) ? [...data.tags] : [],
@@ -46,6 +47,7 @@ export class PostsService implements IPostsService {
     // Map repository ISO strings to Date per core Post type contract
     const created: Post = {
       id: toCreate.id,
+      ownerId: toCreate.ownerId,
       title: toCreate.title,
       content: toCreate.content,
       tags: toCreate.tags,
@@ -94,6 +96,7 @@ export class PostsService implements IPostsService {
 
     const replaced: Post = {
       id: existing.id,
+      ownerId: (existing as unknown as { ownerId: string }).ownerId,
       title: data.title,
       content: data.content,
       tags: Array.isArray(data.tags) ? [...data.tags] : [],
@@ -136,6 +139,7 @@ export class PostsService implements IPostsService {
   private mapStoredToDomain(stored: PostRecord): Post {
     return {
       id: String(stored.id),
+      ownerId: String((stored as unknown as { ownerId: string }).ownerId),
       title: String(stored.title),
       content: String(stored.content),
       tags: Array.isArray(stored.tags) ? stored.tags.slice() : [],

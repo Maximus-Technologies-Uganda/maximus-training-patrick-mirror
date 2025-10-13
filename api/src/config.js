@@ -13,6 +13,20 @@ function loadConfigFromEnv() {
   };
 }
 
-module.exports = { loadConfigFromEnv };
+function getSessionSecret() {
+  const raw = (process.env.SESSION_SECRET || '').trim();
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (!raw) {
+    if (isProduction) {
+      throw new Error('SESSION_SECRET must be set in production');
+    }
+    // eslint-disable-next-line no-console
+    console.warn('[config] SESSION_SECRET is not set; using insecure dev default');
+    return 'dev-secret';
+  }
+  return raw;
+}
+
+module.exports = { loadConfigFromEnv, getSessionSecret };
 
 

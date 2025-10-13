@@ -43,6 +43,7 @@ class InMemoryPostsRepository {
     const nowIso = new Date().toISOString();
     const toStore = {
       id: post.id || getNanoid()(),
+      ownerId: post.ownerId,
       title: post.title,
       content: post.content,
       tags: Array.isArray(post.tags) ? post.tags : [],
