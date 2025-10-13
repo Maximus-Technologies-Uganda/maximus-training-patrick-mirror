@@ -37,9 +37,11 @@
           "required": true,
           "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostCreate" } } }
         },
+        "security": [ { "cookieAuth": [] } ],
         "responses": {
           "201": { "description": "Created", "headers": { "Location": { "schema": { "type": "string" } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } }
         }
       }
     },
@@ -56,9 +58,12 @@
         "summary": "Replace post",
         "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostCreate" } } } },
+        "security": [ { "cookieAuth": [] } ],
         "responses": {
           "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
           "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForbiddenError" } } } },
           "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       },
@@ -66,32 +71,47 @@
         "summary": "Update post",
         "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostUpdate" } } } },
+        "security": [ { "cookieAuth": [] } ],
         "responses": {
           "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
           "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForbiddenError" } } } },
           "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       },
       "delete": {
         "summary": "Delete post",
         "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
+        "security": [ { "cookieAuth": [] } ],
         "responses": {
           "204": { "description": "No Content" },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } },
+          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForbiddenError" } } } },
           "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Signed HttpOnly session cookie named 'session'"
+      }
+    },
     "parameters": {
       "PostId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
     },
     "schemas": {
       "Post": {
         "type": "object",
-        "required": ["id", "title", "content", "published", "createdAt", "updatedAt"],
+        "required": ["id", "ownerId", "title", "content", "published", "createdAt", "updatedAt"],
         "properties": {
           "id": { "type": "string" },
+          "ownerId": { "type": "string" },
           "title": { "type": "string", "minLength": 1, "maxLength": 200 },
           "content": { "type": "string", "minLength": 1, "maxLength": 10000 },
           "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 40 }, "maxItems": 20 },
@@ -146,6 +166,18 @@
           "details": {}
         },
         "additionalProperties": false
+      },
+      "UnauthorizedError": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Error" },
+          { "type": "object", "properties": { "code": { "type": "string", "enum": ["unauthorized"] } }, "required": ["code"] }
+        ]
+      },
+      "ForbiddenError": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Error" },
+          { "type": "object", "properties": { "code": { "type": "string", "enum": ["forbidden"] } }, "required": ["code"] }
+        ]
       }
     }
   }

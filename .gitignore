@@ -80,3 +80,6 @@ stopwatch/tests/report.txt
 # Agent artifacts
 .cursor/
 
+# Accidental Git status output file
+
+

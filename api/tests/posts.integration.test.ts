@@ -1,4 +1,8 @@
 import supertest from "supertest";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { validToken } = require('./jwt.util.js');
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
+const cookie = (u: string) => `session=${validToken(u)}`;
 import * as appModule from "#tsApp";
 // jest-openapi now initialised globally via tests/jest.setup.js
 
@@ -40,6 +44,7 @@ describe('Posts API Integration Tests', () => {
       for (const p of payloads) {
         const res = await supertest(api)
           .post('/posts')
+          .set('Cookie', cookie('user-A'))
           .send(p)
           .set('Content-Type', 'application/json');
         expect(res.status).toBe(201);
@@ -86,6 +91,7 @@ describe('Posts API Integration Tests', () => {
       const createPayload = { title: 'Integration Title', content: 'This is the integration test content.' };
       const createRes = await supertest(api)
         .post('/posts')
+        .set('Cookie', cookie('user-A'))
         .send(createPayload)
         .set('Content-Type', 'application/json');
       expect(createRes.status).toBe(201);
@@ -102,6 +108,7 @@ describe('Posts API Integration Tests', () => {
       const patchPayload = { content: 'This content has been updated by the integration test.' };
       const patchRes = await supertest(api)
         .patch(`/posts/${id}`)
+        .set('Cookie', cookie('user-A'))
         .send(patchPayload)
         .set('Content-Type', 'application/json');
       expect(patchRes.status).toBe(200);
@@ -113,7 +120,7 @@ describe('Posts API Integration Tests', () => {
       expect(getRes2.body).toMatchObject({ id, ...createPayload, ...patchPayload });
 
       // DELETE
-      const deleteRes = await supertest(api).delete(`/posts/${id}`);
+      const deleteRes = await supertest(api).delete(`/posts/${id}`).set('Cookie', cookie('user-A'));
       expect(deleteRes.status).toBe(204);
 
       // VERIFY DELETE

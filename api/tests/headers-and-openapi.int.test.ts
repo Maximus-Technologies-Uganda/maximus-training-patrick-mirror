@@ -4,6 +4,10 @@ End-to-end header and body validation for all routes, plus OpenAPI doc route.
 
 jest.mock("nanoid", () => ({ nanoid: () => "test-id" }));
 import request from "supertest";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { validToken } = require('./jwt.util.js');
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
+const cookie = (u: string) => `session=${validToken(u)}`;
 
 // Use JS factories to avoid TS module resolution issues during tests
 import { createApp } from "../src/app";
@@ -37,6 +41,7 @@ describe('E2E headers and bodies', () => {
       const app = await makeApp();
       const res = await request(app)
         .post('/posts')
+        .set('Cookie', cookie('user-A'))
         .send({ title: 'Hello', content: 'World' })
         .set('Content-Type', 'application/json');
       expect(res.status).toBe(201);
@@ -67,7 +72,7 @@ describe('E2E headers and bodies', () => {
   describe('/posts/:id', () => {
     it('GET returns 200 JSON on success and 404 JSON on missing', async () => {
       const app = await makeApp();
-      const created = await request(app).post('/posts').send({ title: 'X', content: 'Y' });
+      const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'X', content: 'Y' });
       const id = created.body.id as string;
 
       const ok = await request(app).get(`/posts/${id}`);
@@ -82,20 +87,19 @@ describe('E2E headers and bodies', () => {
 
     it('PUT and PATCH return JSON body; DELETE returns 204 with no body', async () => {
       const app = await makeApp();
-      // Seed a post; with mocked nanoid, the id will be 'test-id'
-      await request(app).post('/posts').send({ title: 'P', content: 'C' });
+      const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).send({ title: 'P', content: 'C' });
+      const id = created.body.id as string;
 
-      const putRes = await request(app).put('/posts/test-id').send({ title: 'New', content: 'Text' });
+      const putRes = await request(app).put(`/posts/${id}`).set('Cookie', cookie('user-A')).send({ title: 'New', content: 'Text' });
       expect(putRes.status).toBe(200);
       expect(putRes.headers['content-type']).toMatch(/application\/json/);
 
-      const patchRes = await request(app).patch('/posts/test-id').send({ title: 'Updated' });
+      const patchRes = await request(app).patch(`/posts/${id}`).set('Cookie', cookie('user-A')).send({ title: 'Updated' });
       expect(patchRes.status).toBe(200);
       expect(patchRes.headers['content-type']).toMatch(/application\/json/);
 
-      const delRes = await request(app).delete('/posts/test-id');
+      const delRes = await request(app).delete(`/posts/${id}`).set('Cookie', cookie('user-A'));
       expect(delRes.status).toBe(204);
-      // 204 responses should not include a body
       expect(delRes.text).toBe('');
     });
   });

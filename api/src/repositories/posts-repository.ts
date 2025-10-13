@@ -1,5 +1,6 @@
 export interface PostRecord {
   id: string;
+  ownerId?: string;
   title: string;
   content: string;
   tags: string[];
@@ -34,6 +35,7 @@ export class InMemoryPostsRepository {
     const nowIso = new Date().toISOString();
     const toStore: PostRecord = {
       id: post.id || nanoid(),
+      ownerId: post.ownerId,
       title: String(post.title || ''),
       content: String(post.content || ''),
       tags: Array.isArray(post.tags) ? post.tags.map(String) : [],

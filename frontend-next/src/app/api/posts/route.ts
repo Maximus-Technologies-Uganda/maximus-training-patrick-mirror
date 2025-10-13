@@ -106,9 +106,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     bodyText = "{}";
   }
   try {
+    const incomingCookieHeader = request.headers.get("cookie") || "";
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...buildAuthHeaders() },
+      headers: {
+        "Content-Type": "application/json",
+        ...buildAuthHeaders(),
+        ...(incomingCookieHeader ? { Cookie: incomingCookieHeader } : {}),
+      },
       body: bodyText,
     });
 

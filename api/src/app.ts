@@ -2,56 +2,74 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
-import postsRouter from "./core/posts/posts.routes";
+import authRouter from "./core/auth/auth.routes";
 import { errorHandler } from "./middleware/errorHandler";
+import { createPostsRoutes } from "./core/posts/posts.routes";
+import { createPostsController } from "./core/posts/posts.controller";
+import { PostsService } from "./services/PostsService";
+import type { IPostsRepository } from "./repositories/posts.repository";
+import type { AppConfig } from "./config";
 
-const app = express();
-
-// Core Middleware (order matters)
-app.use(helmet());
-app.use(cors());
-// Default limiter from quality gate workflow
 import rateLimit from "express-rate-limit";
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
-app.use(express.json());
-app.use(morgan("dev"));
-
-// Health Check
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-// Feature Routes
-app.use("/posts", postsRouter);
-
-// In development, expose OpenAPI JSON for tests
 import path from "path";
-app.get("/openapi.json", (_req, res) => {
-  const specPath = path.join(__dirname, "..", "openapi.json");
-  res.set("Cache-Control", "no-store");
-  res.type("application/json");
-  res.sendFile(specPath);
-});
 
-// Error Handler (must be last)
-app.use(errorHandler);
+export function createApp(config: AppConfig, repository: IPostsRepository) {
+  const app = express();
 
-export { app };
-export default app;
+  // Core Middleware (order matters)
+  app.use(helmet());
+  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.use(
+    cors({
+      origin: allowedOrigins,
+      credentials: true,
+    })
+  );
+  const limiter = rateLimit({
+    windowMs: config.rateLimitWindowMs,
+    max: config.rateLimitMax,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(limiter);
+  app.use(express.json({ limit: config.jsonLimit }));
+  app.use(morgan("dev"));
 
-// Compatibility factory used by server.ts (TS) and server.js (CJS) callers
-// to mirror the CommonJS createApp export shape used elsewhere.
-// The current codebase constructs a singleton Express app without
-// configuration or repository injection, so we simply return that instance.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createApp(_config?: any, _repository?: any) {
+  // Health Check
+  app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
+
+  // Feature Routes
+  app.use("/auth", authRouter);
+  const postsService = new PostsService(repository);
+  const postsController = createPostsController(postsService);
+  app.use("/posts", createPostsRoutes(postsController));
+
+  // In development, expose OpenAPI JSON for tests
+  app.get("/openapi.json", (_req, res) => {
+    const specPath = path.join(__dirname, "..", "openapi.json");
+    res.set("Cache-Control", "no-store");
+    res.type("application/json");
+    res.sendFile(specPath);
+  });
+
+  // Error Handler (must be last)
+  app.use(errorHandler);
+
   return app;
 }
+
+// Backwards-compatible default export for environments that import an app instance
+import { loadConfigFromEnv } from "./config";
+import { InMemoryPostsRepository } from "./repositories/posts.repository";
+const defaultConfig = loadConfigFromEnv();
+const defaultRepository = new InMemoryPostsRepository() as unknown as IPostsRepository;
+const app = createApp(defaultConfig, defaultRepository);
+export { app };
+export default app;
 
 

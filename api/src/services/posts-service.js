@@ -23,6 +23,7 @@ class PostsService {
     const now = new Date().toISOString();
     const post = {
       id: getNanoid()(),
+      ownerId: data.ownerId,
       title: data.title,
       content: data.content,
       tags: Array.isArray(data.tags) ? data.tags : [],
@@ -58,6 +59,7 @@ class PostsService {
     const now = new Date().toISOString();
     const updated = {
       id: existing.id,
+      ownerId: existing.ownerId,
       title: data.title,
       content: data.content,
       tags: Array.isArray(data.tags) ? data.tags : [],

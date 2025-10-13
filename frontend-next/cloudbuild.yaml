@@ -43,7 +43,7 @@ steps:
       - '-t'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
       - '-f'
-      - 'frontend-next/Dockerfile'
+      - 'Dockerfile'
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=${_PROD_API_URL}'
       - '.'

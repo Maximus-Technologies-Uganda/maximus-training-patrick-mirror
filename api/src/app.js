@@ -13,13 +13,22 @@ const { createHealthRoutes } = require('./routes/health');
 function createApp(config, repository) {
   const app = express();
   app.use(helmet());
-  app.use(cors());
+  // Configure CORS to support credentialed cookie auth
+  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
   app.use(express.json({ limit: config.jsonLimit }));
   app.use(morgan('combined'));
   app.use(createRateLimiter(config));
 
   // Health
   app.use('/', createHealthRoutes());
+
+  // Auth
+  const { createAuthRoutes } = require('./routes/auth');
+  app.use('/auth', createAuthRoutes());
 
   // Posts
   const postsService = new PostsService(repository);

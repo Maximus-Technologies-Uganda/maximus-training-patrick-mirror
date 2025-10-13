@@ -4,7 +4,7 @@ import type { Post, PostCreate, PostUpdate } from "../core/posts/post.schemas";
 import { createRepository as createRepositoryImpl, InMemoryPostsRepository as InMemoryPostsRepositoryImpl } from "./posts-repository";
 
 export interface IPostsRepository {
-  create(post: PostCreate): Promise<Post>;
+  create(post: PostCreate & { ownerId: string }): Promise<Post>;
   getById(id: string): Promise<Post | null>;
   list(page: number, pageSize: number): Promise<Post[]>;
   replace(id: string, post: Post): Promise<boolean>;

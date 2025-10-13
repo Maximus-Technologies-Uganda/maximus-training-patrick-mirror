@@ -1,17 +1,13 @@
-// Repository factory for TS callers. Returns in-memory by default.
-// Defers loading to the JS implementation that is covered by tests.
+// Repository factory for TS callers with proper typing
+import type { IPostsRepository } from "./posts.repository";
+import { createRepository as createTypedRepository, InMemoryPostsRepository as TypedInMemoryRepo } from "./posts.repository";
 
-import { createRepository as createPostsRepository, InMemoryPostsRepository } from "./posts-repository";
-
-export type AnyRepository = unknown;
-
-export function createRepository(): AnyRepository {
-  // Use JS implementation to avoid duplication and ensure identical behavior
-  return createPostsRepository();
+export function createRepository(): Promise<IPostsRepository> {
+  return createTypedRepository();
 }
 
-export function createInMemoryRepository(): AnyRepository {
-  return new InMemoryPostsRepository();
+export function createInMemoryRepository(): IPostsRepository {
+  return new TypedInMemoryRepo();
 }
 
 

@@ -6,6 +6,10 @@ const { execSync } = require('child_process');
 const { createApp } = require('../src/app');
 const { loadConfigFromEnv } = require('../src/config');
 const { createRepository } = require('../src/repositories/posts-repository');
+const { validToken } = require('./jwt.util.js');
+
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
+const cookie = (user) => `session=${validToken(user)}`;
 
 async function makeApp() {
   const base = loadConfigFromEnv();
@@ -33,7 +37,10 @@ describe('OpenAPI contract - /health', () => {
 describe('OpenAPI contract - /posts', () => {
   it('POST /posts success matches spec', async () => {
     const app = await makeApp();
-    const res = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+    const res = await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'T', content: 'C' });
     expect(res.status).toBe(201);
     // Response schema validation is handled via integration tests and Zod schemas
     expect(res.headers.location).toBe(`/posts/${res.body.id}`);
@@ -41,14 +48,20 @@ describe('OpenAPI contract - /posts', () => {
 
   it('POST /posts validation error matches spec', async () => {
     const app = await makeApp();
-    const res = await request(app).post('/posts').send({});
+    const res = await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({});
     expect(res.status).toBe(400);
     // Response schema validation is handled via integration tests and Zod schemas
   });
 
   it('GET /posts list matches spec', async () => {
     const app = await makeApp();
-    await request(app).post('/posts').send({ title: 'A', content: 'aaa' });
+    await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'A', content: 'aaa' });
     const res = await request(app).get('/posts');
     expect(res.status).toBe(200);
     // Response schema validation is handled via integration tests and Zod schemas
@@ -72,7 +85,10 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('GET /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    const created = await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
+    const created = await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Hello', content: 'World' });
     const res = await request(app).get(`/posts/${created.body.id}`);
     expect(res.status).toBe(200);
     // Response schema validation is handled via integration tests and Zod schemas
@@ -80,54 +96,88 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('PUT /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
-    const res = await request(app).put('/posts/test-id').send({ title: 'New', content: 'Text' });
+    await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Hello', content: 'World' });
+    const res = await request(app)
+      .put('/posts/test-id')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'New', content: 'Text' });
     expect(res.status).toBe(200);
   });
 
   it('PUT /posts/:id not found matches spec', async () => {
     const app = await makeApp();
-    const res = await request(app).put('/posts/missing').send({ title: 'New', content: 'Text' });
+    const res = await request(app)
+      .put('/posts/missing')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'New', content: 'Text' });
     expect(res.status).toBe(404);
   });
 
   it('PUT /posts/:id invalid body matches spec', async () => {
     const app = await makeApp();
-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
-    const res = await request(app).put('/posts/test-id').send({ title: '' });
+    await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Hello', content: 'World' });
+    const res = await request(app)
+      .put('/posts/test-id')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: '' });
     expect(res.status).toBe(400);
   });
 
   it('PATCH /posts/:id validation error matches spec', async () => {
     const app = await makeApp();
-    const res = await request(app).patch('/posts/test-id').send({});
+    const res = await request(app)
+      .patch('/posts/test-id')
+      .set('Cookie', cookie('user-A'))
+      .send({});
     expect(res.status).toBe(400);
   });
 
   it('PATCH /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
-    const res = await request(app).patch('/posts/test-id').send({ title: 'Updated' });
+    await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Hello', content: 'World' });
+    const res = await request(app)
+      .patch('/posts/test-id')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Updated' });
     expect(res.status).toBe(200);
   });
 
   it('PATCH /posts/:id not found matches spec', async () => {
     const app = await makeApp();
-    const res = await request(app).patch('/posts/missing').send({ title: 'Updated' });
+    const res = await request(app)
+      .patch('/posts/missing')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Updated' });
     expect(res.status).toBe(404);
   });
 
   it('DELETE /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
-    const res = await request(app).delete('/posts/test-id');
+    await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Hello', content: 'World' });
+    const res = await request(app)
+      .delete('/posts/test-id')
+      .set('Cookie', cookie('user-A'));
     expect(res.status).toBe(204);
     // No body expected for 204
   });
 
   it('DELETE /posts/:id not found matches spec', async () => {
     const app = await makeApp();
-    const res = await request(app).delete('/posts/missing');
+    const res = await request(app)
+      .delete('/posts/missing')
+      .set('Cookie', cookie('user-A'));
     expect(res.status).toBe(404);
   });
 });
