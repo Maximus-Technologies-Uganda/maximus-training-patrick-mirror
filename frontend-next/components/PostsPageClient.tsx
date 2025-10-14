@@ -63,10 +63,12 @@ export default function PostsPageClient({
   page: initialPage = 1,
   pageSize: initialPageSize = 10,
   q: incomingSearchQuery = "",
+  currentUserId,
 }: {
   page?: number;
   pageSize?: number;
   q?: string;
+  currentUserId?: string;
 }): React.ReactElement {
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
@@ -197,7 +199,7 @@ export default function PostsPageClient({
           ) : filteredItems.length === 0 ? (
             <EmptyState />
           ) : (
-            <PostsList items={filteredItems} />
+            <PostsList items={filteredItems} currentUserId={currentUserId} />
           )}
         </section>
 

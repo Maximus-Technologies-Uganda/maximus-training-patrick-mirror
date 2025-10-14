@@ -3,6 +3,7 @@ import { z } from "zod";
 // Core entity schemas
 export const PostSchema = z.object({
   id: z.string(),
+  ownerId: z.string().optional(),
   title: z.string(),
   content: z.string(),
   tags: z.array(z.string()).optional(),
