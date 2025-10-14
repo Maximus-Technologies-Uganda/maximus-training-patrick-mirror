@@ -62,13 +62,17 @@ export const requireAuth: RequestHandler = (req, res, next) => {
   const secret = getSessionSecret();
   const payload: Record<string, unknown> | null = token ? verifyJwt(token, secret) : null;
   if (!payload || typeof (payload as Record<string, unknown>).userId !== "string") {
-    const requestId = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
+    const requestId =
+      (req as unknown as { requestId?: string }).requestId ||
+      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     console.log(JSON.stringify({ level: "warn", message: "Auth failed", requestId }));
     return res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
   }
   (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };
   {
-    const requestId = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
+    const requestId =
+      (req as unknown as { requestId?: string }).requestId ||
+      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     const userId = (payload as { userId: string }).userId;
     console.log(JSON.stringify({ level: "info", message: "Auth ok", requestId, userId }));
   }

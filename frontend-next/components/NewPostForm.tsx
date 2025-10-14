@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import { mutatePostsPage1 } from "../src/lib/swr";
@@ -23,8 +23,8 @@ export default function NewPostForm({
   const [success, setSuccess] = useState<string | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
 
-  // Focus the success alert after it is rendered
-  useEffect(() => {
+  // Focus the success alert immediately after it is rendered
+  useLayoutEffect(() => {
     if (success) {
       successRef.current?.focus();
     }

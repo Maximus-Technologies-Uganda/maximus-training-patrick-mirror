@@ -496,3 +496,103 @@ jobs:
           node-version: '20'
       - name: Lint OpenAPI with Spectral
         run: npx -y @stoplight/spectral-cli@6 lint specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml --ruleset specs/spec/007-week-6-final-punchlist/contracts/.spectral.yaml --fail-severity=error
+
+  latency-snapshot:
+    name: Latency Snapshot (non-gating)
+    if: ${{ always() }}
+    needs: [aggregate-coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve Target URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          VAR_URL="${{ vars['PROD_API_URL'] }}"
+          SEC_URL="${{ secrets['PROD_API_URL'] }}"
+          if [ -n "$VAR_URL" ]; then
+            echo "TARGET_API_URL=$VAR_URL" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if [ -n "$SEC_URL" ]; then
+            echo "TARGET_API_URL=$SEC_URL" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          {
+            echo "### Latency Snapshot (/auth/login)"
+            echo
+            echo "_No TARGET_API_URL configured (vars or secrets). Skipping latency snapshot._"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Measure /auth/login p50/p95 latency
+        shell: bash
+        continue-on-error: true
+        env:
+          TARGET_API_URL: ${{ env.TARGET_API_URL }}
+          REQUESTS: '20'
+          USERNAME: 'alice'
+          PASSWORD: 'correct-password'
+        run: |
+          set -euo pipefail
+          URL="${TARGET_API_URL:-}"
+          if [ -z "$URL" ]; then
+            {
+              echo "### Latency Snapshot (/auth/login)"
+              echo
+              echo "_TARGET_API_URL not set; skipping latency snapshot._"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          ENDPOINT="${URL%/}/auth/login"
+          COUNT="${REQUESTS:-20}"
+          tmpfile=$(mktemp)
+          for i in $(seq 1 "$COUNT"); do
+            t=$(curl -s -o /dev/null -w '%{time_total}' -X POST "$ENDPOINT" \
+                 -H 'Content-Type: application/json' \
+                 --data "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}") || t="0"
+            echo "$t" >> "$tmpfile"
+          done
+
+          msfile=$(mktemp)
+          awk '{printf "%.3f\n", $1*1000}' "$tmpfile" | sort -n > "$msfile"
+          n=$(wc -l < "$msfile" | tr -d ' ')
+          if [ "$n" -eq 0 ]; then
+            {
+              echo "### Latency Snapshot (/auth/login)"
+              echo
+              echo "_No samples collected._"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ $((n%2)) -eq 1 ]; then
+            mid=$(( (n+1)/2 ))
+            p50=$(awk "NR==$mid{print $1}" "$msfile")
+          else
+            mid1=$(( n/2 ))
+            mid2=$(( mid1+1 ))
+            v1=$(awk "NR==$mid1{print $1}" "$msfile")
+            v2=$(awk "NR==$mid2{print $1}" "$msfile")
+            p50=$(awk -v a="$v1" -v b="$v2" 'BEGIN{ printf "%.3f", (a+b)/2 }')
+          fi
+
+          rank=$(awk -v n="$n" 'BEGIN{ printf "%d", (n*0.95==int(n*0.95)) ? int(n*0.95) : int(n*0.95)+1 }')
+          if [ "$rank" -lt 1 ]; then rank=1; fi
+          if [ "$rank" -gt "$n" ]; then rank="$n"; fi
+          p95=$(awk -v r="$rank" 'NR==r{print $1}' "$msfile")
+
+          {
+            echo "### Latency Snapshot (/auth/login)"
+            echo
+            echo "- Target: $ENDPOINT"
+            echo "- Samples: $n"
+            echo
+            echo "| Metric | ms |"
+            echo "| ------ | --- |"
+            echo "| p50 | $p50 |"
+            echo "| p95 | $p95 |"
+          } >> "$GITHUB_STEP_SUMMARY"
