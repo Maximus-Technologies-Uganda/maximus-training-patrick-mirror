@@ -9,7 +9,7 @@ function truncate(text: string, max = 200): string {
   return text.slice(0, max).trimEnd() + "…";
 }
 
-export default function PostsList({ items }: { items: Post[] }): React.ReactElement {
+export default function PostsList({ items, currentUserId }: { items: Post[]; currentUserId?: string }): React.ReactElement {
   if (!items.length) {
     return (
       <p className="text-gray-600" aria-live="polite">
@@ -27,6 +27,18 @@ export default function PostsList({ items }: { items: Post[] }): React.ReactElem
         >
           <h3 className="text-lg font-semibold text-gray-900">{post.title}</h3>
           <p className="mt-2 text-gray-700">{truncate(post.content)}</p>
+          <div className="mt-3 flex gap-2">
+            {currentUserId && post.ownerId && post.ownerId === currentUserId ? (
+              <>
+                <button type="button" className="rounded border border-gray-300 px-2 py-1" aria-label="Edit">
+                  Edit
+                </button>
+                <button type="button" className="rounded border border-red-300 bg-red-50 px-2 py-1 text-red-700" aria-label="Delete">
+                  Delete
+                </button>
+              </>
+            ) : null}
+          </div>
         </li>
       ))}
     </ul>

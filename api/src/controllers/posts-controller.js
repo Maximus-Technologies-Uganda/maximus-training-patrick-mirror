@@ -28,7 +28,13 @@ function createPostsController(postsService) {
       try {
         const userId = req.user && req.user.userId;
         if (!userId) { res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' }); return; }
-        const existing = await postsService.getById(req.params.id);
+        let existing;
+        try {
+          existing = await postsService.getById(req.params.id);
+        } catch (err) {
+          if (err && (err.name === 'NotFoundError' || err.code === 'POST_NOT_FOUND' || err.code === 'not_found')) { res.status(404).send(); return; }
+          throw err;
+        }
         if (!existing) { res.status(404).send(); return; }
         if (existing.ownerId !== userId) { res.status(403).json({ code: 'forbidden', message: 'Forbidden' }); return; }
         const updated = await postsService.replace(req.params.id, req.body);
@@ -39,7 +45,13 @@ function createPostsController(postsService) {
       try {
         const userId = req.user && req.user.userId;
         if (!userId) { res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' }); return; }
-        const existing = await postsService.getById(req.params.id);
+        let existing;
+        try {
+          existing = await postsService.getById(req.params.id);
+        } catch (err) {
+          if (err && (err.name === 'NotFoundError' || err.code === 'POST_NOT_FOUND' || err.code === 'not_found')) { res.status(404).send(); return; }
+          throw err;
+        }
         if (!existing) { res.status(404).send(); return; }
         if (existing.ownerId !== userId) { res.status(403).json({ code: 'forbidden', message: 'Forbidden' }); return; }
         const updated = await postsService.update(req.params.id, req.body);
@@ -50,7 +62,13 @@ function createPostsController(postsService) {
       try {
         const userId = req.user && req.user.userId;
         if (!userId) { res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' }); return; }
-        const existing = await postsService.getById(req.params.id);
+        let existing;
+        try {
+          existing = await postsService.getById(req.params.id);
+        } catch (err) {
+          if (err && (err.name === 'NotFoundError' || err.code === 'POST_NOT_FOUND' || err.code === 'not_found')) { res.status(404).send(); return; }
+          throw err;
+        }
         if (!existing) { res.status(404).send(); return; }
         if (existing.ownerId !== userId) { res.status(403).json({ code: 'forbidden', message: 'Forbidden' }); return; }
         await postsService.delete(req.params.id);

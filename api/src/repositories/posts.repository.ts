@@ -25,7 +25,7 @@ export class InMemoryPostsRepository implements IPostsRepository {
     this.impl = new InMemoryPostsRepositoryImpl() as unknown as IPostsRepository;
   }
 
-  create(post: PostCreate): Promise<Post> {
+  create(post: PostCreate & { ownerId: string }): Promise<Post> {
     return this.impl.create(post);
   }
 
