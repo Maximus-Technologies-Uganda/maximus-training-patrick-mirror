@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 
 // Prefer a server-only base URL for backend calls; never expose secrets to the client
 // Fallback to NEXT_PUBLIC_API_URL so server and client target the same host in local dev
@@ -75,14 +76,15 @@ async function fetchWithTimeoutAndRetries(
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = buildUpstreamUrl("/posts", request.nextUrl.searchParams);
   try {
-    const requestId = request.headers.get("x-request-id") || undefined;
+    const incomingReqId = request.headers.get("x-request-id") || "";
+    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
     const upstreamResponse = await fetchWithTimeoutAndRetries(
       upstreamUrl,
       {
         method: "GET",
         headers: {
           ...buildAuthHeaders(),
-          ...(requestId ? { "X-Request-Id": requestId } : {}),
+          "X-Request-Id": requestId,
         },
         cache: "no-store",
       },
@@ -91,13 +93,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
 
     const contentType = upstreamResponse.headers.get("content-type") || "";
+    const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
     const upstreamBodyText = await upstreamResponse.text();
     if (contentType.includes("application/json")) {
       try {
         const data = JSON.parse(upstreamBodyText);
         // If the upstream returned an array (including empty array), pass it through as JSON
         if (Array.isArray(data)) {
-          return NextResponse.json(data, { status: upstreamResponse.status });
+          return NextResponse.json(data, {
+            status: upstreamResponse.status,
+            headers: { "X-Request-Id": upstreamRequestId },
+          });
         }
         // Fall through for non-array JSON payloads below to preserve content-type and body
       } catch {
@@ -106,7 +112,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     return new NextResponse(upstreamBodyText, {
       status: upstreamResponse.status,
-      headers: { "content-type": contentType || "text/plain" },
+      headers: { "content-type": contentType || "text/plain", "X-Request-Id": upstreamRequestId },
     });
   } catch (error) {
     // Fallback for local/CI: return an empty list to keep UI flows working
@@ -121,15 +127,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         .slice(start, start + pageSize);
       const total = localPostsFallback.length;
       const hasNextPage = start + items.length < total;
-      return NextResponse.json(
-        { page, pageSize, hasNextPage, items },
-        { status: 200 },
-      );
+      const incomingReqId = request.headers.get("x-request-id") || "";
+      const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+      return NextResponse.json({ page, pageSize, hasNextPage, items }, {
+        status: 200,
+        headers: { "X-Request-Id": requestId },
+      });
     }
     console.error("GET /api/posts upstream error", { upstreamUrl, error });
+    const incomingReqId = request.headers.get("x-request-id") || "";
+    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
     return NextResponse.json(
       { error: { code: "UPSTREAM_FETCH_FAILED", message: "Failed to fetch posts" } },
-      { status: 500 },
+      { status: 500, headers: { "X-Request-Id": requestId } },
     );
   }
 }
@@ -144,14 +154,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
-    const requestId = request.headers.get("x-request-id") || undefined;
+    const incomingReqId = request.headers.get("x-request-id") || "";
+    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...buildAuthHeaders(),
         ...(incomingCookieHeader ? { Cookie: incomingCookieHeader } : {}),
-        ...(requestId ? { "X-Request-Id": requestId } : {}),
+        "X-Request-Id": requestId,
       },
       body: bodyText,
     });
@@ -161,12 +172,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const headers: Record<string, string> = {};
     const location = upstreamResponse.headers.get("Location");
     if (location) headers["Location"] = location;
+    const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
 
     if (contentType.includes("application/json")) {
       try {
         return NextResponse.json(JSON.parse(upstreamBodyText), {
           status: upstreamResponse.status,
-          headers,
+          headers: { ...headers, "X-Request-Id": upstreamRequestId },
         });
       } catch {
         // Fall through to raw response if JSON parsing fails
@@ -174,7 +186,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     return new NextResponse(upstreamBodyText, {
       status: upstreamResponse.status,
-      headers: { ...headers, "content-type": contentType || "text/plain" },
+      headers: { ...headers, "content-type": contentType || "text/plain", "X-Request-Id": upstreamRequestId },
     });
   } catch (error) {
     // Fallback for local/CI: accept creation and return a fabricated record
@@ -210,15 +222,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         };
         // Store for subsequent GET fallback reads
         localPostsFallback.unshift(created);
-        return NextResponse.json(created, { status: 201 });
+        const incomingReqId = request.headers.get("x-request-id") || "";
+        const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+        return NextResponse.json(created, { status: 201, headers: { "X-Request-Id": requestId } });
       } catch {
         // noop and fall through
       }
     }
     console.error("POST /api/posts upstream error", { upstreamUrl, error });
+    const incomingReqId = request.headers.get("x-request-id") || "";
+    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
     return NextResponse.json(
       { error: { code: "UPSTREAM_CREATE_FAILED", message: "Failed to create post" } },
-      { status: 500 },
+      { status: 500, headers: { "X-Request-Id": requestId } },
     );
   }
 }

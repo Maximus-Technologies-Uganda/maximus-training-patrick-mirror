@@ -40,7 +40,9 @@ router.post("/login", (req, res) => {
     (username === "admin" && password === "password") ||
     (username === "alice" && password === "correct-password");
   if (!isValid) {
-    const requestId = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
+    const requestId =
+      (req as unknown as { requestId?: string }).requestId ||
+      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     console.log(JSON.stringify({ level: "warn", message: "Invalid credentials", requestId }));
     return res.status(401).send();
   }
@@ -58,7 +60,9 @@ router.post("/login", (req, res) => {
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000,
   });
-  const requestId = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
+  const requestId =
+    (req as unknown as { requestId?: string }).requestId ||
+    ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
   console.log(JSON.stringify({ level: "info", message: "User authenticated successfully", requestId, userId }));
   return res.status(204).send();
 });
@@ -71,7 +75,9 @@ router.post("/logout", (req, res) => {
     sameSite: "lax",
     maxAge: 0,
   });
-  const requestId = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
+  const requestId =
+    (req as unknown as { requestId?: string }).requestId ||
+    ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
   try {
     const secret = getSessionSecret();
     const raw = (req as any).cookies?.session || (req.headers.cookie?.match(/(?:^|;)\s*session=([^;]+)/)?.[1] ?? "");

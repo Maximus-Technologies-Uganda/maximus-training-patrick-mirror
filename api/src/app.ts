@@ -1,7 +1,9 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
+// import morgan from "morgan";
+import { requestId as requestIdMiddleware } from "./middleware/requestId";
+import { requestLogger } from "./middleware/logger";
 import authRouter from "./core/auth/auth.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import { createPostsRoutes } from "./core/posts/posts.routes";
@@ -36,7 +38,13 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   });
   app.use(limiter);
   app.use(express.json({ limit: config.jsonLimit }));
-  app.use(morgan("dev"));
+  app.use(requestIdMiddleware);
+  app.use(requestLogger);
+
+  // Root - simple status JSON
+  app.get("/", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+  });
 
   // Health Check
   app.get("/health", (_req, res) => {

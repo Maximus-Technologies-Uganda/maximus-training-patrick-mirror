@@ -27,13 +27,13 @@ function requireAuth(req, res, next) {
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies.session;
   if (!token) {
-    const requestId = req.headers['x-request-id'];
+    const requestId = req.requestId || req.headers['x-request-id'];
     console.log(JSON.stringify({ level: 'warn', message: 'Auth failed', requestId }));
     return res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' });
   }
   const parts = token.split('.');
   if (parts.length !== 3) {
-    const requestId = req.headers['x-request-id'];
+    const requestId = req.requestId || req.headers['x-request-id'];
     console.log(JSON.stringify({ level: 'warn', message: 'Auth failed', requestId }));
     return res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' });
   }
@@ -44,7 +44,7 @@ function requireAuth(req, res, next) {
   const crypto = require('node:crypto');
   const expected = crypto.createHmac('sha256', secret).update(data).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   if (sig !== expected) {
-    const requestId = req.headers['x-request-id'];
+    const requestId = req.requestId || req.headers['x-request-id'];
     console.log(JSON.stringify({ level: 'warn', message: 'Auth failed', requestId }));
     return res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' });
   }
@@ -53,19 +53,19 @@ function requireAuth(req, res, next) {
   const header = safeJson(headerJson) || {};
   const payload = safeJson(payloadJson) || {};
   if (header.alg !== 'HS256' || typeof payload.userId !== 'string') {
-    const requestId = req.headers['x-request-id'];
+    const requestId = req.requestId || req.headers['x-request-id'];
     console.log(JSON.stringify({ level: 'warn', message: 'Auth failed', requestId }));
     return res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' });
   }
   const now = Math.floor(Date.now() / 1000);
   if (typeof payload.exp !== 'number' || now >= payload.exp) {
-    const requestId = req.headers['x-request-id'];
+    const requestId = req.requestId || req.headers['x-request-id'];
     console.log(JSON.stringify({ level: 'warn', message: 'Auth failed', requestId }));
     return res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' });
   }
   req.user = { userId: payload.userId };
   {
-    const requestId = req.headers['x-request-id'];
+    const requestId = req.requestId || req.headers['x-request-id'];
     console.log(JSON.stringify({ level: 'info', message: 'Auth ok', requestId, userId: payload.userId }));
   }
   next();
