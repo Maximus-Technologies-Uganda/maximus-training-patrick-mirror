@@ -16,7 +16,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   try {
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           (username === "alice" && password === "correct-password");
         if (!isValid) {
           const incomingReqId = request.headers.get("x-request-id") || "";
-          const requestId = incomingReqId.trim() ? incomingReqId : crypto.randomUUID();
+          const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
           return new NextResponse(null, { status: 401, headers: { "X-Request-Id": requestId } });
         }
         const userId = username === "admin" ? "admin-1" : "user-alice-1";
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const payload = enc(JSON.stringify({ userId, iat: Math.floor(Date.now() / 1000) }));
         const token = `${header}.${payload}.dev`;
         const incomingReqId = request.headers.get("x-request-id") || "";
-        const requestId = incomingReqId.trim() ? incomingReqId : crypto.randomUUID();
+        const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
         const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
         res.headers.set(
           "set-cookie",
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     console.error("POST /api/auth/login upstream error", { upstreamUrl, error });
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
     return NextResponse.json(
       { error: { code: "UPSTREAM_LOGIN_FAILED", message: "Failed to authenticate" } },
       { status: 500, headers: { "X-Request-Id": requestId } },

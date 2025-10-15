@@ -1,3 +1,39 @@
+# v7.0.0 – Week 7: Auth, Ownership, and Observability
+
+This release delivers foundational authentication (session cookie), ownership enforcement for all write operations, structured logging with request-id propagation, a readiness health endpoint, and a published API contract.
+
+## Highlights
+
+- API
+  - Username/password login issues HttpOnly session cookie; logout is idempotent
+  - Authorization middleware protects CUD; ownership enforced on update/delete (403 for non-owner)
+  - Read endpoints remain public
+  - `/health` readiness endpoint
+- Observability
+  - Structured JSON logs include `request-id` and `userId` (when authenticated)
+  - `X-Request-Id` propagation through web → API
+- Contracts
+  - Finalized OpenAPI (openapi-skeleton.yaml) and published as CI artifact `openapi-contract`
+- UI (Next.js)
+  - Login/Logout flows; ownership-aware controls (Edit/Delete hidden for non-owners)
+
+## Evidence Links
+
+- Spec PR: https://github.com/Maximus-Technologies-Uganda/Training/pull/474
+- Parent Linear issue: https://linear.app/maximusglobal/issue/DEV-516/auth-ownership-observability-feature
+- Quality Gate (latest on main): https://github.com/Maximus-Technologies-Uganda/Training/actions/workflows/quality-gate.yml?query=branch%3Amain
+- Review Packet (latest on main): https://github.com/Maximus-Technologies-Uganda/Training/actions/workflows/review-packet.yml?query=branch%3Amain
+- Live Cloud Run demo: https://maximus-training-frontend-673209018655.africa-south1.run.app
+- Release evidence: `docs/release-evidence/week-7/`
+
+## Scope
+
+- Phase 1: API authN/authZ, ownership, OpenAPI updates, tests
+- Phase 2: Next.js login/logout and ownership UI
+- Phase 3: Structured logging, request-id propagation, `/health`
+
+---
+
 # v6.0.1 – Week 6: Finish-to-Green follow-up
 
 This maintenance tag rolls forward the Week 6 Finish-to-Green release with finalized CI evidence links and artifact names. It does not change runtime code, only CI evidence surfacing and release metadata.

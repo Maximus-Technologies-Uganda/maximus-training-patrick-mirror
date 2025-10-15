@@ -399,6 +399,20 @@ jobs:
         with:
           node-version: '20'
 
+      # OpenAPI contract lint + artifact upload (Phase 4 evidence)
+      - name: Install Spectral (OpenAPI linter)
+        run: npm i -g @stoplight/spectral-cli
+
+      - name: Lint OpenAPI
+        run: spectral lint specs/spec-auth-ownership-observability/contracts/openapi-skeleton.yaml
+
+      - name: Upload OpenAPI contract
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-contract
+          path: specs/spec-auth-ownership-observability/contracts/openapi-skeleton.yaml
+          if-no-files-found: error
+
       - name: Generate review.md (env + commits + repo map)
         run: |
           {

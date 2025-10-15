@@ -9,7 +9,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = new URL("/auth/logout", API_BASE_URL).toString();
   try {
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
@@ -31,14 +31,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Fallback for local/CI: always clear the session cookie
     if (process.env.NODE_ENV !== "production") {
       const incomingReqId = request.headers.get("x-request-id") || "";
-      const requestId = incomingReqId.trim() ? incomingReqId : crypto.randomUUID();
+      const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
       const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
       res.headers.set("set-cookie", `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
       return res;
     }
     console.error("POST /api/auth/logout upstream error", { upstreamUrl, error });
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
     return NextResponse.json(
       { error: { code: "UPSTREAM_LOGOUT_FAILED", message: "Failed to logout" } },
       { status: 500, headers: { "X-Request-Id": requestId } },

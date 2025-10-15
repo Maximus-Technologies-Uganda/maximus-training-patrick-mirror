@@ -77,7 +77,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = buildUpstreamUrl("/posts", request.nextUrl.searchParams);
   try {
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const upstreamResponse = await fetchWithTimeoutAndRetries(
       upstreamUrl,
       {
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const total = localPostsFallback.length;
       const hasNextPage = start + items.length < total;
       const incomingReqId = request.headers.get("x-request-id") || "";
-      const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+      const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
       return NextResponse.json({ page, pageSize, hasNextPage, items }, {
         status: 200,
         headers: { "X-Request-Id": requestId },
@@ -136,7 +136,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     console.error("GET /api/posts upstream error", { upstreamUrl, error });
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     return NextResponse.json(
       { error: { code: "UPSTREAM_FETCH_FAILED", message: "Failed to fetch posts" } },
       { status: 500, headers: { "X-Request-Id": requestId } },
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // Store for subsequent GET fallback reads
         localPostsFallback.unshift(created);
         const incomingReqId = request.headers.get("x-request-id") || "";
-        const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+        const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
         return NextResponse.json(created, { status: 201, headers: { "X-Request-Id": requestId } });
       } catch {
         // noop and fall through
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     console.error("POST /api/posts upstream error", { upstreamUrl, error });
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId : randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     return NextResponse.json(
       { error: { code: "UPSTREAM_CREATE_FAILED", message: "Failed to create post" } },
       { status: 500, headers: { "X-Request-Id": requestId } },
