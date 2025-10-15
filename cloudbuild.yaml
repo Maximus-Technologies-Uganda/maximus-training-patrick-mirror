@@ -59,7 +59,7 @@ steps:
           --progress=plain \
           -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_API_SERVICE_NAME}:${BUILD_ID}" \
           -f api/Dockerfile \
-          .
+          api
 
   - name: 'gcr.io/cloud-builders/docker'
     id: Push API Image
