@@ -40,7 +40,8 @@ describe("Integration: create post and mutate cache", () => {
       }),
     );
 
-    render(<PostsPageClient />);
+    // Render as an authenticated user so the create form is visible
+    render(<PostsPageClient currentUserId="test-user-1" />);
 
     // Fill and submit the form
     const title = await screen.findByLabelText(/title/i);

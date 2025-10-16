@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getIdToken } from "../../../../server/auth/getIdToken";
 
 // Keep server-only API base URL; fallback to public var for local dev parity
 const API_BASE_URL: string =
@@ -17,12 +18,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const audience = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE || "";
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Request-Id": requestId,
+    };
+    if (audience) headers.Authorization = `Bearer ${await getIdToken(audience)}`;
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Request-Id": requestId,
-      },
+      headers,
       // Forward raw body text to preserve exact payload
       body: bodyText,
     });

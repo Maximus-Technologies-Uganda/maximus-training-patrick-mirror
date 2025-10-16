@@ -148,7 +148,7 @@ steps:
           --region="${_REGION}" \
           --platform=managed \
           --port=8080 \
-          --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$$API_URL" \
+          --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$$API_URL,ID_TOKEN_AUDIENCE=$$API_URL,IAP_AUDIENCE=" \
           --memory="${_FRONTEND_MEMORY}" \
           --cpu="${_FRONTEND_CPU}" \
           --min-instances="${_FRONTEND_MIN_INSTANCES}" \
@@ -162,6 +162,26 @@ steps:
           DEPLOY_ARGS+=(--allow-unauthenticated)
         fi
         gcloud --verbosity=debug "${DEPLOY_ARGS[@]}"
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Grant Frontend Invoker on API
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        set -euxo pipefail
+        FRONTEND_SA=${_SERVICE_ACCOUNT}
+        if [ -z "$FRONTEND_SA" ]; then
+          FRONTEND_SA=$(gcloud run services describe "${_FRONTEND_SERVICE_NAME}" --project "${PROJECT_ID}" --region "${_REGION}" --format='value(spec.template.spec.serviceAccountName)')
+        fi
+        if [ -n "$FRONTEND_SA" ]; then
+          gcloud run services add-iam-policy-binding "${_API_SERVICE_NAME}" \
+            --project "${PROJECT_ID}" --region "${_REGION}" \
+            --member "serviceAccount:$${FRONTEND_SA}" \
+            --role "roles/run.invoker" || true
+        else
+          echo "Could not determine frontend service account; skipping IAM grant" >&2
+        fi
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: Verify Frontend

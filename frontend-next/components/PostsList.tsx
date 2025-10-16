@@ -9,13 +9,41 @@ function truncate(text: string, max = 200): string {
   return text.slice(0, max).trimEnd() + "…";
 }
 
-export default function PostsList({ items, currentUserId }: { items: Post[]; currentUserId?: string }): React.ReactElement {
+export default function PostsList({ items, currentUserId, onChanged }: { items: Post[]; currentUserId?: string; onChanged?: () => void }): React.ReactElement {
   if (!items.length) {
     return (
       <p className="text-gray-600" aria-live="polite">
         No posts yet
       </p>
     );
+  }
+
+  async function onDelete(id: string): Promise<void> {
+    try {
+      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
+      if (res.status === 204 || res.status === 200) {
+        onChanged?.();
+      }
+    } catch {
+      // ignore for now; parent shows list state
+    }
+  }
+
+  async function onEdit(id: string): Promise<void> {
+    const title = prompt("New title?");
+    const content = title != null ? prompt("New content?") : null;
+    if (title == null || content == null) return;
+    try {
+      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title, content }),
+      });
+      if (res.ok) onChanged?.();
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -30,10 +58,10 @@ export default function PostsList({ items, currentUserId }: { items: Post[]; cur
           <div className="mt-3 flex gap-2">
             {currentUserId && post.ownerId && post.ownerId === currentUserId ? (
               <>
-                <button type="button" className="rounded border border-gray-300 px-2 py-1" aria-label="Edit">
+                <button type="button" className="rounded border border-gray-300 px-2 py-1" aria-label="Edit" onClick={() => onEdit(post.id)}>
                   Edit
                 </button>
-                <button type="button" className="rounded border border-red-300 bg-red-50 px-2 py-1 text-red-700" aria-label="Delete">
+                <button type="button" className="rounded border border-red-300 bg-red-50 px-2 py-1 text-red-700" aria-label="Delete" onClick={() => onDelete(post.id)}>
                   Delete
                 </button>
               </>

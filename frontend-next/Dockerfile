@@ -12,6 +12,7 @@ RUN npm ci --omit=optional --no-audit --no-fund --prefer-offline --progress=fals
 FROM node:20-bookworm-slim AS builder
 WORKDIR /repo
 COPY --from=deps /repo/node_modules ./node_modules
+COPY --from=deps /repo/frontend-next/node_modules ./frontend-next/node_modules
 COPY --from=deps /repo/package.json ./package.json
 COPY frontend-next ./frontend-next
 WORKDIR /repo/frontend-next

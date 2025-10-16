@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getIdToken } from "../../../server/auth/getIdToken";
 import { randomUUID } from "node:crypto";
 
 // Prefer a server-only base URL for backend calls; never expose secrets to the client
@@ -7,6 +8,11 @@ import { randomUUID } from "node:crypto";
 const API_BASE_URL: string =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 const API_SERVICE_TOKEN: string | undefined = process.env.API_SERVICE_TOKEN;
+// Use logical-OR so an empty IAP_AUDIENCE falls back to ID_TOKEN_AUDIENCE
+const IAP_AUDIENCE: string | undefined = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE;
+
+// Ensure Node.js runtime so google-auth-library can mint ID tokens on Cloud Run
+export const runtime = "nodejs";
 
 // Local in-process fallback store for CI/local when upstream API is unavailable
 // Use globalThis to better survive module reloads in dev
@@ -29,6 +35,12 @@ function buildAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = { Accept: "application/json" };
   if (API_SERVICE_TOKEN) headers["Authorization"] = `Bearer ${API_SERVICE_TOKEN}`;
   return headers;
+}
+
+async function buildIapAuthHeader(): Promise<Record<string, string>> {
+  if (!IAP_AUDIENCE) return {};
+  const idToken = await getIdToken(IAP_AUDIENCE);
+  return { Authorization: `Bearer ${idToken}` };
 }
 
 function buildUpstreamUrl(pathname: string, search: URLSearchParams): string {
@@ -84,6 +96,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         method: "GET",
         headers: {
           ...buildAuthHeaders(),
+          ...(await buildIapAuthHeader()),
           "X-Request-Id": requestId,
         },
         cache: "no-store",
@@ -161,6 +174,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       headers: {
         "Content-Type": "application/json",
         ...buildAuthHeaders(),
+        ...(await buildIapAuthHeader()),
         ...(incomingCookieHeader ? { Cookie: incomingCookieHeader } : {}),
         "X-Request-Id": requestId,
       },

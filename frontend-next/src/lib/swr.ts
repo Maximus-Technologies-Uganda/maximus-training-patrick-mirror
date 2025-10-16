@@ -40,7 +40,23 @@ export function usePostsList(params?: {
   const key = postsListKey(page, pageSize);
   const { data, isLoading, error } = useSWR<PostList>(
     key,
-    (url) => fetchJson(url, PostListSchema),
+    async (url) => {
+      const res = await fetch(url);
+      if (res.status === 401) {
+        // Treat unauthorized as an empty list for guests
+        return { page, pageSize, hasNextPage: false, items: [] } as PostList;
+      }
+      if (!res.ok) {
+        const message = `Request failed with ${res.status}`;
+        throw new Error(message);
+      }
+      const json = (await res.json()) as unknown;
+      const parsed = PostListSchema.safeParse(json);
+      if (!parsed.success) {
+        throw new Error("Response validation failed");
+      }
+      return parsed.data;
+    },
     {
       revalidateOnMount: true,
       revalidateIfStale: false,
