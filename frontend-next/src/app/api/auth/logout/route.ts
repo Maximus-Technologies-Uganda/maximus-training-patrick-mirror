@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getIdToken } from "../../../../server/auth/getIdToken";
 
 const API_BASE_URL: string =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -10,11 +11,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const audience = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE || "";
+    const headers: Record<string, string> = { "X-Request-Id": requestId };
+    if (audience) headers.Authorization = `Bearer ${await getIdToken(audience)}`;
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
-      headers: {
-        "X-Request-Id": requestId,
-      },
+      headers,
     });
     // Forward cookie clearing header
     const setCookie = upstreamResponse.headers.get("set-cookie");

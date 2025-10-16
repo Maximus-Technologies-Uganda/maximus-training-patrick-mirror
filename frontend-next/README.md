@@ -15,6 +15,8 @@ The browser makes calls to relative routes like `/api/posts`. Server Route Handl
 | `NEXT_PUBLIC_API_URL` | Local dev and SSR fallback | `http://localhost:3000` | Base URL for the API when running locally; also used by SSR if `API_BASE_URL` is not set. |
 | `API_BASE_URL` | Server-only (Cloud Run) | `https://maximus-training-api-673209018655.africa-south1.run.app` | Upstream API base URL used by server Route Handlers. |
 | `API_SERVICE_TOKEN` | Server-only (optional) | `eyJ...` | Optional bearer token sent as `Authorization: Bearer <token>` for service-to-service calls. |
+| `IAP_AUDIENCE` | Server-only (prod) | `<IAP OAuth Client ID>` | If set, server routes mint an IAP ID token per request and attach `Authorization: Bearer <token>` to upstream calls. |
+| `ID_TOKEN_AUDIENCE` | Server-only (alt) | `https://<cloud-run-api-url>` | Alternative to IAP: set audience to Cloud Run service URL for IAM-authenticated calls (no LB).
 | `PORT` | Runtime (container) | `8080` | Provided by Cloud Run; the app binds to this port. |
 
 ### Local Development
@@ -37,6 +39,9 @@ The browser makes calls to relative routes like `/api/posts`. Server Route Handl
    # API_BASE_URL=http://localhost:3000
    # Optional service-to-service token:
    # API_SERVICE_TOKEN=your-local-token
+# IAP/IAM (production only; typically not set for local dev):
+# IAP_AUDIENCE=
+# ID_TOKEN_AUDIENCE=
    ```
 4. Start the frontend:
    ```bash

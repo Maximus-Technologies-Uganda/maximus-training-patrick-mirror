@@ -11,7 +11,7 @@ import PageSizeSelect from "./PageSizeSelect";
 import PaginationControls from "./PaginationControls";
 import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
-import { usePostsList } from "../src/lib/swr";
+import { usePostsList, mutatePostsPage1 } from "../src/lib/swr";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SWRCacheValue = State<unknown, any>;
@@ -169,6 +169,14 @@ export default function PostsPageClient({
     [],
   );
 
+  const onListChanged = async (): Promise<void> => {
+    await mutatePostsPage1(pageSize);
+    if (page !== 1) {
+      setPage(1);
+      updateUrlQuery({ page: 1 });
+    }
+  };
+
   return (
     <SWRConfig value={swrValue}>
       <main className="mx-auto max-w-3xl p-4">
@@ -187,9 +195,15 @@ export default function PostsPageClient({
           <SearchInput value={searchQuery} onChange={onChangeSearchQuery} />
         </div>
 
-        <div className="mt-6">
-          <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
-        </div>
+        {currentUserId ? (
+          <section className="mt-6" aria-label="Create new post">
+            <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
+          </section>
+        ) : (
+          <p className="mt-6 text-center text-gray-600">
+            <a href="/login" className="underline">Log in</a> to create a post.
+          </p>
+        )}
 
         <section className="mt-6" aria-label="Posts list">
           {error ? (
@@ -199,7 +213,7 @@ export default function PostsPageClient({
           ) : filteredItems.length === 0 ? (
             <EmptyState />
           ) : (
-            <PostsList items={filteredItems} currentUserId={currentUserId} />
+            <PostsList items={filteredItems} currentUserId={currentUserId} onChanged={onListChanged} />
           )}
         </section>
 
