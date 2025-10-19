@@ -48,7 +48,7 @@ try {
 
   fs.writeFileSync(todoPath, lines.join("\n"), "utf8");
   process.exit(0);
-} catch (err) {
+} catch (_err) {
   // On any error, write back original and exit; rebase will continue unchanged
   try { fs.writeFileSync(todoPath, fs.readFileSync(todoPath, "utf8"), "utf8"); } catch {}
   process.exit(0);

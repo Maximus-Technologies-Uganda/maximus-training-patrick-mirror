@@ -10,8 +10,16 @@ function isHttps(request: NextRequest): boolean {
   try {
     const xfProto = (request.headers.get("x-forwarded-proto") || "").toLowerCase();
     if (xfProto.includes("https")) return true;
-    // @ts-ignore
-    const proto = request.nextUrl && typeof request.nextUrl.protocol === "string" ? request.nextUrl.protocol : "";
+    const proto = ((): string => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const anyReq = request as any;
+        const p = anyReq?.nextUrl?.protocol;
+        return typeof p === "string" ? p : "";
+      } catch {
+        return "";
+      }
+    })();
     if (proto === "https:") return true;
   } catch {}
   return false;

@@ -17,15 +17,17 @@ describe("getIdToken", () => {
   });
 
   it("throws when missing bearer", async () => {
-    // Override mock to return bad headers
-    const { GoogleAuth } = await import("google-auth-library");
-    // @ts-ignore
-    GoogleAuth.mockImplementation(() => ({
-      getIdTokenClient: vi.fn().mockResolvedValue({
-        getRequestHeaders: vi.fn().mockResolvedValue({}),
-      }),
+    // Reset and override mock to return bad headers using vi.doMock
+    vi.resetModules();
+    vi.doMock("google-auth-library", () => ({
+      GoogleAuth: vi.fn().mockImplementation(() => ({
+        getIdTokenClient: vi.fn().mockResolvedValue({
+          getRequestHeaders: vi.fn().mockResolvedValue({}),
+        }),
+      })),
     }));
-    await expect(getIdToken("aud"))
-      .rejects.toThrow(/Failed to obtain ID token/);
+    // Re-import getIdToken to pick up new mock
+    const { getIdToken: getIdTokenRemocked } = await import("./getIdToken");
+    await expect(getIdTokenRemocked("aud")).rejects.toThrow(/Failed to obtain ID token/);
   });
 });

@@ -23,7 +23,7 @@ beforeEach(() => {
 import { GET } from "./route";
 
 function makeRequest(url: string): NextRequest {
-  // @ts-ignore: Minimal NextRequest-like shape sufficient for handler under test
+  // Minimal NextRequest-like shape sufficient for handler under test
   return {
     headers: new Map(),
     nextUrl: new URL(url, "http://localhost:3000"),
@@ -34,9 +34,9 @@ describe("GET /api/posts route handler", () => {
   it("proxies JSON arrays from upstream as JSON", async () => {
     const req = makeRequest("/api/posts?page=1&pageSize=5");
     const res = await GET(req);
-    // @ts-ignore: Accessing NextResponse internals for assertion in test
+    // Accessing NextResponse internals for assertion in test
     expect(res.status).toBe(200);
-    // @ts-ignore: Accessing NextResponse internals for assertion in test
+    // Accessing NextResponse internals for assertion in test
     expect(res.headers.get("X-Request-Id")).toBeTruthy();
   });
 
@@ -46,7 +46,7 @@ describe("GET /api/posts route handler", () => {
     });
     const req = makeRequest("/api/posts?page=1&pageSize=1");
     const res = await GET(req);
-    // @ts-ignore: Accessing NextResponse internals for assertion in test
+    // Accessing NextResponse internals for assertion in test
     expect(res.status).toBe(200);
   });
 
@@ -61,15 +61,15 @@ describe("GET /api/posts route handler", () => {
     });
     const req = makeRequest("/api/posts?page=1&pageSize=1");
     const res = await GET(req);
-    // @ts-ignore: Accessing NextResponse internals for assertion in test
+    // Accessing NextResponse internals for assertion in test
     expect(res.status).toBe(200);
-    // @ts-ignore: Accessing NextResponse internals for assertion in test
+    // Accessing NextResponse internals for assertion in test
     expect(res.headers.get("content-type")).toContain("application/json");
   });
 
   it("filters Cookie header to only session on POST", async () => {
     // Arrange a fake upstream that echoes cookies back
-    (global.fetch as unknown as Mock).mockImplementationOnce(async (url, init) => {
+    (global.fetch as unknown as Mock).mockImplementationOnce(async (_url, _init) => {
       return {
         status: 201,
         headers: new Map([["content-type", "application/json"]]),
@@ -84,7 +84,6 @@ describe("GET /api/posts route handler", () => {
     } as unknown as NextRequest;
     const { POST } = await import("./route");
     const res = await POST(req);
-    // @ts-ignore
     expect(res.status).toBe(201);
   });
 });

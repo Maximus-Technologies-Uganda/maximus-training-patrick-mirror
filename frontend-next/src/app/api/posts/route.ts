@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 
 // Local in-process fallback store for CI/local when upstream API is unavailable
 // Use globalThis to better survive module reloads in dev
-const localPostsFallback: Array<{
+type LocalPost = {
   id: string;
   ownerId?: string;
   title: string;
@@ -25,10 +25,11 @@ const localPostsFallback: Array<{
   published: boolean;
   createdAt: string;
   updatedAt: string;
-}> = (globalThis as unknown as { __LOCAL_POSTS__?: Array<any> }).__LOCAL_POSTS__ ?? [];
+};
+const localPostsFallback: Array<LocalPost> = (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ ?? [];
 // Initialize global store if missing
-if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<any> }).__LOCAL_POSTS__) {
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<any> }).__LOCAL_POSTS__ = localPostsFallback;
+if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__) {
+  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ = localPostsFallback;
 }
 
 function buildAuthHeaders(): Record<string, string> {
@@ -96,7 +97,10 @@ async function fetchWithTimeoutAndRetries(
   }
   const err = lastError instanceof Error ? lastError : new Error(String(lastError || "Request failed"));
   // Attach context for upstream logs without leaking secrets
-  (err as any).upstream = { url, method: (init as any)?.method || "GET" };
+  (err as Error & { upstream?: { url: string; method: string } }).upstream = {
+    url,
+    method: (init as RequestInit & { method?: string })?.method || "GET",
+  };
   throw err;
 }
 

@@ -47,6 +47,29 @@ jobs:
         id: tests
         run: npm test
 
+      - name: Parse Coverage Summary
+        if: always()
+        shell: bash
+        run: |
+          set -e
+          FILE="frontend-next/coverage/coverage-summary.json"
+          if [ ! -f "$FILE" ]; then
+            echo "No frontend-next coverage summary found at $FILE; skipping totals." >&2
+            exit 0
+          fi
+          if command -v jq >/dev/null 2>&1; then
+            STATEMENTS=$(jq -r '.total.statements.pct // empty' "$FILE")
+            LINES=$(jq -r '.total.lines.pct // empty' "$FILE")
+          else
+            # Fallback to node if jq is unavailable
+            read -r STATEMENTS LINES <<< "$(node -e "const fs=require('fs');try{const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));const s=j?.total?.statements?.pct;const l=j?.total?.lines?.pct;process.stdout.write(((s??'')+' '+(l??'')))}catch(e){process.stdout.write(' ')}" "$FILE")"
+          fi
+          {
+            echo "## Coverage Totals"
+            echo "- Statements: ${STATEMENTS:-N/A}%"
+            echo "- Lines: ${LINES:-N/A}%"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: 'Extract Test Coverage'
         id: coverage
         if: always() && steps.tests.outcome == 'success'
@@ -76,6 +99,32 @@ jobs:
 
       - name: 'Ensure frontend-next dependencies'
         run: npm ci --workspace="frontend-next"
+
+      - name: Upload frontend-next coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend-next
+          path: |
+            frontend-next/coverage/**
+
+      - name: Upload a11y HTML report (frontend-next)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-frontend-next
+          path: |
+            docs/ReviewPacket/a11y/html/**
+          if-no-files-found: warn
+
+      - name: Upload API contract
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-api
+          path: |
+            api/openapi.json
+          if-no-files-found: warn
 
       - name: 'Cache Playwright browsers' # <-- T061: Caches Playwright binaries
         uses: 'actions/cache@v4'

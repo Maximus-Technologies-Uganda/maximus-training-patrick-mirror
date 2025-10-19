@@ -9,22 +9,26 @@ export default defineConfig({
     include: [
       "src/**/*.test.{ts,tsx}",
       "src/**/*.spec.{ts,tsx}",
+      // Only include explicit Vitest tests from tests/; avoid Playwright specs
       "tests/**/*.test.{ts,tsx}",
-      "tests/**/*.spec.{ts,tsx}",
+      "tests/contract.*.spec.ts",
     ],
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/test/setup.ts",
-    environmentMatchGlobs: [["tests/openapi.validation.test.ts", "node"]],
+    environmentMatchGlobs: [
+      ["tests/openapi.validation.test.ts", "node"],
+      ["src/app/api/**", "node"],
+      ["src/app/**/__tests__/**", "node"]
+    ],
     exclude: [
       "node_modules/**",
       // Exclude Playwright specs from Vitest collection
       "tests/playwright/**",
-      "tests/**/*.spec.ts",
     ],
     coverage: {
       provider: "v8",
-      reporter: ["text", "html", "json-summary", "lcov"],
+      reporter: ["json-summary", "lcov", "html"],
       reportsDirectory: "./coverage",
       include: [
         "src/app/**/*.{ts,tsx}",
