@@ -1,22 +1,7 @@
-"use client";
-
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import React from "react";
+import { redirect } from "next/navigation";
 
 export default function Home(): React.ReactElement {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace("/posts");
-  }, [router]);
-
-  return (
-    <main style={{ padding: "2rem" }}>
-      <p>Redirecting to /posts…</p>
-      <p>
-        If you are not redirected automatically, go to <Link href="/posts">/posts</Link>.
-      </p>
-    </main>
-  );
+  // Perform a server-side redirect for reliability in tests and production.
+  redirect("/posts");
 }

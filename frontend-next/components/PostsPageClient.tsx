@@ -12,6 +12,7 @@ import PaginationControls from "./PaginationControls";
 import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
 import { usePostsList, mutatePostsPage1 } from "../src/lib/swr";
+import type { Post, PostList } from "../src/lib/schemas";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SWRCacheValue = State<unknown, any>;
@@ -64,11 +65,15 @@ export default function PostsPageClient({
   pageSize: initialPageSize = 10,
   q: incomingSearchQuery = "",
   currentUserId,
+  initialData,
+  initialHasNextPage,
 }: {
   page?: number;
   pageSize?: number;
   q?: string;
   currentUserId?: string;
+  initialData?: Post[];
+  initialHasNextPage?: boolean;
 }): React.ReactElement {
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
@@ -112,9 +117,39 @@ export default function PostsPageClient({
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const { data, isLoading, error } = usePostsList({ page, pageSize });
+  const initialItems: Post[] = useMemo(
+    () =>
+      (initialData ?? []).map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        published: p.published,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        ownerId: p.ownerId,
+        tags: p.tags,
+      })),
+    [initialData],
+  );
+  const initialList: PostList | undefined = useMemo(() => {
+    if (!initialData || initialData.length === 0) return undefined;
+    return { page: initialPage, pageSize: initialPageSize, hasNextPage: Boolean(initialHasNextPage), items: initialItems };
+  }, [initialData, initialItems, initialPage, initialPageSize, initialHasNextPage]);
 
-  const statusMessage = useMemo(() => (isLoading ? "Loading posts…" : ""), [isLoading]);
+  const shouldUseFallback = useMemo(
+    () => Boolean(initialList && page === initialPage && pageSize === initialPageSize),
+    [initialList, page, pageSize, initialPage, initialPageSize],
+  );
+
+  const { data, isLoading, error } = usePostsList({
+    page,
+    pageSize,
+    fallbackData: shouldUseFallback ? initialList : undefined,
+  });
+
+  const effectiveItems: Post[] = data?.items ?? (shouldUseFallback ? initialItems : []);
+
+  const statusMessage = useMemo(() => (isLoading && effectiveItems.length === 0 ? "Loading posts…" : ""), [isLoading, effectiveItems.length]);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -157,7 +192,7 @@ export default function PostsPageClient({
     }
   };
 
-  const filteredItems = useMemo(() => filterPostsByQuery(data?.items ?? [], searchQuery), [data?.items, searchQuery]);
+  // removed unused filteredItems; filtering applied at render using effectiveItems
 
   // Keep SWR cache stable across renders for this page instance (keys must be strings per SWR types)
   const cacheRef = useRef<Cache<unknown> | null>(null);
@@ -206,20 +241,23 @@ export default function PostsPageClient({
         )}
 
         <section className="mt-6" aria-label="Posts list">
-          {error ? (
+          {error && effectiveItems.length === 0 ? (
             <ErrorState />
-          ) : isLoading ? (
+          ) : isLoading && effectiveItems.length === 0 ? (
             <p className="text-gray-600">Loading…</p>
-          ) : filteredItems.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <PostsList items={filteredItems} currentUserId={currentUserId} onChanged={onListChanged} />
-          )}
+          ) : (() => {
+            const items = filterPostsByQuery(effectiveItems, searchQuery);
+            return items.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <PostsList items={items} currentUserId={currentUserId} onChanged={onListChanged} />
+            );
+          })()}
         </section>
 
         <PaginationControls
           page={page}
-          hasNextPage={Boolean(data?.hasNextPage)}
+          hasNextPage={Boolean(data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false))}
           onChangePage={onChangePage}
         />
       </main>

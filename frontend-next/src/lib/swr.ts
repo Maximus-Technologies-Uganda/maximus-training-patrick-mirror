@@ -21,6 +21,8 @@ function postsListKey(page: number, pageSize: number): string {
 export function usePostsList(params?: {
   page?: number;
   pageSize?: number;
+  fallbackData?: PostList;
+  revalidateOnMount?: boolean;
 }): { data: PostList | undefined; isLoading: boolean; error: unknown } {
   const page = params?.page ?? 1;
   const pageSize = params?.pageSize ?? 10;
@@ -45,7 +47,8 @@ export function usePostsList(params?: {
       return parsed.data;
     },
     {
-      revalidateOnMount: true,
+      fallbackData: params?.fallbackData,
+      revalidateOnMount: params?.revalidateOnMount ?? (params?.fallbackData ? false : true),
       revalidateIfStale: false,
       dedupingInterval: 0,
       shouldRetryOnError: false,

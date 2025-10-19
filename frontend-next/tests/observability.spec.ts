@@ -11,7 +11,7 @@ test.describe("observability", () => {
       }
     });
 
-    await page.goto("/posts");
+    await page.goto("/posts?page=2");
 
     const apiResp = await apiResponsePromise;
     const requestId = await apiResp.headerValue("x-request-id");

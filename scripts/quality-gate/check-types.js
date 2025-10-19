@@ -38,11 +38,15 @@ const PROJECTS = [
 ];
 
 function parseArgs(argv) {
-  /** @type {{ bail: boolean }} */
+  /** @type {{ bail: boolean, projects?: string[] }} */
   const cfg = { bail: false };
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--bail") cfg.bail = true;
+    if (arg.startsWith("--projects=")) {
+      const value = arg.slice("--projects=".length).trim();
+      if (value) cfg.projects = value.split(",").map((s) => s.trim()).filter(Boolean);
+    }
   }
   return cfg;
 }
@@ -134,12 +138,20 @@ function parseTscErrorCount(stdout, stderr) {
 }
 
 async function main() {
-  const { bail } = parseArgs(process.argv);
+  const args = parseArgs(process.argv);
+  const { bail } = args;
 
   /** @type {Array<{ name: string, skipped: boolean, errors: number, warnings: number, durationMs: number, exitCode: number, command: string }>} */
   const projectResults = [];
 
-  for (const proj of PROJECTS) {
+  /** @type {typeof PROJECTS} */
+  const selected = (function selectProjects() {
+    if (!args.projects || args.projects.length === 0) return PROJECTS;
+    const wanted = new Set(args.projects);
+    return PROJECTS.filter((p) => wanted.has(p.name));
+  })();
+
+  for (const proj of selected) {
     if (!fileExists(proj.tsconfig)) {
       projectResults.push({
         name: proj.name,
