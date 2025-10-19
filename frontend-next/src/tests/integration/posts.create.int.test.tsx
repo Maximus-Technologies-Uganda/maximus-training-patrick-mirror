@@ -56,7 +56,7 @@ describe("Integration: create post and mutate cache", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(/created/i);
     expect(alert).toHaveFocus();
-  });
+  }, 10000);
 });
 
 

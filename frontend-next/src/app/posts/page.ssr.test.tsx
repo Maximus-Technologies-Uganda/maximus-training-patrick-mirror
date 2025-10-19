@@ -1,4 +1,3 @@
-import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Stub next/headers.cookies to control session decoding in the server component

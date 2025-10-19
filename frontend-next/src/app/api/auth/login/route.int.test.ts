@@ -8,7 +8,6 @@ function makeRequest(body: object, extraHeaders: Record<string, string> = {}): N
     headers: { "Content-Type": "application/json", ...extraHeaders },
     body: JSON.stringify(body),
   });
-  // @ts-ignore: NextResponse expects a framework-internal NextRequest; minimal Request is sufficient for handler
   return req as unknown as NextRequest;
 }
 
@@ -16,9 +15,7 @@ describe("POST /api/auth/login route handler (fallback)", () => {
   it("returns 204 and sets cookie on valid local creds", async () => {
     vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("upstream down"));
     const res = await POST(makeRequest({ username: "admin", password: "password" }));
-    // @ts-ignore: Accessing NextResponse internals for assertion in test
     expect(res.status).toBe(204);
-    // @ts-ignore: Accessing NextResponse internals for assertion in test
     expect(res.headers.get("set-cookie")).toBeTruthy();
   });
 
@@ -29,7 +26,6 @@ describe("POST /api/auth/login route handler (fallback)", () => {
       { "x-forwarded-proto": "https" },
     );
     const res = await POST(req);
-    // @ts-ignore
     const setCookie = res.headers.get("set-cookie") || "";
     expect(setCookie).toMatch(/;\s*Secure/);
   });

@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: Maximus Training API
+  version: 1.0.0
+  description: API for managing blog posts during training.
+paths: {}
+components:
+  schemas: {}
+  securitySchemes: {}
+

@@ -1,23 +1,10 @@
 import useSWR, { mutate } from "swr";
-import { z } from "zod";
+// zod imported elsewhere; no direct use here
 
 import { getBaseUrl } from "./config";
 import { PostListSchema, type PostList } from "./schemas";
 
-// Generic JSON fetcher with Zod validation
-async function fetchJson<T>(url: string, schema: z.ZodType<T>): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const message = `Request failed with ${res.status}`;
-    throw new Error(message);
-  }
-  const json = (await res.json()) as unknown;
-  const parsed = schema.safeParse(json);
-  if (!parsed.success) {
-    throw new Error("Response validation failed");
-  }
-  return parsed.data;
-}
+// Removed unused fetchJson helper
 
 // SWR key builder
 function postsListKey(page: number, pageSize: number): string {

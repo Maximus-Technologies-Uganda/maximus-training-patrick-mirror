@@ -13,7 +13,7 @@ const { URL } = require("url");
 function extractLinks(markdownText) {
   const links = new Set();
   const mdLinkRegex = /\[[^\]]*\]\((https?:[^)\s]+)\)/g; // [text](http...)
-  const bareUrlRegex = /(https?:\/\/[\w.-]+(?:\/[\w\-._~:?#\[\]@!$&'()*+,;=%]*)?)/g;
+  const bareUrlRegex = /(https?:\/\/[\w.-]+(?:\/[\w\-._~:?#[\]@!$&'()*+,;=%]*)?)/g;
 
   let match;
   while ((match = mdLinkRegex.exec(markdownText))) {

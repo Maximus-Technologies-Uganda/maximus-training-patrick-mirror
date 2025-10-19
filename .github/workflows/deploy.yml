@@ -1,0 +1,142 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: proj-app-dev
+  REGION: africa-south1
+
+jobs:
+  deploy:
+    name: Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Setup gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and deploy via Cloud Build
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild.yaml \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            .
+
+      - name: Resolve live URL
+        id: live
+        shell: bash
+        env:
+          VAR_LIVE_URL: ${{ vars.LIVE_URL }}
+          SEC_LIVE_URL: ${{ secrets.LIVE_URL }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          GH_REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          url="${VAR_LIVE_URL:-}"
+          if [ -z "$url" ]; then url="${SEC_LIVE_URL}"; fi
+          if [ -z "$url" ]; then
+            # On default-branch pushes, absence of LIVE_URL violates FR-010; fail the job
+            if [ "${GH_EVENT_NAME:-}" = "push" ] && [ "${GH_REF_NAME:-}" = "main" ]; then
+              echo "LIVE_URL not configured via org/repo vars or secrets. Set LIVE_URL to satisfy FR-010." >&2
+              exit 1
+            fi
+            if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "url=" >> "$GITHUB_OUTPUT"; fi
+            exit 0
+          fi
+          if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "url=$url" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Post-deploy smoke check
+        shell: bash
+        env:
+          URL: ${{ steps.live.outputs.url }}
+          SMOKE_URL: ${{ vars.SMOKE_URL }}
+          SEC_SMOKE_URL: ${{ secrets.SMOKE_URL }}
+          SMOKE_PATH: ${{ vars.SMOKE_PATH }}
+          SMOKE_ATTEMPTS: ${{ vars.SMOKE_ATTEMPTS }}
+          SMOKE_DELAY_SECS: ${{ vars.SMOKE_DELAY_SECS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${URL:-}" ]; then
+            echo "No LIVE_URL configured; skipping smoke check" >&2
+            exit 0
+          fi
+          # Compose probe URL
+          probe="${SMOKE_URL:-}"
+          if [ -z "$probe" ]; then probe="${SEC_SMOKE_URL:-}"; fi
+          if [ -z "$probe" ]; then
+            path="${SMOKE_PATH:-/api/health}"
+            # join base URL and path safely
+            base="${URL%/}"
+            suffix="/${path#/}"
+            probe="${base}${suffix}"
+          fi
+          echo "Probing: $probe"
+
+          attempts="${SMOKE_ATTEMPTS:-12}"
+          delay="${SMOKE_DELAY_SECS:-5}"
+          last_code=0
+          for i in $(seq 1 "$attempts"); do
+            # Try unauthenticated first
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$probe") || code=0
+            echo "Attempt $i/$attempts unauth: $code"
+            if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
+              exit 0
+            fi
+            # If unauthorized, try with an identity token against the service audience (base URL)
+            if [ "$code" = "401" ] || [ "$code" = "403" ]; then
+              echo "Retrying with identity token..."
+              token=$(gcloud auth print-identity-token --audiences="$URL" 2>/dev/null || true)
+              if [ -n "$token" ]; then
+                code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $token" "$probe") || code=0
+                echo "Attempt $i/$attempts auth: $code"
+                if [ "$code" -ge 200 ] && [ "$code" -lt 400 ]; then
+                  exit 0
+                fi
+              else
+                echo "Failed to mint identity token; continuing to retry unauthenticated" >&2
+              fi
+            fi
+            last_code="$code"
+            sleep "$delay"
+          done
+          echo "Smoke check failed for $probe (status=$last_code)" >&2
+          exit 1
+
+      - name: Annotate job summary
+        if: always()
+        run: |
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              echo "### Deploy Summary"
+              echo
+              echo "- Pipeline run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              url="${{ steps.live.outputs.url }}"
+              if [ -n "$url" ]; then
+                echo "- Live URL: $url"
+              else
+                echo "- Live URL: (not configured)"
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+

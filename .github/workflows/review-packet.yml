@@ -321,7 +321,10 @@ jobs:
         run: npx --yes playwright install chromium
 
       - name: Run a11y Playwright tests
-        run: npx playwright test --reporter=list,html
+        run: |
+          # Ensure Playwright HTML report lands in the Review Packet path with index.html
+          export PLAYWRIGHT_HTML_REPORT=docs/ReviewPacket/a11y/html
+          npx playwright test --reporter=list,html
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 

@@ -25,7 +25,8 @@ describe("LoginPage", () => {
     render(<LoginPage />);
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: "admin" } });
     fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "password" } });
-    fireEvent.submit(screen.getByRole("button", { name: /sign in/i }));
+    // Click the button to submit; submit() can be flaky with nested form/button
+    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
     await waitFor(() => expect(assign).toHaveBeenCalled());
   });
 });

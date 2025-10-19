@@ -6,12 +6,12 @@ import { describe, it } from "vitest";
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+// App proxies the upstream API via Next.js Route Handlers at /api/posts
 
 describe("A11y: /posts page states have basic roles/labels", () => {
   it("renders loading in aria-live region, then shows content with proper roles", async () => {
     server.use(
-      http.get(`${baseUrl}/posts`, () => {
+      http.get("*/api/posts", () => {
         return HttpResponse.json(
           {
             page: 1,
