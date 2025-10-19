@@ -80,6 +80,7 @@ stopwatch/tests/report.txt
 # Agent artifacts
 .cursor/
 
-# Accidental Git status output file
-
-
+# Review Packet artifacts
+docs/ReviewPacket/*
+!docs/ReviewPacket/README.md
+docs/review-packet.zip

@@ -82,7 +82,7 @@ function evaluateCoverage(coverageSummary) {
   if (!coverageSummary || !coverageSummary.total) {
     return {
       passed: false,
-      reason: "Missing coverage summary",
+      reason: `Missing coverage summary (${COVERAGE_FILE})`,
       metrics: null,
     };
   }
@@ -170,7 +170,24 @@ function evaluateSecurity(security) {
   if (!security) {
     return { passed: true, reason: "No security summary found (treat as pass)", metrics: null };
   }
-  // Expect structure: { critical: number, high: number, medium: number, low: number }
+  // Expect structure: { critical: number, high: number, medium: number, low: number, tool?: string, failed?: boolean }
+  const tool = String(security.tool || "").toLowerCase();
+  const failedFlag = Boolean(security.failed);
+  if (tool === "fallback" || failedFlag) {
+    return {
+      passed: false,
+      reason: "Security audit unavailable (fallback or failed)",
+      metrics: {
+        critical: Number(security.critical || 0),
+        high: Number(security.high || 0),
+        medium: Number(security.medium || 0),
+        low: Number(security.low || 0),
+        tool,
+        failed: failedFlag,
+      },
+    };
+  }
+
   const critical = Number(security.critical || 0);
   const high = Number(security.high || 0);
   const passed = critical === 0 && high === 0;
@@ -261,9 +278,16 @@ function applyExceptions(dimensionKey, result, governance) {
   }
 
   if (dimensionKey === "security" && result.passed === false) {
+    const lowerReason = String(result.reason || "").toLowerCase();
     const secEx = approved.find((ex) => ex.waiveAllCurrentFindings === true);
     const allowLevels = approved.flatMap((ex) => Array.isArray(ex.allowLevels) ? ex.allowLevels : []);
+    const allowFallback = approved.find((ex) => ex.allowFallback === true);
+    // Waive high/critical findings
     if (secEx || allowLevels.includes("high") || allowLevels.includes("critical")) {
+      return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
+    }
+    // Waive audit fallback/unavailable when explicitly approved
+    if (allowFallback && (lowerReason.includes("fallback") || lowerReason.includes("unavailable"))) {
       return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
     }
   }
@@ -343,6 +367,26 @@ function main() {
     generatedAt: new Date().toISOString(),
   };
   fs.writeFileSync(GATE_SUMMARY, JSON.stringify(summary, null, 2) + "\n", "utf8");
+
+  // Emit Coverage Totals block to stdout for CI summary (Spec label must be exact)
+  if (results.coverage && results.coverage.metrics) {
+    const c = results.coverage.metrics;
+    console.log(
+      "\nCoverage Totals\n" +
+      `Statements: ${Number(c.statements ?? 0).toFixed(1)}%\n` +
+      `Branches: ${Number(c.branches ?? 0).toFixed(1)}%\n` +
+      `Functions: ${Number(c.functions ?? 0).toFixed(1)}%\n` +
+      `Lines: ${Number(c.lines ?? 0).toFixed(1)}%`
+    );
+  }
+
+  // Emit concise single-line gate summary for CI parsers
+  try {
+    const flatFailures = decision.failures && decision.failures.length
+      ? decision.failures.join(", ")
+      : "none";
+    console.log(`Gate Decision: ${decision.passed ? "PASS" : "FAIL"}; Failures: ${flatFailures}`);
+  } catch { /* noop */ }
 
   if (!decision.passed) {
     console.error("Quality Gate: FAIL");

@@ -4,9 +4,9 @@ const path = require("path");
 
 // Test targets: scripts/quality-gate/build-review-packet.js (T031)
 // References:
-// - Spec FR-004: specs/005-week-6-finishers/spec.md
-// - Plan: specs/005-week-6-finishers/plan.md
-// - Tasks: specs/005-week-6-finishers/tasks.md (T031, T060)
+// - Spec FR-006 (week 7.5): specs/007-spec/week-7.5-finishers/spec.md
+// - Plan: specs/007-spec/week-7.5-finishers/plan.md
+// - Tasks: specs/007-spec/week-7.5-finishers/tasks.md
 
 const SCRIPT_PATH = path.join(process.cwd(), "scripts", "quality-gate", "build-review-packet.js");
 const REVIEW_DIR = path.join(process.cwd(), "docs", "ReviewPacket");
@@ -145,16 +145,16 @@ describe("build-review-packet (unit)", () => {
     expect(manifest.inputs.security).toBe("security/audit-summary.json");
     expect(manifest.inputs.governance).toBe("governance/report.json");
 
-    // references include spec/plan/tasks and resolved contract path
-    expect(manifest.references.spec).toBe(path.join(root, "specs", "005-week-6-finishers", "spec.md"));
-    expect(manifest.references.plan).toBe(path.join(root, "specs", "005-week-6-finishers", "plan.md"));
-    expect(manifest.references.tasks).toBe(path.join(root, "specs", "005-week-6-finishers", "tasks.md"));
-    expect(manifest.references.contractSourceOfTruth).toBe(path.join(root, "api", "openapi.json"));
+    // references include spec/plan/tasks and resolved contract path (repo-relative)
+    expect(manifest.references.spec.replace(/\\/g, "/")).toBe(["specs","007-spec","week-7.5-finishers","spec.md"].join("/"));
+    expect(manifest.references.plan.replace(/\\/g, "/")).toBe(["specs","007-spec","week-7.5-finishers","plan.md"].join("/"));
+    expect(manifest.references.tasks.replace(/\\/g, "/")).toBe(["specs","007-spec","week-7.5-finishers","tasks.md"].join("/"));
+    expect(manifest.references.contractSourceOfTruth.replace(/\\/g, "/")).toBe(["api","openapi.json"].join("/"));
     expect(manifest.references.demoUrl).toBe("https://demo.example");
 
     // packet metadata
-    expect(manifest.packet.baseDir).toBe(REVIEW_DIR);
-    expect(manifest.packet.zipPath).toBe(ZIP_PATH);
+    expect(manifest.packet.baseDir.replace(/\\/g, "/")).toBe(["docs","ReviewPacket"].join("/"));
+    expect(manifest.packet.zipPath.replace(/\\/g, "/")).toBe(["docs","review-packet.zip"].join("/"));
     expect(Array.isArray(manifest.packet.included)).toBe(true);
     // at least the 8 known files (gate summary + 7 dimensions) should be included
     expect(manifest.packet.included.length).toBeGreaterThanOrEqual(8);

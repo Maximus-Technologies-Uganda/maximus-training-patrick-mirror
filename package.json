@@ -32,7 +32,11 @@
     "build:frontend": "npm --workspace frontend ci --no-audit --no-fund && npm exec -w frontend vite build",
     "build:api": "npm --workspace api ci --no-audit --no-fund && npm --workspace api run build",
     "test:playwright:frontend-next": "npm --prefix frontend-next ci && npx --prefix frontend-next playwright install --with-deps chromium && npx --prefix frontend-next @playwright/test test",
-    "prepare": "node -e \"try{require('child_process').execSync('husky install',{stdio:'inherit'})}catch(e){console.log('Skipping husky install:', (e&&e.message)||e)}\""
+    "prepare": "node -e \"try{require('child_process').execSync('husky install',{stdio:'inherit'})}catch(e){console.log('Skipping husky install:', (e&&e.message)||e)}\"",
+    "security:audit": "node scripts/generate-security-audit.js",
+    "governance:report": "node scripts/generate-governance-report.js --out governance/report.json",
+    "gate:aggregate": "node scripts/quality-gate/aggregate-results.js",
+    "gate:packet": "node scripts/quality-gate/build-review-packet.js --force"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",

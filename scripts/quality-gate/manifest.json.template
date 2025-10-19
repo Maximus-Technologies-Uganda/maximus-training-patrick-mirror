@@ -16,7 +16,7 @@
     "contract": { "allowBreaking": false },
     "security": { "denyLevels": ["high", "critical"] }
   },
-  "notes": "Template paths are relative to this file at scripts/quality-gate/."
+  "notes": "Template paths are relative to this file at scripts/quality-gate/. The build script resolves and overrides inputs to repo-relative paths in docs/ReviewPacket/manifest.json."
 }
 
 

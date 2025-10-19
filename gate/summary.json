@@ -1,13 +1,6 @@
 {
-  "decision": "FAIL",
-  "failures": [
-    "coverage",
-    "tests",
-    "a11y",
-    "contract",
-    "security",
-    "governance"
-  ],
+  "decision": "PASS",
+  "failures": [],
   "thresholds": {
     "coverage": {
       "statements": 60,
@@ -29,14 +22,23 @@
   ],
   "results": {
     "coverage": {
-      "passed": false,
-      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\coverage\\coverage-summary.json",
-      "metrics": null
+      "passed": true,
+      "reason": "Coverage thresholds met",
+      "metrics": {
+        "statements": 66.8,
+        "branches": 53.8,
+        "functions": 68.46,
+        "lines": 67.81
+      }
     },
     "tests": {
-      "passed": false,
-      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\test-results\\summary.json",
-      "metrics": null
+      "passed": true,
+      "reason": "All required tests passed",
+      "metrics": {
+        "total": 4,
+        "passed": 4,
+        "failed": 0
+      }
     },
     "typecheck": {
       "passed": true,
@@ -46,25 +48,37 @@
       }
     },
     "a11y": {
-      "passed": false,
-      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\a11y\\report.json",
-      "metrics": null
+      "passed": true,
+      "reason": "No critical/serious a11y violations",
+      "metrics": {
+        "totalViolations": 0,
+        "criticalOrSerious": 0
+      }
     },
     "contract": {
-      "passed": false,
-      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\contract\\report.json",
-      "metrics": null
+      "passed": true,
+      "reason": "No breaking contract mismatches",
+      "metrics": {
+        "breaking": 0
+      }
     },
     "security": {
-      "passed": false,
-      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\security\\audit-summary.json",
-      "metrics": null
+      "passed": true,
+      "reason": "No high/critical vulnerabilities",
+      "metrics": {
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      }
     },
     "governance": {
-      "passed": false,
-      "reason": "Missing required artifact: C:\\Users\\LENOVO\\Training\\governance\\report.json",
-      "metrics": null
+      "passed": true,
+      "reason": "Governance checks passed",
+      "metrics": {
+        "reasons": []
+      }
     }
   },
-  "generatedAt": "2025-09-30T09:24:40.763Z"
+  "generatedAt": "2025-10-17T20:35:50.575Z"
 }

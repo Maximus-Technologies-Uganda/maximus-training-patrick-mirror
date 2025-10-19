@@ -1,6 +1,10 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  esbuild: {
+    jsx: "automatic",
+    jsxInject: 'import React from "react"'
+  },
   test: {
     include: [
       "src/**/*.test.{ts,tsx}",
@@ -22,6 +26,16 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "json-summary", "lcov"],
       reportsDirectory: "./coverage",
+      include: [
+        "src/app/**/*.{ts,tsx}",
+        "src/server/**/*.{ts,tsx}",
+        "src/lib/**/*.{ts,tsx}"
+      ],
+      exclude: [
+        "src/tests/**",
+        "tests/**",
+        "**/*.d.ts"
+      ]
     },
   },
 });

@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Review Packet Manifest",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "coverage": { "type": ["string", "null"] },
+        "tests": { "type": ["string", "null"] },
+        "typecheck": { "type": ["string", "null"] },
+        "a11y": { "type": ["string", "null"] },
+        "contract": { "type": ["string", "null"] },
+        "security": { "type": ["string", "null"] },
+        "governance": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "required": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "thresholds": { "type": "object" },
+    "references": {
+      "type": "object",
+      "properties": {
+        "demoUrl": { "type": "string" },
+        "contractSourceOfTruth": { "type": "string" },
+        "spec": { "type": "string" },
+        "plan": { "type": "string" },
+        "tasks": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "packet": {
+      "type": "object",
+      "properties": {
+        "baseDir": { "type": "string" },
+        "zipPath": { "type": "string" },
+        "included": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source": { "type": "string" },
+              "dest": { "type": "string" }
+            },
+            "required": ["source", "dest"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["baseDir", "zipPath", "included"],
+      "additionalProperties": true
+    },
+    "generatedAt": { "type": "string" },
+    "missingRequired": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["inputs", "thresholds", "references", "packet"],
+  "additionalProperties": true
+}
+
+

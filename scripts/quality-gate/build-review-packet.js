@@ -8,11 +8,9 @@ const childProcess = require("child_process");
 /**
  * Build Review Packet (T031)
  *
- * Source references:
- *  - Tasks: C:/Users/LENOVO/Training/specs/005-week-6-finishers/tasks.md (T031)
- *  - Spec:  C:/Users/LENOVO/Training/specs/005-week-6-finishers/spec.md (FR-004)
- *  - Plan:  C:/Users/LENOVO/Training/specs/005-week-6-finishers/plan.md (Gate reporting & artifacts)
- *  - Contract (source of truth): C:/Users/LENOVO/Training/api/openapi.json
+ * Source references (repo-relative):
+ *  - Spec/Plan/Tasks: specs/007-spec/week-7.5-finishers/{spec.md,plan.md,tasks.md}
+ *  - Contract (source of truth): api/openapi.json
  *
  * Responsibilities:
  *  - Collect Quality Gate artifacts (coverage, tests, typecheck, a11y, contract, security, governance, gate summary)
@@ -28,6 +26,7 @@ const SCRIPTS_DIR = __dirname;
 const REVIEW_DIR = path.join(REPO_ROOT, "docs", "ReviewPacket");
 const ZIP_PATH = path.join(REPO_ROOT, "docs", "review-packet.zip");
 const TEMPLATE_PATH = path.join(SCRIPTS_DIR, "manifest.json.template");
+const SCHEMAS_DIR = path.join(SCRIPTS_DIR, "schemas");
 
 const PATHS = {
   coverage: path.join(REPO_ROOT, "coverage", "coverage-summary.json"),
@@ -74,7 +73,10 @@ function copyFileIfExists(absSourcePath, reviewRelativePath, copiedList) {
     const destAbs = path.join(REVIEW_DIR, reviewRelativePath);
     ensureDir(path.dirname(destAbs));
     fs.copyFileSync(absSourcePath, destAbs);
-    copiedList.push({ source: absSourcePath, dest: destAbs });
+    // Record repo-relative source and ReviewPacket-relative destination for portability
+    const sourceRel = path.relative(REPO_ROOT, absSourcePath).replace(/\\/g, "/");
+    const destRel = reviewRelativePath.replace(/\\/g, "/");
+    copiedList.push({ source: sourceRel, dest: destRel });
     return true;
   } catch (err) {
     console.warn(`WARN: Failed to copy ${absSourcePath}: ${err && err.message ? err.message : String(err)}`);
@@ -94,9 +96,9 @@ function resolveContractPath(userProvided) {
 }
 
 function buildManifest(templateObj, args, includedFiles) {
-  const specPath = path.join(REPO_ROOT, "specs", "005-week-6-finishers", "spec.md");
-  const planPath = path.join(REPO_ROOT, "specs", "005-week-6-finishers", "plan.md");
-  const tasksPath = path.join(REPO_ROOT, "specs", "005-week-6-finishers", "tasks.md");
+  const specRel = path.join("specs", "007-spec", "week-7.5-finishers", "spec.md");
+  const planRel = path.join("specs", "007-spec", "week-7.5-finishers", "plan.md");
+  const tasksRel = path.join("specs", "007-spec", "week-7.5-finishers", "tasks.md");
 
   const resolvedInputs = {
     coverage: fs.existsSync(PATHS.coverage) ? "coverage/coverage-summary.json" : null,
@@ -107,6 +109,9 @@ function buildManifest(templateObj, args, includedFiles) {
     security: fs.existsSync(PATHS.security) ? "security/audit-summary.json" : null,
     governance: fs.existsSync(PATHS.governance) ? "governance/report.json" : null,
   };
+
+  const contractAbs = resolveContractPath(args.contract);
+  const contractRel = contractAbs ? path.relative(REPO_ROOT, contractAbs).replace(/\\/g, "/") : "";
 
   const manifest = {
     $schema: templateObj && templateObj.$schema ? templateObj.$schema : undefined,
@@ -128,15 +133,19 @@ function buildManifest(templateObj, args, includedFiles) {
     },
     references: {
       demoUrl: args.demoUrl || "",
-      contractSourceOfTruth: resolveContractPath(args.contract),
-      spec: specPath,
-      plan: planPath,
-      tasks: tasksPath,
+      contractSourceOfTruth: contractRel,
+      spec: specRel.replace(/\\/g, "/"),
+      plan: planRel.replace(/\\/g, "/"),
+      tasks: tasksRel.replace(/\\/g, "/"),
     },
     packet: {
-      baseDir: REVIEW_DIR,
-      zipPath: ZIP_PATH,
+      baseDir: path.join("docs", "ReviewPacket").replace(/\\/g, "/"),
+      zipPath: path.join("docs", "review-packet.zip").replace(/\\/g, "/"),
       included: includedFiles.map((f) => ({ source: f.source, dest: f.dest })),
+    },
+    git: {
+      branch: tryReadGitRef(),
+      commit: tryReadGitSha(),
     },
     generatedAt: new Date().toISOString(),
   };
@@ -153,6 +162,30 @@ function removeIfExists(filePath) {
   try {
     if (fs.existsSync(filePath)) fs.rmSync(filePath, { recursive: true, force: true });
   } catch {/* no-op */}
+}
+
+function tryReadGitSha() {
+  try {
+    const head = fs.readFileSync(path.join(REPO_ROOT, ".git", "HEAD"), "utf8").trim();
+    if (head.startsWith("ref: ")) {
+      const refPath = head.slice(5).trim();
+      const refAbs = path.join(REPO_ROOT, ".git", refPath);
+      return fs.existsSync(refAbs) ? fs.readFileSync(refAbs, "utf8").trim() : "";
+    }
+    return head;
+  } catch {
+    return "";
+  }
+}
+
+function tryReadGitRef() {
+  try {
+    const head = fs.readFileSync(path.join(REPO_ROOT, ".git", "HEAD"), "utf8").trim();
+    if (head.startsWith("ref: ")) return head.slice(5).trim();
+    return "";
+  } catch {
+    return "";
+  }
 }
 
 function zipWithArchiverOrCli() {
@@ -207,6 +240,16 @@ function main() {
   const manifestOut = path.join(REVIEW_DIR, "manifest.json");
   writeJson(manifestOut, manifest);
 
+  // Best-effort: copy manifest schema alongside output for reviewers
+  try {
+    const schemaSrc = path.join(SCHEMAS_DIR, "manifest.schema.json");
+    if (fs.existsSync(schemaSrc)) {
+      const schemaDest = path.join(REVIEW_DIR, "schemas", "manifest.schema.json");
+      ensureDir(path.dirname(schemaDest));
+      fs.copyFileSync(schemaSrc, schemaDest);
+    }
+  } catch { /* ignore */ }
+
   // Enforce required artifact presence: fail fast in CI when required are missing
   /** @type {string[]} */
   const requiredDims = Array.isArray(template.required) && template.required.length
@@ -215,12 +258,22 @@ function main() {
   const missing = requiredDims.filter((dim) => !manifest.inputs || !manifest.inputs[dim]);
   if (missing.length > 0) {
     // Augment manifest with missing list for debuggability without changing schema requirements
+    const augmented = { ...manifest, missingRequired: missing };
     try {
-      const augmented = { ...manifest, missingRequired: missing };
       writeJson(manifestOut, augmented);
     } catch { /* ignore */ }
     console.error("Review Packet build failed: missing required artifacts:");
     for (const dim of missing) console.error(` - ${dim}`);
+    // Log references to aid debugging in CI
+    try {
+      const refs = augmented && augmented.references ? augmented.references : (manifest && manifest.references ? manifest.references : {});
+      console.error("References:");
+      console.error(` - spec: ${refs.spec || "(unset)"}`);
+      console.error(` - plan: ${refs.plan || "(unset)"}`);
+      console.error(` - tasks: ${refs.tasks || "(unset)"}`);
+      console.error(` - contract: ${refs.contractSourceOfTruth || "(unset)"}`);
+      if (args.demoUrl) console.error(` - demoUrl: ${args.demoUrl}`);
+    } catch { /* ignore */ }
     process.exit(1);
     return;
   }
