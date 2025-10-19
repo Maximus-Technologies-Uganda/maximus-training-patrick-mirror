@@ -1,10 +1,10 @@
-# Security Exceptions Log (Week 6 Policy)
+# Security Exceptions Log (Week 7.5 Policy)
 
 This document tracks any approved temporary exceptions to security, accessibility, contract, coverage, or type-check gates that would otherwise fail CI. It aligns with the requirements in:
 
-- Spec: `specs/005-week-6-finishers/spec.md` (see FR-011, FR-012)
-- Plan: `specs/005-week-6-finishers/plan.md`
-- Tasks: `specs/005-week-6-finishers/tasks.md`
+- Spec: `specs/007-spec/week-7.5-finishers/spec.md` (see FR-009–FR-013)
+- Plan: `specs/007-spec/week-7.5-finishers/plan.md`
+- Tasks: `specs/007-spec/week-7.5-finishers/tasks.md`
 
 All exceptions must be time-bound, include an owner and mitigation plan, and have mentor approval evidenced in the PR (approval review or an explicit "Exception Approved" comment referencing the entry).
 
@@ -17,8 +17,6 @@ All exceptions must be time-bound, include an owner and mitigation plan, and hav
 - Gate Behavior: Exceptions may allow CI to pass while the issue is mitigated. The governance report should mirror active exceptions so gate aggregation can record/audit waivers (see `scripts/quality-gate/aggregate-results.js`).
 
 ## Exception Entry Template
-
-Copy the template below and fill all fields. Keep the entry concise and auditable.
 
 ```yaml
 id: EX-YYYYMMDD-###          # unique id (date + sequence)

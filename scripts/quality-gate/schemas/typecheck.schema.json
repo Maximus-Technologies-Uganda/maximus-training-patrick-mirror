@@ -5,7 +5,34 @@
   "type": "object",
   "properties": {
     "errors": { "type": "integer", "minimum": 0 },
-    "warnings": { "type": "integer", "minimum": 0 }
+    "warnings": { "type": "integer", "minimum": 0 },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "skipped": { "type": "boolean" },
+          "errors": { "type": "integer", "minimum": 0 },
+          "warnings": { "type": "integer", "minimum": 0 },
+          "durationMs": { "type": "integer", "minimum": 0 },
+          "exitCode": { "type": "integer" },
+          "command": { "type": "string" }
+        },
+        "required": ["name", "skipped"],
+        "additionalProperties": true
+      }
+    },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "specRefs": {
+      "type": "object",
+      "properties": {
+        "tasks": { "type": "string" },
+        "plan": { "type": "string" },
+        "spec": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
   },
   "required": ["errors"],
   "additionalProperties": true

@@ -8,7 +8,7 @@ const { spawn } = require("child_process");
 /**
  * TypeScript Type-Check Runner (T004)
  *
- * Goals (from specs/005-week-6-finishers/spec.md and plan.md):
+ * Goals (from specs/007-spec/week-7.5-finishers/spec.md and plan.md):
  * - Run the TypeScript compiler across the monorepo (api, frontend-next)
  * - Produce a JSON summary at <repo>/typecheck/results.json conforming to
  *   scripts/quality-gate/schemas/typecheck.schema.json
@@ -181,9 +181,9 @@ async function main() {
     projects: projectResults,
     generatedAt: new Date().toISOString(),
     specRefs: {
-      tasks: path.join(REPO_ROOT, "specs", "005-week-6-finishers", "tasks.md"),
-      plan: path.join(REPO_ROOT, "specs", "005-week-6-finishers", "plan.md"),
-      spec: path.join(REPO_ROOT, "specs", "005-week-6-finishers", "spec.md"),
+      tasks: path.join(REPO_ROOT, "specs", "007-spec", "week-7.5-finishers", "tasks.md"),
+      plan: path.join(REPO_ROOT, "specs", "007-spec", "week-7.5-finishers", "plan.md"),
+      spec: path.join(REPO_ROOT, "specs", "007-spec", "week-7.5-finishers", "spec.md"),
     },
   };
 

@@ -11,7 +11,18 @@
       "items": {
         "type": "object",
         "properties": {
-          "dimension": { "type": "string", "enum": ["coverage", "tests", "typecheck", "a11y", "contract", "security", "governance"] },
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "coverage",
+              "tests",
+              "typecheck",
+              "a11y",
+              "contract",
+              "security",
+              "governance"
+            ]
+          },
           "scope": { "type": "string" },
           "approved": { "type": "boolean" },
           "approvedBy": { "type": "string" },
@@ -25,12 +36,15 @@
           "allowBreaking": { "type": "boolean" },
           "allowCoverageBelowThreshold": { "type": "boolean" }
         },
-        "required": ["dimension", "approved"]
+        "required": ["dimension", "approved"],
+        "additionalProperties": true
       },
       "default": []
-    }
+    },
+    "generatedAt": { "type": "string", "format": "date-time" }
   },
-  "required": ["passed"]
+  "required": ["passed"],
+  "additionalProperties": true
 }
 
 

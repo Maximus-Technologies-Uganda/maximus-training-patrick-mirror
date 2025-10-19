@@ -6,6 +6,17 @@ const API_BASE_URL: string =
 
 export const runtime = "nodejs";
 
+function isHttps(request: NextRequest): boolean {
+  try {
+    const xfProto = (request.headers.get("x-forwarded-proto") || "").toLowerCase();
+    if (xfProto.includes("https")) return true;
+    // @ts-ignore
+    const proto = request.nextUrl && typeof request.nextUrl.protocol === "string" ? request.nextUrl.protocol : "";
+    if (proto === "https:") return true;
+  } catch {}
+  return false;
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = new URL("/auth/logout", API_BASE_URL).toString();
   try {
@@ -18,11 +29,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       method: "POST",
       headers,
     });
-    // Forward cookie clearing header
-    const setCookie = upstreamResponse.headers.get("set-cookie");
-    if (setCookie) {
+    // Forward cookie clearing headers; upstream may clear multiple cookies
+    const getSetCookieValues = (h: Headers): string[] => {
+      try {
+        const anyHeaders = h as unknown as { getSetCookie?: () => string[]; raw?: () => Record<string, string[]> };
+        if (typeof anyHeaders.getSetCookie === "function") {
+          const arr = anyHeaders.getSetCookie();
+          if (Array.isArray(arr) && arr.length) return arr;
+        }
+        if (typeof anyHeaders.raw === "function") {
+          const raw = anyHeaders.raw();
+          const arr = raw && raw["set-cookie"]; // node-fetch style
+          if (Array.isArray(arr) && arr.length) return arr as string[];
+        }
+      } catch {}
+      const single = h.get("set-cookie");
+      return single ? [single] : [];
+    };
+    const setCookieValues = getSetCookieValues(upstreamResponse.headers);
+    if (setCookieValues.length > 0) {
       const res = new NextResponse(null, { status: upstreamResponse.status });
-      res.headers.set("set-cookie", setCookie);
+      for (const cookie of setCookieValues) res.headers.append("set-cookie", cookie);
       const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
       res.headers.set("X-Request-Id", upstreamRequestId);
       return res;
@@ -35,12 +62,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const incomingReqId = request.headers.get("x-request-id") || "";
       const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
       const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
-      res.headers.set("set-cookie", `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+      const secureAttr = isHttps(request) ? "; Secure" : "";
+      res.headers.set("set-cookie", `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttr}`);
       return res;
     }
-    console.error("POST /api/auth/logout upstream error", { upstreamUrl, error });
+    // Structured error for logs/telemetry
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const errInfo = error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : String(error);
+    console.error(JSON.stringify({ level: "error", msg: "POST /api/auth/logout upstream error", upstreamUrl, requestId, error: errInfo }));
     return NextResponse.json(
       { error: { code: "UPSTREAM_LOGOUT_FAILED", message: "Failed to logout" } },
       { status: 500, headers: { "X-Request-Id": requestId } },

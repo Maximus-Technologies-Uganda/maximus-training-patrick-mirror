@@ -3,7 +3,7 @@
 
 // T042: Basic governance report
 // Reads root package-lock.json and prints production dependencies and versions.
-// Usage: node scripts/generate-governance-report.js [--json]
+// Usage: node scripts/generate-governance-report.js [--json] [--out <path>]
 
 const fs = require("fs");
 const path = require("path");
@@ -85,7 +85,53 @@ function collectProdDeps(lock) {
   return collectedNameToVersion;
 }
 
+// Compute optional warnings about dependency version drift across workspaces
+// Flags packages that appear with multiple versions and especially different MAJOR versions
+function computeVersionDriftWarnings(collectedNameToVersion) {
+  /** @type {{ package: string, versions: string[], majors: string[], majorDrift: boolean }[]} */
+  const drift = [];
+
+  const toMajors = (versions) => {
+    return versions
+      .map((v) => String(v).trim())
+      .filter(Boolean)
+      .map((v) => v.split(".")[0]) // naive major extraction, resilient to non-semver by taking first token
+      .map((m) => (m && /\d+/.test(m) ? m.replace(/[^0-9]/g, "") : m))
+      .filter(Boolean);
+  };
+
+  for (const [name, meta] of Object.entries(collectedNameToVersion || {})) {
+    const raw = String(meta && meta.version ? meta.version : "");
+    const versions = raw.split(" | ").map((s) => s.trim()).filter(Boolean);
+    if (versions.length <= 1) continue;
+    const majors = Array.from(new Set(toMajors(versions)));
+    const majorDrift = majors.length > 1 && majors.every((m) => /\d+/.test(m));
+    drift.push({ package: name, versions, majors, majorDrift });
+  }
+
+  return {
+    versionDrift: drift,
+    summary: {
+      packagesWithDrift: drift.length,
+      packagesWithMajorDrift: drift.filter((d) => d.majorDrift).length,
+    },
+  };
+}
+
+function parseArgs(argv) {
+  /** @type {{ json: boolean, out: string, failOnMajorDrift: boolean }} */
+  const cfg = { json: false, out: "", failOnMajorDrift: false };
+  for (let i = 2; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === "--json") cfg.json = true;
+    else if (a === "--out" && i + 1 < argv.length) { cfg.out = String(argv[++i] || ""); }
+    else if (a === "--fail-on-major-drift") { cfg.failOnMajorDrift = true; }
+  }
+  return cfg;
+}
+
 function main() {
+  const args = parseArgs(process.argv);
   const root = process.cwd();
   const lockPath = path.join(root, "package-lock.json");
   if (!fs.existsSync(lockPath)) {
@@ -95,10 +141,35 @@ function main() {
 
   const lock = readJson(lockPath);
   const prod = collectProdDeps(lock);
-  const isJson = process.argv.includes("--json");
+  const warnings = computeVersionDriftWarnings(prod);
+  const isJson = args.json;
+  const outPath = args.out;
 
-  if (isJson) {
-    console.log(JSON.stringify({ dependencies: prod }, null, 2));
+  if (isJson || outPath) {
+    const payload = {
+      passed: true,
+      approvedExceptions: [],
+      dependencies: prod,
+      warnings,
+      generatedAt: new Date().toISOString(),
+    };
+    if (args.failOnMajorDrift && warnings && warnings.summary && warnings.summary.packagesWithMajorDrift > 0) {
+      payload.passed = false;
+      payload.reasons = [
+        `Major version drift detected for ${warnings.summary.packagesWithMajorDrift} package(s)`
+      ];
+    }
+    if (outPath) {
+      const absOut = path.isAbsolute(outPath) ? outPath : path.join(root, outPath);
+      const dir = path.dirname(absOut);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(absOut, JSON.stringify(payload, null, 2) + "\n", "utf8");
+      console.log(`[governance] Wrote ${absOut}`);
+      if (args.failOnMajorDrift && payload.passed === false) process.exitCode = 1;
+      return;
+    }
+    console.log(JSON.stringify(payload, null, 2));
+    if (args.failOnMajorDrift && payload.passed === false) process.exitCode = 1;
     return;
   }
 
@@ -111,6 +182,10 @@ function main() {
   console.log("Name,Version");
   for (const name of names) {
     console.log(`${name},${prod[name].version}`);
+  }
+  if (args.failOnMajorDrift && warnings && warnings.summary && warnings.summary.packagesWithMajorDrift > 0) {
+    console.error(`Major version drift detected for ${warnings.summary.packagesWithMajorDrift} package(s)`);
+    process.exitCode = 1;
   }
 }
 

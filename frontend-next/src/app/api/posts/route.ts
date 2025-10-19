@@ -73,16 +73,31 @@ async function fetchWithTimeoutAndRetries(
       clear();
       // Retry on 5xx only; surface others immediately
       if (res.status >= 500 && attempt < retries) {
+        // basic exponential backoff with jitter (50-150ms * 2^attempt)
+        const base = 100;
+        const jitter = 0.5 + Math.random();
+        const delayMs = Math.floor(base * Math.pow(2, attempt) * jitter);
+        await new Promise((r) => setTimeout(r, delayMs));
         continue;
       }
       return res;
     } catch (error) {
       clear();
       lastError = error;
-      if (attempt >= retries) break;
+      if (attempt < retries) {
+        const base = 100;
+        const jitter = 0.5 + Math.random();
+        const delayMs = Math.floor(base * Math.pow(2, attempt) * jitter);
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      break;
     }
   }
-  throw lastError ?? new Error("Request failed");
+  const err = lastError instanceof Error ? lastError : new Error(String(lastError || "Request failed"));
+  // Attach context for upstream logs without leaking secrets
+  (err as any).upstream = { url, method: (init as any)?.method || "GET" };
+  throw err;
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -147,9 +162,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         headers: { "X-Request-Id": requestId },
       });
     }
-    console.error("GET /api/posts upstream error", { upstreamUrl, error });
+    // Structured error for logs/telemetry
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
+    const errInfo = error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : String(error);
+    console.error(JSON.stringify({ level: "error", msg: "GET /api/posts upstream error", upstreamUrl, requestId, error: errInfo }));
     return NextResponse.json(
       { error: { code: "UPSTREAM_FETCH_FAILED", message: "Failed to fetch posts" } },
       { status: 500, headers: { "X-Request-Id": requestId } },
@@ -167,6 +186,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
+    // Only forward the session cookie to upstream to avoid leaking unrelated cookies
+    const sessionCookie = (() => {
+      try {
+        const match = incomingCookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+        return match ? `session=${match[1]}` : "";
+      } catch {
+        return "";
+      }
+    })();
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const upstreamResponse = await fetch(upstreamUrl, {
@@ -175,7 +203,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         "Content-Type": "application/json",
         ...buildAuthHeaders(),
         ...(await buildIapAuthHeader()),
-        ...(incomingCookieHeader ? { Cookie: incomingCookieHeader } : {}),
+        ...(sessionCookie ? { Cookie: sessionCookie } : {}),
         "X-Request-Id": requestId,
       },
       body: bodyText,
@@ -243,9 +271,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // noop and fall through
       }
     }
-    console.error("POST /api/posts upstream error", { upstreamUrl, error });
+    // Structured error for logs/telemetry
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
+    const errInfo = error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : String(error);
+    console.error(JSON.stringify({ level: "error", msg: "POST /api/posts upstream error", upstreamUrl, requestId, error: errInfo }));
     return NextResponse.json(
       { error: { code: "UPSTREAM_CREATE_FAILED", message: "Failed to create post" } },
       { status: 500, headers: { "X-Request-Id": requestId } },

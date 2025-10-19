@@ -70,14 +70,28 @@ Cloud Build file: `cloudbuild.yaml`
 ### Evidence and Reports
 
 - The Quality Gate job summary includes a section titled "frontend-next Coverage (with thresholds)" with the current coverage table.
-- The Review Packet artifacts include the `coverage-frontend-next` HTML coverage report and the Playwright HTML report.
+- The Review Packet artifacts include the `coverage-frontend-next` HTML coverage report and the Playwright HTML report. See the Review Packet guide for details and local rebuild steps: [docs/ReviewPacket/README.md](docs/ReviewPacket/README.md)
 
-## GitHub Actions
+Local gate commands (parity with CI):
 
-The primary workflow `.github/workflows/main.yml` has two jobs:
+```bash
+# Generate security and governance artifacts
+npm run security:audit
+npm run governance:report
 
-1. `test`: installs dependencies and runs the monorepo test suite
-2. `deploy`: triggers the Cloud Build on `main` after `test` passes
+# Aggregate Quality Gate and emit Coverage Totals block
+npm run gate:aggregate
+```
+
+To package the Review Packet locally (mirrors CI):
+
+```bash
+npm run gate:packet -- --force
+```
+
+## CI Overview
+
+This repository uses Google Cloud Build for deploys (`cloudbuild.yaml`). Tests and quality gate run prior to deploys in the upstream CI environment.
 
 ## Useful Commands
 
@@ -103,6 +117,12 @@ cd frontend-next && npm run test:ci
 
 - Frontend image builds with `NEXT_PUBLIC_API_URL` passed as a build-arg from Cloud Build.
 - Consider setting a Cloud Run service account for least privilege deployments.
+
+### Production configuration (required)
+
+- Ensure the runtime has `NODE_ENV=production` so development fallbacks in route handlers are disabled.
+- Set `API_BASE_URL` on the frontend service (Cloud Run) to the API HTTPS URL.
+- If protecting the API with IAP or requiring ID tokens, set `IAP_AUDIENCE` (or `ID_TOKEN_AUDIENCE`) so the app can mint ID tokens for upstream calls.
 
 # Training
 
@@ -156,13 +176,6 @@ Environment variables:
 | `API_BASE_URL` | Server-only (Cloud Run) | `http://localhost:8080` | `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app` | Upstream API base URL used by server SSR and Route Handlers. Set on Cloud Run service env vars. |
 | `NEXT_PUBLIC_API_URL` | Client and SSR fallback | `http://localhost:8080` | (not required) | Base URL for API in local dev; SSR falls back to this if `API_BASE_URL` is unset. Prefer server proxy (`/api`) in production. |
 | `NEXT_PUBLIC_APP_URL` | CI/E2E usage | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | Public URL of the app for Playwright and link checks in CI. |
-feature/us4-contract-hygiene
-
- - Canonical OpenAPI specification: [specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml](specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml)
-=======
-main
-
- - Canonical OpenAPI specification: [specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml](specs/spec/007-week-6-final-punchlist/contracts/openapi.yaml)
 
 ### Running with Docker
 
@@ -228,3 +241,17 @@ Relevant files and scripts:
 - `.specify/scripts/powershell/*.ps1` (helper scripts invoked by prompts)
 
 <!-- Removed legacy references to the separate Vite-based frontend project to avoid confusion with `frontend-next`. CI evidence for `frontend-next` is surfaced in the Quality Gate summary and Review Packet as noted above. -->
+
+## Governance Waivers and Quality Gate
+
+If a temporary exception is required (e.g., security audit has high findings or audit unavailable), follow the policy in `SECURITY_EXCEPTIONS.md` and mirror approved waivers in the governance report consumed by the gate.
+
+- Guide: see `CONTRIBUTING.md` section "Governance basics" (example JSON provided)
+- Schema: `scripts/quality-gate/schemas/governance.schema.json`
+- Generate a baseline governance report:
+
+```bash
+npm run governance:report
+```
+
+This writes `governance/report.json`. Add `approvedExceptions` entries as needed with mentor approval and expiry dates.

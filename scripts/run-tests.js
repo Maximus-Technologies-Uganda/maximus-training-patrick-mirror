@@ -1,11 +1,13 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const tests = [
   { name: 'quote', script: 'quote/tests/test.js' },
   { name: 'expense', script: 'expense/tests/test.js' },
   { name: 'stopwatch', script: 'stopwatch/tests/test.js' },
   { name: 'todo', script: 'todo/tests/test.js' },
+  
   { name: 'dev-week-1:expenses', script: 'repos/dev-week-1/test-expenses.js', optional: true },
   { name: 'dev-week-1:expense-tracker', script: 'repos/dev-week-1/test-expense-tracker.js', optional: true },
   { name: 'dev-week-1:todo-app', script: 'repos/dev-week-1/test-todo-app.js', optional: true },
@@ -33,6 +35,7 @@ async function main() {
   });
 
   let failures = 0;
+  let passedRequired = 0;
   for (const t of selected) {
     console.log(`\n=== Running: ${t.name} ===`);
     try {
@@ -46,6 +49,7 @@ async function main() {
         }
       } else {
         console.log(`PASS ${t.name}`);
+        if (!t.optional) passedRequired++;
       }
     } catch (err) {
       if (t.optional) {
@@ -55,6 +59,22 @@ async function main() {
         failures++;
       }
     }
+  }
+
+  // Emit a minimal summary consumed by the Quality Gate
+  try {
+    const outDir = path.resolve(process.cwd(), 'test-results');
+    fs.mkdirSync(outDir, { recursive: true });
+    const requiredCount = selected.filter(t => !t.optional).length;
+    const summary = {
+      total: requiredCount,
+      passed: passedRequired,
+      failed: failures,
+      generatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(path.join(outDir, 'summary.json'), JSON.stringify(summary, null, 2) + '\n', 'utf8');
+  } catch (e) {
+    console.warn('WARN: failed to write test-results/summary.json:', e && e.message ? e.message : String(e));
   }
 
   if (failures) {

@@ -9,7 +9,7 @@ test.describe("/posts accessibility", () => {
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
 
-    // Persist a11y results for Quality Gate (specs/005-week-6-finishers/plan.md FR-004)
+    // Persist a11y results for Quality Gate (specs/007-spec/week-7.5-finishers/plan.md FR-007)
     // Location expected by scripts/quality-gate/build-review-packet.js and aggregate-results.js
     const repoRoot = path.resolve(__dirname, "..", "..", "..");
     const outDir = path.join(repoRoot, "a11y");
