@@ -2,6 +2,8 @@ import React from "react";
 import { cookies } from "next/headers";
 
 import PostsPageClient from "../../../components/PostsPageClient";
+import type { Post as SsrPost } from "../../lib/schemas";
+import { getBaseUrl } from "../../lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +34,66 @@ export default async function PostsPage({
     }
   })();
 
-  // Always render the client component so interactive controls are available
-  // even when the initial list is empty. The client handles empty/loading states.
-  return <PostsPageClient page={page} pageSize={pageSize} q={q} currentUserId={userId ?? undefined} />;
+  // Server-side fetch to pre-render posts for first paint (no spinner)
+  // Only fetch SSR data for the first page; other pages will be fetched client-side
+  let posts: SsrPost[] | undefined;
+  let initialHasNextPage: boolean | undefined;
+  try {
+    if (page === 1) {
+      // Use upstream service endpoint directly from the server to avoid self-calls to the Next app
+      const base = getBaseUrl();
+      const url = new URL("/api/posts", base || "http://localhost");
+      url.searchParams.set("page", String(page));
+      // Request one extra to determine if there's a next page without another round trip
+      url.searchParams.set("pageSize", String(pageSize + 1));
+      const res = await fetch(url.toString(), { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as unknown;
+        if (Array.isArray(data)) {
+          const arr = (data as Array<Record<string, unknown>>).map((p) => ({
+            ...(p as Record<string, unknown>),
+            // Ensure content exists; some upstreams use `body`
+            content:
+              typeof (p as { content?: unknown }).content === "string"
+                ? (p as { content: string }).content
+                : typeof (p as { body?: unknown }).body === "string"
+                ? (p as { body: string }).body
+                : "",
+          })) as unknown as SsrPost[];
+          initialHasNextPage = arr.length > pageSize;
+          posts = arr.slice(0, pageSize);
+        } else if (data && typeof data === "object") {
+          const obj = data as { items?: SsrPost[]; hasNextPage?: boolean };
+          if (Array.isArray(obj.items)) {
+            const normalized = (obj.items as Array<Record<string, unknown>>).map((p) => ({
+              ...(p as Record<string, unknown>),
+              content:
+                typeof (p as { content?: unknown }).content === "string"
+                  ? (p as { content: string }).content
+                  : typeof (p as { body?: unknown }).body === "string"
+                  ? (p as { body: string }).body
+                  : "",
+            })) as unknown as SsrPost[];
+            posts = normalized.slice(0, pageSize);
+            initialHasNextPage =
+              typeof obj.hasNextPage === "boolean" ? obj.hasNextPage : obj.items.length > pageSize;
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore upstream errors; render without initial data
+  }
+  return (
+    <PostsPageClient
+      page={page}
+      pageSize={pageSize}
+      q={q}
+      currentUserId={userId ?? undefined}
+      initialData={posts}
+      initialHasNextPage={initialHasNextPage}
+    />
+  );
 }
 
 

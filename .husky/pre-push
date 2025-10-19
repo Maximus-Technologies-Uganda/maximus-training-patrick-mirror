@@ -1,9 +1,79 @@
 #!/usr/bin/env sh
 set -e
 
-# Run type checks before pushing (bail on errors)
-echo "🧪 Running type checks..."
-npm run typecheck:bail
+echo "🧪 Running type checks for changed workspaces..."
+
+# Compute changed files based on the refs being pushed (from STDIN)
+# pre-push receives lines: <local ref> <local sha> <remote ref> <remote sha>
+REMOTE_NAME="$1"
+CHANGED_FILES=""
+
+while IFS=' ' read -r local_ref local_sha remote_ref remote_sha; do
+  # Skip deletes (local sha is all zeros)
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+
+  # Determine base commit for diff
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # New remote ref; try to diff from the remote's default branch merge-base
+    DEFAULT_REMOTE_REF=$(git symbolic-ref -q "refs/remotes/$REMOTE_NAME/HEAD" 2>/dev/null || true)
+    BASE_COMMIT=""
+    if [ -n "$DEFAULT_REMOTE_REF" ]; then
+      DEFAULT_REMOTE_REF=${DEFAULT_REMOTE_REF#refs/remotes/}
+      BASE_COMMIT=$(git merge-base "$DEFAULT_REMOTE_REF" "$local_sha" 2>/dev/null || true)
+    fi
+    # Fallback to empty tree if merge-base not available
+    if [ -z "$BASE_COMMIT" ]; then
+      BASE_COMMIT=$(git hash-object -t tree /dev/null)
+    fi
+  else
+    BASE_COMMIT="$remote_sha"
+  fi
+
+  DIFF_OUT=$(git diff --name-only "$BASE_COMMIT" "$local_sha")
+  if [ -n "$DIFF_OUT" ]; then
+    CHANGED_FILES="$CHANGED_FILES
+$DIFF_OUT"
+  fi
+done
+
+# Derive workspace roots touched
+WORKSPACES=""
+# Normalize file list (unique) first, then iterate without a subshell so WORKSPACES persists
+FILES_NORMALIZED=$(printf "%b" "$CHANGED_FILES" | sed '/^$/d' | sort -u)
+
+# Use here-doc to keep loop in current shell
+while IFS= read -r file; do
+  case "$file" in
+    frontend-next/*)
+      WORKSPACES="$WORKSPACES,frontend-next" ;;
+    frontend/*)
+      WORKSPACES="$WORKSPACES,frontend" ;;
+    api/*)
+      WORKSPACES="$WORKSPACES,api" ;;
+    quote/*)
+      WORKSPACES="$WORKSPACES,quote" ;;
+    todo/*)
+      WORKSPACES="$WORKSPACES,todo" ;;
+    expense/*)
+      WORKSPACES="$WORKSPACES,expense" ;;
+    stopwatch/*)
+      WORKSPACES="$WORKSPACES,stopwatch" ;;
+  esac
+done <<EOF
+$FILES_NORMALIZED
+EOF
+
+# Normalize list (remove leading comma and duplicates)
+WORKSPACES=$(echo "$WORKSPACES" | sed 's/^,//' | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+
+if [ -z "$WORKSPACES" ]; then
+  echo "No workspace changes detected; skipping type checks."
+else
+  echo "Changed workspaces: $WORKSPACES"
+  npm run typecheck:bail -- --projects="$WORKSPACES"
+fi
 
 # Run lint as a safety net (should be fast due to caching)
 echo "🔍 Running lint checks..."

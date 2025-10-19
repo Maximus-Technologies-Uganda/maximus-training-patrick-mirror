@@ -31,7 +31,7 @@ test.describe("/posts screenshots (Loading → Data)", () => {
     });
 
     // Navigate to posts page and wait for the static heading
-    await page.goto("/posts");
+    await page.goto("/posts?page=2");
     await expect(page.getByRole("heading", { name: "Posts", level: 1 })).toBeVisible({ timeout: 7000 });
 
     // Capture a loading snapshot shortly after navigation (before the mocked response completes)
