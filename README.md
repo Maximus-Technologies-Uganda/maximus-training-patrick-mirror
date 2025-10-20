@@ -186,7 +186,7 @@ Environment variables:
 | `ASSISTANT_ENABLED` | Server-only | `false` | `true` | Enable assistant API routes at `/api/assistant/*`. |
 | `ASSISTANT_MACROS_ONLY` | Server-only | `false` | `false` | Restrict assistant to macros-only mode. |
 | `VITE_ASSISTANT_ENABLED` | Client build-time | `false` | `true` | Enable assistant UI in client build. |
-| `ASSISTANT_CORS_ORIGINS` | Server-only | `http://localhost:3000` | `https://...` | CSV of allowed CORS origins for assistant endpoints. |
+| `ASSISTANT_CORS_ORIGINS` | Server-only | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | CSV of allowed CORS origins for assistant endpoints. |
 | `ASSISTANT_FORWARDING_SECRET` | Server-only | (random) | (random) | HMAC secret for assistant ingress authentication. |
 
 ### Running with Docker

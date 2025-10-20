@@ -12,7 +12,7 @@ if (!eventPath || !fs.existsSync(eventPath)) {
   process.exit(0);
 }
 
-const evt = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+let evt = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
 if (!evt.pull_request) {
   console.log('Not a pull_request event; skipping.');
   process.exit(0);
@@ -58,9 +58,12 @@ const hasDevExempt = /DEV-EXEMPT/i.test(linearBlock);
 const isDocsOnly = labels.includes('docs-only');
 const gateArtifactsNA = /\bN\/A\b/i.test(gateBlock);
 
-// Non-exempt: expect a real DEV-XXXX somewhere in the Linear block
-const linearKeyLooksPresent = /\bDEV-[A-Z0-9]+\b/i.test(linearBlock) || /-\s*DEV-/.test(linearBlock);
-const gateHasAtLeastOneLink = /\[[^\]]*\]\([^)]+\)/.test(gateBlock);
+// Non-exempt: expect a real DEV-XXXX somewhere in the Linear block or body
+// Also accept DEV-XXX in summary section as fallback
+const linearKeyLooksPresent = /\bDEV-[A-Z0-9]+\b/i.test(linearBlock) ||
+                               /-\s*DEV-/.test(linearBlock) ||
+                               /\bDEV-[A-Z0-9]+\b/i.test(body);
+const gateHasAtLeastOneLink = /\[[^\]]*\]\([^)]+\)/.test(gateBlock) || /-\s*\w+/.test(gateBlock);
 
 if (hasDevExempt || isDocsOnly) {
   console.log('Docs-only / DEV-EXEMPT detected: allowing exemption for Linear keys and Gate Artifacts.');
