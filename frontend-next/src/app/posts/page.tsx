@@ -39,7 +39,7 @@ export default async function PostsPage({
   let initialHasNextPage: boolean | undefined;
   try {
     if (page === 1) {
-      const headerStore = headers();
+      const headerStore = await headers();
       const protocol = headerStore.get("x-forwarded-proto") ?? "http";
       const host =
         headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? undefined;

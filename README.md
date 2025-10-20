@@ -25,8 +25,8 @@ gcloud run services describe maximus-training-api --region <region> --format='va
 
 ```bash
 cd api
-npm ci
-npm run dev
+pnpm install
+pnpm dev
 # API listens on http://localhost:8080
 ```
 
@@ -42,8 +42,8 @@ Then start the dev server:
 
 ```bash
 cd frontend-next
-npm ci
-npm run dev
+pnpm install
+pnpm dev
 # App on http://localhost:3000
 ```
 
@@ -55,7 +55,7 @@ Note on server-side configuration:
 
 ### Stage 1: Tests (Quality Gate)
 
-- Runs monorepo tests via `npm test` at the root.
+- Runs monorepo tests via `pnpm -r test` at the root.
 - Individual packages also have their own `test:ci` scripts (e.g., `api/`, `frontend-next/`).
 
 ### Stage 2: Deploy (Single Cloud Build)
@@ -71,22 +71,23 @@ Cloud Build file: `cloudbuild.yaml`
 
 - The Quality Gate job summary includes a section titled "frontend-next Coverage (with thresholds)" with the current coverage table.
 - The Review Packet artifacts include the `coverage-frontend-next` HTML coverage report and the Playwright HTML report. See the Review Packet guide for details and local rebuild steps: [docs/ReviewPacket/README.md](docs/ReviewPacket/README.md)
+- For guidance on finding and interpreting CI/CD evidence artifacts, see [docs/release-evidence.md](docs/release-evidence.md)
 
 Local gate commands (parity with CI):
 
 ```bash
 # Generate security and governance artifacts
-npm run security:audit
-npm run governance:report
+pnpm run security:audit
+pnpm run governance:report
 
 # Aggregate Quality Gate and emit Coverage Totals block
-npm run gate:aggregate
+pnpm run gate:aggregate
 ```
 
 To package the Review Packet locally (mirrors CI):
 
 ```bash
-npm run gate:packet -- --force
+pnpm run gate:packet -- --force
 ```
 
 ## CI Overview
@@ -97,13 +98,13 @@ This repository uses Google Cloud Build for deploys (`cloudbuild.yaml`). Tests a
 
 ```bash
 # Run all tests (root)
-npm test
+pnpm -r test
 
 # API tests
-cd api && npm run test:ci
+cd api && pnpm run test:ci
 
 # Frontend tests
-cd frontend-next && npm run test:ci
+cd frontend-next && pnpm run test:ci
 ```
 
 ## Repository Structure
@@ -143,8 +144,8 @@ Local steps:
 
    ```bash
    cd api
-   npm ci
-   npm run dev
+   pnpm install
+   pnpm dev
    # API listens on http://localhost:8080
    ```
 
@@ -159,8 +160,8 @@ Local steps:
 
    ```bash
    cd frontend-next
-   npm ci
-   npm run dev
+   pnpm install
+   pnpm dev
    # App on http://localhost:3000
    ```
 
@@ -176,6 +177,17 @@ Environment variables:
 | `API_BASE_URL` | Server-only (Cloud Run) | `http://localhost:8080` | `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app` | Upstream API base URL used by server SSR and Route Handlers. Set on Cloud Run service env vars. |
 | `NEXT_PUBLIC_API_URL` | Client and SSR fallback | `http://localhost:8080` | (not required) | Base URL for API in local dev; SSR falls back to this if `API_BASE_URL` is unset. Prefer server proxy (`/api`) in production. |
 | `NEXT_PUBLIC_APP_URL` | CI/E2E usage | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | Public URL of the app for Playwright and link checks in CI. |
+| `DATABASE_URL` | Server-only | `postgresql://localhost:5432/dev` | `postgresql://...neon.tech/prod` | PostgreSQL connection string (Neon or local). Required for server start and DB tests. |
+| `SESSION_SECRET` | Server-only | `dev-secret-32chars` | `(32+ char random)` | Strong random string for session encryption. Required in production. |
+| `GCP_PROJECT_ID` | Server-only | `proj-rms-dev` | `proj-rms-prod` | Google Cloud project ID for GCP services. |
+| `GCP_REGION` | Server-only | `africa-south1` | `africa-south1` | Google Cloud region for deployments. |
+| `VERTEX_LOCATION` | Server-only | `us-central1` | `us-central1` | Vertex AI location for model access. |
+| `VERTEX_MODEL` | Server-only | `gemini-2.5-flash` | `gemini-2.5-flash` | Vertex AI model name. |
+| `ASSISTANT_ENABLED` | Server-only | `false` | `true` | Enable assistant API routes at `/api/assistant/*`. |
+| `ASSISTANT_MACROS_ONLY` | Server-only | `false` | `false` | Restrict assistant to macros-only mode. |
+| `VITE_ASSISTANT_ENABLED` | Client build-time | `false` | `true` | Enable assistant UI in client build. |
+| `ASSISTANT_CORS_ORIGINS` | Server-only | `http://localhost:3000` | `https://...` | CSV of allowed CORS origins for assistant endpoints. |
+| `ASSISTANT_FORWARDING_SECRET` | Server-only | (random) | (random) | HMAC secret for assistant ingress authentication. |
 
 ### Running with Docker
 
@@ -207,8 +219,8 @@ From the repo root:
 
 ```bash
 # install root tools and run the monorepo test runner
-npm ci
-npm test
+pnpm install
+pnpm -r test
 ```
 
 ### Spec Kit (Specify) integration
@@ -251,7 +263,7 @@ If a temporary exception is required (e.g., security audit has high findings or 
 - Generate a baseline governance report:
 
 ```bash
-npm run governance:report
+pnpm run governance:report
 ```
 
 This writes `governance/report.json`. Add `approvedExceptions` entries as needed with mentor approval and expiry dates.
