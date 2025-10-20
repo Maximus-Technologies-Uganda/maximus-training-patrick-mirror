@@ -13,7 +13,6 @@ import { InMemoryPostsRepository } from "../../repositories/posts.repository";
 
 export class PostsService {
   private readonly impl: DomainService;
-  private readonly orderedIds: string[] = [];
 
   constructor(repository?: IPostsRepository) {
     const repo = repository ?? (new InMemoryPostsRepository() as unknown as IPostsRepository);
@@ -24,7 +23,6 @@ export class PostsService {
     const ownerId = data.ownerId ?? "unknown-owner";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const created = await this.impl.create({ ...(data as any), ownerId });
-    this.orderedIds.push(created.id);
     return created;
   }
 
@@ -37,31 +35,7 @@ export class PostsService {
   }
 
   async list(query: ListPostsQuery): Promise<PaginatedResponse<Post>> {
-    const requestedPage = query.page;
-    const requestedPageSize = query.pageSize;
-    const maxPageSize = 100;
-    const pageSize = Math.min(Math.max(requestedPageSize, 1), maxPageSize);
-    const currentPage = Math.max(requestedPage, 1);
-
-    const totalItems = this.orderedIds.length;
-    const totalPages = pageSize > 0 ? Math.ceil(totalItems / pageSize) : 0;
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const pageIds = this.orderedIds.slice(start, end);
-    const items: Post[] = [];
-    for (const id of pageIds) {
-      const p = await this.getById(id);
-      if (p) items.push(p);
-    }
-
-    return {
-      items,
-      totalItems,
-      totalPages,
-      currentPage,
-      hasNextPage: currentPage < totalPages,
-      pageSize,
-    };
+    return this.impl.list(query);
   }
 
   async replace(id: string, data: PostCreate): Promise<Post | null> {
@@ -85,8 +59,6 @@ export class PostsService {
   async delete(id: string): Promise<boolean> {
     try {
       await this.impl.delete(id);
-      const idx = this.orderedIds.indexOf(id);
-      if (idx !== -1) this.orderedIds.splice(idx, 1);
       return true;
     } catch {
       return false;

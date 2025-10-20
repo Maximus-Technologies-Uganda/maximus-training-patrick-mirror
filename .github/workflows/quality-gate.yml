@@ -1,4 +1,4 @@
-name: Quality Gate
+﻿name: Quality Gate
 
 on:
   push:
@@ -31,6 +31,11 @@ jobs:
         run: npm install --no-audit --no-fund --ignore-scripts
       - name: Link check README
         run: node scripts/link-check.js README.md
+      - name: Enforce PR template
+        if: ${ github.event_name == 'pull_request' }
+        run: node scripts/check-pr-template.js
+        env:
+          GITHUB_EVENT_PATH: ${ github.event_path }
   readme-placeholder-guard:
     name: README placeholder guard
     runs-on: ubuntu-latest

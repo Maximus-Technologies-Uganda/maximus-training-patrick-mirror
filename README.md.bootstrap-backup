@@ -255,18 +255,3 @@ npm run governance:report
 ```
 
 This writes `governance/report.json`. Add `approvedExceptions` entries as needed with mentor approval and expiry dates.
-
-## Status checks & docs-only exemption
-
-This repo enforces protected checks per **DEVELOPMENT_RULES.md**:
-
-- Required checks: lint, 	ypecheck, unit, coverage, 11y, contract, uild, deploy-preview
-- PR body must include evidence fields (Linear key, Gate run, Artifacts, Demo URL(s), Screenshots if UI, Linked Plan).
-
-**Docs-only PRs:** If your change only updates documentation and touches no runtime code:
-
-- Add label **docs-only** **or** put **DEV-EXEMPT** under **Linear Key(s)** in the PR body.
-- Gate Artifacts may be N/A for docs-only PRs.
-- The PR template checker (scripts/check-pr-template.js) recognizes these exemptions.
-
-See **DEVELOPMENT_RULES.md** for full details.

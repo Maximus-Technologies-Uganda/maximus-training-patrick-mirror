@@ -47,19 +47,19 @@ describe("PostsService", () => {
       }
 
       const page1 = await service.list({ page: 1, pageSize: 2 });
-      expect(page1.items.map((p) => p.title)).toEqual(["T1", "T2"]);
+      expect(page1.items.map((p) => p.title)).toEqual(["T5", "T4"]);
       expect(page1.totalItems).toBe(5);
       expect(page1.totalPages).toBe(3);
       expect(page1.currentPage).toBe(1);
 
       const page2 = await service.list({ page: 2, pageSize: 2 });
-      expect(page2.items.map((p) => p.title)).toEqual(["T3", "T4"]);
+      expect(page2.items.map((p) => p.title)).toEqual(["T3", "T2"]);
       expect(page2.totalItems).toBe(5);
       expect(page2.totalPages).toBe(3);
       expect(page2.currentPage).toBe(2);
 
       const page3 = await service.list({ page: 3, pageSize: 2 });
-      expect(page3.items.map((p) => p.title)).toEqual(["T5"]);
+      expect(page3.items.map((p) => p.title)).toEqual(["T1"]);
       expect(page3.totalItems).toBe(5);
       expect(page3.totalPages).toBe(3);
       expect(page3.currentPage).toBe(3);
@@ -84,6 +84,30 @@ describe("PostsService", () => {
     it("should return null when trying to update a non-existent post", async () => {
       const updated = await service.update("does-not-exist", { title: "X" });
       expect(updated).toBeNull();
+    });
+  });
+
+  describe("replace", () => {
+    it("should replace post data, preserve id/createdAt, and return Date instances", async () => {
+      const created = await service.create({ title: "Original", content: "Original content" });
+      const originalCreatedAt = created.createdAt;
+      await new Promise((r) => setTimeout(r, 2));
+
+      const replaced = await service.replace(created.id, { title: "Replaced", content: "Replaced content" });
+
+      expect(replaced).not.toBeNull();
+      expect(replaced!.id).toBe(created.id);
+      expect(replaced!.title).toBe("Replaced");
+      expect(replaced!.content).toBe("Replaced content");
+      expect(replaced!.createdAt).toBeInstanceOf(Date);
+      expect(replaced!.updatedAt).toBeInstanceOf(Date);
+      expect(replaced!.createdAt).toEqual(originalCreatedAt);
+      expect(replaced!.updatedAt.getTime()).toBeGreaterThan(originalCreatedAt.getTime());
+    });
+
+    it("should return null when trying to replace a non-existent post", async () => {
+      const replaced = await service.replace("does-not-exist", { title: "X", content: "Y" });
+      expect(replaced).toBeNull();
     });
   });
 

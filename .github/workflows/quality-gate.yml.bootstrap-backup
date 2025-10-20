@@ -1,0 +1,758 @@
+name: Quality Gate
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+      - 'frontend-next/**'
+      - 'api/**'
+      - 'specs/007-spec/week-7.5-finishers/contracts/**'
+      - 'docs/ReviewPacket/**'
+      - '.github/workflows/quality-gate.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'frontend-next/**'
+      - 'api/**'
+      - 'specs/007-spec/week-7.5-finishers/contracts/**'
+      - 'docs/ReviewPacket/**'
+      - '.github/workflows/quality-gate.yml'
+
+jobs:
+  readme-link-check:
+    name: README link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Link check README
+        run: node scripts/link-check.js README.md
+  readme-placeholder-guard:
+    name: README placeholder guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if README contains placeholder URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -E '(YOUR_CLOUD_RUN_URL|example\.com/placeholder|<LIVE_URL>)' -n README.md; then
+            echo "README contains placeholder URL patterns. Replace with real URLs." >&2
+            exit 1
+          fi
+  lint-workflows:
+    name: Lint GitHub workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-actionlint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          actionlint_flags: ".github/workflows/*.yml"
+          reporter: github-check
+          fail_level: error
+  install-root-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - name: Install root dependencies
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          # Use npm install for better workspace compatibility
+          echo "Installing root and workspace dependencies"
+          npm install --no-audit --no-fund
+
+  frontend-next-a11y:
+    needs: install-root-deps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          npm install --no-audit --no-fund
+          cd frontend-next
+          npm ci
+          npx -y playwright install --with-deps
+
+      - name: Run Playwright a11y/e2e tests (HTML report)
+        working-directory: frontend-next
+        run: npm run test:e2e
+
+      - name: Upload a11y HTML report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-frontend-next
+          path: |
+            docs/ReviewPacket/a11y/html/**
+          if-no-files-found: warn
+
+  frontend-next-coverage:
+    needs: install-root-deps
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          # Install root and workspace dependencies
+          npm install --no-audit --no-fund
+          # Ensure frontend-next has its dependencies
+          cd frontend-next
+          npm ci
+
+      - name: Run frontend-next tests with coverage
+        working-directory: frontend-next
+        run: npm run test:ci
+
+      - name: Upload frontend-next coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend-next
+          path: |
+            frontend-next/coverage/**
+
+      - name: Read coverage summary
+        id: coverage_frontend_next
+        working-directory: frontend-next
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const summaryPath = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
+          if (!fs.existsSync(summaryPath)) {
+            console.error('ERROR: Coverage summary not found at coverage/coverage-summary.json. Ensure Vitest runs with coverage.');
+            try {
+              console.log('Listing coverage directory for diagnostics:');
+              console.log(fs.readdirSync(path.join(process.cwd(), 'coverage')).join('\n'));
+            } catch (e) {
+              console.log('No coverage directory present.');
+            }
+            process.exit(1);
+          }
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8')); }
+          catch (e) {
+            console.error('ERROR: Failed to parse coverage/coverage-summary.json:', e.message);
+            process.exit(1);
+          }
+          function statementsPct(summary){
+            if (!summary || !summary.total || !summary.total.statements) return 'no files collected';
+            const t = summary.total.statements;
+            if (typeof t.total === 'number' && t.total === 0) return 'no files collected';
+            if (typeof t.pct === 'number') return String(t.pct) + '%';
+            return 'no files collected';
+          }
+          const rows = [['Target','Statements %'], ['frontend-next', statementsPct(summary)]];
+          const pad = (arr, widths) => arr.map((c,i)=>String(c).padEnd(widths[i])).join(' | ');
+          const widths = rows[0].map((_,i)=>Math.max(...rows.map(r=>String(r[i]).length)));
+          let table = `| ${pad(rows[0], widths)} |\n| ${widths.map(w=>'-'.repeat(w)).join(' | ')} |\n`;
+          for (let i=1;i<rows.length;i++){ table += `| ${pad(rows[i], widths)} |\n`; }
+          fs.writeFileSync('coverage-table.md', table);
+          console.log(table);
+          NODE
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report-frontend-next
+          path: frontend-next/coverage-table.md
+
+  api-coverage:
+    needs: install-root-deps
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          # Install root and workspace dependencies
+          npm install --no-audit --no-fund
+          # Ensure API has its dependencies
+          cd api
+          npm ci
+
+      - name: Debug available api scripts
+        run: |
+          node -e "const p=require('./api/package.json');console.log('scripts',p.scripts)" | cat
+          ls -la api
+          ls -la api/node_modules/.bin || true
+          node -e "console.log(process.cwd())"
+
+      - name: Run API tests with coverage (in-memory repo)
+        working-directory: api
+        env:
+          POSTS_REPOSITORY: inmemory
+        run: npm run test:ci
+
+      - name: Upload API coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api
+          path: |
+            api/coverage/**
+
+      - name: Read coverage summary
+        id: api_coverage
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const summaryPath = path.join(process.cwd(), 'api', 'coverage', 'coverage-summary.json');
+          if (!fs.existsSync(summaryPath)) {
+            console.error('ERROR: Coverage summary not found at api/coverage/coverage-summary.json. Ensure Jest runs with coverage.');
+            try {
+              console.log('Listing api/coverage directory for diagnostics:');
+              console.log(fs.readdirSync(path.join(process.cwd(), 'api', 'coverage')).join('\n'));
+            } catch (e) {
+              console.log('No coverage directory present.');
+            }
+            process.exit(1);
+          }
+          let summary = null;
+          try { summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8')); }
+          catch (e) {
+            console.error('ERROR: Failed to parse api/coverage/coverage-summary.json:', e.message);
+            process.exit(1);
+          }
+          function statementsPct(summary){
+            if (!summary || !summary.total || !summary.total.statements) return 'no files collected';
+            const t = summary.total.statements;
+            if (typeof t.total === 'number' && t.total === 0) return 'no files collected';
+            if (typeof t.pct === 'number') return String(t.pct) + '%';
+            return 'no files collected';
+          }
+          const rows = [['Target','Statements %'], ['API', statementsPct(summary)]];
+          const pad = (arr, widths) => arr.map((c,i)=>String(c).padEnd(widths[i])).join(' | ');
+          const widths = rows[0].map((_,i)=>Math.max(...rows.map(r=>String(r[i]).length)));
+          let table = `| ${pad(rows[0], widths)} |\n| ${widths.map(w=>'-'.repeat(w)).join(' | ')} |\n`;
+          for (let i=1;i<rows.length;i++){ table += `| ${pad(rows[i], widths)} |\n`; }
+          fs.writeFileSync('api-coverage-table.md', table);
+          console.log(table);
+          NODE
+
+      - name: Fail on zero coverage (API)
+        if: always()
+        working-directory: api
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="coverage/coverage-summary.json"
+          if [ ! -f "$FILE" ]; then
+            echo "ERROR: API coverage summary not found at $FILE" >&2
+            exit 1
+          fi
+          node - <<'NODE'
+          const fs = require('fs');
+          const j = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+          const s = j?.total?.statements?.pct;
+          const l = j?.total?.lines?.pct;
+          const ok = (v) => typeof v === 'number' && v > 0;
+          if (!ok(s) || !ok(l)) {
+            console.error(`ERROR: API coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+            process.exit(1);
+          }
+          NODE
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: api-coverage-report
+          path: api-coverage-table.md
+
+  contract-artifact:
+    needs: install-root-deps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload contract artifact (OpenAPI spec)
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-api
+          path: |
+            api/openapi.json
+          if-no-files-found: error
+
+  aggregate-coverage:
+    name: Aggregate monorepo coverage and summarize
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [frontend-next-coverage, api-coverage, frontend-next-a11y, contract-artifact]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root deps for scripts
+        run: |
+          npm config set audit false --location=project
+          npm config set fund false --location=project
+          npm install --no-audit --no-fund --omit=optional
+
+      - name: Download coverage artifacts from prior jobs
+        uses: actions/download-artifact@v4
+        with:
+          path: _dl
+        continue-on-error: true
+
+      - name: Download a11y artifact (frontend-next)
+        uses: actions/download-artifact@v4
+        with:
+          name: a11y-frontend-next
+          path: _dl/a11y-frontend-next
+        continue-on-error: true
+
+      - name: Download contract artifact (frontend-next)
+        uses: actions/download-artifact@v4
+        with:
+          name: contract-api
+          path: _dl/contract-api
+        continue-on-error: true
+
+      - name: Fail if required artifacts missing (a11y HTML index and contract)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Require a11y HTML index.html in artifact
+          A11Y_DIR="_dl/a11y-frontend-next"
+          A11Y_INDEX_COUNT=$(find "$A11Y_DIR" -type f -iname 'index.html' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
+          CONTRACT_FILE="_dl/contract-api/api/openapi.json"
+          CONTRACT_EXISTS=0
+          if [ -f "$CONTRACT_FILE" ]; then
+            CONTRACT_EXISTS=1
+          else
+            CANDIDATE=$(find "_dl/contract-api" -type f -iname 'openapi.json' 2>/dev/null | head -n 1 || true)
+            if [ -n "$CANDIDATE" ]; then CONTRACT_EXISTS=1; fi
+          fi
+          missing=()
+          if [ ! -d "$A11Y_DIR" ] || [ "$A11Y_INDEX_COUNT" -eq 0 ]; then
+            missing+=("a11y HTML (index.html) in artifact 'a11y-frontend-next'")
+          fi
+          if [ "$CONTRACT_EXISTS" -ne 1 ]; then
+            missing+=("contract API (api/openapi.json) in artifact 'contract-api'")
+          fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "ERROR: Missing required artifacts: ${missing[*]}" >&2
+            exit 1
+          fi
+
+      - name: Move downloaded coverage into expected locations
+        shell: bash
+        run: |
+          # Place any downloaded coverage into their package directories if needed
+          # We only rely on local runs here; if artifacts are absent, we proceed.
+          mkdir -p frontend-next/coverage api/coverage || true
+          # If upstream jobs also wrote coverage directly in the workspace, nothing to do
+          # Otherwise, attempt to copy from artifacts
+          # Newer upload-artifact formats may flatten the folder structure; try multiple candidates
+          if [ -d "_dl/coverage-frontend-next/frontend-next/coverage" ]; then
+            cp -R "_dl/coverage-frontend-next/frontend-next/coverage/." "frontend-next/coverage/" || true
+          elif [ -d "_dl/coverage-frontend-next/coverage" ]; then
+            cp -R "_dl/coverage-frontend-next/coverage/." "frontend-next/coverage/" || true
+          elif [ -f "_dl/coverage-frontend-next/coverage/coverage-summary.json" ]; then
+            cp "_dl/coverage-frontend-next/coverage/coverage-summary.json" "frontend-next/coverage/coverage-summary.json" || true
+          elif [ -f "_dl/coverage-frontend-next/frontend-next/coverage/coverage-summary.json" ]; then
+            cp "_dl/coverage-frontend-next/frontend-next/coverage/coverage-summary.json" "frontend-next/coverage/coverage-summary.json" || true
+          else
+            # Final fallback: search for a coverage-summary.json anywhere under the downloaded artifact
+            CANDIDATE=$(find "_dl/coverage-frontend-next" -type f -name 'coverage-summary.json' 2>/dev/null | head -n 1 || true)
+            if [ -n "$CANDIDATE" ]; then
+              cp "$CANDIDATE" "frontend-next/coverage/coverage-summary.json" || true
+            fi
+          fi
+          if [ -d "_dl/coverage-api/api/coverage" ]; then
+            cp -R "_dl/coverage-api/api/coverage/." "api/coverage/" || true
+          fi
+
+      - name: Normalize coverage (monorepo)
+        run: npm run coverage:normalize
+
+      - name: Summarize coverage totals (monorepo and frontend-next)
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+              echo "### Monorepo Coverage Totals"
+              echo
+              echo '```json'
+              if [ -f coverage/coverage-summary.json ]; then
+                cat coverage/coverage-summary.json
+              else
+                echo '{"note":"no aggregated coverage found"}'
+              fi
+              echo
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "GITHUB_STEP_SUMMARY not set; skipping summary append" >&2
+          fi
+
+      - name: Summarize a11y result (frontend-next)
+        if: always()
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+          const repo = process.env.GITHUB_REPOSITORY;
+          const runId = process.env.GITHUB_RUN_ID;
+          const artifactUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+
+          const candidates = [
+            path.join(process.cwd(), '_dl', 'a11y-frontend-next', 'a11y', 'report.json'),
+            path.join(process.cwd(), '_dl', 'a11y', 'report.json'),
+            path.join(process.cwd(), 'a11y', 'report.json')
+          ];
+          const jsonPath = candidates.find(p => fs.existsSync(p));
+
+          let violationsCount = null;
+          if (jsonPath) {
+            try {
+              const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+              violationsCount = Array.isArray(data.violations) ? data.violations.length : null;
+            } catch (e) {
+              violationsCount = null;
+            }
+          }
+
+          const lines = [];
+          lines.push('### frontend-next A11y Result');
+          if (violationsCount === null) {
+            lines.push('_No a11y JSON report found; artifact or file missing._');
+            lines.push(`Artifact: [a11y-frontend-next](${artifactUrl})`);
+          } else {
+            const status = violationsCount === 0 ? 'PASS' : 'FAIL';
+            const label = violationsCount === 1 ? 'violation' : 'violations';
+            lines.push(`${status}: ${violationsCount} ${label}`);
+            lines.push(`Full HTML report: [a11y-frontend-next](${artifactUrl}) (open index.html inside artifact)`);
+          }
+          fs.appendFileSync(summaryFile, lines.join('\n') + '\n');
+          NODE
+
+      - name: Summarize contract result (frontend-next)
+        if: always()
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+          if (!summaryFile) process.exit(0);
+          const repo = process.env.GITHUB_REPOSITORY;
+          const runId = process.env.GITHUB_RUN_ID;
+          const artifactUrl = `https://github.com/${repo}/actions/runs/${runId}`;
+
+          // Only parse contract test reports; do not treat OpenAPI spec as a report
+          const specPath = path.join(process.cwd(), '_dl', 'contract-api', 'api', 'openapi.json');
+          const reportCandidates = [
+            path.join(process.cwd(), '_dl', 'contract-api', 'contract', 'report.json'),
+            path.join(process.cwd(), '_dl', 'contract', 'report.json'),
+            path.join(process.cwd(), 'contract', 'report.json')
+          ];
+          const reportPath = reportCandidates.find(p => fs.existsSync(p));
+
+          let passed = null, failed = null;
+          if (reportPath) {
+            try {
+              const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+              if (typeof data.breakingMismatches === 'number') {
+                failed = data.breakingMismatches > 0 ? 1 : 0;
+                passed = data.breakingMismatches > 0 ? 0 : 1;
+              }
+            } catch (e) {
+              passed = null; failed = null;
+            }
+          }
+
+          const lines = [];
+          lines.push('### frontend-next Contract Result');
+          if (passed === null || failed === null) {
+            if (fs.existsSync(specPath)) {
+              lines.push('_No contract test report found; OpenAPI spec present but no report.json._');
+            } else {
+              lines.push('_No contract JSON report found; artifact or file missing._');
+            }
+            lines.push(`Artifact: [contract-api](${artifactUrl})`);
+          } else {
+            const status = failed === 0 ? 'PASS' : 'FAIL';
+            lines.push(`${status}: ${passed} passed, ${failed} failed`);
+            lines.push(`Full report: [contract-api](${artifactUrl})`);
+          }
+          fs.appendFileSync(summaryFile, lines.join('\n') + '\n');
+          NODE
+
+          {
+            echo
+            echo "### frontend-next A11y Summary"
+            echo
+            if [ -f a11y/report.json ]; then
+              echo '```json'
+              cat a11y/report.json || true
+              echo
+              echo '```'
+            else
+              echo '_No a11y report found (a11y/report.json)_'
+            fi
+
+            echo
+            echo "### frontend-next Contract Summary"
+            echo
+            if [ -f contract/report.json ]; then
+              echo '```json'
+              cat contract/report.json || true
+              echo
+              echo '```'
+            else
+              echo '_No contract report found (contract/report.json)_'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Append frontend-next coverage totals table
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            node frontend-next/scripts/print-coverage-summary.mjs frontend-next >> "$GITHUB_STEP_SUMMARY" || true
+          else
+            node frontend-next/scripts/print-coverage-summary.mjs frontend-next || true
+          fi
+
+      - name: Append exact Coverage Totals (frontend-next)
+        if: always()
+        shell: bash
+        working-directory: frontend-next
+        run: |
+          FILE="coverage/coverage-summary.json"
+          if [ -f "$FILE" ]; then
+            if command -v jq >/dev/null 2>&1; then
+              STATEMENTS=$(jq -r '.total.statements.pct // empty' "$FILE")
+              LINES=$(jq -r '.total.lines.pct // empty' "$FILE")
+            else
+              read -r STATEMENTS LINES <<< "$(node -e "const fs=require('fs');try{const j=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));const s=j?.total?.statements?.pct;const l=j?.total?.lines?.pct;process.stdout.write(((s??'')+' '+(l??'')))}catch(e){process.stdout.write(' ')}" "$FILE")"
+            fi
+            {
+              echo "## Coverage Totals"
+              echo "- Statements: ${STATEMENTS:-N/A}%"
+              echo "- Lines: ${LINES:-N/A}%"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## Coverage Totals"
+              echo "- Statements: N/A%"
+              echo "- Lines: N/A%"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Fail on zero coverage (frontend-next)
+        if: always()
+        shell: bash
+        working-directory: frontend-next
+        run: |
+          set -euo pipefail
+          FILE="coverage/coverage-summary.json"
+          if [ ! -f "$FILE" ]; then
+            echo "WARN: frontend-next coverage summary not found at $FILE; skipping zero-coverage check." >&2
+            exit 0
+          fi
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const file = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
+          const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+          const s = j?.total?.statements?.pct;
+          const l = j?.total?.lines?.pct;
+          const ok = (v) => typeof v === 'number' && v > 0;
+          if (!ok(s) || !ok(l)) {
+            console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+            process.exit(1);
+          }
+          NODE
+
+  spectral-lint:
+    name: Spectral Lint (OpenAPI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Lint OpenAPI with Spectral
+        run: npx -y @stoplight/spectral-cli@6 lint specs/007-spec/week-7.5-finishers/contracts/openapi.yaml --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
+      - name: Lint live API contract if present
+        run: |
+          if [ -f api/openapi.json ]; then
+            npx -y @stoplight/spectral-cli@6 lint api/openapi.json --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
+          else
+            echo "No api/openapi.json found; skipping live contract lint."
+          fi
+
+  latency-snapshot:
+    name: Latency Snapshot (non-gating)
+    if: ${{ always() }}
+    needs: [aggregate-coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve Target URL
+        shell: bash
+        env:
+          VAR_PROD_API_URL: ${{ vars.PROD_API_URL }}
+          SEC_PROD_API_URL: ${{ secrets.PROD_API_URL }}
+        run: |
+          set -euo pipefail
+          VAR_URL="${VAR_PROD_API_URL}"
+          SEC_URL="${SEC_PROD_API_URL}"
+          if [ -n "$VAR_URL" ]; then
+            echo "TARGET_API_URL=$VAR_URL" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if [ -n "$SEC_URL" ]; then
+            echo "TARGET_API_URL=$SEC_URL" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          {
+            echo "### Latency Snapshot (/auth/login)"
+            echo
+            echo "_No TARGET_API_URL configured (vars or secrets). Skipping latency snapshot._"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Measure /auth/login p50/p95 latency
+        shell: bash
+        continue-on-error: true
+        env:
+          TARGET_API_URL: ${{ env.TARGET_API_URL }}
+          REQUESTS: '20'
+          USERNAME: 'alice'
+          PASSWORD: 'correct-password'
+        run: |
+          set -euo pipefail
+          URL="${TARGET_API_URL:-}"
+          if [ -z "$URL" ]; then
+            {
+              echo "### Latency Snapshot (/auth/login)"
+              echo
+              echo "_TARGET_API_URL not set; skipping latency snapshot._"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          ENDPOINT="${URL%/}/auth/login"
+          COUNT="${REQUESTS:-20}"
+          tmpfile=$(mktemp)
+          for i in $(seq 1 "$COUNT"); do
+            t=$(curl -s -o /dev/null -w '%{time_total}' -X POST "$ENDPOINT" \
+                 -H 'Content-Type: application/json' \
+                 --data "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}") || t="0"
+            echo "$t" >> "$tmpfile"
+          done
+
+          msfile=$(mktemp)
+          awk '{printf "%.3f\n", $1*1000}' "$tmpfile" | sort -n > "$msfile"
+          n=$(wc -l < "$msfile" | tr -d ' ')
+          if [ "$n" -eq 0 ]; then
+            {
+              echo "### Latency Snapshot (/auth/login)"
+              echo
+              echo "_No samples collected._"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ $((n%2)) -eq 1 ]; then
+            mid=$(( (n+1)/2 ))
+            p50=$(awk "NR==$mid{print $1}" "$msfile")
+          else
+            mid1=$(( n/2 ))
+            mid2=$(( mid1+1 ))
+            v1=$(awk "NR==$mid1{print $1}" "$msfile")
+            v2=$(awk "NR==$mid2{print $1}" "$msfile")
+            p50=$(awk -v a="$v1" -v b="$v2" 'BEGIN{ printf "%.3f", (a+b)/2 }')
+          fi
+
+          rank=$(awk -v n="$n" 'BEGIN{ printf "%d", (n*0.95==int(n*0.95)) ? int(n*0.95) : int(n*0.95)+1 }')
+          if [ "$rank" -lt 1 ]; then rank=1; fi
+          if [ "$rank" -gt "$n" ]; then rank="$n"; fi
+          p95=$(awk -v r="$rank" 'NR==r{print $1}' "$msfile")
+
+          {
+            echo "### Latency Snapshot (/auth/login)"
+            echo
+            echo "- Target: $ENDPOINT"
+            echo "- Samples: $n"
+            echo
+            echo "| Metric | ms |"
+            echo "| ------ | --- |"
+            echo "| p50 | $p50 |"
+            echo "| p95 | $p95 |"
+          } >> "$GITHUB_STEP_SUMMARY"
