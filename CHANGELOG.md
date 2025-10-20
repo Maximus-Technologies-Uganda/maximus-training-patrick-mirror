@@ -1,5 +1,21 @@
 ## Changelog
 
+### 2025-10-20 (Release v7.0.0: Finish-to-Green - DEV-590, DEV-591, DEV-592, DEV-593, DEV-594, DEV-595)
+
+### Added
+- **Frontend**:
+  - SSR instrumentation logging for initial post render timing (DEV-593)
+- **Documentation**:
+  - Application Health Runbook for auditors/operators at `docs/runbook.md` (DEV-594)
+  - Release notes documentation in RELEASE-NOTES.md (DEV-592)
+- **CI/CD**:
+  - 21-day retention policy for all CI artifacts (coverage, a11y, contract) (DEV-595)
+
+### Changed
+- **Release Management**:
+  - Tagged v7.0.0 with comprehensive release notes (DEV-590)
+  - Published GitHub Release with evidence links (DEV-591)
+
 ### 2025-10-23 (Posts adapter pagination fix - DEV-EXEMPT)
 
 ### Fixed

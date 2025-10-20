@@ -32,10 +32,11 @@ jobs:
       - name: Link check README
         run: node scripts/link-check.js README.md
       - name: Enforce PR template
-        if: ${ github.event_name == 'pull_request' }
+        if: ${{ github.event_name == 'pull_request' }}
         run: node scripts/check-pr-template.js
         env:
-          GITHUB_EVENT_PATH: ${ github.event_path }
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   readme-placeholder-guard:
     name: README placeholder guard
     runs-on: ubuntu-latest
@@ -116,6 +117,7 @@ jobs:
           path: |
             docs/ReviewPacket/a11y/html/**
           if-no-files-found: warn
+          retention-days: 21
 
   frontend-next-coverage:
     needs: install-root-deps
@@ -157,6 +159,7 @@ jobs:
           name: coverage-frontend-next
           path: |
             frontend-next/coverage/**
+          retention-days: 21
 
       - name: Read coverage summary
         id: coverage_frontend_next
@@ -254,6 +257,7 @@ jobs:
           name: coverage-api
           path: |
             api/coverage/**
+          retention-days: 21
 
       - name: Read coverage summary
         id: api_coverage
@@ -338,6 +342,7 @@ jobs:
           path: |
             api/openapi.json
           if-no-files-found: error
+          retention-days: 21
 
   aggregate-coverage:
     name: Aggregate monorepo coverage and summarize

@@ -44,6 +44,8 @@ describe("PostsService", () => {
     it("should return a paginated list of posts correctly", async () => {
       for (let i = 1; i <= 5; i++) {
         await service.create({ title: `T${i}`, content: `C${i}` });
+        // Small delay to ensure unique createdAt timestamps
+        await new Promise((resolve) => setTimeout(resolve, 2));
       }
 
       const page1 = await service.list({ page: 1, pageSize: 2 });

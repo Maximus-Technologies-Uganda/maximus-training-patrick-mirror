@@ -1,3 +1,31 @@
+# Release v7.0.0 - Finish-to-Green
+
+**Date:** 2025-10-20
+
+This release marks the successful completion of the "Week 7.5 Finishers Workbook." The application has been stabilized, and a professional-grade engineering system has been implemented to ensure all code is shippable, verifiable, and maintainable.
+
+### Major Achievements:
+* **SSR First-Paint:** The `/posts` page now renders content on the server, eliminating the initial "Loading..." spinner for a professional user experience.
+* **CI/CD Hardening:** A comprehensive, automated CI/CD pipeline has been built to enforce quality gates, including test coverage, accessibility, API contract linting, and security checks.
+* **Evidence-Based PRs:** A new, mandatory PR template and workflow ensures every change is documented and linked to its evidence (CI runs, artifacts, demo URLs).
+* **Monorepo Tooling:** The repository now uses `pnpm` workspaces and has a full suite of automated local checks (linting, type-checking, testing) managed by Husky hooks.
+* **Full Documentation:** The project's `README.md` is now truthy with live URLs, and new guides have been created for understanding release artifacts and verifying application health.
+
+### Infrastructure & Observability:
+* **SSR Instrumentation:** Server-side rendering now includes logging for initial render timing (DEV-593)
+* **Auditor Runbook:** New operational runbook for verifying application health (DEV-594)
+* **CI Artifact Retention:** 21-day retention policy for all CI artifacts (coverage, a11y, contract) (DEV-595)
+
+### Documentation:
+* **Release Evidence Guide:** Comprehensive guide for interpreting CI/CD artifacts (DEV-587, DEV-574)
+* **SSR Documentation:** Detailed explanation of server-side rendering implementation (DEV-567)
+* **Environment Variables:** Complete environment variables table covering all services (DEV-584)
+
+### Linear Issues Addressed:
+DEV-590, DEV-591, DEV-592, DEV-593, DEV-594, DEV-595, DEV-587, DEV-574, DEV-567, DEV-584
+
+---
+
 # v7.0.0 – Week 7: Auth, Ownership, and Observability
 
 This release delivers foundational authentication (session cookie), ownership enforcement for all write operations, structured logging with request-id propagation, a readiness health endpoint, and a published API contract.
