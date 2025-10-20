@@ -98,6 +98,23 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
+## Server-Side Rendering (SSR)
+
+The `/posts` page is server-rendered for a fast first-paint experience. On the initial request, the page fetches its data directly on the server and returns HTML with visible post content. Client-side navigation may show a brief loader, but first paint does not.
+
+**How it works:**
+- The `PostsPage` server component fetches posts using `API_BASE_URL` (or falls back to `NEXT_PUBLIC_API_URL` in development)
+- Server responds with fully-rendered HTML containing post data
+- Client hydrates with `initialData` from SSR, preventing flash of loading state
+- SWR revalidates on mount to ensure fresh data without blocking the initial render
+
+**Benefits:**
+- Faster perceived load time (content visible immediately)
+- Better SEO (search engines see rendered content)
+- Improved Core Web Vitals (LCP, FCP)
+
+For implementation details, see `src/app/posts/page.tsx` and `src/app/posts/PostsPageClient.tsx`.
+
 ### API Contracts
 
 - `../api/openapi.json`
