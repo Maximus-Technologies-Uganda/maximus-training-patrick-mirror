@@ -8,6 +8,15 @@ const IAP_AUDIENCE: string | undefined = process.env.IAP_AUDIENCE || process.env
 
 export const runtime = "nodejs";
 
+function extractSessionCookie(cookieHeader: string): string {
+  try {
+    const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+    return match ? `session=${match[1]}` : "";
+  } catch {
+    return "";
+  }
+}
+
 async function authHeader(): Promise<Record<string, string>> {
   if (!IAP_AUDIENCE) return {};
   const token = await getIdToken(IAP_AUDIENCE);
@@ -20,10 +29,15 @@ export async function DELETE(request: Request): Promise<Response> {
   const id = segments[segments.length - 1] || segments[segments.length - 2];
   const upstreamUrl = new URL(`/posts/${encodeURIComponent(id)}`, API_BASE_URL).toString();
   const incomingCookieHeader = request.headers.get("cookie") || "";
+  const sessionCookie = extractSessionCookie(incomingCookieHeader);
   const requestId = randomUUID();
   const upstream = await fetch(upstreamUrl, {
     method: "DELETE",
-    headers: { ...(await authHeader()), ...(incomingCookieHeader ? { Cookie: incomingCookieHeader } : {}), "X-Request-Id": requestId },
+    headers: {
+      ...(await authHeader()),
+      ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+      "X-Request-Id": requestId,
+    },
   });
   const upstreamRequestId = upstream.headers.get("x-request-id") || requestId;
   return new NextResponse(null, { status: upstream.status, headers: { "X-Request-Id": upstreamRequestId } });
@@ -36,13 +50,14 @@ export async function PATCH(request: Request): Promise<Response> {
   const upstreamUrl = new URL(`/posts/${encodeURIComponent(id)}`, API_BASE_URL).toString();
   const body = await request.text();
   const incomingCookieHeader = request.headers.get("cookie") || "";
+  const sessionCookie = extractSessionCookie(incomingCookieHeader);
   const requestId = randomUUID();
   const upstream = await fetch(upstreamUrl, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       ...(await authHeader()),
-      ...(incomingCookieHeader ? { Cookie: incomingCookieHeader } : {}),
+      ...(sessionCookie ? { Cookie: sessionCookie } : {}),
       "X-Request-Id": requestId,
     },
     body,

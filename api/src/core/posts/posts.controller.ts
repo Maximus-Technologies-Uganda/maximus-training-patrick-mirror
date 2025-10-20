@@ -4,6 +4,7 @@ import type { IPostsService } from "../../services/PostsService";
 import { NotFoundError } from "../../errors/NotFoundError";
 
 export function createPostsController(postsService: IPostsService) {
+  type ServicePost = Awaited<ReturnType<IPostsService["getById"]>>;
   return {
     async create(req, res, next) {
       try {
@@ -27,12 +28,16 @@ export function createPostsController(postsService: IPostsService) {
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
         }
-        let existing;
+        let existing: ServicePost | null = null;
         try {
           existing = await postsService.getById(req.params.id);
         } catch (err) {
           if (err instanceof NotFoundError) { res.status(404).send(); return; }
           throw err;
+        }
+        if (!existing) {
+          res.status(404).send();
+          return;
         }
         if (existing.ownerId !== userId) {
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
@@ -70,6 +75,10 @@ export function createPostsController(postsService: IPostsService) {
     async getById(req, res, next) {
       try {
         const post = await postsService.getById(req.params.id);
+        if (!post) {
+          res.status(404).send();
+          return;
+        }
         res.json(post);
       } catch (error) {
         if (error instanceof NotFoundError) { res.status(404).send(); return; }
@@ -84,12 +93,16 @@ export function createPostsController(postsService: IPostsService) {
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
         }
-        let existing;
+        let existing: ServicePost | null = null;
         try {
           existing = await postsService.getById(req.params.id);
         } catch (err) {
           if (err instanceof NotFoundError) { res.status(404).send(); return; }
           throw err;
+        }
+        if (!existing) {
+          res.status(404).send();
+          return;
         }
         if (existing.ownerId !== userId) {
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
@@ -109,12 +122,16 @@ export function createPostsController(postsService: IPostsService) {
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
         }
-        let existing;
+        let existing: ServicePost | null = null;
         try {
           existing = await postsService.getById(req.params.id);
         } catch (err) {
           if (err instanceof NotFoundError) { res.status(404).send(); return; }
           throw err;
+        }
+        if (!existing) {
+          res.status(404).send();
+          return;
         }
         if (existing.ownerId !== userId) {
           res.status(403).json({ code: "forbidden", message: "Forbidden" });

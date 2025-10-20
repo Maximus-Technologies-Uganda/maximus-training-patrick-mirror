@@ -2,5 +2,7 @@
 	"github-actions.workflows.secrets": [
 		"LINEAR_API_KEY",
 		"LINEAR_TEAM_ID"
-	]
+	],
+	"workbench.activityBar.orientation": "horizontal",
+	"chatgpt.openOnStartup": true
 }

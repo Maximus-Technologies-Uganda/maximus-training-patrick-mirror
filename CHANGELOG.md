@@ -1,5 +1,31 @@
 ## Changelog
 
+### 2025-10-23 (Posts adapter pagination fix - DEV-EXEMPT)
+
+### Fixed
+- **API**:
+  - Updated the legacy posts service adapter to delegate pagination to the repository so existing records appear in list responses after restarts. (DEV-EXEMPT)
+
+### 2025-10-22 (Posts SSR auth fix - DEV-EXEMPT)
+
+### Fixed
+- **Frontend**:
+  - Updated the `/posts` server component to fetch via the authenticated `/api/posts` proxy so Cloud Run SSR requests include IAP credentials and scoped cookies.
+
+### 2025-10-21 (Posts controller 404 fixes - DEV-EXEMPT)
+
+### Fixed
+- **API**:
+  - Hardened posts controller handlers against `null` responses from legacy service adapters so missing posts correctly return 404 and avoid null dereferences during write operations. (DEV-EXEMPT)
+
+### 2025-10-20 (Posts API bugfixes - DEV-EXEMPT)
+
+### Changed
+- **API**:
+  - Ensured `PostsService.replace` coerces repository timestamps to `Date` instances before returning domain objects.
+- **Frontend**:
+  - Limited PATCH/DELETE post proxy routes to forward only the `session` cookie to the upstream API.
+
 ### 2025-09-04 (Week 2 Wrap-up - DEV-81, DEV-82, DEV-83, DEV-84)
 
 ### Added

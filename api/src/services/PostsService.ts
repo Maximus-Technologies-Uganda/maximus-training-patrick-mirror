@@ -92,7 +92,8 @@ export class PostsService implements IPostsService {
   async replace(id: string, data: PostCreate): Promise<Post> {
     const existing = await this.repository.getById(id);
     if (!existing) throw new NotFoundError({ id });
-    const nowIso = new Date().toISOString();
+    const createdAt = new Date(existing.createdAt);
+    const updatedAt = new Date();
 
     const replaced: Post = {
       id: existing.id,
@@ -101,12 +102,13 @@ export class PostsService implements IPostsService {
       content: data.content,
       tags: Array.isArray(data.tags) ? [...data.tags] : [],
       published: data.published ?? false,
-      createdAt: existing.createdAt,
-      updatedAt: new Date(nowIso),
+      // Convert repo string → Date for domain contract
+      createdAt,
+      updatedAt,
     };
 
     await this.repository.replace(id, replaced);
-    return this.mapStoredToDomain(replaced);
+    return replaced;
   }
 
   /** Merge allowed fields; do not allow changing id/createdAt; bump updatedAt. */

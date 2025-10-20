@@ -1,9 +1,8 @@
 import React from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import PostsPageClient from "../../../components/PostsPageClient";
 import type { Post as SsrPost } from "../../lib/schemas";
-import { getBaseUrl } from "../../lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -40,13 +39,24 @@ export default async function PostsPage({
   let initialHasNextPage: boolean | undefined;
   try {
     if (page === 1) {
-      // Use upstream service endpoint directly from the server to avoid self-calls to the Next app
-      const base = getBaseUrl();
-      const url = new URL("/api/posts", base || "http://localhost");
+      const headerStore = headers();
+      const protocol = headerStore.get("x-forwarded-proto") ?? "http";
+      const host =
+        headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? undefined;
+      const fallbackOrigin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      const origin = host ? `${protocol}://${host}` : fallbackOrigin;
+      const url = new URL("/api/posts", origin);
       url.searchParams.set("page", String(page));
       // Request one extra to determine if there's a next page without another round trip
       url.searchParams.set("pageSize", String(pageSize + 1));
-      const res = await fetch(url.toString(), { cache: "no-store" });
+      const fetchHeaders: Record<string, string> = {};
+      if (session) {
+        fetchHeaders.Cookie = `session=${session}`;
+      }
+      const res = await fetch(url.toString(), {
+        cache: "no-store",
+        headers: fetchHeaders,
+      });
       if (res.ok) {
         const data = (await res.json()) as unknown;
         if (Array.isArray(data)) {
