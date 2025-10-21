@@ -69,28 +69,53 @@ jobs:
           fi
 
       - name: Submit Cloud Build (full deploy)
+        id: submit_build
         run: |
           set -euo pipefail
-          gcloud builds submit \
+          BUILD_OUTPUT=$(gcloud builds submit \
             --config=cloudbuild.yaml \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
             --service-account="projects/${{ env.PROJECT_ID }}/serviceAccounts/github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
             --substitutions=_REGION=${{ env.REGION }},_AR_REPOSITORY=${{ env.AR_REPOSITORY }},_FRONTEND_SERVICE_NAME=${{ env.SERVICE_NAME }},_API_SERVICE_NAME=maximus-training-api \
-            .
+            . 2>&1)
+          echo "$BUILD_OUTPUT"
 
-      - name: Write Cloud Run URL to Job Summary
+          # Extract build ID from the output
+          BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP 'ID:\s+\K[a-zA-Z0-9-]+' | head -1 || echo "")
+          if [ -n "$BUILD_ID" ]; then
+            echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Write deployment summary to Job Summary
         run: |
           set -euo pipefail
           SERVICE_URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" --project "${{ env.PROJECT_ID }}" --region "${{ env.REGION }}" --format='value(status.url)')
+          API_URL=$(gcloud run services describe maximus-training-api --project "${{ env.PROJECT_ID }}" --region "${{ env.REGION }}" --format='value(status.url)' || echo "N/A")
+
           if [ -z "$SERVICE_URL" ]; then
             echo "Failed to resolve Cloud Run service URL" >&2
             exit 1
           fi
+
+          BUILD_ID="${{ steps.submit_build.outputs.build_id }}"
+          BUILD_LINK="https://console.cloud.google.com/cloud-build/builds;region=${{ env.REGION }}/${BUILD_ID}?project=${{ env.PROJECT_ID }}"
+
           {
             echo "## Cloud Run Deployment"
-            echo "- Region: ${{ env.REGION }}"
-            echo "- Service: ${{ env.SERVICE_NAME }}"
-            echo "- URL: $SERVICE_URL"
+            echo ""
+            echo "### Build Information"
+            echo "- **Commit SHA:** \`${{ github.sha }}\`"
+            echo "- **Branch:** \`${{ github.ref_name }}\`"
+            if [ -n "$BUILD_ID" ]; then
+              echo "- **Cloud Build:** [View Build Log]($BUILD_LINK)"
+            fi
+            echo ""
+            echo "### Deployed Services"
+            echo "- **Frontend Service:** ${{ env.SERVICE_NAME }}"
+            echo "  - URL: $SERVICE_URL"
+            echo "- **API Service:** maximus-training-api"
+            echo "  - URL: $API_URL"
+            echo "- **Region:** ${{ env.REGION }}"
           } >> "$GITHUB_STEP_SUMMARY"
 

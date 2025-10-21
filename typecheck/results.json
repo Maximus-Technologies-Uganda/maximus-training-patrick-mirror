@@ -1,5 +1,5 @@
 {
-  "errors": 61,
+  "errors": 0,
   "warnings": 0,
   "projects": [
     {
@@ -7,33 +7,15 @@
       "skipped": false,
       "errors": 0,
       "warnings": 0,
-chore/repo-standards-v3
-      "durationMs": 6512,
+      "durationMs": 10983,
       "exitCode": 0,
-      "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
-    },
-    {
-      "name": "api",
-      "skipped": false,
-      "errors": 61,
-      "warnings": 0,
-      "durationMs": 5310,
-      "exitCode": 2,
-      "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\api\\tsconfig.json --noEmit"
+      "command": "npx -y -p typescript tsc -p c:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
     }
   ],
-  "generatedAt": "2025-10-20T08:46:30.101Z",
-=======
-      "durationMs": 8889,
-      "exitCode": 0,
-      "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
-    }
-  ],
-  "generatedAt": "2025-10-19T14:57:41.372Z",
-main
+  "generatedAt": "2025-10-21T10:37:58.786Z",
   "specRefs": {
-    "tasks": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\tasks.md",
-    "plan": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\plan.md",
-    "spec": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\spec.md"
+    "tasks": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\tasks.md",
+    "plan": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\plan.md",
+    "spec": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\spec.md"
   }
 }

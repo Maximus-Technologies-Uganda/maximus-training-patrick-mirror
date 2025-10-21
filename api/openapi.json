@@ -2,12 +2,41 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Blog Posts API",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "RESTful API for managing blog posts with authentication, pagination, and full CRUD operations. Supports creating, reading, updating, and deleting posts with role-based access control.",
+    "contact": {
+      "name": "API Support",
+      "email": "support@example.com",
+      "url": "https://github.com/yourusername/yourrepo"
+    }
   },
+  "servers": [
+    {
+      "url": "https://maximus-training-api-wyb2jsgqyq-bq.a.run.app",
+      "description": "Production server (Cloud Run)"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "System",
+      "description": "System health and monitoring endpoints"
+    },
+    {
+      "name": "Posts",
+      "description": "Blog post management operations"
+    }
+  ],
   "paths": {
     "/health": {
       "get": {
+        "operationId": "getHealthStatus",
         "summary": "Health check",
+        "description": "Returns the health status of the API service. Used for monitoring and load balancer health checks.",
+        "tags": ["System"],
         "responses": {
           "200": {
             "description": "OK",
@@ -18,7 +47,10 @@
     },
     "/posts": {
       "get": {
+        "operationId": "listPosts",
         "summary": "List posts",
+        "description": "Retrieves a paginated list of blog posts. Supports pagination via page and pageSize query parameters. Returns all published posts visible to the current user.",
+        "tags": ["Posts"],
         "parameters": [
           { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 }, "required": false },
           { "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 }, "required": false }
@@ -32,7 +64,10 @@
         }
       },
       "post": {
+        "operationId": "createPost",
         "summary": "Create post",
+        "description": "Creates a new blog post. Requires authentication. The authenticated user becomes the owner of the post. Returns the created post with generated ID and timestamps.",
+        "tags": ["Posts"],
         "requestBody": {
           "required": true,
           "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostCreate" } } }
@@ -47,7 +82,10 @@
     },
     "/posts/{id}": {
       "get": {
+        "operationId": "getPostById",
         "summary": "Get post",
+        "description": "Retrieves a single blog post by its unique identifier. Returns the full post details including title, content, tags, and metadata.",
+        "tags": ["Posts"],
         "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
         "responses": {
           "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
@@ -55,7 +93,10 @@
         }
       },
       "put": {
+        "operationId": "replacePost",
         "summary": "Replace post",
+        "description": "Completely replaces an existing post with new data. Requires authentication and ownership of the post. All fields must be provided as the entire post is replaced.",
+        "tags": ["Posts"],
         "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostCreate" } } } },
         "security": [ { "cookieAuth": [] } ],
@@ -68,7 +109,10 @@
         }
       },
       "patch": {
+        "operationId": "updatePost",
         "summary": "Update post",
+        "description": "Partially updates an existing post. Requires authentication and ownership. Only the provided fields will be updated; omitted fields remain unchanged.",
+        "tags": ["Posts"],
         "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostUpdate" } } } },
         "security": [ { "cookieAuth": [] } ],
@@ -81,7 +125,10 @@
         }
       },
       "delete": {
+        "operationId": "deletePost",
         "summary": "Delete post",
+        "description": "Permanently deletes a blog post. Requires authentication and ownership of the post. This action cannot be undone.",
+        "tags": ["Posts"],
         "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
         "security": [ { "cookieAuth": [] } ],
         "responses": {
