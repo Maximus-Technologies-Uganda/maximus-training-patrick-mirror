@@ -4,6 +4,7 @@ import { getIdToken } from "../../../../server/auth/getIdToken";
 
 const API_BASE_URL: string =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+const API_SERVICE_TOKEN: string | undefined = process.env.API_SERVICE_TOKEN;
 const IAP_AUDIENCE: string | undefined = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE;
 
 export const runtime = "nodejs";
@@ -23,6 +24,12 @@ async function authHeader(): Promise<Record<string, string>> {
   return { Authorization: `Bearer ${token}` };
 }
 
+function serviceAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (API_SERVICE_TOKEN) headers["Authorization"] = `Bearer ${API_SERVICE_TOKEN}`;
+  return headers;
+}
+
 export async function DELETE(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const segments = url.pathname.split("/");
@@ -34,6 +41,7 @@ export async function DELETE(request: Request): Promise<Response> {
   const upstream = await fetch(upstreamUrl, {
     method: "DELETE",
     headers: {
+      ...serviceAuthHeaders(),
       ...(await authHeader()),
       ...(sessionCookie ? { Cookie: sessionCookie } : {}),
       "X-Request-Id": requestId,
@@ -56,6 +64,7 @@ export async function PATCH(request: Request): Promise<Response> {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      ...serviceAuthHeaders(),
       ...(await authHeader()),
       ...(sessionCookie ? { Cookie: sessionCookie } : {}),
       "X-Request-Id": requestId,

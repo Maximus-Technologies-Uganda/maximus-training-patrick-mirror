@@ -12,7 +12,8 @@
       "Bash(npx tsc --noEmit)",
       "Bash(npm run lint)",
       "Bash(npx eslint src/services/PostsService.ts src/core/posts/posts.service.test.ts)",
-      "Bash(git add api/src/services/PostsService.ts api/src/core/posts/posts.service.test.ts)"
+      "Bash(git add api/src/services/PostsService.ts api/src/core/posts/posts.service.test.ts)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
