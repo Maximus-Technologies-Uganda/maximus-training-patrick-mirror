@@ -40,7 +40,15 @@ export function usePostsList(params?: {
         throw new Error(message);
       }
       const json = (await res.json()) as unknown;
-      const parsed = PostListSchema.safeParse(json);
+      const normalizedJson: unknown = Array.isArray(json)
+        ? {
+            page,
+            pageSize,
+            hasNextPage: json.length >= pageSize,
+            items: json,
+          }
+        : json;
+      const parsed = PostListSchema.safeParse(normalizedJson);
       if (!parsed.success) {
         throw new Error("Response validation failed");
       }

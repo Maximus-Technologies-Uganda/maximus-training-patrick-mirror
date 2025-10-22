@@ -1,0 +1,16 @@
+# Gitleaks configuration for Training monorepo
+# See: https://github.com/gitleaks/gitleaks
+
+title = "Training Monorepo Gitleaks Config"
+
+[[rules]]
+description = "Allow fake private key in examples"
+id = "allow-fake-pk-example"
+regex = '''-----BEGIN PRIVATE KEY-----\n<key>\n-----END PRIVATE KEY-----'''
+entropy = 0.0
+
+  [rules.allowlist]
+  paths = [
+    '''.*api/\.env\.example''',
+    '''.*\.env\.example$'''
+  ]

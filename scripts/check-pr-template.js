@@ -32,7 +32,7 @@ const requiredAnchors = [
   '## Gate Artifacts',
   '## Demo URL(s)',
   '## Screenshots (UI changes)',
-  '## Linked Plan (/specify → /plan → /tasks)',
+  '## Linked Plan (/specify /plan /tasks)',
   '## Risk / Impact',
   '## Rollback Plan',
   '## Checklist'

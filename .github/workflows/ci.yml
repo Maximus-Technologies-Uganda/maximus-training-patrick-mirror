@@ -11,6 +11,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  contracts-spectral:
+    name: Contracts - Spectral Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: spectral-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Spectral Lint (pinned CLI)
+        run: |
+          mkdir -p specs/008-identity-platform/contracts
+          npx @stoplight/spectral-cli@6.11.0 lint \
+            specs/008-identity-platform/contracts/openapi.yaml \
+            -f json > specs/008-identity-platform/contracts/spectral-report.json || true
+
+      - name: Check Spectral Errors
+        run: |
+          if [ -f specs/008-identity-platform/contracts/spectral-report.json ]; then
+            SPECTRAL_ERRORS=$(cat specs/008-identity-platform/contracts/spectral-report.json | jq '[.[] | select(.severity == 0)] | length')
+            echo "Spectral errors found: $SPECTRAL_ERRORS"
+            if [ "$SPECTRAL_ERRORS" -gt 0 ]; then
+              echo "❌ Found $SPECTRAL_ERRORS Spectral error(s). Fix them before merging."
+              jq '[.[] | select(.severity == 0)]' specs/008-identity-platform/contracts/spectral-report.json
+              exit 1
+            fi
+            echo "✅ No Spectral errors found"
+          else
+            echo "❌ Spectral report not found"
+            exit 1
+          fi
+
+      - name: Check OpenAPI Drift
+        run: npm run contracts:check
+
+      - name: Secret Pattern Check
+        run: npm run gate:secrets
+
+      - name: Upload Spectral Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contracts-spectral-report
+          path: specs/008-identity-platform/contracts/spectral-report.json
+
+      - name: Job Summary
+        if: always()
+        run: |
+          {
+            echo "### Spectral Lint - openapi.yaml"
+            echo "Report: contracts-spectral-report/spectral-report.json"
+            if [ -f specs/008-identity-platform/contracts/spectral-report.json ]; then
+              echo ""
+              echo "#### Report Contents:"
+              cat specs/008-identity-platform/contracts/spectral-report.json
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   test:
     # T026: Disabled legacy CI in favor of quality-gate/review-packet
     if: ${{ false }}
@@ -293,5 +362,4 @@ jobs:
         with:
           name: review-packet
           path: review-packet.zip
-
 
