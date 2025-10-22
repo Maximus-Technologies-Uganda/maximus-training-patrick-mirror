@@ -1,233 +1,300 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Blog Posts API",
-    "version": "1.0.0",
-    "description": "RESTful API for managing blog posts with authentication, pagination, and full CRUD operations. Supports creating, reading, updating, and deleting posts with role-based access control.",
-    "contact": {
-      "name": "API Support",
-      "email": "support@example.com",
-      "url": "https://github.com/yourusername/yourrepo"
-    }
+    "title": "Identity Platform & Posts API",
+    "version": "0.0.0"
   },
   "servers": [
     {
-      "url": "https://maximus-training-api-wyb2jsgqyq-bq.a.run.app",
-      "description": "Production server (Cloud Run)"
-    },
-    {
-      "url": "http://localhost:8080",
-      "description": "Local development server"
+      "url": "http://localhost:3000"
     }
   ],
-  "tags": [
-    {
-      "name": "System",
-      "description": "System health and monitoring endpoints"
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     },
-    {
-      "name": "Posts",
-      "description": "Blog post management operations"
-    }
-  ],
-  "paths": {
-    "/health": {
-      "get": {
-        "operationId": "getHealthStatus",
-        "summary": "Health check",
-        "description": "Returns the health status of the API service. Used for monitoring and load balancer health checks.",
-        "tags": ["System"],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string", "enum": ["ok"] } }, "required": ["status"], "additionalProperties": false } } }
+    "responses": {
+      "Err401": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Err403": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Err422": {
+        "description": "Unprocessable Entity",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Err429": {
+        "description": "Too Many Requests",
+        "headers": {
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Seconds until next allowed request"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Err413": {
+        "description": "Payload Too Large",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
+      "Err503": {
+        "description": "Service Unavailable (read-only mode or dependency failure)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
           }
         }
       }
     },
+    "schemas": {
+      "ErrorEnvelope": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ValidationErrorEnvelope": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorEnvelope"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "issue": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "paths": {
     "/posts": {
       "get": {
         "operationId": "listPosts",
-        "summary": "List posts",
-        "description": "Retrieves a paginated list of blog posts. Supports pagination via page and pageSize query parameters. Returns all published posts visible to the current user.",
-        "tags": ["Posts"],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 }, "required": false },
-          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100 }, "required": false }
+        "tags": [
+          "Posts"
         ],
+        "summary": "List posts (public)",
         "responses": {
           "200": {
-            "description": "List of posts",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostList" } } }
-          },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+            "description": "OK"
+          }
         }
       },
       "post": {
         "operationId": "createPost",
-        "summary": "Create post",
-        "description": "Creates a new blog post. Requires authentication. The authenticated user becomes the owner of the post. Returns the created post with generated ID and timestamps.",
-        "tags": ["Posts"],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostCreate" } } }
-        },
-        "security": [ { "cookieAuth": [] } ],
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Create a post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "responses": {
-          "201": { "description": "Created", "headers": { "Location": { "schema": { "type": "string" } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } }
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "$ref": "#/components/responses/Err401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Err403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Err413"
+          },
+          "422": {
+            "$ref": "#/components/responses/Err422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Err429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Err503"
+          }
         }
       }
     },
     "/posts/{id}": {
       "get": {
-        "operationId": "getPostById",
-        "summary": "Get post",
-        "description": "Retrieves a single blog post by its unique identifier. Returns the full post details including title, content, tags, and metadata.",
-        "tags": ["Posts"],
-        "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
+        "operationId": "getPost",
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Get post (public)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
-          "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "200": {
+            "description": "OK"
+          }
         }
       },
       "put": {
-        "operationId": "replacePost",
-        "summary": "Replace post",
-        "description": "Completely replaces an existing post with new data. Requires authentication and ownership of the post. All fields must be provided as the entire post is replaced.",
-        "tags": ["Posts"],
-        "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostCreate" } } } },
-        "security": [ { "cookieAuth": [] } ],
-        "responses": {
-          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } },
-          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForbiddenError" } } } },
-          "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
-        }
-      },
-      "patch": {
         "operationId": "updatePost",
-        "summary": "Update post",
-        "description": "Partially updates an existing post. Requires authentication and ownership. Only the provided fields will be updated; omitted fields remain unchanged.",
-        "tags": ["Posts"],
-        "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PostUpdate" } } } },
-        "security": [ { "cookieAuth": [] } ],
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Update a post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Post" } } } },
-          "400": { "description": "Bad Request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } },
-          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForbiddenError" } } } },
-          "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "$ref": "#/components/responses/Err401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Err403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Err413"
+          },
+          "422": {
+            "$ref": "#/components/responses/Err422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Err429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Err503"
+          }
         }
       },
       "delete": {
         "operationId": "deletePost",
-        "summary": "Delete post",
-        "description": "Permanently deletes a blog post. Requires authentication and ownership of the post. This action cannot be undone.",
-        "tags": ["Posts"],
-        "parameters": [ { "$ref": "#/components/parameters/PostId" } ],
-        "security": [ { "cookieAuth": [] } ],
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Delete a post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "204": { "description": "No Content" },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UnauthorizedError" } } } },
-          "403": { "description": "Forbidden", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForbiddenError" } } } },
-          "404": { "description": "Not Found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "$ref": "#/components/responses/Err401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Err403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Err413"
+          },
+          "429": {
+            "$ref": "#/components/responses/Err429"
+          },
+          "503": {
+            "$ref": "#/components/responses/Err503"
+          }
         }
-      }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "cookieAuth": {
-        "type": "apiKey",
-        "in": "cookie",
-        "name": "session",
-        "description": "Signed HttpOnly session cookie named 'session'"
-      }
-    },
-    "parameters": {
-      "PostId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
-    },
-    "schemas": {
-      "Post": {
-        "type": "object",
-        "required": ["id", "ownerId", "title", "content", "published", "createdAt", "updatedAt"],
-        "properties": {
-          "id": { "type": "string" },
-          "ownerId": { "type": "string" },
-          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "content": { "type": "string", "minLength": 1, "maxLength": 10000 },
-          "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 40 }, "maxItems": 20 },
-          "published": { "type": "boolean" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
-        },
-        "additionalProperties": false
-      },
-      "PostCreate": {
-        "type": "object",
-        "required": ["title", "content"],
-        "properties": {
-          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "content": { "type": "string", "minLength": 1, "maxLength": 10000 },
-          "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 40 }, "maxItems": 20 },
-          "published": { "type": "boolean" }
-        },
-        "additionalProperties": false
-      },
-      "PostUpdate": {
-        "type": "object",
-        "additionalProperties": false,
-        "minProperties": 1,
-        "properties": {
-          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "content": { "type": "string", "minLength": 1, "maxLength": 10000 },
-          "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 40 }, "maxItems": 20 },
-          "published": { "type": "boolean" }
-        }
-      },
-      "PostList": {
-        "type": "object",
-        "required": ["page", "pageSize", "hasNextPage", "items"],
-        "properties": {
-          "page": { "type": "integer", "minimum": 1 },
-          "pageSize": { "type": "integer", "minimum": 1 },
-          "hasNextPage": { "type": "boolean" },
-          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Post" } },
-          "totalItems": { "type": "integer", "minimum": 0 },
-          "totalPages": { "type": "integer", "minimum": 0 },
-          "currentPage": { "type": "integer", "minimum": 1 }
-        },
-        "additionalProperties": false
-      },
-      "Error": {
-        "type": "object",
-        "required": ["code", "message"],
-        "properties": {
-          "code": { "type": "string" },
-          "message": { "type": "string" },
-          "details": {}
-        },
-        "additionalProperties": false
-      },
-      "UnauthorizedError": {
-        "allOf": [
-          { "$ref": "#/components/schemas/Error" },
-          { "type": "object", "properties": { "code": { "type": "string", "enum": ["unauthorized"] } }, "required": ["code"] }
-        ]
-      },
-      "ForbiddenError": {
-        "allOf": [
-          { "$ref": "#/components/schemas/Error" },
-          { "type": "object", "properties": { "code": { "type": "string", "enum": ["forbidden"] } }, "required": ["code"] }
-        ]
       }
     }
   }
 }
-
-

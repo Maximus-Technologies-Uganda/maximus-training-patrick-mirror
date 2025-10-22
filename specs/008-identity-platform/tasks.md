@@ -5,10 +5,17 @@ Source of truth: specs/008-identity-platform/spec.md
 Plan: specs/008-identity-platform/plan.md
 
 ## Phase 1 — Setup
+chore/T001-env-flags-setup-DEV-598
+- [X] T001 Establish env/flags (.env examples) per plan (NEXT_PUBLIC_API_URL, FIREBASE_*, SESSION_SECRET) — specs/008-identity-platform/quickstart.md
+- [X] T002 Create CI spectral step and artifacts path — .github/workflows/ci.yml
+- [X] T003 Add `scripts/sync-openapi.ts` to copy canonical contract to app — scripts/sync-openapi.ts
+- [X] T045 Document Secret Manager wiring (FIREBASE_ADMIN_*), add .env.example placeholders and secret-pattern checks — specs/008-identity-platform/quickstart.md
+=======
 - [ ] T001 Establish env/flags (.env examples) per plan (NEXT_PUBLIC_API_URL, FIREBASE_*, SESSION_SECRET) — specs/008-identity-platform/quickstart.md
 - [ ] T002 Create CI spectral step and artifacts path — .github/workflows/ci.yml
 - [ ] T003 Add `scripts/sync-openapi.ts` to copy canonical contract to app — scripts/sync-openapi.ts
 - [ ] T045 Document Secret Manager wiring (FIREBASE_ADMIN_*), add .env.example placeholders and secret-pattern checks — specs/008-identity-platform/quickstart.md
+main
 
 ## Phase 2 — Foundational
 - [ ] T004 Add canonical OpenAPI skeleton (bearer + protected ops) — specs/008-identity-platform/contracts/openapi.yaml

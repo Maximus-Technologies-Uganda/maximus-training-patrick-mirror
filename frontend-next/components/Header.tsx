@@ -24,10 +24,12 @@ function decodeJwtWithoutVerify(token: string): DecodedSession | null {
 
 function deriveUsername(userId: string | undefined): string | null {
   if (!userId) return null;
-  const lower = userId.toLowerCase();
+  const trimmed = userId.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
   if (lower.startsWith("admin")) return "admin";
   if (lower.includes("alice")) return "alice";
-  return null;
+  return trimmed;
 }
 
 export default async function Header(): Promise<React.ReactElement> {
@@ -35,6 +37,7 @@ export default async function Header(): Promise<React.ReactElement> {
   const raw = cookieStore.get("session")?.value || "";
   const decoded = raw ? decodeJwtWithoutVerify(raw) : null;
   const username = deriveUsername(decoded?.userId);
+  const isSignedIn = Boolean(username ?? decoded?.userId?.trim());
 
   return (
     <header className="border-b border-gray-200 bg-gray-50">
@@ -43,9 +46,11 @@ export default async function Header(): Promise<React.ReactElement> {
           Posts App
         </Link>
         <div className="flex items-center gap-3">
-          {username ? (
+          {isSignedIn ? (
             <>
-              <span className="text-sm text-gray-800">Signed in as {username}</span>
+              <span className="text-sm text-gray-800">
+                Signed in{username ? ` as ${username}` : ""}
+              </span>
               <LogoutButton />
             </>
           ) : (

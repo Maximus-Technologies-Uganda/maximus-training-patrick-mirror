@@ -32,16 +32,19 @@ if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_P
   (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ = localPostsFallback;
 }
 
-function buildAuthHeaders(): Record<string, string> {
+async function buildAuthHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (API_SERVICE_TOKEN) headers["Authorization"] = `Bearer ${API_SERVICE_TOKEN}`;
-  return headers;
-}
+  const serviceAuthorization = API_SERVICE_TOKEN ? `Bearer ${API_SERVICE_TOKEN}` : undefined;
 
-async function buildIapAuthHeader(): Promise<Record<string, string>> {
-  if (!IAP_AUDIENCE) return {};
-  const idToken = await getIdToken(IAP_AUDIENCE);
-  return { Authorization: `Bearer ${idToken}` };
+  if (IAP_AUDIENCE) {
+    const idToken = await getIdToken(IAP_AUDIENCE);
+    headers["Authorization"] = `Bearer ${idToken}`;
+    if (serviceAuthorization) headers["X-Service-Authorization"] = serviceAuthorization;
+    return headers;
+  }
+
+  if (serviceAuthorization) headers["Authorization"] = serviceAuthorization;
+  return headers;
 }
 
 function buildUpstreamUrl(pathname: string, search: URLSearchParams): string {
@@ -107,6 +110,16 @@ async function fetchWithTimeoutAndRetries(
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = buildUpstreamUrl("/posts", request.nextUrl.searchParams);
   try {
+    const incomingCookieHeader = request.headers.get("cookie") || "";
+    // Only forward the session cookie to upstream to avoid leaking unrelated cookies
+    const sessionCookie = (() => {
+      try {
+        const match = incomingCookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+        return match ? `session=${match[1]}` : "";
+      } catch {
+        return "";
+      }
+    })();
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const upstreamResponse = await fetchWithTimeoutAndRetries(
@@ -114,8 +127,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       {
         method: "GET",
         headers: {
-          ...buildAuthHeaders(),
-          ...(await buildIapAuthHeader()),
+          ...(await buildAuthHeaders()),
+          ...(sessionCookie ? { Cookie: sessionCookie } : {}),
           "X-Request-Id": requestId,
         },
         cache: "no-store",
@@ -205,8 +218,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...buildAuthHeaders(),
-        ...(await buildIapAuthHeader()),
+        ...(await buildAuthHeaders()),
         ...(sessionCookie ? { Cookie: sessionCookie } : {}),
         "X-Request-Id": requestId,
       },

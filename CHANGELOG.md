@@ -1,5 +1,24 @@
 ## Changelog
 
+### 2025-10-24 (Posts offline fallback parity - DEV-EXEMPT)
+
+### Fixed
+- **Frontend**:
+  - Added local fallback handling for `/api/posts/[id]` PATCH/DELETE routes so edit and delete flows remain functional when the upstream API is unavailable in local or CI environments. (DEV-EXEMPT)
+
+### 2025-10-22 (Identity Platform groundwork nits - DEV-EXEMPT)
+
+### Changed
+- **CI**:
+  - Switched OpenAPI drift check to `pnpm run contracts:check` for consistency with pnpm-based toolchain.
+  - Added `gate:secrets` step to validate example env files for secret hygiene in CI.
+- **Docs**:
+  - Cleaned encoding artifacts in `specs/008-identity-platform/quickstart.md` and clarified `SESSION_SECRET` requirement (>= 32 chars) and console navigation arrows.
+- **Contracts**:
+  - Aligned OpenAPI `servers` URL to `http://localhost:3000` to match dev defaults.
+- **Repo**:
+  - Declared `packageManager: pnpm@9.x` in root `package.json` to align with Corepack usage.
+
 ### 2025-10-20 (Release v7.0.0: Finish-to-Green - DEV-590, DEV-591, DEV-592, DEV-593, DEV-594, DEV-595)
 
 ### Added
@@ -198,5 +217,4 @@
 
 - **Testing**:
   - Added comprehensive test suites across Expense Tracker, To-Do App, and Stopwatch to ensure functionality and robustness, including edge cases and CLI error handling.
-
 
