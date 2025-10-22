@@ -7,12 +7,30 @@
       "skipped": false,
       "errors": 0,
       "warnings": 0,
+008-identity-roles-hardening
+      "durationMs": 35540,
+      "exitCode": 0,
+      "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
+    },
+    {
+      "name": "api",
+      "skipped": false,
+      "errors": 0,
+      "warnings": 0,
+      "durationMs": 22942,
+      "exitCode": 0,
+      "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\api\\tsconfig.json --noEmit"
+    }
+  ],
+  "generatedAt": "2025-10-22T06:42:00.163Z",
+=======
       "durationMs": 10983,
       "exitCode": 0,
       "command": "npx -y -p typescript tsc -p c:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
     }
   ],
   "generatedAt": "2025-10-21T10:37:58.786Z",
+main
   "specRefs": {
     "tasks": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\tasks.md",
     "plan": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\plan.md",

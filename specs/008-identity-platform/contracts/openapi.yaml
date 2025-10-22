@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: Identity Platform & Posts API
+  version: 0.0.0
+servers:
+  - url: http://localhost:4000
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    Err401:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Err403:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Err422:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorEnvelope'
+    Err429:
+      description: Too Many Requests
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until next allowed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Err413:
+      description: Payload Too Large
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Err503:
+      description: Service Unavailable (read-only mode or dependency failure)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    ValidationErrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/ErrorEnvelope'
+        - type: object
+          properties:
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  path: { type: string }
+                  issue: { type: string }
+paths:
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [Posts]
+      summary: List posts (public)
+      responses:
+        '200':
+          description: OK
+    post:
+      operationId: createPost
+      tags: [Posts]
+      summary: Create a post
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Created
+        '401': { $ref: '#/components/responses/Err401' }
+        '403': { $ref: '#/components/responses/Err403' }
+        '422': { $ref: '#/components/responses/Err422' }
+        '429': { $ref: '#/components/responses/Err429' }
+        '413': { $ref: '#/components/responses/Err413' }
+        '503': { $ref: '#/components/responses/Err503' }
+  /posts/{id}:
+    get:
+      operationId: getPost
+      tags: [Posts]
+      summary: Get post (public)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    put:
+      operationId: updatePost
+      tags: [Posts]
+      summary: Update a post
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+        '401': { $ref: '#/components/responses/Err401' }
+        '403': { $ref: '#/components/responses/Err403' }
+        '422': { $ref: '#/components/responses/Err422' }
+        '429': { $ref: '#/components/responses/Err429' }
+        '413': { $ref: '#/components/responses/Err413' }
+        '503': { $ref: '#/components/responses/Err503' }
+    delete:
+      operationId: deletePost
+      tags: [Posts]
+      summary: Delete a post
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content
+        '401': { $ref: '#/components/responses/Err401' }
+        '403': { $ref: '#/components/responses/Err403' }
+        '429': { $ref: '#/components/responses/Err429' }
+        '413': { $ref: '#/components/responses/Err413' }
+        '503': { $ref: '#/components/responses/Err503' }
