@@ -23,8 +23,9 @@ describe("Auth middleware on protected CUD route (POST /posts)", () => {
     const res = await request(app)
       .post("/posts")
       .set("Cookie", ["session=invalid.tampered.payload"]) // bad signature / format
-      .send(body)
-      .set("Content-Type", "application/json");
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send(body);
     expect(res.status).toBe(401);
   });
 
@@ -34,8 +35,9 @@ describe("Auth middleware on protected CUD route (POST /posts)", () => {
     const res = await request(app)
       .post("/posts")
       .set("Cookie", [expiredCookie])
-      .send(body)
-      .set("Content-Type", "application/json");
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send(body);
     expect(res.status).toBe(401);
   });
 
@@ -43,8 +45,9 @@ describe("Auth middleware on protected CUD route (POST /posts)", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/posts")
-      .send(body)
-      .set("Content-Type", "application/json");
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send(body);
     expect(res.status).toBe(401);
   });
 
@@ -54,8 +57,9 @@ describe("Auth middleware on protected CUD route (POST /posts)", () => {
     const res = await request(app)
       .post("/posts")
       .set("Cookie", [validCookie])
-      .send(body)
-      .set("Content-Type", "application/json");
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send(body);
     expect(res.status).toBe(201);
   });
 });

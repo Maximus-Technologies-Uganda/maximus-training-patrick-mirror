@@ -1,0 +1,42 @@
+# CI Workflow Additions for T055 and T056
+# Apply these changes to .github/workflows/ci.yml
+
+# Add after line 12 (after concurrency block, before jobs:):
+
+jobs:
+  secret-scan:
+    name: Security - Secret Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for gitleaks
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  app-router-check:
+    name: Frontend - App Router Enforcement
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for pages/ directory
+        run: |
+          if [ -d "frontend-next/pages" ] || [ -d "frontend-next/pages/api" ]; then
+            echo "❌ ERROR: pages/ or pages/api/ directory found!"
+            echo "App Router only: remove pages/ and pages/api/ directories."
+            echo "Use app/api/.../route.ts instead."
+            exit 1
+          fi
+          echo "✅ No pages/ directory found - App Router enforcement passed"
+
+  # Keep existing contracts-spectral job here...
+

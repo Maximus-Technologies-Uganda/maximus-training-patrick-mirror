@@ -45,8 +45,9 @@ describe('Posts API Integration Tests', () => {
         const res = await supertest(api)
           .post('/posts')
           .set('Cookie', cookie('user-A'))
-          .send(p)
-          .set('Content-Type', 'application/json');
+          .set('Content-Type', 'application/json')
+          .set('Accept', 'application/json')
+          .send(p);
         expect(res.status).toBe(201);
       }
 
@@ -92,8 +93,9 @@ describe('Posts API Integration Tests', () => {
       const createRes = await supertest(api)
         .post('/posts')
         .set('Cookie', cookie('user-A'))
-        .send(createPayload)
-        .set('Content-Type', 'application/json');
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+        .send(createPayload);
       expect(createRes.status).toBe(201);
       expect(createRes.headers['location']).toMatch(/^\/posts\/[A-Za-z0-9_-]+$/);
       expect(typeof createRes.body.id).toBe('string');
@@ -109,8 +111,9 @@ describe('Posts API Integration Tests', () => {
       const patchRes = await supertest(api)
         .patch(`/posts/${id}`)
         .set('Cookie', cookie('user-A'))
-        .send(patchPayload)
-        .set('Content-Type', 'application/json');
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+        .send(patchPayload);
       expect(patchRes.status).toBe(200);
       expect(patchRes.body).toMatchObject({ id, ...createPayload, ...patchPayload });
 
@@ -120,7 +123,10 @@ describe('Posts API Integration Tests', () => {
       expect(getRes2.body).toMatchObject({ id, ...createPayload, ...patchPayload });
 
       // DELETE
-      const deleteRes = await supertest(api).delete(`/posts/${id}`).set('Cookie', cookie('user-A'));
+      const deleteRes = await supertest(api)
+        .delete(`/posts/${id}`)
+        .set('Cookie', cookie('user-A'))
+        .set('Accept', 'application/json');
       expect(deleteRes.status).toBe(204);
 
       // VERIFY DELETE

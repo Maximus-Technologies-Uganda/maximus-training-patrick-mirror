@@ -3,6 +3,9 @@ info:
   title: Identity Platform & Posts API
   version: 0.0.0
   description: Production-hardened API for authenticated posts management
+  contact:
+    name: Maximus Platform Team
+    email: platform@maximusglobal.com
 servers:
   - url: http://localhost:8080
     description: Local development (API)
@@ -12,6 +15,9 @@ servers:
     description: Production API
   - url: https://maximus-training-frontend-673209018655.africa-south1.run.app
     description: Production frontend/BFF
+tags:
+  - name: Posts
+    description: Operations for listing and managing posts
 components:
   securitySchemes:
     BearerAuth:
@@ -39,6 +45,16 @@ components:
             code: "FORBIDDEN"
             message: "Insufficient permissions to access this resource"
             requestId: "550e8400-e29b-41d4-a716-446655440001"
+    Err406:
+      description: Not Acceptable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: "NOT_ACCEPTABLE"
+            message: "Accept header must include application/json for mutating requests"
+            requestId: "550e8400-e29b-41d4-a716-446655440006"
     Err422:
       description: Unprocessable Entity
       content:
@@ -104,6 +120,16 @@ components:
           type: string
           format: uuid
           description: Unique request identifier for tracing
+        details:
+          description: Additional error context such as validation issues or metadata
+          anyOf:
+            - type: 'null'
+            - type: object
+              additionalProperties: true
+            - type: array
+              items:
+                type: object
+                additionalProperties: true
     ValidationErrorEnvelope:
       allOf:
         - $ref: '#/components/schemas/ErrorEnvelope'
@@ -122,6 +148,7 @@ paths:
       operationId: listPosts
       tags: [Posts]
       summary: List posts (public)
+      description: Retrieve the collection of published posts that are visible to all users.
       responses:
         '200':
           description: OK
@@ -129,6 +156,7 @@ paths:
       operationId: createPost
       tags: [Posts]
       summary: Create a post
+      description: Create a new post owned by the authenticated user.
       security:
         - BearerAuth: []
       responses:
@@ -136,6 +164,7 @@ paths:
           description: Created
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
+        '406': { $ref: '#/components/responses/Err406' }
         '422': { $ref: '#/components/responses/Err422' }
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
@@ -145,6 +174,7 @@ paths:
       operationId: getPost
       tags: [Posts]
       summary: Get post (public)
+      description: Fetch the details for a single post by identifier.
       parameters:
         - in: path
           name: id
@@ -158,6 +188,7 @@ paths:
       operationId: updatePost
       tags: [Posts]
       summary: Update a post
+      description: Replace the contents of an existing post owned by the authenticated user.
       security:
         - BearerAuth: []
       parameters:
@@ -171,6 +202,7 @@ paths:
           description: OK
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
+        '406': { $ref: '#/components/responses/Err406' }
         '422': { $ref: '#/components/responses/Err422' }
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
@@ -179,6 +211,7 @@ paths:
       operationId: deletePost
       tags: [Posts]
       summary: Delete a post
+      description: Remove an existing post owned by the authenticated user.
       security:
         - BearerAuth: []
       parameters:
@@ -192,7 +225,6 @@ paths:
           description: No Content
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
+        '406': { $ref: '#/components/responses/Err406' }
         '429': { $ref: '#/components/responses/Err429' }
-        '413': { $ref: '#/components/responses/Err413' }
         '503': { $ref: '#/components/responses/Err503' }
-

@@ -2,8 +2,10 @@
  * cors.ts
  * Custom CORS middleware with explicit preflight handling
  *
- * Requirements (T031):
- * - OPTIONS preflight returns 204 with proper Access-Control-* headers
+ * Requirements:
+ * - T031: OPTIONS preflight returns 204 with proper Access-Control-* headers
+ * - T061: Expose rate-limit headers to browsers via Access-Control-Expose-Headers
+ * - T069: Reject Origin: null (unless dev flag); no wildcard (*) in production
  * - Vary header includes Origin, Access-Control-Request-Method, Access-Control-Request-Headers
  * - No rate-limit headers on preflight responses
  * - Access-Control-Max-Age: 600 (10 minutes)
@@ -26,6 +28,9 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     .map((o) => o.trim())
     .filter(Boolean);
 
+  const isProd = process.env.NODE_ENV === 'production';
+  const allowNullOrigin = process.env.ALLOW_NULL_ORIGIN === 'true'; // dev only
+
   return (req: Request, res: Response, _next: NextFunction): void => {
     const origin = req.headers.origin;
     const requestMethod = req.headers['access-control-request-method'];
@@ -41,12 +46,46 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     }
     res.setHeader('Vary', varyComponents.join(', '));
 
+    // T069: Reject Origin: null unless explicitly allowed (dev only)
+    if (origin === 'null' && !allowNullOrigin) {
+      const requestId = res.locals.requestId || req.requestId || 'unknown';
+
+      res.status(403).json({
+        code: 'FORBIDDEN_NULL_ORIGIN',
+        message: 'Origin: null is not allowed',
+        requestId,
+        hint: 'Requests from local files or sandboxed contexts are blocked. Use a proper origin or set ALLOW_NULL_ORIGIN=true in development.'
+      });
+      return;
+    }
+
+    // T069: Never allow wildcard in production
+    if (isProd && allowedOrigins.includes('*')) {
+      const requestId = res.locals.requestId || req.requestId || 'unknown';
+
+      console.error(JSON.stringify({
+        level: 'error',
+        message: 'SECURITY ERROR: Wildcard CORS origin (*) detected in production',
+        context: 'cors-preflight',
+        env: process.env.NODE_ENV,
+        configuredOrigins: allowedOrigins,
+        requestId
+      }));
+      res.status(500).json({
+        code: 'INVALID_CORS_CONFIG',
+        message: 'Internal server error',
+        requestId,
+        hint: 'Wildcard CORS origin (*) is not allowed in production. Configure specific allowed origins via CORS_ORIGINS environment variable.'
+      });
+      return;
+    }
+
     // Check if origin is allowed
     if (origin && allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
-    } else if (origin && allowedOrigins.includes('*')) {
-      // Wildcard support (not recommended with credentials)
+    } else if (origin && allowedOrigins.includes('*') && !isProd) {
+      // Wildcard support (only in dev/test)
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
 
@@ -81,15 +120,11 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
 export function corsVaryHeader(): RequestHandler {
   return (_req: Request, res: Response, next: NextFunction): void => {
     const currentVary = res.getHeader('Vary');
-
     if (!currentVary) {
       res.setHeader('Vary', 'Origin');
-    } else if (typeof currentVary === 'string') {
-      if (!currentVary.includes('Origin')) {
-        res.setHeader('Vary', `${currentVary}, Origin`);
-      }
+    } else if (typeof currentVary === 'string' && !currentVary.includes('Origin')) {
+      res.setHeader('Vary', `${currentVary}, Origin`);
     }
-
     next();
   };
 }
@@ -104,17 +139,54 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     .map((o) => o.trim())
     .filter(Boolean);
 
+  const isProd = process.env.NODE_ENV === 'production';
+  const allowNullOrigin = process.env.ALLOW_NULL_ORIGIN === 'true'; // dev only
+
   return (req: Request, res: Response, next: NextFunction): void => {
     const origin = req.headers.origin;
+
+    // T069: Reject Origin: null unless explicitly allowed (dev only)
+    if (origin === 'null' && !allowNullOrigin) {
+      const requestId = res.locals.requestId || req.requestId || 'unknown';
+
+      res.status(403).json({
+        code: 'FORBIDDEN_NULL_ORIGIN',
+        message: 'Origin: null is not allowed',
+        requestId,
+        hint: 'Requests from local files or sandboxed contexts are blocked. Use a proper origin or set ALLOW_NULL_ORIGIN=true in development.'
+      });
+      return;
+    }
+
+    // T069: Never allow wildcard in production
+    if (isProd && allowedOrigins.includes('*')) {
+      const requestId = res.locals.requestId || req.requestId || 'unknown';
+
+      console.error(JSON.stringify({
+        level: 'error',
+        message: 'SECURITY ERROR: Wildcard CORS origin (*) detected in production',
+        context: 'cors-headers',
+        env: process.env.NODE_ENV,
+        configuredOrigins: allowedOrigins,
+        requestId
+      }));
+      res.status(500).json({
+        code: 'INVALID_CORS_CONFIG',
+        message: 'Internal server error',
+        requestId,
+        hint: 'Wildcard CORS origin (*) is not allowed in production. Configure specific allowed origins via CORS_ORIGINS environment variable.'
+      });
+      return;
+    }
 
     if (origin && allowedOrigins.includes(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
-    } else if (origin && allowedOrigins.includes('*')) {
+    } else if (origin && allowedOrigins.includes('*') && !isProd) {
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
 
-    // Expose rate-limit headers
+    // Expose rate-limit headers (T061)
     res.setHeader(
       'Access-Control-Expose-Headers',
       'X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id'
@@ -131,3 +203,15 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     next();
   };
 }
+
+/**
+ * Add Vary: Origin header to normal responses
+ * This ensures caches understand the response varies by Origin
+ */
+// removed duplicate implementation block
+
+/**
+ * Set CORS headers for normal (non-preflight) requests
+ * Used in conjunction with the cors() package for simple requests
+ */
+// removed duplicate implementation block

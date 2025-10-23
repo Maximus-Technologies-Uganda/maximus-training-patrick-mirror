@@ -2,7 +2,7 @@
  * securityHeaders.ts
  * Security headers baseline middleware
  *
- * Requirements (T050):
+ * Requirements (T050, T067):
  * - Referrer-Policy: strict-origin-when-cross-origin
  * - X-Content-Type-Options: nosniff
  * - X-Frame-Options: DENY

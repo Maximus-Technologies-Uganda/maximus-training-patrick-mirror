@@ -261,16 +261,17 @@ jobs:
 
       - name: Read coverage summary
         id: api_coverage
+        working-directory: api
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const path = require('path');
-          const summaryPath = path.join(process.cwd(), 'api', 'coverage', 'coverage-summary.json');
+          const summaryPath = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
           if (!fs.existsSync(summaryPath)) {
-            console.error('ERROR: Coverage summary not found at api/coverage/coverage-summary.json. Ensure Jest runs with coverage.');
+            console.error('ERROR: Coverage summary not found at coverage/coverage-summary.json. Ensure Jest runs with coverage.');
             try {
-              console.log('Listing api/coverage directory for diagnostics:');
-              console.log(fs.readdirSync(path.join(process.cwd(), 'api', 'coverage')).join('\n'));
+              console.log('Listing coverage directory for diagnostics:');
+              console.log(fs.readdirSync(path.join(process.cwd(), 'coverage')).join('\n'));
             } catch (e) {
               console.log('No coverage directory present.');
             }
@@ -279,7 +280,7 @@ jobs:
           let summary = null;
           try { summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8')); }
           catch (e) {
-            console.error('ERROR: Failed to parse api/coverage/coverage-summary.json:', e.message);
+            console.error('ERROR: Failed to parse coverage/coverage-summary.json:', e.message);
             process.exit(1);
           }
           function statementsPct(summary){
@@ -326,7 +327,7 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: api-coverage-report
-          path: api-coverage-table.md
+          path: api/api-coverage-table.md
 
   contract-artifact:
     needs: install-root-deps

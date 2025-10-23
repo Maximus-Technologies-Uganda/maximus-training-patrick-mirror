@@ -40,6 +40,7 @@ describe('OpenAPI contract - /posts', () => {
     const res = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'T', content: 'C' });
     expect(res.status).toBe(201);
     // Response schema validation is handled via integration tests and Zod schemas
@@ -51,6 +52,7 @@ describe('OpenAPI contract - /posts', () => {
     const res = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({});
     expect(res.status).toBe(400);
     // Response schema validation is handled via integration tests and Zod schemas
@@ -61,6 +63,7 @@ describe('OpenAPI contract - /posts', () => {
     await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'A', content: 'aaa' });
     const res = await request(app).get('/posts');
     expect(res.status).toBe(200);
@@ -88,6 +91,7 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
     const res = await request(app).get(`/posts/${created.body.id}`);
     expect(res.status).toBe(200);
@@ -99,11 +103,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
     const id = created.body.id;
     const res = await request(app)
       .put(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'New', content: 'Text' });
     expect(res.status).toBe(200);
   });
@@ -113,6 +119,7 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const res = await request(app)
       .put('/posts/missing')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'New', content: 'Text' });
     expect(res.status).toBe(404);
   });
@@ -122,11 +129,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
     const id = created.body.id;
     const res = await request(app)
       .put(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: '' });
     expect(res.status).toBe(400);
   });
@@ -136,11 +145,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
     const id = created.body.id;
     const res = await request(app)
       .patch(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({});
     expect(res.status).toBe(400);
   });
@@ -150,11 +161,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
     const id = created.body.id;
     const res = await request(app)
       .patch(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Updated' });
     expect(res.status).toBe(200);
   });
@@ -164,6 +177,7 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const res = await request(app)
       .patch('/posts/missing')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Updated' });
     expect(res.status).toBe(404);
   });
@@ -173,11 +187,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
     const id = created.body.id;
     const res = await request(app)
       .delete(`/posts/${id}`)
-      .set('Cookie', cookie('user-A'));
+      .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json');
     expect(res.status).toBe(204);
     // No body expected for 204
   });
@@ -186,7 +202,8 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const app = await makeApp();
     const res = await request(app)
       .delete('/posts/missing')
-      .set('Cookie', cookie('user-A'));
+      .set('Cookie', cookie('user-A'))
+      .set('Accept', 'application/json');
     expect(res.status).toBe(404);
   });
 });
