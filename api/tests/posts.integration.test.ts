@@ -1,6 +1,6 @@
 import supertest from "supertest";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { validToken } = require('./jwt.util.js');
+import * as jwtUtil from './jwt.util.js';
+const { validToken } = jwtUtil;
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 const cookie = (u: string) => `session=${validToken(u)}`;
 import * as appModule from "#tsApp";
@@ -166,5 +166,3 @@ describe('Posts API Integration Tests', () => {
     });
   });
 });
-
-

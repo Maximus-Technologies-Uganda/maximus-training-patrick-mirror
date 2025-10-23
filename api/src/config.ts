@@ -33,7 +33,6 @@ export function getSessionSecret(): string {
     if (isProduction) {
       throw new Error('SESSION_SECRET must be set in production');
     }
-    // eslint-disable-next-line no-console
     console.warn('[config] SESSION_SECRET is not set; using insecure dev default');
     return 'dev-secret';
   }

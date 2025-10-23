@@ -2,8 +2,16 @@ openapi: 3.1.0
 info:
   title: Identity Platform & Posts API
   version: 0.0.0
+  description: Production-hardened API for authenticated posts management
 servers:
+  - url: http://localhost:8080
+    description: Local development (API)
   - url: http://localhost:3000
+    description: Local development (BFF)
+  - url: https://maximus-training-api-wyb2jsgqyq-bq.a.run.app
+    description: Production API
+  - url: https://maximus-training-frontend-673209018655.africa-south1.run.app
+    description: Production frontend/BFF
 components:
   securitySchemes:
     BearerAuth:
@@ -17,18 +25,35 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: "UNAUTHORIZED"
+            message: "Invalid or expired authentication token"
+            requestId: "550e8400-e29b-41d4-a716-446655440000"
     Err403:
       description: Forbidden
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: "FORBIDDEN"
+            message: "Insufficient permissions to access this resource"
+            requestId: "550e8400-e29b-41d4-a716-446655440001"
     Err422:
       description: Unprocessable Entity
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ValidationErrorEnvelope'
+          example:
+            code: "VALIDATION_ERROR"
+            message: "Request validation failed"
+            requestId: "550e8400-e29b-41d4-a716-446655440002"
+            details:
+              - path: "title"
+                issue: "Title is required"
+              - path: "body"
+                issue: "Body must be at least 10 characters"
     Err429:
       description: Too Many Requests
       headers:
@@ -40,18 +65,30 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: "RATE_LIMITED"
+            message: "Rate limit exceeded. Please try again later."
+            requestId: "550e8400-e29b-41d4-a716-446655440003"
     Err413:
       description: Payload Too Large
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: "PAYLOAD_TOO_LARGE"
+            message: "Request payload exceeds 1MB limit"
+            requestId: "550e8400-e29b-41d4-a716-446655440004"
     Err503:
       description: Service Unavailable (read-only mode or dependency failure)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: "SERVICE_UNAVAILABLE"
+            message: "Service is in read-only mode"
+            requestId: "550e8400-e29b-41d4-a716-446655440005"
   schemas:
     ErrorEnvelope:
       type: object
@@ -59,11 +96,14 @@ components:
       properties:
         code:
           type: string
+          description: Machine-readable error code
         message:
           type: string
-        details:
-          type: object
-          additionalProperties: true
+          description: Human-readable error message
+        requestId:
+          type: string
+          format: uuid
+          description: Unique request identifier for tracing
     ValidationErrorEnvelope:
       allOf:
         - $ref: '#/components/schemas/ErrorEnvelope'
@@ -155,3 +195,4 @@ paths:
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
         '503': { $ref: '#/components/responses/Err503' }
+

@@ -1,6 +1,4 @@
-// Use CommonJS-compatible require to avoid TS type resolution issues in tests
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const express = require("express");
+import express from "express";
 import { requireAuth as requireSessionAuth } from "../auth/auth.middleware";
 import { validateBody, validateQuery } from "../../middleware/validate";
 import { ListPostsQuerySchema, PostCreateSchema, PostUpdateSchema } from "./post.schemas";

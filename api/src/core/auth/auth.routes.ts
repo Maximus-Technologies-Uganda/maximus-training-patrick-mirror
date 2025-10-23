@@ -1,6 +1,4 @@
-// Use CommonJS-compatible require to avoid TS type resolution issues in some setups
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const express = require("express");
+import express from "express";
 import { createHmac } from "node:crypto";
 import { getSessionSecret } from "../../config";
 
@@ -80,7 +78,8 @@ router.post("/logout", (req, res) => {
     ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
   try {
     const secret = getSessionSecret();
-    const raw = (req as any).cookies?.session || (req.headers.cookie?.match(/(?:^|;)\s*session=([^;]+)/)?.[1] ?? "");
+    const raw = (req as unknown as { cookies?: Record<string, string> }).cookies?.session ||
+      (req.headers.cookie?.match(/(?:^|;)\s*session=([^;]+)/)?.[1] ?? "");
     if (raw) {
       // verify signature minimally to extract userId when valid
       const [h, p, sig] = raw.split(".");

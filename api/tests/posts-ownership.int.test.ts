@@ -1,5 +1,5 @@
 import request from "supertest";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { validToken } = require('./jwt.util.js');
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 const cookieForUser = (userId: string): string => `session=${validToken(userId)}`;

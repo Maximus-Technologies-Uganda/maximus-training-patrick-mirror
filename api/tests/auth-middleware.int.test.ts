@@ -1,8 +1,8 @@
 import request from "supertest";
 // Support both TS and JS util depending on runner
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const jwtUtil = require('./jwt.util.js');
-const { validToken, expiredToken } = jwtUtil;
+const { validToken } = jwtUtil;
 import { createApp } from "../src/app";
 import { loadConfigFromEnv } from "../src/config";
 import { createRepository } from "../src/repositories/posts-repository";

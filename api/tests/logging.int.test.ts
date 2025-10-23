@@ -16,7 +16,6 @@ describe("logging integration", () => {
 
   beforeEach(() => {
     logs = [];
-    // eslint-disable-next-line no-console
     console.log = (msg?: unknown) => {
       if (typeof msg === "string") logs.push(msg);
       else logs.push(String(msg));
@@ -24,7 +23,6 @@ describe("logging integration", () => {
   });
 
   afterEach(() => {
-    // eslint-disable-next-line no-console
     console.log = originalLog;
   });
 

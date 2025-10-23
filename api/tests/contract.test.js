@@ -22,7 +22,7 @@ beforeAll(() => {
   const specPath = path.join(__dirname, '..', 'openapi.json');
   // Validate OpenAPI document with Spectral before running contract assertions
   // This ensures the spec is syntactically valid and conforms to common rulesets
-  execSync(`npx spectral lint "${specPath}"`, { stdio: 'inherit' });
+  execSync(`npx @stoplight/spectral-cli@6.11.0 lint "${specPath}"`, { stdio: 'inherit' });
 });
 
 describe('OpenAPI contract - /health', () => {
@@ -96,12 +96,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('PUT /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .put('/posts/test-id')
+      .put(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
       .send({ title: 'New', content: 'Text' });
     expect(res.status).toBe(200);
@@ -118,12 +119,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('PUT /posts/:id invalid body matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .put('/posts/test-id')
+      .put(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
       .send({ title: '' });
     expect(res.status).toBe(400);
@@ -131,8 +133,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('PATCH /posts/:id validation error matches spec', async () => {
     const app = await makeApp();
+    const created = await request(app)
+      .post('/posts')
+      .set('Cookie', cookie('user-A'))
+      .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .patch('/posts/test-id')
+      .patch(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
       .send({});
     expect(res.status).toBe(400);
@@ -140,12 +147,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('PATCH /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .patch('/posts/test-id')
+      .patch(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
       .send({ title: 'Updated' });
     expect(res.status).toBe(200);
@@ -162,12 +170,13 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('DELETE /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .delete('/posts/test-id')
+      .delete(`/posts/${id}`)
       .set('Cookie', cookie('user-A'));
     expect(res.status).toBe(204);
     // No body expected for 204
