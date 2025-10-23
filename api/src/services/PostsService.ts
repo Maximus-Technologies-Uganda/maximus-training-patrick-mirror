@@ -139,9 +139,12 @@ export class PostsService implements IPostsService {
   }
 
   private mapStoredToDomain(stored: PostRecord): Post {
+    const storedWithOwner = stored as unknown as { ownerId?: string };
     return {
       id: String(stored.id),
-      ownerId: String((stored as unknown as { ownerId: string }).ownerId),
+      // Preserve undefined for pre-existing posts without ownerId
+      // String(undefined) would return "undefined" which breaks ownership checks
+      ownerId: storedWithOwner.ownerId ? String(storedWithOwner.ownerId) : undefined,
       title: String(stored.title),
       content: String(stored.content),
       tags: Array.isArray(stored.tags) ? stored.tags.slice() : [],

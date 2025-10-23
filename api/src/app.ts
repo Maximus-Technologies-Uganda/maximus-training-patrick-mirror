@@ -12,8 +12,10 @@ import { PostsService } from "./services/PostsService";
 import type { IPostsRepository } from "./repositories/posts.repository";
 import type { AppConfig } from "./config";
 import { requireJsonContentType, requireJsonAccept } from "./middleware/contentType";
+import { stripIdentityFields } from "./middleware/stripIdentity";
 import { corsHeaders, corsPreflight } from "./middleware/cors";
 import { securityHeaders } from "./middleware/securityHeaders";
+import { assertCorsProdInvariants } from "./config/cors";
 
 import rateLimit from "express-rate-limit";
 import path from "path";
@@ -33,6 +35,8 @@ function handleCorsPreflightRequest(config: AppConfig) {
 }
 
 export function createApp(config: AppConfig, repository: IPostsRepository) {
+  // Validate critical production invariants before wiring middleware (T103)
+  assertCorsProdInvariants();
   const app = express();
 
   // Generate request identifiers before any middleware can short-circuit the pipeline
@@ -67,9 +71,23 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     max: config.rateLimitMax,
     standardHeaders: true,
     legacyHeaders: false,
+    handler: (req, res) => {
+      // T092: Ensure Retry-After present only on 429
+      const seconds = Math.ceil(config.rateLimitWindowMs / 1000);
+      res.setHeader('Retry-After', String(seconds));
+      // T087: Prevent caching of error responses
+      res.setHeader('Cache-Control', 'no-store');
+      const requestId = (req as unknown as { requestId?: string }).requestId ||
+        ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined) ||
+        (res.get('X-Request-Id') as string | undefined) || 'unknown';
+      res.status(429).json({ code: 'rate_limit_exceeded', message: 'Too Many Requests', requestId });
+    }
   });
   app.use(limiter);
   app.use(express.json({ limit: config.jsonLimit }));
+
+  // Strip privileged identity fields from client payloads (T104)
+  app.use(stripIdentityFields);
 
   // Content-Type and Accept validation (T032, T068)
   app.use(requireJsonContentType);

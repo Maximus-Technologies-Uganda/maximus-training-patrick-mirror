@@ -170,14 +170,14 @@ steps:
       - -ceu
       - |
         set -euxo pipefail
-        FRONTEND_SA=${_SERVICE_ACCOUNT}
-        if [ -z "$FRONTEND_SA" ]; then
-          FRONTEND_SA=$(gcloud run services describe "${_FRONTEND_SERVICE_NAME}" --project "${PROJECT_ID}" --region "${_REGION}" --format='value(spec.template.spec.serviceAccountName)')
+        FRONTEND_SA="${_SERVICE_ACCOUNT}"
+        if [ -z "$$FRONTEND_SA" ]; then
+          FRONTEND_SA=$$(gcloud run services describe "${_FRONTEND_SERVICE_NAME}" --project "${PROJECT_ID}" --region "${_REGION}" --format='value(spec.template.spec.serviceAccountName)')
         fi
-        if [ -n "$FRONTEND_SA" ]; then
+        if [ -n "$$FRONTEND_SA" ]; then
           gcloud run services add-iam-policy-binding "${_API_SERVICE_NAME}" \
             --project "${PROJECT_ID}" --region "${_REGION}" \
-            --member "serviceAccount:$${FRONTEND_SA}" \
+            --member "serviceAccount:$$FRONTEND_SA" \
             --role "roles/run.invoker" || true
         else
           echo "Could not determine frontend service account; skipping IAM grant" >&2

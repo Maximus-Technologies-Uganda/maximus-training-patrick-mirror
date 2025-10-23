@@ -12,6 +12,10 @@ export function errorHandler(err: AppError, _req: Request, res: Response, _next:
   const fallbackStatus = err.status ?? err.statusCode;
   const mappedStatus = err.code ? statusByCode[err.code] : undefined;
   const status = fallbackStatus ?? mappedStatus ?? 500;
+  // T087: Prevent caching of error responses
+  if ([401, 403, 413, 422, 429, 503].includes(status)) {
+    res.setHeader('Cache-Control', 'no-store');
+  }
 
   res.status(status).json({
     code: err.code ?? "internal_error",

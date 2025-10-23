@@ -155,3 +155,29 @@ jobs:
               echo "Spectral report file not found."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+  dependency-audit:
+    name: Security - Dependency Audit (non-gating) (T090)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Enable Corepack (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+      - name: Install (frozen)
+        run: pnpm install --ignore-scripts --frozen-lockfile=false
+      - name: Audit for High/Critical
+        run: |
+          # Prefer npm audit (broad ecosystem support) for now
+          npm audit --audit-level=high || true
+      - name: Job Summary
+        if: always()
+        run: echo "Dependency audit executed (non-gating). See logs for findings." >> "$GITHUB_STEP_SUMMARY"

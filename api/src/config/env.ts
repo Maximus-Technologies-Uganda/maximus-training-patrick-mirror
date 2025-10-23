@@ -17,5 +17,18 @@ export const optionalEnv = [
 export type ProdRequired = typeof requiredEnvInProd[number];
 export type Optional = typeof optionalEnv[number];
 
+/**
+ * T076: Validate required environment variable names on boot.
+ * Only checks presence of names (not values) and only in production.
+ */
+export function validateEnvOnBoot(): void {
+  const isProd = process.env.NODE_ENV === 'production';
+  if (!isProd) return;
+  const missing = requiredEnvInProd.filter((k) => !(k in process.env));
+  if (missing.length > 0) {
+    throw new Error(`[config] Missing required env var(s): ${missing.join(', ')}`);
+  }
+}
+
 // Note: Validation logic will be added in T076
 // For now, this module just documents the contract

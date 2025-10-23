@@ -39,21 +39,21 @@ main
 - [X] T067 CSP nonce/strict policy (tighten T050; automated check) — api/src/middleware/securityHeaders.ts; scripts/quality-gate/check-csp.ts
 - [X] T068 Content negotiation guard: mutating routes require `Accept: application/json`; extend 415 tests accordingly — api/src/middleware/contentType.ts; api/tests/contracts/http.415.spec.ts
 - [X] T069 CORS hardening: reject `Origin: null` (unless explicitly allowed) and assert no wildcard `Access-Control-Allow-Origin` in prod — api/src/middleware/cors.ts; api/tests/contracts/cors.preflight.spec.ts
-- [ ] T076 Env validation on boot (fail fast; names only, not values) — api/src/config/env.ts; api/tests/env.validation.spec.ts; frontend-next/src/config/env.ts
-- [ ] T084 Security headers++: add `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and a minimal `Permissions-Policy`; add tests — api/src/middleware/securityHeaders.ts; api/tests/security.headers.spec.ts
-- [ ] T085 CORS vary on normal responses: ensure `Vary: Origin` on CORS’d non-preflight responses; add contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.vary-normal.spec.ts
-- [ ] T086 406 guard (content negotiation): if `Accept` excludes `application/json`, return 406; extend OpenAPI/examples + tests — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.406.spec.ts
-- [ ] T087 Error cache headers: set `Cache-Control: no-store` on 401/403/422/429/413/503 responses; assert in contract tests — api/src/lib/errors.ts; api/tests/contracts/errors.cache-control.spec.ts
-- [ ] T090 Dependency policy gate (non-gating at first): CI fails on high/critical vulns with allowlist — .github/workflows/ci.yml
-- [ ] T092 Retry-After semantics: document and assert `Retry-After` present on 429 only (absent on 413/503); add contract checks — specs/008-identity-platform/plan.md; api/tests/contracts/retry-after.spec.ts
-- [ ] T094 Cache rules on authenticated routes: set `Cache-Control: no-store, private` on any response that required auth; add contract test — api/src/middleware/cacheHeaders.ts; api/tests/contracts/cache.auth-routes.spec.ts
-- [ ] T095 CORS credentials guard: allow `Access-Control-Allow-Credentials: true` only when `Access-Control-Allow-Origin` is an exact origin (never `*`); contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.credentials.guard.spec.ts
+- [X] T076 Env validation on boot (fail fast; names only, not values) - api/src/config/env.ts; api/tests/env.validation.spec.ts; frontend-next/src/config/env.ts
+- [X] T084 Security headers++: add `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and a minimal `Permissions-Policy`; add tests - api/src/middleware/securityHeaders.ts; api/tests/security.headers.spec.ts
+- [X] T085 CORS vary on normal responses: ensure `Vary: Origin` on CORS'd non-preflight responses; add contract test - api/src/middleware/cors.ts; api/tests/contracts/cors.vary-normal.spec.ts
+- [X] T086 406 guard (content negotiation): if `Accept` excludes `application/json`, return 406; extend OpenAPI/examples + tests - api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.406.spec.ts
+- [X] T087 Error cache headers: set `Cache-Control: no-store` on 401/403/422/429/413/503 responses; assert in contract tests - api/src/lib/errors.ts; api/tests/contracts/errors.cache-control.spec.ts
+- [X] T090 Dependency policy gate (non-gating at first): CI fails on high/critical vulns with allowlist - .github/workflows/ci.yml
+- [X] T092 Retry-After semantics: document and assert `Retry-After` present on 429 only (absent on 413/503); add contract checks - specs/008-identity-platform/plan.md; api/tests/contracts/retry-after.spec.ts
+- [X] T094 Cache rules on authenticated routes: set `Cache-Control: no-store, private` on any response that required auth; add contract test - api/src/middleware/cacheHeaders.ts; api/tests/contracts/cache.auth-routes.spec.ts
+- [X] T095 CORS credentials guard: allow `Access-Control-Allow-Credentials: true` only when `Access-Control-Allow-Origin` is an exact origin (never `*`); contract test - api/src/middleware/cors.ts; api/tests/contracts/cors.credentials.guard.spec.ts
 - [ ] T096 415 vs 406 matrix doc: add a 2×2 decision chart in contentType.ts/OpenAPI comments (“invalid Content-Type → 415; Accept excludes JSON → 406”) — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml
-- [ ] T097 Origin=null dev carve-out: add dev allowlist toggle for `Origin: null` and test it is OFF in prod — api/src/middleware/cors.ts; api/tests/contracts/cors.origin-null.spec.ts
-- [ ] T098 Spectral custom rules: forbid `additionalProperties: true` on error envelopes; require integer types for rate-limit headers (assert numeric emission in test); require at least one 2xx example per operation — .spectral.yaml; scripts/validate-openapi.ts; api/tests/middleware.rate-limit.headers.spec.ts
+- [X] T097 Origin=null dev carve-out: add dev allowlist toggle for `Origin: null` and test it is OFF in prod - api/src/middleware/cors.ts; api/tests/contracts/cors.origin-null.spec.ts
+- [X] T098 Spectral custom rules: forbid `additionalProperties: true` on error envelopes; require integer types for rate-limit headers (assert numeric emission in test); require at least one 2xx example per operation - .spectral.yaml; scripts/validate-openapi.ts; api/tests/middleware.rate-limit.headers.spec.ts
 - [ ] T102 (merged into T094) — track under T094
-- [ ] T103 Prod header invariant: fail startup if `ALLOW_CREDENTIALS=true` and `ALLOW_ORIGIN='*'` in prod; unit test — api/src/config/cors.ts; api/tests/cors.invariants.spec.ts
-- [ ] T104 Drop client identity fields: strip `userId/role/authorId` from request bodies before business logic; unit test — api/src/middleware/stripIdentity.ts; api/tests/strip-identity.spec.ts
+- [X] T103 Prod header invariant: fail startup if `ALLOW_CREDENTIALS=true` and `ALLOW_ORIGIN='*'` in prod; unit test - api/src/config/cors.ts; api/tests/cors.invariants.spec.ts
+- [X] T104 Drop client identity fields: strip `userId/role/authorId` from request bodies before business logic; unit test - api/src/middleware/stripIdentity.ts; api/tests/strip-identity.spec.ts
 - [ ] T107 401/403 doc note: add explicit line in spec/plan (invalid/expired token → 401; valid identity but forbidden resource → 403) — specs/008-identity-platform/spec.md; specs/008-identity-platform/plan.md
 - [ ] T108 Rate-limit key doc & test: document key derivation `userId || IP`; add precedence test — api/src/middleware/rateLimit.ts; api/tests/middleware.rate-limit.key.spec.ts
 - [ ] T109 CSP nonce rotation test: ensure nonce differs between sequential responses — api/tests/security.csp-nonce.spec.ts

@@ -91,14 +91,26 @@ function main() {
   const auditJson = runNpmAudit();
   if (auditJson) {
     const sev = summarizeNpmAudit(auditJson);
+    const exitCode = Number(auditJson.__exitCode || 0);
+    const hasNoData = auditJson.__raw === null;
+
+    // Mark as failed if no stdout or non-zero exit (except exit code 1 from vulnerabilities)
+    const failed = hasNoData || (exitCode !== 0 && exitCode !== 1);
+
     writeJson(OUT_FILE, {
       ...sev,
       generatedAt: new Date().toISOString(),
       tool: "npm audit",
-      exitCode: Number(auditJson.__exitCode || 0),
+      exitCode: exitCode,
       npmVersion: String(auditJson.__npmVersion || ""),
+      ...(failed && {
+        failed: true,
+        message: hasNoData
+          ? "npm audit produced no output (network error or command failed)"
+          : `npm audit exited with code ${exitCode}`
+      }),
     });
-    console.log(`[security] Wrote ${OUT_FILE}`);
+    console.log(`[security] Wrote ${OUT_FILE}${failed ? ' (marked as failed)' : ''}`);
     return;
   }
 
