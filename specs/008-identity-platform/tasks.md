@@ -18,16 +18,16 @@ chore/T001-env-flags-setup-DEV-598
 main
 
 ## Phase 2 — Foundational
-- [ ] T004 Add canonical OpenAPI skeleton (bearer + protected ops) — specs/008-identity-platform/contracts/openapi.yaml
-- [ ] T005 [P] Add rate-limit header policy docs (headers on 2xx, 429; none on preflight) — specs/008-identity-platform/plan.md
-- [ ] T006 Add logging policy & retention (PII redaction, 30d; audit 90d) — specs/008-identity-platform/plan.md
-- [ ] T031 CORS & preflight policy (OPTIONS 204 with Access-Control-*; add `Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers`; no rate-limit headers on preflight) — api/src/middleware/cors.ts; frontend-next/next.config.js
-- [ ] T032 Content-Type guard for mutations (require application/json; else 415 envelope) — api/src/middleware/contentType.ts
-- [ ] T042 OpenAPI CI checks (operationId uniqueness, examples for 401/403/422/429/413/503; fail if global `security` block present; verify `servers` map to local/staging/prod) — scripts/validate-openapi.ts
-- [ ] T044 Time sync assumption documented (NTP/chrony) to honor ±5m skew — specs/008-identity-platform/spec.md
-- [ ] T049 Canonical contracts path + CI sync documented — specs/008-identity-platform/plan.md
-- [ ] T050 Security headers baseline (Referrer-Policy: `strict-origin-when-cross-origin`; X-Content-Type-Options: `nosniff`; X-Frame-Options: `DENY` or CSP `frame-ancestors 'none'`; minimal CSP with nonce `default-src 'self'; script-src 'self' 'nonce-<nonce>'`) — api/src/middleware/securityHeaders.ts
-- [ ] T051 OPTIONS contract tests (204 + Access-Control-*; no auth; add `Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers`; no rate-limit headers; assert `Access-Control-Max-Age: 600` or intentional omission) — api/tests/contracts/cors.preflight.spec.ts
+- [X] T004 Add canonical OpenAPI skeleton (bearer + protected ops) — specs/008-identity-platform/contracts/openapi.yaml
+- [X] T005 [P] Add rate-limit header policy docs (headers on 2xx, 429; none on preflight) — specs/008-identity-platform/plan.md
+- [X] T006 Add logging policy & retention (PII redaction, 30d; audit 90d) — specs/008-identity-platform/plan.md
+- [X] T031 CORS & preflight policy (OPTIONS 204 with Access-Control-*; add `Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers`; no rate-limit headers on preflight) — api/src/middleware/cors.ts; frontend-next/next.config.js
+- [X] T032 Content-Type guard for mutations (require application/json; else 415 envelope) — api/src/middleware/contentType.ts
+- [X] T042 OpenAPI CI checks (operationId uniqueness, examples for 401/403/422/429/413/503; fail if global `security` block present; verify `servers` map to local/staging/prod) — scripts/validate-openapi.ts
+- [X] T044 Time sync assumption documented (NTP/chrony) to honor ±5m skew — specs/008-identity-platform/spec.md
+- [X] T049 Canonical contracts path + CI sync documented — specs/008-identity-platform/plan.md
+- [X] T050 Security headers baseline (Referrer-Policy: `strict-origin-when-cross-origin`; X-Content-Type-Options: `nosniff`; X-Frame-Options: `DENY` or CSP `frame-ancestors 'none'`; minimal CSP with nonce `default-src 'self'; script-src 'self' 'nonce-<nonce>'`) — api/src/middleware/securityHeaders.ts
+- [X] T051 OPTIONS contract tests (204 + Access-Control-*; no auth; add `Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers`; no rate-limit headers; assert `Access-Control-Max-Age: 600` or intentional omission) — api/tests/contracts/cors.preflight.spec.ts
 - [ ] T054 Spectral ruleset pin & CI gate (stoplight/spectral@6.11.0) — .spectral.yaml; .github/workflows/ci.yml
 - [ ] T055 Secret scanning in CI (gitleaks or equivalent; whitelist fixtures) — .github/workflows/ci.yml; .gitleaks.toml
 - [ ] T056 App Router lint/CI check (no pages/ or pages/api/; only app/api/.../route.ts) — .eslintrc.js; .github/workflows/ci.yml

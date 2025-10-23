@@ -15,21 +15,91 @@ import type { AppConfig } from "./config";
 import rateLimit from "express-rate-limit";
 import path from "path";
 
+// New production hardening middleware
+import { securityHeaders } from "./middleware/securityHeaders";
+import { corsVaryHeader } from "./middleware/cors";
+import { requireJsonContentType } from "./middleware/contentType";
+
 export function createApp(config: AppConfig, repository: IPostsRepository) {
   const app = express();
 
   // Core Middleware (order matters)
-  app.use(helmet());
-  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000")
-    .split(",")
+  // 1. CORS preflight handler FIRST (completely bypass all other middleware for OPTIONS)
+  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+    .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
-  app.use(
+  const allowsWildcardOrigin = allowedOrigins.includes('*');
+
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      // Handle preflight immediately - inline implementation to avoid any middleware interference
+      const origin = req.headers.origin;
+      const requestMethod = req.headers['access-control-request-method'];
+      const requestHeaders = req.headers['access-control-request-headers'];
+
+      // Build Vary header
+      const varyComponents = ['Origin'];
+      if (requestMethod) varyComponents.push('Access-Control-Request-Method');
+      if (requestHeaders) varyComponents.push('Access-Control-Request-Headers');
+      res.setHeader('Vary', varyComponents.join(', '));
+
+      // Set CORS headers
+      if (origin && (allowedOrigins.includes(origin) || allowsWildcardOrigin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
+
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Authorization, X-CSRF-Token, X-Request-Id, Content-Type');
+      res.setHeader('Access-Control-Max-Age', '600');
+      res.setHeader('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id');
+
+      // Send 204 and end - do NOT call next()
+      return res.status(204).end();
+    }
+    next();
+  });
+
+  // 2. Security headers baseline (skip for OPTIONS - already handled above)
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      return next(); // OPTIONS already handled, skip helmet
+    }
+    helmet()(req, res, next);
+  });
+
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      return next(); // OPTIONS already handled, skip security headers
+    }
+    securityHeaders(req, res, next);
+  });
+
+  // 3. CORS for normal requests (NOT for OPTIONS - already handled above)
+  // Apply cors() only to non-OPTIONS requests
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      return next(); // Already handled by preflight middleware above
+    }
     cors({
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin) {
+          return callback(null, true);
+        }
+
+        if (allowsWildcardOrigin || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        return callback(null, false);
+      },
       credentials: true,
-    })
-  );
+    })(req, res, next);
+  });
+  app.use(corsVaryHeader());
+
+  // 4. Rate limiting (after CORS, so preflight bypasses it)
   const limiter = rateLimit({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
@@ -37,8 +107,15 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     legacyHeaders: false,
   });
   app.use(limiter);
-  app.use(express.json({ limit: config.jsonLimit }));
+
+  // 5. Request tracking (must occur before validators that rely on requestId)
   app.use(requestIdMiddleware);
+
+  // 6. Body parsing
+  app.use(express.json({ limit: config.jsonLimit }));
+
+  // 7. Content-Type validation (after body parsing, before routes)
+  app.use(requireJsonContentType);
   app.use(requestLogger);
 
   // Root - simple status JSON

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getIdToken } from "../../../../server/auth/getIdToken";
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = new URL("/auth/logout", API_BASE_URL).toString();
   try {
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const audience = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE || "";
     const headers: Record<string, string> = { "X-Request-Id": requestId };
     if (audience) headers.Authorization = `Bearer ${await getIdToken(audience)}`;
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Fallback for local/CI: always clear the session cookie
     if (process.env.NODE_ENV !== "production") {
       const incomingReqId = request.headers.get("x-request-id") || "";
-      const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+      const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
       const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
       const secureAttr = isHttps(request) ? "; Secure" : "";
       res.headers.set("set-cookie", `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttr}`);
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     // Structured error for logs/telemetry
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const errInfo = error instanceof Error
       ? { name: error.name, message: error.message, stack: error.stack }
       : String(error);

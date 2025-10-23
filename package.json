@@ -17,6 +17,7 @@
   "scripts": {
     "contracts:sync": "tsx scripts/sync-openapi.ts",
     "contracts:check": "tsx scripts/sync-openapi.ts --check",
+    "contracts:validate": "tsx scripts/validate-openapi.ts",
     "pretest": "npm run contracts:sync",
     "test": "node scripts/run-tests.js",
     "test:quote": "node quote/tests/test.js",

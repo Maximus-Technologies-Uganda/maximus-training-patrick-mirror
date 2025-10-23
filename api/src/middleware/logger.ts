@@ -10,7 +10,6 @@ export const requestLogger: RequestHandler = (req, res, next) => {
       status: res.statusCode,
       requestId: (req as unknown as { requestId?: string }).requestId,
     };
-    // eslint-disable-next-line no-console
     console.log(JSON.stringify(event));
   });
   next();

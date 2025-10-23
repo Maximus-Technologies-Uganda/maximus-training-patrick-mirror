@@ -467,10 +467,108 @@ Consolidate all evidence and publish the official `v8.0.0` release.
 - Commits: `dayN(scope): short summary`
 - PR titles: `[DayN][Area] <summary>`; body links Linear + spec path.
 
+## Production Hardening Policies
+
+### Rate-Limit Header Policy (T005)
+
+Rate-limit headers provide visibility into quota consumption and help clients implement adaptive backoff.
+
+**Header Behavior:**
+- **Present on 2xx responses**: All successful requests include `X-RateLimit-Limit` and `X-RateLimit-Remaining`
+- **Present on 429 responses**: Rate-limited requests include all quota headers plus `Retry-After` (seconds until reset)
+- **Absent on OPTIONS (preflight)**: CORS preflight requests do NOT include rate-limit headers to avoid client confusion and caching issues
+- **CORS Exposure**: `Access-Control-Expose-Headers` includes `X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id` to make headers visible to browser JavaScript
+
+**Example Response Headers:**
+```
+# Successful request (2xx)
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 7
+X-Request-Id: 550e8400-e29b-41d4-a716-446655440000
+
+# Rate-limited request (429)
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+Retry-After: 42
+X-Request-Id: 550e8400-e29b-41d4-a716-446655440001
+```
+
+**Key Derivation:** `userId` (if authenticated) → IP address (fallback for anonymous)
+
+### Logging Policy & Retention (T006)
+
+Structured logging protects user privacy while maintaining operational observability.
+
+**PII Redaction Rules:**
+- **Never log**: Email addresses, passwords, authentication tokens, cookies, raw request bodies
+- **Allowed**: Opaque `userId` (Firebase UID), `role` enum (`owner`|`admin`), HTTP method/path, status code
+- **Audit logs**: Explicit fields only: `{ timestamp, userId, role, verb, targetType, targetId, status, traceId }`
+
+**Retention Policy:**
+- **Application logs**: ≤ 30 days (stdout → Cloud Logging)
+- **Audit logs**: 90 days (separate log sink, restricted read access)
+- **Trace data**: Follows retention policy of trace backend (e.g., Cloud Trace)
+
+**Log Structure Example:**
+```json
+{
+  "timestamp": "2025-10-22T15:30:45.123Z",
+  "level": "info",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+  "userId": "firebase-uid-abc123",
+  "role": "owner",
+  "method": "POST",
+  "path": "/posts",
+  "status": 201,
+  "latency_ms": 42,
+  "message": "Post created successfully"
+}
+```
+
+### Canonical Contracts Path & CI Sync (T049)
+
+**Source of Truth:** `specs/008-identity-platform/contracts/openapi.yaml` (YAML)
+**Build Artifact:** `api/openapi.json` (JSON, generated at build time)
+
+**Sync Process:**
+1. Canonical YAML is hand-maintained in `specs/008-identity-platform/contracts/`
+2. CI runs `scripts/sync-openapi.ts` to convert YAML → JSON
+3. JSON is deployed with the API and exposed at `/openapi.json` endpoint
+4. CI validates drift with `npm run contracts:check` (fails if JSON doesn't match YAML)
+
+**Developer Workflow:**
+```bash
+# Edit canonical spec
+vim specs/008-identity-platform/contracts/openapi.yaml
+
+# Sync to api directory
+npm run contracts:sync
+
+# Validate spec
+npm run contracts:validate
+
+# Commit both files
+git add specs/008-identity-platform/contracts/openapi.yaml api/openapi.json
+git commit -m "feat(contracts): add 415 response for invalid Content-Type"
+```
+
+**CI Integration:**
+```yaml
+- name: Validate OpenAPI
+  run: npm run contracts:validate
+
+- name: Check contract drift
+  run: npm run contracts:check
+```
+
 ## Commands & CI snippets
 
 * **Run a11y:** `pnpm test:a11y` → outputs to `a11y-frontend-next/`
 * **Contract tests:** `pnpm test:contracts` (expects 200/401/403/404/422/429/413)
+* **Validate OpenAPI:** `npm run contracts:validate` → enforces operationId uniqueness, examples, no global security
+* **Sync OpenAPI:** `npm run contracts:sync` → YAML → JSON
+* **Check OpenAPI drift:** `npm run contracts:check` → fails if JSON doesn't match YAML
 * **Bench:** `pnpm bench:week8` → CSV to `packet/bench/week8.csv`; Gate prints p50/p95
 * **Tag:** `git tag -a v8.0.0 -m "Week 8 release" && git push origin v8.0.0`
 

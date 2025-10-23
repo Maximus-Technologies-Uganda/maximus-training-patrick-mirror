@@ -1,5 +1,13 @@
 ## Changelog
 
+### 2025-10-25 (Frontend dev CORS parity - DEV-EXEMPT)
+
+### Fixed
+- **Frontend**:
+  - Added `PATCH` to development CORS allow-methods for BFF routes so local updates match server capabilities. (DEV-EXEMPT)
+- **API**:
+  - Ensured CORS preflight responses advertise `PATCH` to unblock cross-origin updates against posts endpoints. (DEV-EXEMPT)
+
 ### 2025-10-24 (Posts offline fallback parity - DEV-EXEMPT)
 
 ### Fixed

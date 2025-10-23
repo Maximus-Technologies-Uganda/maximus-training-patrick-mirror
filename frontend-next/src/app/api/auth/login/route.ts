@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getIdToken } from "../../../../server/auth/getIdToken";
 
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   try {
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const audience = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE || "";
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           (username === "alice" && password === "correct-password");
         if (!isValid) {
           const incomingReqId = request.headers.get("x-request-id") || "";
-          const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+          const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
           return new NextResponse(null, { status: 401, headers: { "X-Request-Id": requestId } });
         }
         const userId = username === "admin" ? "admin-1" : "user-alice-1";
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const payload = enc(JSON.stringify({ userId, iat: Math.floor(Date.now() / 1000) }));
         const token = `${header}.${payload}.dev`;
         const incomingReqId = request.headers.get("x-request-id") || "";
-        const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+        const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
         const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
         const secureAttr = isHttps(request) ? "; Secure" : "";
         res.headers.set(
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     // Structured error for logs/telemetry
     const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const errInfo = error instanceof Error
       ? { name: error.name, message: error.message, stack: error.stack }
       : String(error);

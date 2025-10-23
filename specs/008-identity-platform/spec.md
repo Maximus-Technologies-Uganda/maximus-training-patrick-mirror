@@ -163,6 +163,7 @@ Assumptions & Dependencies
 - **Deny lists**: Reserve endpoints for future; none enabled this week.
 - **Secrets**: Firebase Admin keys via Secret Manager; no secrets in env files or code.
 - **Clock skew**: Accept ±5 minutes on ID token `iat/exp` to reduce false 401s.
+- **Time synchronization**: Infrastructure assumes NTP/chrony is configured and operational to maintain ±5m maximum clock drift between API servers, client systems, and Firebase token issuers. This supports the clock skew tolerance for token validation.
 - **Revocation**: Honor Firebase token revocation on privileged actions (admin).
 
 ## CSRF Model (unambiguous)

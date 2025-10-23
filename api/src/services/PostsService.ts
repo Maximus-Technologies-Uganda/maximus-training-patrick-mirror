@@ -117,7 +117,7 @@ export class PostsService implements IPostsService {
     if (!existing) throw new NotFoundError({ id });
     const nowIso = new Date().toISOString();
 
-    const merged: any = {
+    const merged: unknown = {
       ...existing,
       ...(partial.title !== undefined ? { title: partial.title } : {}),
       ...(partial.content !== undefined ? { content: partial.content } : {}),
@@ -126,7 +126,7 @@ export class PostsService implements IPostsService {
       updatedAt: nowIso,
     };
 
-    const saved = await this.repository.update(id, merged);
+    const saved = await this.repository.update(id, merged as PostUpdate);
     // Repository returns null if not found; defensive check
     if (!saved) throw new NotFoundError({ id });
     return this.mapStoredToDomain(saved);
