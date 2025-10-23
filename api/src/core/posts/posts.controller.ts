@@ -39,7 +39,9 @@ export function createPostsController(postsService: IPostsService) {
           res.status(404).send();
           return;
         }
-        if (existing.ownerId !== userId) {
+        // Backward compatibility: allow editing posts without ownerId (pre-existing)
+        // Otherwise, enforce ownership check
+        if (existing.ownerId && existing.ownerId !== userId) {
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
         }
@@ -104,7 +106,9 @@ export function createPostsController(postsService: IPostsService) {
           res.status(404).send();
           return;
         }
-        if (existing.ownerId !== userId) {
+        // Backward compatibility: allow editing posts without ownerId (pre-existing)
+        // Otherwise, enforce ownership check
+        if (existing.ownerId && existing.ownerId !== userId) {
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
         }
@@ -133,7 +137,9 @@ export function createPostsController(postsService: IPostsService) {
           res.status(404).send();
           return;
         }
-        if (existing.ownerId !== userId) {
+        // Backward compatibility: allow editing posts without ownerId (pre-existing)
+        // Otherwise, enforce ownership check
+        if (existing.ownerId && existing.ownerId !== userId) {
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
         }

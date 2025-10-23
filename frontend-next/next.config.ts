@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import path from "path";
+import { validateFrontendEnvOnBoot } from "./src/config/env";
+
+// T076: Validate required environment variables at build/boot time
+validateFrontendEnvOnBoot();
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {

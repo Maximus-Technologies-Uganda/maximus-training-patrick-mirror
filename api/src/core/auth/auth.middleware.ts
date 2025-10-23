@@ -66,6 +66,8 @@ export const requireAuth: RequestHandler = (req, res, next) => {
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     console.log(JSON.stringify({ level: "warn", message: "Auth failed", requestId }));
+    // T087: Prevent caching of 401 responses
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
   }
   (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };

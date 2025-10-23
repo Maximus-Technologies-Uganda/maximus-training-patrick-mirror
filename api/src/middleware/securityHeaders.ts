@@ -43,6 +43,27 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
 
   res.setHeader('Content-Security-Policy', csp);
 
+  // Additional hardening headers (T084)
+  // Isolate browsing context to prevent cross-origin interference
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // Restrict cross-origin resource embedding
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+  // Minimal, privacy-preserving defaults; extend as needed per feature
+  // Disables powerful features by default (e.g., camera, microphone)
+  res.setHeader(
+    'Permissions-Policy',
+    [
+      'accelerometer=()',
+      'camera=()',
+      'geolocation=()',
+      'gyroscope=()',
+      'magnetometer=()',
+      'microphone=()',
+      'payment=()',
+      'usb=()'
+    ].join(', ')
+  );
+
   next();
 }
 
