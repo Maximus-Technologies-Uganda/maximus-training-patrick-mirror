@@ -1,5 +1,11 @@
 ## Changelog
 
+### 2025-10-23 (Week 8 Day 2 spectral lint unblocking - DEV-617, DEV-620)
+
+### Fixed
+- **Contracts**:
+  - Updated the `ErrorEnvelope.details` schema to use explicit null/object/array unions so Spectral 6.11.0 accepts all error examples without nullable/type conflicts, restoring passing contract lint and drift checks for the Week 8 hardening PR.
+
 ### 2025-10-25 (Frontend dev CORS parity - DEV-EXEMPT)
 
 ### Fixed
@@ -7,6 +13,12 @@
   - Added `PATCH` to development CORS allow-methods for BFF routes so local updates match server capabilities. (DEV-EXEMPT)
 - **API**:
   - Ensured CORS preflight responses advertise `PATCH` to unblock cross-origin updates against posts endpoints. (DEV-EXEMPT)
+
+### 2025-10-23 (Week 8 Day 2 hardening CI fix - DEV-EXEMPT)
+
+### Fixed
+- **Contracts**:
+  - Synced `api/openapi.json` from canonical `specs/008-identity-platform/contracts/openapi.yaml` to resolve CI contract drift failure for PR #685 (T054/T058). Includes Err406 responses, requestId in error envelope, and updated servers list.
 
 ### 2025-10-24 (Posts offline fallback parity - DEV-EXEMPT)
 
@@ -225,4 +237,3 @@
 
 - **Testing**:
   - Added comprehensive test suites across Expense Tracker, To-Do App, and Stopwatch to ensure functionality and robustness, including edge cases and CLI error handling.
-

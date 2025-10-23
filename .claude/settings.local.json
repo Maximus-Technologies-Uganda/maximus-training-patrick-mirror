@@ -26,7 +26,21 @@
       "Bash(gh pr view:*)",
       "Bash(node -e:*)",
       "Bash(npx @stoplight/spectral-cli@6 lint:*)",
+008-identity-hardening/day2-t054-t069-foundational
+      "Bash(npm run contracts:sync:*)",
+      "Bash(git pull:*)",
+      "Bash(git tag:*)",
+      "Bash(pwsh:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(cat:*)",
+      "Bash(git stash push:*)",
+      "Bash(git push:*)",
+      "Bash(pnpm -r typecheck:*)",
+      "Bash(npm run test:types:*)"
+=======
       "Bash(npm run contracts:sync:*)"
+main
     ],
     "deny": [],
     "ask": []

@@ -11,95 +11,57 @@ import { createPostsController } from "./core/posts/posts.controller";
 import { PostsService } from "./services/PostsService";
 import type { IPostsRepository } from "./repositories/posts.repository";
 import type { AppConfig } from "./config";
+import { requireJsonContentType, requireJsonAccept } from "./middleware/contentType";
+import { corsHeaders, corsPreflight } from "./middleware/cors";
+import { securityHeaders } from "./middleware/securityHeaders";
 
 import rateLimit from "express-rate-limit";
 import path from "path";
 
-// New production hardening middleware
-import { securityHeaders } from "./middleware/securityHeaders";
-import { corsVaryHeader } from "./middleware/cors";
-import { requireJsonContentType } from "./middleware/contentType";
+/**
+ * Handle CORS preflight OPTIONS requests
+ * Extracted for better stack traces and testability
+ */
+function handleCorsPreflightRequest(config: AppConfig) {
+  const preflightHandler = corsPreflight(config);
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.method === "OPTIONS") {
+      return preflightHandler(req, res, next);
+    }
+    next();
+  };
+}
 
 export function createApp(config: AppConfig, repository: IPostsRepository) {
   const app = express();
 
+  // Generate request identifiers before any middleware can short-circuit the pipeline
+  app.use(requestIdMiddleware);
+
   // Core Middleware (order matters)
-  // 1. CORS preflight handler FIRST (completely bypass all other middleware for OPTIONS)
-  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
-    .split(',')
+  app.use(helmet());
+
+  // Custom security headers (T050, T067)
+  app.use(securityHeaders);
+
+  // CORS preflight handler for all routes (T031, T061, T069)
+  app.use(handleCorsPreflightRequest(config));
+
+  // CORS headers for normal requests (T031, T061, T069)
+  app.use(corsHeaders(config));
+
+  // Fallback CORS for compatibility
+  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000")
+    .split(",")
     .map((o) => o.trim())
     .filter(Boolean);
-  const allowsWildcardOrigin = allowedOrigins.includes('*');
-
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      // Handle preflight immediately - inline implementation to avoid any middleware interference
-      const origin = req.headers.origin;
-      const requestMethod = req.headers['access-control-request-method'];
-      const requestHeaders = req.headers['access-control-request-headers'];
-
-      // Build Vary header
-      const varyComponents = ['Origin'];
-      if (requestMethod) varyComponents.push('Access-Control-Request-Method');
-      if (requestHeaders) varyComponents.push('Access-Control-Request-Headers');
-      res.setHeader('Vary', varyComponents.join(', '));
-
-      // Set CORS headers
-      if (origin && (allowedOrigins.includes(origin) || allowsWildcardOrigin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-      }
-
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-      res.setHeader('Access-Control-Allow-Headers', 'Authorization, X-CSRF-Token, X-Request-Id, Content-Type');
-      res.setHeader('Access-Control-Max-Age', '600');
-      res.setHeader('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id');
-
-      // Send 204 and end - do NOT call next()
-      return res.status(204).end();
-    }
-    next();
-  });
-
-  // 2. Security headers baseline (skip for OPTIONS - already handled above)
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      return next(); // OPTIONS already handled, skip helmet
-    }
-    helmet()(req, res, next);
-  });
-
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      return next(); // OPTIONS already handled, skip security headers
-    }
-    securityHeaders(req, res, next);
-  });
-
-  // 3. CORS for normal requests (NOT for OPTIONS - already handled above)
-  // Apply cors() only to non-OPTIONS requests
-  app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-      return next(); // Already handled by preflight middleware above
-    }
+  app.use(
     cors({
-      origin: (origin, callback) => {
-        if (!origin) {
-          return callback(null, true);
-        }
-
-        if (allowsWildcardOrigin || allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-
-        return callback(null, false);
-      },
+      origin: allowedOrigins,
       credentials: true,
-    })(req, res, next);
-  });
-  app.use(corsVaryHeader());
+    })
+  );
 
-  // 4. Rate limiting (after CORS, so preflight bypasses it)
   const limiter = rateLimit({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
@@ -107,15 +69,12 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     legacyHeaders: false,
   });
   app.use(limiter);
-
-  // 5. Request tracking (must occur before validators that rely on requestId)
-  app.use(requestIdMiddleware);
-
-  // 6. Body parsing
   app.use(express.json({ limit: config.jsonLimit }));
 
-  // 7. Content-Type validation (after body parsing, before routes)
+  // Content-Type and Accept validation (T032, T068)
   app.use(requireJsonContentType);
+  app.use(requireJsonAccept);
+
   app.use(requestLogger);
 
   // Root - simple status JSON
@@ -156,5 +115,3 @@ const defaultRepository = new InMemoryPostsRepository() as unknown as IPostsRepo
 const app = createApp(defaultConfig, defaultRepository);
 export { app };
 export default app;
-
-

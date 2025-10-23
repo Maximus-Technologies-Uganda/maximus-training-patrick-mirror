@@ -55,8 +55,33 @@ const eslintConfig = [
           argsIgnorePattern: "^_",
         },
       ],
+      "no-console": ["error", { allow: ["warn", "error"] }],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.object.name='console'][callee.property.name='log']",
+          message: "console.log() is forbidden. Use console.warn() or console.error() instead."
+        },
+        {
+          selector: "Literal[value=/@|email|token|cookie|password|secret/i]",
+          message: "Potential PII leak: avoid logging emails, tokens, cookies, passwords, or secrets."
+        }
+      ]
     },
   },
+  // T056: App Router enforcement - forbid pages/ and pages/api/
+  {
+    files: ["pages/**/*.{js,jsx,ts,tsx}", "pages/api/**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Program",
+          message: "App Router only: remove pages/ and pages/api/ directories. Use app/api/.../route.ts instead."
+        }
+      ]
+    }
+  }
 ];
 
 export default eslintConfig;

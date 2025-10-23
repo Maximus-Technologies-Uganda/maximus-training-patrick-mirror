@@ -3,7 +3,11 @@
   "info": {
     "title": "Identity Platform & Posts API",
     "version": "0.0.0",
-    "description": "Production-hardened API for authenticated posts management"
+    "description": "Production-hardened API for authenticated posts management",
+    "contact": {
+      "name": "Maximus Platform Team",
+      "email": "platform@maximusglobal.com"
+    }
   },
   "servers": [
     {
@@ -21,6 +25,12 @@
     {
       "url": "https://maximus-training-frontend-673209018655.africa-south1.run.app",
       "description": "Production frontend/BFF"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Posts",
+      "description": "Operations for listing and managing posts"
     }
   ],
   "components": {
@@ -58,6 +68,21 @@
               "code": "FORBIDDEN",
               "message": "Insufficient permissions to access this resource",
               "requestId": "550e8400-e29b-41d4-a716-446655440001"
+            }
+          }
+        }
+      },
+      "Err406": {
+        "description": "Not Acceptable",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "example": {
+              "code": "NOT_ACCEPTABLE",
+              "message": "Accept header must include application/json for mutating requests",
+              "requestId": "550e8400-e29b-41d4-a716-446655440006"
             }
           }
         }
@@ -161,6 +186,25 @@
             "type": "string",
             "format": "uuid",
             "description": "Unique request identifier for tracing"
+          },
+          "details": {
+            "description": "Additional error context such as validation issues or metadata",
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            ]
           }
         }
       },
@@ -200,6 +244,7 @@
           "Posts"
         ],
         "summary": "List posts (public)",
+        "description": "Retrieve the collection of published posts that are visible to all users.",
         "responses": {
           "200": {
             "description": "OK"
@@ -212,6 +257,7 @@
           "Posts"
         ],
         "summary": "Create a post",
+        "description": "Create a new post owned by the authenticated user.",
         "security": [
           {
             "BearerAuth": []
@@ -226,6 +272,9 @@
           },
           "403": {
             "$ref": "#/components/responses/Err403"
+          },
+          "406": {
+            "$ref": "#/components/responses/Err406"
           },
           "413": {
             "$ref": "#/components/responses/Err413"
@@ -249,6 +298,7 @@
           "Posts"
         ],
         "summary": "Get post (public)",
+        "description": "Fetch the details for a single post by identifier.",
         "parameters": [
           {
             "in": "path",
@@ -271,6 +321,7 @@
           "Posts"
         ],
         "summary": "Update a post",
+        "description": "Replace the contents of an existing post owned by the authenticated user.",
         "security": [
           {
             "BearerAuth": []
@@ -296,6 +347,9 @@
           "403": {
             "$ref": "#/components/responses/Err403"
           },
+          "406": {
+            "$ref": "#/components/responses/Err406"
+          },
           "413": {
             "$ref": "#/components/responses/Err413"
           },
@@ -316,6 +370,7 @@
           "Posts"
         ],
         "summary": "Delete a post",
+        "description": "Remove an existing post owned by the authenticated user.",
         "security": [
           {
             "BearerAuth": []
@@ -341,8 +396,8 @@
           "403": {
             "$ref": "#/components/responses/Err403"
           },
-          "413": {
-            "$ref": "#/components/responses/Err413"
+          "406": {
+            "$ref": "#/components/responses/Err406"
           },
           "429": {
             "$ref": "#/components/responses/Err429"

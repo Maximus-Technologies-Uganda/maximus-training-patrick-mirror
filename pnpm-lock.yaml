@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@stoplight/spectral-cli':
-        specifier: ^6.14.1
-        version: 6.15.0
       axios:
         specifier: ^1.12.2
         version: 1.12.2
@@ -63,6 +60,12 @@ importers:
       prettier:
         specifier: ^3.3.3
         version: 3.6.2
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
+      yaml:
+        specifier: ^2.6.1
+        version: 2.6.1
 
 packages:
 
