@@ -655,15 +655,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Spectral (OpenAPI linter)
+        run: npm i -g @stoplight/spectral-cli@6
       - name: Lint OpenAPI with Spectral
-        run: npx -y @stoplight/spectral-cli@6 lint specs/007-spec/week-7.5-finishers/contracts/openapi.yaml --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
+        run: spectral lint specs/007-spec/week-7.5-finishers/contracts/openapi.yaml --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
       - name: Lint live API contract if present
         run: |
           if [ -f api/openapi.json ]; then
-            npx -y @stoplight/spectral-cli@6 lint api/openapi.json --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
+            spectral lint api/openapi.json --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
           else
             echo "No api/openapi.json found; skipping live contract lint."
           fi
+      - name: Validate OpenAPI
+        run: npm run contracts:validate
 
   latency-snapshot:
     name: Latency Snapshot (non-gating)

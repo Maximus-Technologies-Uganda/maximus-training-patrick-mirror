@@ -66,9 +66,18 @@ export const requireAuth: RequestHandler = (req, res, next) => {
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     console.log(JSON.stringify({ level: "warn", message: "Auth failed", requestId }));
-    // T087: Prevent caching of 401 responses
+    // Prevent caching of 401 responses (T087)
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
+    // Include requestId and optional traceId (T111)
+    const traceparent = (req.get("traceparent") || req.headers["traceparent"]) as string | undefined;
+    let traceId: string | undefined = (req.get("x-trace-id") || req.headers["x-trace-id"]) as string | undefined;
+    if (!traceId && typeof traceparent === 'string') {
+      const parts = traceparent.split('-');
+      if (parts.length >= 4 && parts[1] && /^[0-9a-f]{32}$/i.test(parts[1])) {
+        traceId = parts[1];
+      }
+    }
+    return res.status(401).json({ code: "unauthorized", message: "Unauthorized", ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}) });
   }
   (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };
   {
