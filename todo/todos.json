@@ -1,10 +1,26 @@
 [
   {
     "id": 1,
-    "text": "Low priority task",
+    "text": "Low priority",
     "due": null,
     "priority": "low",
-    "createdAt": "2025-10-19T10:18:42.914Z",
+    "createdAt": "2025-10-24T08:51:46.721Z",
+    "completed": false
+  },
+  {
+    "id": 2,
+    "text": "Medium priority",
+    "due": null,
+    "priority": "medium",
+    "createdAt": "2025-10-24T08:51:46.968Z",
+    "completed": false
+  },
+  {
+    "id": 3,
+    "text": "High priority",
+    "due": null,
+    "priority": "high",
+    "createdAt": "2025-10-24T08:51:47.259Z",
     "completed": false
   }
 ]

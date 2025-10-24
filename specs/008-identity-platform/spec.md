@@ -209,6 +209,12 @@ Assumptions & Dependencies
 
 ## OpenAPI Contract Additions (drop-in)
 
+### Public Read Endpoints (Unauthenticated)
+- `GET /posts` — public listing; no authentication required.
+- `GET /posts/{id}` — public detail; no authentication required.
+
+OpenAPI explicitly marks these operations with `security: []` to denote no auth, while protected write operations specify `security: [{ BearerAuth: [] }]`.
+
 - **SecuritySchemes**:
 
 ```yaml

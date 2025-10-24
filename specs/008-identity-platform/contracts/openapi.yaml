@@ -149,6 +149,7 @@ paths:
       tags: [Posts]
       summary: List posts (public)
       description: Retrieve the collection of published posts that are visible to all users.
+      security: []
       responses:
         '200':
           description: OK
@@ -175,6 +176,7 @@ paths:
       tags: [Posts]
       summary: Get post (public)
       description: Fetch the details for a single post by identifier.
+      security: []
       parameters:
         - in: path
           name: id

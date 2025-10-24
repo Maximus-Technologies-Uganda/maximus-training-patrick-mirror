@@ -248,6 +248,13 @@ Out of scope:
 * ✅ Screenshots: signed‑out UI (no mutation controls) and signed‑in UI (controls visible per role placeholder).
 * ✅ Login form uses `aria-live="polite"` for non-critical auth status; focus moves to the first invalid field on validation error.
 
+**Independent Test Criteria — US1 (DEV-641/DEV-642/DEV-643/DEV-644)**
+
+- Anonymous reader can view posts list and details: navigate to `/posts` while signed out; verify posts render and no Create/Edit/Delete controls exist in the DOM.
+- UI hides mutation controls when signed out: verify `NewPostForm` is not rendered and `Edit`/`Delete` buttons are absent in `PostsList` when `currentUserId` is undefined. See `frontend-next/components/PostsPageClient.tsx` and `frontend-next/components/PostsList.tsx`.
+- Public endpoints are unauthenticated: confirm OpenAPI marks `GET /posts` and `GET /posts/{id}` with `security: []` (`specs/008-identity-platform/contracts/openapi.yaml`) and spec describes them as public (`specs/008-identity-platform/spec.md`).
+- A11y specifics: status updates use `aria-live="polite"`; form errors use `role="alert"` (assertive); focus moves to first invalid field on validation error; all interactive elements show visible focus ring; Escape closes any modal dialogs (pattern provided via `useEscapeKey`). See `frontend-next/components/LiveRegion.tsx` and `frontend-next/components/NewPostForm.tsx`.
+
 **Merge Gates**
 
 * Unit/UI smoke tests green.

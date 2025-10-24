@@ -1,5 +1,16 @@
 ## Changelog
 
+feature/DEV-641-644-us1-anon-reader
+### 2025-10-24 (US1 Anonymous Reader - DEV-641, DEV-642, DEV-643, DEV-644)
+
+### Added/Changed
+- T007: Documented public GET endpoints as unauthenticated in spec and OpenAPI (`specs/008-identity-platform/spec.md`, `specs/008-identity-platform/contracts/openapi.yaml`).
+- T008: Auth-aware UI hides mutation controls when signed out (`frontend-next/components/PostsPageClient.tsx`, `frontend-next/components/PostsList.tsx`).
+- T009: Recorded independent test criteria in plan (`specs/008-identity-platform/plan.md`).
+- T043: Implemented a11y specifics: polite vs assertive live regions, focus-to-first-invalid in forms, global visible focus ring, and Escape-close hook for modals (`frontend-next/components/NewPostForm.tsx`, `frontend-next/src/app/globals.css`, `frontend-next/components/useEscapeKey.ts`).
+
+=======
+main
 ### 2025-10-23 (Phase 2 docs + guards - DEV-636, DEV-637, DEV-638, DEV-639, DEV-640)
 
 ### Added/Changed

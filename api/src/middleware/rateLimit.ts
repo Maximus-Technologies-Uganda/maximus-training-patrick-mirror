@@ -156,4 +156,4 @@ export function createRateLimiter(config: RateLimitConfig) {
   });
 }
 
-export default createRateLimiter;
+// Note: Do not export a default to avoid CommonJS/ESM interop issues in ts-jest.

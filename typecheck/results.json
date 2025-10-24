@@ -7,10 +7,14 @@
       "skipped": false,
       "errors": 0,
       "warnings": 0,
+feature/DEV-641-644-us1-anon-reader
+      "durationMs": 16790,
+=======
 feature/DEV-636-640-phase2-docs-guards
       "durationMs": 11360,
 =======
       "durationMs": 8004,
+main
 main
       "exitCode": 0,
       "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
@@ -20,19 +24,27 @@ main
       "skipped": false,
       "errors": 0,
       "warnings": 0,
+feature/DEV-641-644-us1-anon-reader
+      "durationMs": 10065,
+=======
 feature/DEV-636-640-phase2-docs-guards
       "durationMs": 9749,
 =======
       "durationMs": 6841,
 main
+main
       "exitCode": 0,
       "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\api\\tsconfig.json --noEmit"
     }
   ],
+feature/DEV-641-644-us1-anon-reader
+  "generatedAt": "2025-10-24T08:49:13.127Z",
+=======
 feature/DEV-636-640-phase2-docs-guards
   "generatedAt": "2025-10-23T17:18:55.514Z",
 =======
   "generatedAt": "2025-10-23T14:02:45.072Z",
+main
 main
   "specRefs": {
     "tasks": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\tasks.md",
