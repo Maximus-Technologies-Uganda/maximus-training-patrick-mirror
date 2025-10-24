@@ -469,6 +469,15 @@ Consolidate all evidence and publish the official `v8.0.0` release.
 
 ## Production Hardening Policies
 
+### Auth Response Semantics (T107)
+
+- `401 Unauthorized`: identity is missing, invalid, or expired (e.g., bad/expired token).
+- `403 Forbidden`: identity is valid but the resource/action is not permitted (e.g., owner attempting to mutate another user’s post).
+
+### Rate-Limit Key Precedence (T108)
+
+Precedence is `userId || ip` — use `userId` when authenticated; fall back to client IP when anonymous.
+
 ### Rate-Limit Header Policy (T005)
 
 Rate-limit headers provide visibility into quota consumption and help clients implement adaptive backoff.
@@ -580,4 +589,3 @@ git commit -m "feat(contracts): add 415 response for invalid Content-Type"
 * PR2: API lead + Security sign‑off
 * PR3: SRE/Observability + Docs
 * PR4: Eng Manager + Release Manager
-

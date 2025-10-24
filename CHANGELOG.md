@@ -1,5 +1,14 @@
 ## Changelog
 
+### 2025-10-23 (Phase 2 docs + guards - DEV-636, DEV-637, DEV-638, DEV-639, DEV-640)
+
+### Added/Changed
+- T107: Added explicit 401 vs 403 semantics to `specs/008-identity-platform/spec.md` (Edge Cases) and `specs/008-identity-platform/plan.md` (Production Hardening policies).
+- T108: Implemented rate-limit key precedence (`userId || ip`) via `api/src/middleware/rateLimit.ts`; wired in `api/src/app.ts`. Added tests `api/tests/middleware.rate-limit.key.spec.ts`.
+- T109: CSP nonce rotation test present (`api/tests/security.csp-nonce.spec.ts`).
+- T110: OpenAPI servers prod guard in `scripts/validate-openapi.ts` (fails if a server URL contains `localhost` when `NODE_ENV=production`).
+- T111: Error envelope now includes `requestId` and optional `traceId` on 4xx/5xx; updated `api/src/middleware/errorHandler.ts` and `api/src/core/auth/auth.middleware.ts`. Added contract test `api/tests/contracts/errors.traceid.spec.ts`.
+
 ### 2025-10-23 (Week 8 Day 2 spectral lint unblocking - DEV-617, DEV-620)
 
 ### Fixed
@@ -25,6 +34,12 @@
 ### Fixed
 - **Frontend**:
   - Added local fallback handling for `/api/posts/[id]` PATCH/DELETE routes so edit and delete flows remain functional when the upstream API is unavailable in local or CI environments. (DEV-EXEMPT)
+
+### 2025-10-24 (Identity rate limiter hardening - DEV-636 follow-up)
+
+### Fixed
+- **API**:
+  - Rate limiter now evaluates Express trust proxy functions per request and ignores unauthenticated `X-User-Id` headers so spoofed values cannot bypass throttling. Added regression tests. (DEV-636)
 
 ### 2025-10-22 (Identity Platform groundwork nits - DEV-EXEMPT)
 

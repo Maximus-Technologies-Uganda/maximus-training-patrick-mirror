@@ -17,7 +17,7 @@ import { corsHeaders, corsPreflight } from "./middleware/cors";
 import { securityHeaders } from "./middleware/securityHeaders";
 import { assertCorsProdInvariants } from "./config/cors";
 
-import rateLimit from "express-rate-limit";
+import { createRateLimiter as createAppRateLimiter } from "./middleware/rateLimit";
 import path from "path";
 
 /**
@@ -66,22 +66,9 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     })
   );
 
-  const limiter = rateLimit({
+  const limiter = createAppRateLimiter({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req, res) => {
-      // T092: Ensure Retry-After present only on 429
-      const seconds = Math.ceil(config.rateLimitWindowMs / 1000);
-      res.setHeader('Retry-After', String(seconds));
-      // T087: Prevent caching of error responses
-      res.setHeader('Cache-Control', 'no-store');
-      const requestId = (req as unknown as { requestId?: string }).requestId ||
-        ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined) ||
-        (res.get('X-Request-Id') as string | undefined) || 'unknown';
-      res.status(429).json({ code: 'rate_limit_exceeded', message: 'Too Many Requests', requestId });
-    }
   });
   app.use(limiter);
   app.use(express.json({ limit: config.jsonLimit }));

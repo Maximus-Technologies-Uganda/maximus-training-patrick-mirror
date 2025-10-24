@@ -198,6 +198,16 @@ function validateErrorExamples(spec: OpenAPIDocument, result: ValidationResult):
   }
 }
 
+/**
+ * Checks if a URL points to a local/development endpoint
+ * Detects: localhost, 127.0.0.1, 0.0.0.0, ::1, *.local domains
+ */
+function isLocalUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  // Match localhost, loopback IPs (IPv4 and IPv6), and .local domains
+  return /localhost|127\.0\.0\.1|0\.0\.0\.0|::1|\.local(?::|\/|$)/.test(lower);
+}
+
 function validateServers(spec: OpenAPIDocument, result: ValidationResult): void {
   if (!spec.servers || spec.servers.length === 0) {
     result.passed = false;
@@ -206,11 +216,11 @@ function validateServers(spec: OpenAPIDocument, result: ValidationResult): void 
   }
 
   const serverUrls = spec.servers.map(s => s.url.toLowerCase());
-  const hasLocal = serverUrls.some(url => url.includes('localhost'));
+  const hasLocal = serverUrls.some(url => isLocalUrl(url));
   const hasStaging = serverUrls.some(url => url.includes('staging') || url.includes('maximus-training'));
   const hasProd = serverUrls.some(url =>
     (url.includes('run.app') || url.includes('production')) &&
-    !url.includes('localhost')
+    !isLocalUrl(url)
   );
 
   if (!hasLocal) {
@@ -225,7 +235,7 @@ function validateServers(spec: OpenAPIDocument, result: ValidationResult): void 
 
   // Check for localhost in production
   if (process.env.NODE_ENV === 'production') {
-    const hasLocalhostInProd = serverUrls.some(url => url.includes('localhost'));
+    const hasLocalhostInProd = serverUrls.some(url => isLocalUrl(url));
     if (hasLocalhostInProd) {
       result.passed = false;
       result.errors.push('Localhost server URL found in production environment');

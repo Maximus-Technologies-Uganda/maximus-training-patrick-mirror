@@ -63,6 +63,11 @@ A signed-in user with the `admin` role can edit or delete any user’s posts.
 - Rate limit exceeded (>10 writes/min/user): respond `429 Too Many Requests` with retry hints.
 - Anonymous user tries to access create/edit/delete UI via deep link: UI redirects or hides controls; API still enforces AuthZ.
 
+### 401 vs 403 Semantics (T107)
+
+- `401 Unauthorized`: identity is missing, invalid, or expired (e.g., bad/expired token).
+- `403 Forbidden`: identity is valid but the resource/action is not permitted (e.g., owner attempting to mutate another user’s post).
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -175,7 +180,7 @@ Assumptions & Dependencies
 ## Rate-Limit Spec (pin the algorithm)
 
 - **Window**: fixed window 60s; capacity 10.
-- **Key**: `userId`; fallback `ip` when unauthenticated.
+- **Key**: `userId`; fallback `ip` when unauthenticated. Precedence is `userId || ip` (T108).
 - **Store**: in-memory for demo; adapter interface for Redis/Cloud Memorystore later.
 - **Headers**: include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After` on 429.
 - **Admin**: NOT exempt.
