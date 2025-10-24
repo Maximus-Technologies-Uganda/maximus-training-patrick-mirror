@@ -230,6 +230,7 @@ export default function PostsPageClient({
           <SearchInput value={searchQuery} onChange={onChangeSearchQuery} />
         </div>
 
+        {/* UI-level auth check; API enforces 401 for unauthorized mutations (see T011) */}
         {currentUserId ? (
           <section className="mt-6" aria-label="Create new post">
             <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />

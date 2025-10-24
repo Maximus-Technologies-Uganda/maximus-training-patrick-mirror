@@ -4,7 +4,9 @@ import React from "react";
 
 import type { Post } from "../src/lib/schemas";
 
-function truncate(text: string, max = 200): string {
+const MAX_CONTENT_PREVIEW_LENGTH = 200;
+
+function truncate(text: string, max = MAX_CONTENT_PREVIEW_LENGTH): string {
   if (text.length <= max) return text;
   return text.slice(0, max).trimEnd() + "…";
 }
