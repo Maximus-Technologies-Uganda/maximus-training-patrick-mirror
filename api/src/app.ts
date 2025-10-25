@@ -16,6 +16,7 @@ import { stripIdentityFields } from "./middleware/stripIdentity";
 import { corsHeaders, corsPreflight } from "./middleware/cors";
 import { securityHeaders } from "./middleware/securityHeaders";
 import { assertCorsProdInvariants } from "./config/cors";
+import { verifyFirebaseIdToken } from "./middleware/firebaseAuth";
 
 import { createRateLimiter as createAppRateLimiter } from "./middleware/rateLimit";
 import path from "path";
@@ -96,7 +97,8 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   app.use("/auth", authRouter);
   const postsService = new PostsService(repository);
   const postsController = createPostsController(postsService);
-  app.use("/posts", createPostsRoutes(postsController));
+  // For write operations on /posts, prefer Firebase bearer if provided; otherwise fallback to cookie session
+  app.use("/posts", verifyFirebaseIdToken, createPostsRoutes(postsController));
 
   // In development, expose OpenAPI JSON for tests
   app.get("/openapi.json", (_req, res) => {

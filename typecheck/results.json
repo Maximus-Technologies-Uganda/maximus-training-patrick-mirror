@@ -7,7 +7,7 @@
       "skipped": false,
       "errors": 0,
       "warnings": 0,
-      "durationMs": 8716,
+      "durationMs": 6551,
       "exitCode": 0,
       "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\frontend-next\\tsconfig.json --noEmit"
     },
@@ -16,12 +16,12 @@
       "skipped": false,
       "errors": 0,
       "warnings": 0,
-      "durationMs": 7581,
+      "durationMs": 8667,
       "exitCode": 0,
       "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\api\\tsconfig.json --noEmit"
     }
   ],
-  "generatedAt": "2025-10-24T10:29:38.637Z",
+  "generatedAt": "2025-10-25T07:13:59.577Z",
   "specRefs": {
     "tasks": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\tasks.md",
     "plan": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\plan.md",

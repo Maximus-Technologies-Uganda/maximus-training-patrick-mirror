@@ -3,6 +3,7 @@
 import React from "react";
 
 import type { Post } from "../src/lib/schemas";
+import { withCsrf } from "../src/lib/auth/csrf";
 
 const MAX_CONTENT_PREVIEW_LENGTH = 200;
 
@@ -22,7 +23,10 @@ export default function PostsList({ items, currentUserId, onChanged }: { items: 
 
   async function onDelete(id: string): Promise<void> {
     try {
-      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
+      const res = await fetch(
+        `/api/posts/${encodeURIComponent(id)}`,
+        withCsrf({ method: "DELETE" }),
+      );
       if (res.status === 204 || res.status === 200) {
         onChanged?.();
       }
@@ -36,12 +40,14 @@ export default function PostsList({ items, currentUserId, onChanged }: { items: 
     const content = title != null ? prompt("New content?") : null;
     if (title == null || content == null) return;
     try {
-      const res = await fetch(`/api/posts/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ title, content }),
-      });
+      const res = await fetch(
+        `/api/posts/${encodeURIComponent(id)}`,
+        withCsrf({
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, content }),
+        }),
+      );
       if (res.ok) onChanged?.();
     } catch {
       // ignore

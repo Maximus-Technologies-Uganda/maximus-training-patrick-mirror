@@ -1,5 +1,14 @@
 ## Changelog
 
+### 2025-10-27 (US2 CSRF follow-up - DEV-645 – DEV-650)
+
+### Fixed
+- Follow-up: BFF post mutation routes now require a client-supplied `X-CSRF-Token` header instead of minting it from cookies, restoring the double-submit guard (`frontend-next/src/app/api/posts/route.ts`, `frontend-next/src/app/api/posts/[id]/route.ts`).
+- Follow-up: Local login fallback now issues a CSRF cookie alongside the session token so BFF mutations succeed offline (`frontend-next/src/app/api/auth/login/route.ts`).
+- Follow-up: Firebase auth middleware now continues verifying Firebase ID tokens even when `X-Service-Authorization` is present so BFF proxied mutations stay authorized while preserving service token support (`api/src/middleware/firebaseAuth.ts`, `api/tests/auth.firebase.spec.ts`).
+- Follow-up: Firebase auth middleware now falls back to cookie/session auth when Firebase Admin is unavailable, preserving local and CI flows (`api/src/middleware/firebaseAuth.ts`).
+- Follow-up: Firebase auth middleware now clamps verification time within the ±5 minute tolerance window before calling `verifyIdToken`, ensuring the advertised clock-skew grace period actually applies (`api/src/middleware/firebaseAuth.ts`).
+
 ### 2025-10-26 (Env + HTTP hardening - DEV-622, DEV-623, DEV-624, DEV-625, DEV-626)
 
 ### Added/Changed

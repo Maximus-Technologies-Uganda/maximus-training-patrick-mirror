@@ -27,10 +27,14 @@ if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_P
   (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ = localPostsFallback;
 }
 
-function extractSessionCookie(cookieHeader: string): string {
+function extractForwardableCookies(cookieHeader: string): string {
   try {
-    const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
-    return match ? `session=${match[1]}` : "";
+    const cookies: string[] = [];
+    const sessionMatch = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+    if (sessionMatch) cookies.push(`session=${sessionMatch[1]}`);
+    const csrfMatch = cookieHeader.match(/(?:^|;\s*)csrf=([^;]+)/);
+    if (csrfMatch) cookies.push(`csrf=${csrfMatch[1]}`);
+    return cookies.join("; ");
   } catch {
     return "";
   }
@@ -61,7 +65,15 @@ export async function DELETE(request: Request): Promise<Response> {
   const id = segments[segments.length - 1] || segments[segments.length - 2];
   const upstreamUrl = new URL(`/posts/${encodeURIComponent(id)}`, API_BASE_URL).toString();
   const incomingCookieHeader = request.headers.get("cookie") || "";
-  const sessionCookie = extractSessionCookie(incomingCookieHeader);
+  const forwardCookieHeader = extractForwardableCookies(incomingCookieHeader);
+  const originHeader = (request.headers.get("origin") || "").trim();
+  const csrfHeader = (request.headers.get("x-csrf-token") || "").trim();
+  if (!csrfHeader) {
+    return NextResponse.json(
+      { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
+      { status: 400 },
+    );
+  }
   const incomingReqId = request.headers.get("x-request-id") || "";
   const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
 
@@ -71,8 +83,10 @@ export async function DELETE(request: Request): Promise<Response> {
       headers: {
         ...serviceAuthHeaders(),
         ...(await authHeader()),
-        ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+        ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
         "X-Request-Id": requestId,
+        ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
+        ...(originHeader ? { Origin: originHeader } : {}),
       },
     });
     const upstreamRequestId = upstream.headers.get("x-request-id") || requestId;
@@ -121,7 +135,15 @@ export async function PATCH(request: Request): Promise<Response> {
     body = "";
   }
   const incomingCookieHeader = request.headers.get("cookie") || "";
-  const sessionCookie = extractSessionCookie(incomingCookieHeader);
+  const forwardCookieHeader = extractForwardableCookies(incomingCookieHeader);
+  const originHeader = (request.headers.get("origin") || "").trim();
+  const csrfHeader = (request.headers.get("x-csrf-token") || "").trim();
+  if (!csrfHeader) {
+    return NextResponse.json(
+      { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
+      { status: 400 },
+    );
+  }
   const incomingReqId = request.headers.get("x-request-id") || "";
   const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
 
@@ -132,8 +154,10 @@ export async function PATCH(request: Request): Promise<Response> {
         "Content-Type": "application/json",
         ...serviceAuthHeaders(),
         ...(await authHeader()),
-        ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+        ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
         "X-Request-Id": requestId,
+        ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
+        ...(originHeader ? { Origin: originHeader } : {}),
       },
       body,
     });
