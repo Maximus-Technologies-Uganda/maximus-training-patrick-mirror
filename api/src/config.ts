@@ -1,3 +1,5 @@
+import { validateEnvOnBoot } from "./config/env";
+
 export interface AppConfig {
   port: number;
   jsonLimit: string;
@@ -11,6 +13,7 @@ function toInt(value: unknown, fallback: number): number {
 }
 
 export function loadConfigFromEnv(): AppConfig {
+  validateEnvOnBoot();
   return {
     port: toInt(process.env.PORT, 3000),
     jsonLimit: process.env.JSON_LIMIT || '256kb',

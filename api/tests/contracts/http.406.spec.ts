@@ -1,6 +1,6 @@
 /**
  * http.406.spec.ts
- * Contract tests for 406 Not Acceptable responses (T068)
+ * Contract tests for 406 Not Acceptable responses (T068, T086)
  *
  * Requirements:
  * - POST/PUT/DELETE without Accept: application/json returns 406
@@ -28,9 +28,9 @@ describe('HTTP 406 Not Acceptable Contract Tests', () => {
       expect(response.status).toBe(406);
       expect(response.body).toMatchObject({
         code: 'NOT_ACCEPTABLE',
-        message: expect.stringContaining('Accept'),
+        message: expect.stringContaining('application/json'),
         requestId: expect.any(String),
-        hint: expect.stringContaining('Accept header')
+        hint: expect.stringContaining('application/json')
       });
       expect(response.body.requestId).not.toBe('unknown');
       expect(response.headers['x-request-id']).toBe(response.body.requestId);
@@ -93,6 +93,22 @@ describe('HTTP 406 Not Acceptable Contract Tests', () => {
       expect(response.status).toBe(406);
       expect(response.body.requestId).not.toBe('unknown');
       expect(response.headers['x-request-id']).toBe(response.body.requestId);
+    });
+  });
+  describe('GET /posts negotiation', () => {
+    it('returns 406 when Accept header explicitly excludes JSON', async () => {
+      const response = await request(app)
+        .get('/posts')
+        .set('Accept', 'text/html');
+
+      expect(response.status).toBe(406);
+      expect(response.body.code).toBe('NOT_ACCEPTABLE');
+      expect(response.body.hint).toContain('application/json');
+    });
+
+    it('allows GET without Accept header', async () => {
+      const ok = await request(app).get('/posts');
+      expect(ok.status).toBe(200);
     });
   });
 });

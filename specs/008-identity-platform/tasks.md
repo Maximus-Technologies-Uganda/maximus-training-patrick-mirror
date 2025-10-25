@@ -189,11 +189,11 @@ main
 - [ ] T067 CSP nonce/strict policy (tighten T050; automated check) — api/src/middleware/securityHeaders.ts; scripts/quality-gate/check-csp.ts
 - [ ] T068 Content negotiation guard: mutating routes require `Accept: application/json`; extend 415 tests accordingly — api/src/middleware/contentType.ts; api/tests/contracts/http.415.spec.ts
 - [ ] T069 CORS hardening: reject `Origin: null` (unless explicitly allowed) and assert no wildcard `Access-Control-Allow-Origin` in prod — api/src/middleware/cors.ts; api/tests/contracts/cors.preflight.spec.ts
-- [ ] T076 Env validation on boot (fail fast; names only, not values) — api/src/config/env.ts; api/tests/env.validation.spec.ts; frontend-next/src/config/env.ts
-- [ ] T084 Security headers++: add `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and a minimal `Permissions-Policy`; add tests — api/src/middleware/securityHeaders.ts; api/tests/security.headers.spec.ts
-- [ ] T085 CORS vary on normal responses: ensure `Vary: Origin` on CORS’d non-preflight responses; add contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.vary-normal.spec.ts
-- [ ] T086 406 guard (content negotiation): if `Accept` excludes `application/json`, return 406; extend OpenAPI/examples + tests — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.406.spec.ts
-- [ ] T087 Error cache headers: set `Cache-Control: no-store` on 401/403/422/429/413/503 responses; assert in contract tests — api/src/lib/errors.ts; api/tests/contracts/errors.cache-control.spec.ts
+- [X] T076 Env validation on boot (fail fast; names only, not values) — api/src/config/env.ts; api/tests/env.validation.spec.ts; frontend-next/src/config/env.ts
+- [X] T084 Security headers++: add `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and a minimal `Permissions-Policy`; add tests — api/src/middleware/securityHeaders.ts; api/tests/security.headers.spec.ts
+- [X] T085 CORS vary on normal responses: ensure `Vary: Origin` on CORS’d non-preflight responses; add contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.vary-normal.spec.ts
+- [X] T086 406 guard (content negotiation): if `Accept` excludes `application/json`, return 406; extend OpenAPI/examples + tests — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.406.spec.ts
+- [X] T087 Error cache headers: set `Cache-Control: no-store` on 401/403/422/429/413/503 responses; assert in contract tests — api/src/lib/errors.ts; api/tests/contracts/errors.cache-control.spec.ts
 - [ ] T090 Dependency policy gate (non-gating at first): CI fails on high/critical vulns with allowlist — .github/workflows/ci.yml
 - [ ] T092 Retry-After semantics: document and assert `Retry-After` present on 429 only (absent on 413/503); add contract checks — specs/008-identity-platform/plan.md; api/tests/contracts/retry-after.spec.ts
 - [ ] T094 Cache rules on authenticated routes: set `Cache-Control: no-store, private` on any response that required auth; add contract test — api/src/middleware/cacheHeaders.ts; api/tests/contracts/cache.auth-routes.spec.ts

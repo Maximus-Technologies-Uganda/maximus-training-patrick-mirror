@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import rateLimit from "express-rate-limit";
+import { setCacheControlNoStore } from "../lib/errors";
 
 export interface RateLimitConfig {
   windowMs: number;
@@ -140,8 +141,7 @@ export function createRateLimiter(config: RateLimitConfig) {
     handler: (req: Request, res: Response) => {
       const seconds = Math.ceil(config.windowMs / 1000);
       res.setHeader("Retry-After", String(seconds));
-      // Prevent caching of error responses (T087)
-      res.setHeader("Cache-Control", "no-store");
+      setCacheControlNoStore(res, 429);
       const requestId =
         (req as unknown as { requestId?: string }).requestId ||
         ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined) ||

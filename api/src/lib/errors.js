@@ -6,6 +6,19 @@ const statusByCode = {
   rate_limit_exceeded: 429
 };
 
+const NO_STORE_STATUSES = new Set([401, 403, 413, 422, 429, 503]);
+
+function shouldPreventCache(status) {
+  const numeric = Number(status);
+  return Number.isFinite(numeric) && NO_STORE_STATUSES.has(numeric);
+}
+
+function setCacheControlNoStore(res, status) {
+  if (!res || typeof res.setHeader !== 'function') return;
+  if (!shouldPreventCache(status)) return;
+  res.setHeader('Cache-Control', 'no-store');
+}
+
 function makeError(code, message, details) {
   const err = new Error(message || code);
   err.code = code;
@@ -15,6 +28,6 @@ function makeError(code, message, details) {
   return err;
 }
 
-module.exports = { makeError, statusByCode };
+module.exports = { makeError, statusByCode, shouldPreventCache, setCacheControlNoStore };
 
 

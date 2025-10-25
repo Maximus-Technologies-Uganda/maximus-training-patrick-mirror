@@ -1,6 +1,7 @@
 // Avoid importing Express types here to reduce type resolution friction in tests
 import type { ListPostsQuery } from "./post.schemas";
 import type { IPostsService } from "../../services/PostsService";
+import { setCacheControlNoStore } from "../../lib/errors";
 import { NotFoundError } from "../../errors/NotFoundError";
 
 export function createPostsController(postsService: IPostsService) {
@@ -10,6 +11,7 @@ export function createPostsController(postsService: IPostsService) {
       try {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
         if (!userId) {
+          setCacheControlNoStore(res, 401);
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
         }
@@ -42,6 +44,7 @@ export function createPostsController(postsService: IPostsService) {
         // Backward compatibility: allow editing posts without ownerId (pre-existing)
         // Otherwise, enforce ownership check
         if (existing.ownerId && existing.ownerId !== userId) {
+          setCacheControlNoStore(res, 403);
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
         }
@@ -92,6 +95,7 @@ export function createPostsController(postsService: IPostsService) {
       try {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
         if (!userId) {
+          setCacheControlNoStore(res, 401);
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
         }
@@ -109,6 +113,7 @@ export function createPostsController(postsService: IPostsService) {
         // Backward compatibility: allow editing posts without ownerId (pre-existing)
         // Otherwise, enforce ownership check
         if (existing.ownerId && existing.ownerId !== userId) {
+          setCacheControlNoStore(res, 403);
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
         }
@@ -123,6 +128,7 @@ export function createPostsController(postsService: IPostsService) {
       try {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
         if (!userId) {
+          setCacheControlNoStore(res, 401);
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
         }
@@ -140,6 +146,7 @@ export function createPostsController(postsService: IPostsService) {
         // Backward compatibility: allow editing posts without ownerId (pre-existing)
         // Otherwise, enforce ownership check
         if (existing.ownerId && existing.ownerId !== userId) {
+          setCacheControlNoStore(res, 403);
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
         }

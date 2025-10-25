@@ -1,6 +1,7 @@
 import express from "express";
 import { createHmac } from "node:crypto";
 import { getSessionSecret } from "../../config";
+import { setCacheControlNoStore } from "../../lib/errors";
 
 const router = express.Router();
 
@@ -42,6 +43,7 @@ router.post("/login", (req, res) => {
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     console.log(JSON.stringify({ level: "warn", message: "Invalid credentials", requestId }));
+    setCacheControlNoStore(res, 401);
     return res.status(401).send();
   }
 
