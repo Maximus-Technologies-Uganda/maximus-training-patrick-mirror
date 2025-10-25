@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { createHmac } from "node:crypto";
 import { getSessionSecret } from "../../config";
+import { setCacheControlNoStore } from "../../lib/errors";
 
 function parseCookies(header: string | undefined): Record<string, string> {
   const result: Record<string, string> = {};
@@ -67,7 +68,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     console.log(JSON.stringify({ level: "warn", message: "Auth failed", requestId }));
     // Prevent caching of 401 responses (T087)
-    res.setHeader('Cache-Control', 'no-store');
+    setCacheControlNoStore(res, 401);
     // Include requestId and optional traceId (T111)
     const traceparent = (req.get("traceparent") || req.headers["traceparent"]) as string | undefined;
     let traceId: string | undefined = (req.get("x-trace-id") || req.headers["x-trace-id"]) as string | undefined;

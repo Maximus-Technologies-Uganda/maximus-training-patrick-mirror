@@ -1,6 +1,17 @@
 ## Changelog
 
-feature/DEV-641-644-us1-anon-reader
+### 2025-10-26 (Env + HTTP hardening - DEV-622, DEV-623, DEV-624, DEV-625, DEV-626)
+
+### Added/Changed
+- T076: Enforced production env validation for API and frontend boot paths with unit coverage (`api/src/config.ts`, `api/src/config/env.ts`, `api/tests/env.validation.spec.ts`, `frontend-next/src/config/env.ts`).
+- T084: Locked COOP/CORP/Permissions-Policy headers with deterministic contract test (`api/src/middleware/securityHeaders.ts`, `api/tests/security.headers.spec.ts`).
+- T085: Normal responses now guarantee `Vary: Origin` with resilient header handling (`api/src/middleware/cors.ts`, `api/tests/contracts/cors.vary-normal.spec.ts`).
+- T086: Expanded Accept negotiation guard across read/write routes and synced OpenAPI + contracts (`api/src/middleware/contentType.ts`, `api/tests/contracts/http.406.spec.ts`, `specs/008-identity-platform/contracts/openapi.yaml`).
+- T087: Centralized `Cache-Control: no-store` enforcement for security-sensitive errors with comprehensive contracts (`api/src/lib/errors.js`, `api/src/middleware/errorHandler.ts`, `api/tests/contracts/errors.cache-control.spec.ts`).
+- Follow-up: Frontend root layout now invokes env validation at module load, and `api/src/config.js` mirrors the production guard for CommonJS consumers.
+- Follow-up: Regenerated `api/openapi.json` from the canonical spec to keep CI `contracts:check` passing.
+
+### 2025-10-24 (US1 Anonymous Reader - DEV-641, DEV-642, DEV-643, DEV-644)
 ### 2025-10-24 (US1 Anonymous Reader - DEV-641, DEV-642, DEV-643, DEV-644)
 
 ### Added/Changed
@@ -9,8 +20,6 @@ feature/DEV-641-644-us1-anon-reader
 - T009: Recorded independent test criteria in plan (`specs/008-identity-platform/plan.md`).
 - T043: Implemented a11y specifics: polite vs assertive live regions, focus-to-first-invalid in forms, global visible focus ring, and Escape-close hook for modals (`frontend-next/components/NewPostForm.tsx`, `frontend-next/src/app/globals.css`, `frontend-next/components/useEscapeKey.ts`).
 
-=======
-main
 ### 2025-10-23 (Phase 2 docs + guards - DEV-636, DEV-637, DEV-638, DEV-639, DEV-640)
 
 ### Added/Changed

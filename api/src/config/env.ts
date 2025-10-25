@@ -21,10 +21,15 @@ export type Optional = typeof optionalEnv[number];
  * T076: Validate required environment variable names on boot.
  * Only checks presence of names (not values) and only in production.
  */
+function hasEnvVar(key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(process.env, key);
+}
+
 export function validateEnvOnBoot(): void {
   const isProd = process.env.NODE_ENV === 'production';
   if (!isProd) return;
-  const missing = requiredEnvInProd.filter((k) => !(k in process.env));
+
+  const missing = requiredEnvInProd.filter((key) => !hasEnvVar(key));
   if (missing.length > 0) {
     throw new Error(`[config] Missing required env var(s): ${missing.join(', ')}`);
   }

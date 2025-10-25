@@ -1,10 +1,11 @@
 /**
  * contentType.ts
- * Content-Type and Accept header validation middleware for mutating requests
+ * Content-Type and Accept header validation middleware for JSON APIs
  *
  * Requirements:
  * - T032: Enforce Content-Type: application/json for POST, PUT, PATCH, DELETE → 415
  * - T068: Enforce Accept: application/json for mutating methods → 406
+ * - T086: Fail 406 when any JSON-producing route receives an Accept header that excludes JSON
  * - Accept application/json with charset parameter (e.g., application/json; charset=utf-8)
  * - Return standardized error envelopes (415/406)
  *
@@ -73,26 +74,34 @@ export function requireJsonContentType(req: Request, res: Response, next: NextFu
  */
 export function requireJsonAccept(req: Request, res: Response, next: NextFunction): void {
   const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  const negotiatedMethods = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-  // Only check mutating methods
-  if (!mutatingMethods.includes(req.method)) {
-    return next();
-  }
-
-  // OPTIONS requests bypass this check (handled by CORS preflight)
   if (req.method === 'OPTIONS') {
     return next();
   }
 
-  const acceptHeader = Array.isArray(req.headers['accept'])
+  if (!negotiatedMethods.includes(req.method)) {
+    return next();
+  }
+
+  const rawAccept = Array.isArray(req.headers['accept'])
     ? req.headers['accept'].join(',')
     : (req.headers['accept'] ?? '');
 
-  // Honor type/subtype wildcards and +json structured syntax suffix
-  const acceptsJson = doesAcceptJson(acceptHeader);
+  const normalizedAccept = typeof rawAccept === 'string' ? rawAccept.trim() : '';
+  const hasExplicitAccept = normalizedAccept.length > 0;
+  const acceptsJson = doesAcceptJson(normalizedAccept);
+  const methodRequiresHeader = mutatingMethods.includes(req.method);
 
   if (!acceptsJson) {
-    return sendNotAcceptable(req, res, 'Accept header must include application/json for mutating requests');
+    if (hasExplicitAccept || methodRequiresHeader) {
+      return sendNotAcceptable(
+        req,
+        res,
+        'Accept header must allow application/json responses'
+      );
+    }
+    return next();
   }
 
   next();
@@ -122,7 +131,7 @@ function sendNotAcceptable(req: Request, res: Response, message: string): void {
     code: 'NOT_ACCEPTABLE',
     message,
     requestId,
-    hint: 'Set Accept header to application/json or */* for mutating requests (POST, PUT, PATCH, DELETE)'
+    hint: 'Set Accept header to application/json or */* to receive JSON responses'
   });
 }
 

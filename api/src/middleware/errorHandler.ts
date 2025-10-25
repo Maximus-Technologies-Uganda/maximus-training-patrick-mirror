@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { statusByCode } from "../lib/errors";
+import { setCacheControlNoStore, statusByCode } from "../lib/errors";
 
 interface AppError extends Error {
   code?: string;
@@ -14,9 +14,7 @@ export function errorHandler(err: AppError, req: Request, res: Response, _next: 
   const status = fallbackStatus ?? mappedStatus ?? 500;
 
   // Prevent caching of error responses for common API errors (T087)
-  if ([401, 403, 413, 422, 429, 503].includes(status)) {
-    res.setHeader("Cache-Control", "no-store");
-  }
+  setCacheControlNoStore(res, status);
 
   // Enrich envelope with requestId and optional traceId when available (T111)
   const requestId =

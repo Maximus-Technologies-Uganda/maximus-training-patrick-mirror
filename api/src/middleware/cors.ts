@@ -16,6 +16,27 @@
 
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import type { AppConfig } from '../config';
+import { setCacheControlNoStore } from '../lib/errors';
+
+function ensureVaryIncludes(res: Response, token: string): void {
+  const current = res.getHeader('Vary');
+  if (!current) {
+    res.setHeader('Vary', token);
+    return;
+  }
+
+  const values = Array.isArray(current)
+    ? current.flatMap((value) => String(value).split(','))
+    : String(current).split(',');
+
+  const normalized = values.map((value) => value.trim()).filter(Boolean);
+  const hasToken = normalized.some((value) => value.toLowerCase() === token.toLowerCase());
+
+  if (!hasToken) {
+    normalized.push(token);
+    res.setHeader('Vary', normalized.join(', '));
+  }
+}
 
 /**
  * CORS preflight handler (OPTIONS requests)
@@ -37,19 +58,19 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     const requestHeaders = req.headers['access-control-request-headers'];
 
     // Build Vary header components
-    const varyComponents = ['Origin'];
+    ensureVaryIncludes(res, 'Origin');
     if (requestMethod) {
-      varyComponents.push('Access-Control-Request-Method');
+      ensureVaryIncludes(res, 'Access-Control-Request-Method');
     }
     if (requestHeaders) {
-      varyComponents.push('Access-Control-Request-Headers');
+      ensureVaryIncludes(res, 'Access-Control-Request-Headers');
     }
-    res.setHeader('Vary', varyComponents.join(', '));
 
     // T069: Reject Origin: null unless explicitly allowed (dev only)
     if (origin === 'null' && !allowNullOrigin) {
       const requestId = res.locals.requestId || req.requestId || 'unknown';
 
+      setCacheControlNoStore(res, 403);
       res.status(403).json({
         code: 'FORBIDDEN_NULL_ORIGIN',
         message: 'Origin: null is not allowed',
@@ -71,6 +92,7 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
         configuredOrigins: allowedOrigins,
         requestId
       }));
+      setCacheControlNoStore(res, 500);
       res.status(500).json({
         code: 'INVALID_CORS_CONFIG',
         message: 'Internal server error',
@@ -119,12 +141,7 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
  */
 export function corsVaryHeader(): RequestHandler {
   return (_req: Request, res: Response, next: NextFunction): void => {
-    const currentVary = res.getHeader('Vary');
-    if (!currentVary) {
-      res.setHeader('Vary', 'Origin');
-    } else if (typeof currentVary === 'string' && !currentVary.includes('Origin')) {
-      res.setHeader('Vary', `${currentVary}, Origin`);
-    }
+    ensureVaryIncludes(res, 'Origin');
     next();
   };
 }
@@ -149,6 +166,7 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     if (origin === 'null' && !allowNullOrigin) {
       const requestId = res.locals.requestId || req.requestId || 'unknown';
 
+      setCacheControlNoStore(res, 403);
       res.status(403).json({
         code: 'FORBIDDEN_NULL_ORIGIN',
         message: 'Origin: null is not allowed',
@@ -170,6 +188,7 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
         configuredOrigins: allowedOrigins,
         requestId
       }));
+      setCacheControlNoStore(res, 500);
       res.status(500).json({
         code: 'INVALID_CORS_CONFIG',
         message: 'Internal server error',
@@ -193,25 +212,8 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     );
 
     // Set Vary header
-    const currentVary = res.getHeader('Vary');
-    if (!currentVary) {
-      res.setHeader('Vary', 'Origin');
-    } else if (typeof currentVary === 'string' && !currentVary.includes('Origin')) {
-      res.setHeader('Vary', `${currentVary}, Origin`);
-    }
+    ensureVaryIncludes(res, 'Origin');
 
     next();
   };
 }
-
-/**
- * Add Vary: Origin header to normal responses
- * This ensures caches understand the response varies by Origin
- */
-// removed duplicate implementation block
-
-/**
- * Set CORS headers for normal (non-preflight) requests
- * Used in conjunction with the cors() package for simple requests
- */
-// removed duplicate implementation block

@@ -17,7 +17,9 @@ describe('security headers (T084)', () => {
     expect(res.status).toBe(200);
     expect(res.headers['cross-origin-opener-policy']).toBe('same-origin');
     expect(res.headers['cross-origin-resource-policy']).toBe('same-origin');
-    expect(res.headers['permissions-policy']).toBeDefined();
+    expect(res.headers['permissions-policy']).toBe(
+      'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()'
+    );
     // Basic CSP presence check with nonce marker
     expect(res.headers['content-security-policy']).toContain("script-src 'self' 'nonce-");
   });

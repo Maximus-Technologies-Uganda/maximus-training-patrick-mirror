@@ -53,7 +53,7 @@ components:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
             code: "NOT_ACCEPTABLE"
-            message: "Accept header must include application/json for mutating requests"
+            message: "Accept header must allow application/json responses"
             requestId: "550e8400-e29b-41d4-a716-446655440006"
     Err422:
       description: Unprocessable Entity
@@ -153,6 +153,7 @@ paths:
       responses:
         '200':
           description: OK
+        '406': { $ref: '#/components/responses/Err406' }
     post:
       operationId: createPost
       tags: [Posts]
@@ -186,6 +187,7 @@ paths:
       responses:
         '200':
           description: OK
+        '406': { $ref: '#/components/responses/Err406' }
     put:
       operationId: updatePost
       tags: [Posts]
