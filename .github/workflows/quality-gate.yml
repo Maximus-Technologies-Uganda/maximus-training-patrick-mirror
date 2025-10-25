@@ -78,9 +78,12 @@ jobs:
           set -e
           npm config set audit false --location=project
           npm config set fund false --location=project
-          # Use npm install for better workspace compatibility
+          npm config set fetch-retries 5 --location=project
+          npm config set fetch-retry-mintimeout 20000 --location=project
+          npm config set fetch-retry-maxtimeout 600000 --location=project
+          npm cache clean --force || true
           echo "Installing root and workspace dependencies"
-          npm install --no-audit --no-fund
+          npm ci || npm ci
 
   frontend-next-a11y:
     needs: install-root-deps
@@ -93,6 +96,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
         shell: bash
@@ -100,9 +105,13 @@ jobs:
           set -e
           npm config set audit false --location=project
           npm config set fund false --location=project
-          npm install --no-audit --no-fund
+          npm config set fetch-retries 5 --location=project
+          npm config set fetch-retry-mintimeout 20000 --location=project
+          npm config set fetch-retry-maxtimeout 600000 --location=project
+          npm cache clean --force || true
+          npm ci || npm ci
           cd frontend-next
-          npm ci
+          npm ci || npm ci
           npx -y playwright install --with-deps
 
       - name: Run Playwright a11y/e2e tests (HTML report)
@@ -142,11 +151,15 @@ jobs:
           set -e
           npm config set audit false --location=project
           npm config set fund false --location=project
+          npm config set fetch-retries 5 --location=project
+          npm config set fetch-retry-mintimeout 20000 --location=project
+          npm config set fetch-retry-maxtimeout 600000 --location=project
+          npm cache clean --force || true
           # Install root and workspace dependencies
-          npm install --no-audit --no-fund
+          npm ci || npm ci
           # Ensure frontend-next has its dependencies
           cd frontend-next
-          npm ci
+          npm ci || npm ci
 
       - name: Run frontend-next tests with coverage
         working-directory: frontend-next
@@ -231,11 +244,15 @@ jobs:
           set -e
           npm config set audit false --location=project
           npm config set fund false --location=project
+          npm config set fetch-retries 5 --location=project
+          npm config set fetch-retry-mintimeout 20000 --location=project
+          npm config set fetch-retry-maxtimeout 600000 --location=project
+          npm cache clean --force || true
           # Install root and workspace dependencies
-          npm install --no-audit --no-fund
+          npm ci || npm ci
           # Ensure API has its dependencies
           cd api
-          npm ci
+          npm ci || npm ci
 
       - name: Debug available api scripts
         run: |

@@ -47,7 +47,7 @@ function buildRepository(overrides: Partial<IPostsRepository>): IPostsRepository
   };
 
   return {
-    create: overrides.create ?? (async (post) => notImplemented()),
+    create: overrides.create ?? (async (_post) => notImplemented()),
     getById: overrides.getById ?? (async (_id) => notImplemented()),
     list: overrides.list ?? (async (_page, _pageSize) => notImplemented()),
     replace: overrides.replace ?? (async (_id, _post) => false),

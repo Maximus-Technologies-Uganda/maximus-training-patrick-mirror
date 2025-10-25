@@ -4,6 +4,7 @@ import React, { useLayoutEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import { mutatePostsPage1 } from "../src/lib/swr";
+import { withCsrf } from "../src/lib/auth/csrf";
 
 const FormSchema = z.object({
   title: z.string().min(1),
@@ -56,14 +57,17 @@ export default function NewPostForm({
       return;
     }
 
-    const res = await fetch(`/api/posts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Ensure HttpOnly session cookie is sent to the Next.js route handler
-      // which forwards it to the upstream API.
-      credentials: "include",
-      body: JSON.stringify({ title, content, published: true, tags: [] }),
-    });
+    const res = await fetch(
+      `/api/posts`,
+      withCsrf({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Ensure HttpOnly session cookie is sent to the Next.js route handler
+        // which forwards it to the upstream API.
+        credentials: "include",
+        body: JSON.stringify({ title, content, published: true, tags: [] }),
+      }),
+    );
     if (res.status === 201) {
       setTitle("");
       setContent("");

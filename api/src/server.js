@@ -9,7 +9,7 @@ const app = createApp(config, repository);
 const port = config.port;
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(`API listening on http://localhost:${port}`);
+    console.info(`API listening on http://localhost:${port}`);
   });
 }
 

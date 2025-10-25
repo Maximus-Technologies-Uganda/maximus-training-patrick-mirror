@@ -111,6 +111,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = buildUpstreamUrl("/posts", request.nextUrl.searchParams);
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
+    const originHeader = (request.headers.get("origin") || "").trim();
     // Only forward the session cookie to upstream to avoid leaking unrelated cookies
     const sessionCookie = (() => {
       try {
@@ -130,6 +131,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           ...(await buildAuthHeaders()),
           ...(sessionCookie ? { Cookie: sessionCookie } : {}),
           "X-Request-Id": requestId,
+          ...(originHeader ? { Origin: originHeader } : {}),
         },
         cache: "no-store",
       },
@@ -203,15 +205,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
-    // Only forward the session cookie to upstream to avoid leaking unrelated cookies
-    const sessionCookie = (() => {
+    const originHeader = (request.headers.get("origin") || "").trim();
+    // Only forward required cookies (session + csrf) to upstream to avoid leaking unrelated cookies
+    const forwardCookieHeader = (() => {
       try {
-        const match = incomingCookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
-        return match ? `session=${match[1]}` : "";
+        const cookies: string[] = [];
+        const sessionMatch = incomingCookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+        if (sessionMatch) cookies.push(`session=${sessionMatch[1]}`);
+        const csrfMatch = incomingCookieHeader.match(/(?:^|;\s*)csrf=([^;]+)/);
+        if (csrfMatch) cookies.push(`csrf=${csrfMatch[1]}`);
+        return cookies.join("; ");
       } catch {
         return "";
       }
     })();
+    const csrfHeader = (request.headers.get("x-csrf-token") || "").trim();
+    if (!csrfHeader) {
+      return NextResponse.json(
+        { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
+        { status: 400 },
+      );
+    }
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const upstreamResponse = await fetch(upstreamUrl, {
@@ -219,8 +233,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       headers: {
         "Content-Type": "application/json",
         ...(await buildAuthHeaders()),
-        ...(sessionCookie ? { Cookie: sessionCookie } : {}),
+        ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
         "X-Request-Id": requestId,
+        ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
+        ...(originHeader ? { Origin: originHeader } : {}),
       },
       body: bodyText,
     });

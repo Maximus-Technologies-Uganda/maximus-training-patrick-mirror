@@ -39,6 +39,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     bodyText = "{}";
   }
   try {
+    // Accept Firebase ID token from client when present; forward as-is upstream
+    // to allow upstream API (or BFF API tier) to verify and mint cookies.
+    // If absent, body will contain legacy username/password for local fallback.
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const audience = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE || "";
@@ -105,11 +108,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const token = `${header}.${payload}.dev`;
         const incomingReqId = request.headers.get("x-request-id") || "";
         const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
-        const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
         const secureAttr = isHttps(request) ? "; Secure" : "";
-        res.headers.set(
+        const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
+        // Session cookie (HttpOnly)
+        res.headers.append(
           "set-cookie",
           `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureAttr}`,
+        );
+        // CSRF cookie (non-HttpOnly) for double-submit header
+        const csrf = randomUUID().replace(/-/g, "");
+        res.headers.append(
+          "set-cookie",
+          `csrf=${csrf}; Path=/; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureAttr}`,
         );
         return res;
       } catch {

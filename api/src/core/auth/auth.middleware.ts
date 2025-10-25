@@ -58,6 +58,10 @@ function verifyJwt(token: string, secret: string): null | Record<string, unknown
 // and to avoid caching stale values across test files.
 
 export const requireAuth: RequestHandler = (req, res, next) => {
+  // If a previous middleware already attached a verified user (e.g., Firebase bearer), honor it
+  if ((req as unknown as { user?: { userId?: string } }).user?.userId) {
+    return next();
+  }
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies["session"];
   const secret = getSessionSecret();
@@ -81,6 +85,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     return res.status(401).json({ code: "unauthorized", message: "Unauthorized", ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}) });
   }
   (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };
+  (req as unknown as { authContext?: { method?: string } }).authContext = { method: "session-cookie" };
   {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||

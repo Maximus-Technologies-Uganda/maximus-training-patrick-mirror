@@ -33,12 +33,34 @@ function signJwt(payload: object, secret: string, expiresInSec: number): string 
   return `${data}.${base64url(signature)}`;
 }
 
-router.post("/login", (req, res) => {
-  const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
-  const isValid =
-    (username === "admin" && password === "password") ||
-    (username === "alice" && password === "correct-password");
-  if (!isValid) {
+router.post("/login", async (req, res) => {
+  const { username, password, idToken } = (req.body ?? {}) as { username?: string; password?: string; idToken?: string };
+  let userId: string | undefined = undefined;
+
+  if (typeof idToken === "string" && idToken.trim()) {
+    try {
+      // Lazy-load firebase-admin to avoid hard dependency in environments without it
+      const admin = (await import("firebase-admin")) as typeof import("firebase-admin");
+      if (!admin.apps.length) {
+        admin.initializeApp();
+      }
+      const decoded = await admin.auth().verifyIdToken(idToken, true);
+      userId = decoded?.sub;
+    } catch {
+      const requestId =
+        (req as unknown as { requestId?: string }).requestId ||
+        ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
+      setCacheControlNoStore(res, 401);
+      return res.status(401).json({ code: "unauthorized", message: "Unauthorized", ...(requestId ? { requestId } : {}) });
+    }
+  } else {
+    const isValid =
+      (username === "admin" && password === "password") ||
+      (username === "alice" && password === "correct-password");
+    if (isValid) userId = username === "admin" ? "admin-1" : "user-alice-1";
+  }
+
+  if (!userId) {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
@@ -48,7 +70,6 @@ router.post("/login", (req, res) => {
   }
 
   const secret = getSessionSecret();
-  const userId = username === "admin" ? "admin-1" : "user-alice-1";
   const token = signJwt({ userId }, secret, 24 * 60 * 60);
 
   res.cookie("session", token, {
@@ -59,6 +80,14 @@ router.post("/login", (req, res) => {
     // checks and a double-submit token) before changing this value.
     sameSite: "lax",
     maxAge: 24 * 60 * 60 * 1000,
+  });
+  // Mint CSRF token cookie for double-submit protection on writes
+  const csrf = base64url(Buffer.from(String(Math.random()).slice(2) + Date.now().toString(36)));
+  res.cookie("csrf", csrf, {
+    httpOnly: false,
+    secure: isProduction,
+    sameSite: "lax",
+    maxAge: 2 * 60 * 60 * 1000,
   });
   const requestId =
     (req as unknown as { requestId?: string }).requestId ||
@@ -71,6 +100,12 @@ router.post("/logout", (req, res) => {
   // Idempotent: always clear the session cookie and return 204
   res.cookie("session", "", {
     httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+    maxAge: 0,
+  });
+  res.cookie("csrf", "", {
+    httpOnly: false,
     secure: isProduction,
     sameSite: "lax",
     maxAge: 0,

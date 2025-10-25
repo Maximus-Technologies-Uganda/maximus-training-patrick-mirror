@@ -34,7 +34,7 @@ function shouldTrustProxy(req: Request): boolean {
   if (typeof trustProxyFn === "function" && remoteAddress) {
     try {
       return Boolean(trustProxyFn(remoteAddress, 0));
-    } catch (_error) {
+    } catch {
       // Fall back to standard evaluation below if the trust function throws
     }
   }
@@ -48,7 +48,7 @@ function shouldTrustProxy(req: Request): boolean {
 
     try {
       return Boolean(trustProxy(remoteAddress, 0));
-    } catch (_error) {
+    } catch {
       return false;
     }
   }
