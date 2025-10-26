@@ -102,10 +102,22 @@ function getRemoteIp(req: Request): string {
 }
 
 function deriveKey(req: Request): string {
+  // Per-app salt to avoid cross-test/process contamination of the in-memory store (Jest/CI isolation)
+  // Falls back to empty string when not set.
+  // This ensures different Express app instances do not share rate-limit buckets inadvertently.
+  // The salt is set in app.locals.rateLimitSalt during app boot.
+  const salt = (() => {
+    try {
+      const val = (req.app?.locals as unknown as { rateLimitSalt?: string })?.rateLimitSalt;
+      return typeof val === "string" ? val : "";
+    } catch {
+      return "";
+    }
+  })();
   // Prefer authenticated user id when present
   const userId = getUserId(req);
   if (userId) {
-    return `u:${userId}`;
+    return `u:${userId}${salt ? `:s<${salt}>` : ''}`;
   }
 
   // Extract and validate X-Forwarded-For (first IP only)
@@ -128,7 +140,7 @@ function deriveKey(req: Request): string {
     }
   }
 
-  return `ip:${ip}`;
+  return `ip:${ip}${salt ? `:s<${salt}>` : ''}`;
 }
 
 export function createRateLimiter(config: RateLimitConfig) {
@@ -138,6 +150,8 @@ export function createRateLimiter(config: RateLimitConfig) {
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => deriveKey(req),
+    // Skip rate limiting for OPTIONS requests (CORS preflight) - T038
+    skip: (req: Request) => req.method === "OPTIONS",
     handler: (req: Request, res: Response) => {
       const seconds = Math.ceil(config.windowMs / 1000);
       res.setHeader("Retry-After", String(seconds));

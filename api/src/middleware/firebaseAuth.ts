@@ -260,7 +260,23 @@ export const verifyFirebaseIdToken: RequestHandler = async (req, res, next) => {
       return unauthorizedResponse();
     }
 
-    (req as unknown as { user?: { userId: string } }).user = { userId: sub };
+    // Extract role from Firebase custom claims if available with safe narrowing
+    const pick = (obj: unknown, key: string): unknown => {
+      return obj && typeof obj === 'object' && key in (obj as Record<string, unknown>)
+        ? (obj as Record<string, unknown>)[key]
+        : undefined;
+    };
+    const roleDirect = pick(decoded, 'role');
+    const customClaims = pick(decoded, 'custom_claims');
+    const roleFromCustom = customClaims && typeof customClaims === 'object' ? (customClaims as Record<string, unknown>)['role'] : undefined;
+    const resolvedRole = typeof roleDirect === 'string'
+      ? roleDirect
+      : (typeof roleFromCustom === 'string' ? roleFromCustom : 'owner');
+
+    (req as unknown as { user?: { userId: string; role?: string } }).user = {
+      userId: sub,
+      role: resolvedRole
+    };
     (req as unknown as { authContext?: { method?: string } }).authContext = {
       method: "firebase-bearer",
     };

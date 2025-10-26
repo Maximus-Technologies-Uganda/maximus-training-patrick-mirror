@@ -11,12 +11,7 @@ chore/T001-env-flags-setup-DEV-598
 - [X] T002 Create CI spectral step and artifacts path — .github/workflows/ci.yml
 - [X] T003 Add `scripts/sync-openapi.ts` to copy canonical contract to app — scripts/sync-openapi.ts
 - [X] T045 Document Secret Manager wiring (FIREBASE_ADMIN_*), add .env.example placeholders and secret-pattern checks — specs/008-identity-platform/quickstart.md
-=======
-- [ ] T001 Establish env/flags (.env examples) per plan (NEXT_PUBLIC_API_URL, FIREBASE_*, SESSION_SECRET) — specs/008-identity-platform/quickstart.md
-- [ ] T002 Create CI spectral step and artifacts path — .github/workflows/ci.yml
-- [ ] T003 Add `scripts/sync-openapi.ts` to copy canonical contract to app — scripts/sync-openapi.ts
-- [ ] T045 Document Secret Manager wiring (FIREBASE_ADMIN_*), add .env.example placeholders and secret-pattern checks — specs/008-identity-platform/quickstart.md
-main
+ 
 
 ## Phase 2 — Foundational
 - [X] T004 Add canonical OpenAPI skeleton (bearer + protected ops) — specs/008-identity-platform/contracts/openapi.yaml
@@ -81,12 +76,12 @@ main
 - [X] T018 [US2] Contract tests for 200/401/403/404/422/429/413/503 — api/tests/contracts/ — DEV-656
 - [X] T019 [US2] Independent test criteria recorded in plan — specs/008-identity-platform/plan.md — DEV-657
 - [X] T036 [US2] Read-only mode (READ_ONLY=true) middleware returning 503 envelope on writes — api/src/middleware/readOnly.ts
-- [ ] T037 [US2] Distinguish 404 (non-existent) vs 403 (unauthorized existing) in posts routes — api/src/core/posts/
-- [ ] T038 [US2] Rate-limit precedence userId→IP and omit headers on OPTIONS — api/src/middleware/rateLimit.ts
-- [ ] T047 [US2] 1MB overflow returns 413 `{ code:"PAYLOAD_TOO_LARGE", ... }`, minimal Content-Length — api/src/middleware/bodyLimit.ts
-- [ ] T048 [US2] Logout semantics (clear cookie Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/) — frontend-next/src/app/api/logout/route.ts
-- [ ] T060 [US2] OpenAPI + tests for 415 (extend T017/T018/T042); add `api/tests/contracts/http.415.spec.ts` and include artifact under `packet/contracts/` — specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.415.spec.ts
-- [ ] T062 [US2] Session cookie rotation (~15m or on role change) and Set-Cookie assertion (fake timers >15m; new cookie; correct flags) — frontend-next/src/app/api/login/route.ts; api/tests/auth.session-rotation.spec.ts
+- [X] T037 [US2] Distinguish 404 (non-existent) vs 403 (unauthorized existing) in posts routes — api/src/core/posts/
+- [X] T038 [US2] Rate-limit precedence userId→IP and omit headers on OPTIONS — api/src/middleware/rateLimit.ts
+- [X] T047 [US2] 1MB overflow returns 413 `{ code:"PAYLOAD_TOO_LARGE", ... }` — api/src/middleware/bodyLimit.ts
+- [X] T048 [US2] Logout semantics (clear cookie Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/) — frontend-next/src/app/api/auth/logout/route.ts
+- [X] T060 [US2] OpenAPI + tests for 415 (extend T017/T018/T042); add `api/tests/contracts/http.415.spec.ts` and include artifact under `packet/contracts/` — specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.415.spec.ts
+- [X] T062 [US2] Session cookie rotation (~15m or on role change) and Set-Cookie assertion (fake timers >15m; new cookie; correct flags) — frontend-next/src/app/api/auth/login/route.ts; api/tests/auth.session-rotation.spec.ts
 - [ ] T063 [US2] CSRF token semantics (entropy, bound to session, TTL ≤2h at BFF; API verifies TTL); add replay-window test and cross-session replay test (403) — specs/008-identity-platform/plan.md; api/tests/csrf.replay.spec.ts
 - [ ] T052 [US2] Standard error envelope helper `{ code, message, details?, requestId }` used by 401/403/422/429/413/503 — api/src/lib/errors.ts
 - [ ] T053 [US2] BFF→API identity propagation check (forward x-user-id/x-user-role; API rejects writes if verified identity present but headers missing/mangled) — frontend-next/src/app/api/posts/[...proxy]/route.ts; api/src/middleware/auth.ts
@@ -231,12 +226,12 @@ main
 - [ ] T018 [US2] Contract tests for 200/401/403/404/422/429/413/503 — api/tests/contracts/
 - [ ] T019 [US2] Independent test criteria recorded in plan — specs/008-identity-platform/plan.md
 - [ ] T036 [US2] Read-only mode (READ_ONLY=true) middleware returning 503 envelope on writes — api/src/middleware/readOnly.ts
-- [ ] T037 [US2] Distinguish 404 (non-existent) vs 403 (unauthorized existing) in posts routes — api/src/core/posts/
-- [ ] T038 [US2] Rate-limit precedence userId→IP and omit headers on OPTIONS — api/src/middleware/rateLimit.ts
-- [ ] T047 [US2] 1MB overflow returns 413 `{ code:"PAYLOAD_TOO_LARGE", ... }`, minimal Content-Length — api/src/middleware/bodyLimit.ts
-- [ ] T048 [US2] Logout semantics (clear cookie Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/) — frontend-next/src/app/api/logout/route.ts
-- [ ] T060 [US2] OpenAPI + tests for 415 (extend T017/T018/T042); add `api/tests/contracts/http.415.spec.ts` and include artifact under `packet/contracts/` — specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.415.spec.ts
-- [ ] T062 [US2] Session cookie rotation (~15m or on role change) and Set-Cookie assertion (fake timers >15m; new cookie; correct flags) — frontend-next/src/app/api/login/route.ts; api/tests/auth.session-rotation.spec.ts
+- [X] T037 [US2] Distinguish 404 (non-existent) vs 403 (unauthorized existing) in posts routes — api/src/core/posts/
+- [X] T038 [US2] Rate-limit precedence userId→IP and omit headers on OPTIONS — api/src/middleware/rateLimit.ts
+- [X] T047 [US2] 1MB overflow returns 413 `{ code:"PAYLOAD_TOO_LARGE", ... }` — api/src/middleware/bodyLimit.ts
+- [X] T048 [US2] Logout semantics (clear cookie Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/) — frontend-next/src/app/api/auth/logout/route.ts
+- [X] T060 [US2] OpenAPI + tests for 415 (extend T017/T018/T042); add `api/tests/contracts/http.415.spec.ts` and include artifact under `packet/contracts/` — specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.415.spec.ts
+- [X] T062 [US2] Session cookie rotation (~15m or on role change) and Set-Cookie assertion (fake timers >15m; new cookie; correct flags) — frontend-next/src/app/api/auth/login/route.ts; api/tests/auth.session-rotation.spec.ts
 - [ ] T063 [US2] CSRF token semantics (entropy, bound to session, TTL ≤2h at BFF; API verifies TTL); add replay-window test and cross-session replay test (403) — specs/008-identity-platform/plan.md; api/tests/csrf.replay.spec.ts
 - [ ] T052 [US2] Standard error envelope helper `{ code, message, details?, requestId }` used by 401/403/422/429/413/503 — api/src/lib/errors.ts
 - [ ] T053 [US2] BFF→API identity propagation check (forward x-user-id/x-user-role; API rejects writes if verified identity present but headers missing/mangled) — frontend-next/src/app/api/posts/[...proxy]/route.ts; api/src/middleware/auth.ts

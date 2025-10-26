@@ -199,14 +199,14 @@ Scope:
 Evidence:
 - Published GitHub Release `v8.0.0` with links to all evidence.
 
-# Week 8 Implementation Plan — Identity Platform, Roles & Production Hardening
+# Week 8 Implementation Plan - Identity Platform, Roles & Production Hardening
 
 **Source of truth:** `@specs/008-identity-platform/spec.md`
 **Branch family:** `008-identity-roles-hardening/*`
-**Scope window:** Week 8 (Days 2–5)
+**Scope window:** Week 8 (Days 2�5)
 **Traceability:** Every PR references Linear `LINEAR-XXXX` and this spec path.
 
-> This plan breaks the work into **four single‑purpose PRs**, aligned to the Week‑8 workbook daily goals. Each PR includes goal, scope (files & changes), evidence, merge gates, review checklist, risks/rollback, and acceptance tests.
+> This plan breaks the work into **four single-purpose PRs**, aligned to the Week 8 workbook daily goals. Each PR includes goal, scope (files & changes), evidence, merge gates, review checklist, risks/rollback, and acceptance tests.
 
 ---
 

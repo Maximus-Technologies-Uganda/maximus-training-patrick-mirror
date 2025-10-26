@@ -7,6 +7,10 @@ import { NotFoundError } from "../errors/NotFoundError";
 import type { Post, PostCreate, PostUpdate, ListPostsQuery } from "../core/posts/post.schemas";
 import type { PaginatedResponse } from "../core/pagination.types";
 
+const DEFAULT_PAGE_SIZE = 10;
+const MIN_PAGE_SIZE = 1;
+const MAX_PAGE_SIZE = 100;
+
 /**
  * Service layer responsible for business rules around Posts.
  * Adds defaults, timestamp management, validation, and domain errors on top of repository semantics.
@@ -69,7 +73,9 @@ export class PostsService implements IPostsService {
   /** List posts with pagination metadata computed from repository. */
   async list(query: ListPostsQuery): Promise<PaginatedResponse<Post>> {
     const page = query.page;
-    const pageSize = query.pageSize;
+    const requestedPageSize = Number.isInteger(query.pageSize) ? query.pageSize : DEFAULT_PAGE_SIZE;
+    const pageSize = Math.min(Math.max(requestedPageSize, MIN_PAGE_SIZE), MAX_PAGE_SIZE);
+
     const itemsStored = await this.repository.list(page, pageSize);
     const total = await this.repository.count();
     const start = (page - 1) * pageSize;

@@ -18,6 +18,7 @@ import { securityHeaders } from "./middleware/securityHeaders";
 import { assertCorsProdInvariants } from "./config/cors";
 import { verifyFirebaseIdToken } from "./middleware/firebaseAuth";
 import { readOnlyGuard } from "./middleware/readOnly";
+import { jsonBodyLimitHandler } from "./middleware/bodyLimit";
 
 import { createRateLimiter as createAppRateLimiter } from "./middleware/rateLimit";
 import path from "path";
@@ -40,6 +41,17 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   // Validate critical production invariants before wiring middleware (T103)
   assertCorsProdInvariants();
   const app = express();
+
+  // Assign a per-app salt for the in-memory rate limiter key derivation to avoid
+  // cross-instance bucket collisions during tests/CI where multiple app instances
+  // may be created in the same Node process.
+  try {
+    (app.locals as unknown as { rateLimitSalt?: string }).rateLimitSalt = `${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2)}`;
+  } catch {
+    // ignore if locals not writable
+  }
 
   // Generate request identifiers before any middleware can short-circuit the pipeline
   app.use(requestIdMiddleware);
@@ -68,11 +80,18 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     })
   );
 
-  const limiter = createAppRateLimiter({
+  const writeLimiter = createAppRateLimiter({
+    windowMs: config.rateLimitWindowMs,
+    max: config.rateLimitMax,
+  });
+  const authLimiter = createAppRateLimiter({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
   });
   app.use(express.json({ limit: config.jsonLimit }));
+
+  // Handle JSON parsing errors including payload size limits (T047)
+  app.use(jsonBodyLimitHandler(config));
 
   // Strip privileged identity fields from client payloads (T104)
   app.use(stripIdentityFields);
@@ -96,10 +115,14 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   });
 
   // Feature Routes
-  app.use("/auth", authRouter);
+  app.use("/auth", authLimiter, authRouter);
   const postsService = new PostsService(repository);
   const postsController = createPostsController(postsService);
-  const postsRouter = createPostsRoutes(postsController, { rateLimiter: limiter });
+  const readLimiter = createAppRateLimiter({
+    windowMs: config.rateLimitWindowMs,
+    max: config.rateLimitMax,
+  });
+  const postsRouter = createPostsRoutes(postsController, { rateLimiterRead: readLimiter, rateLimiterWrite: writeLimiter });
   // For write operations on /posts, prefer Firebase bearer if provided; otherwise fallback to cookie session
   // Apply the rate limiter after authentication so per-user keys are honoured when available.
   app.use("/posts", verifyFirebaseIdToken, postsRouter);

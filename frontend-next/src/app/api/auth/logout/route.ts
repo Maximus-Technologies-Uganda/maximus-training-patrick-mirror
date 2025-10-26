@@ -72,9 +72,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
       const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
       const secureAttr = isHttps(request) ? "; Secure" : "";
-      // Clear both session and csrf cookies
-      res.headers.append("set-cookie", `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttr}`);
-      res.headers.append("set-cookie", `csrf=; Path=/; SameSite=Lax; Max-Age=0${secureAttr}`);
+      // Clear both session and csrf cookies (T048)
+      res.headers.append("set-cookie", `session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secureAttr}`);
+      res.headers.append("set-cookie", `csrf=; Path=/; SameSite=Strict; Max-Age=0${secureAttr}`);
       return res;
     }
     // Structured error for logs/telemetry

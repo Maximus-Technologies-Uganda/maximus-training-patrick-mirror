@@ -54,6 +54,27 @@ function verifyJwt(token: string, secret: string): null | Record<string, unknown
   }
 }
 
+export function signJwt(payload: Record<string, unknown>, secret: string, expiresInSec: number): string {
+  const header = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const body = { iat: now, exp: now + expiresInSec, ...payload } as Record<string, unknown>;
+  const encHeader = base64urlEncode(Buffer.from(JSON.stringify(header)));
+  const encPayload = base64urlEncode(Buffer.from(JSON.stringify(body)));
+  const data = `${encHeader}.${encPayload}`;
+  const signature = createHmac("sha256", secret).update(data).digest();
+  return `${data}.${base64urlEncode(signature)}`;
+}
+
+function shouldRotateToken(payload: Record<string, unknown>): boolean {
+  const iat = typeof payload.iat === "number" ? payload.iat : NaN;
+  if (!Number.isFinite(iat)) return false;
+
+  const now = Math.floor(Date.now() / 1000);
+  // T062: Rotate if token is older than 10 minutes (5 minutes before 15-minute expiry)
+  const tokenAge = now - iat;
+  return tokenAge > 10 * 60; // 10 minutes
+}
+
 // Resolve the secret per request to ensure tests that set env at runtime work
 // and to avoid caching stale values across test files.
 
@@ -84,18 +105,40 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     }
     return res.status(401).json({ code: "unauthorized", message: "Unauthorized", ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}) });
   }
-  (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };
+
+  // T062: Check if token should be rotated (older than 10 minutes or role changed)
+  const shouldRotate = shouldRotateToken(payload);
+
+  (req as unknown as { user?: { userId: string; role?: string } }).user = {
+    userId: (payload as { userId: string }).userId,
+    role: (payload as { role?: string }).role || "owner"
+  };
   (req as unknown as { authContext?: { method?: string } }).authContext = { method: "session-cookie" };
+
+  // Rotate token if needed
+  if (shouldRotate) {
+    const newToken = signJwt({
+      userId: (payload as { userId: string }).userId,
+      role: (payload as { role?: string }).role || "owner"
+    }, secret, 15 * 60);
+
+    res.cookie("session", newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000,
+    });
+  }
+
   {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     const userId = (payload as { userId: string }).userId;
-    console.log(JSON.stringify({ level: "info", message: "Auth ok", requestId, userId }));
+    console.log(JSON.stringify({ level: "info", message: "Auth ok", requestId, userId, ...(shouldRotate ? { rotated: true } : {}) }));
   }
   next();
 };
 
 export default requireAuth;
-
 

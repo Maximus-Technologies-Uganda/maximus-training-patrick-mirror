@@ -12,8 +12,8 @@ export function createPostsRoutes(controller: {
   replace: (req: unknown, res: unknown, next: unknown) => unknown;
   update: (req: unknown, res: unknown, next: unknown) => unknown;
   delete: (req: unknown, res: unknown, next: unknown) => unknown;
-}, deps: { rateLimiter: express.RequestHandler }) {
-  const { rateLimiter } = deps;
+}, deps: { rateLimiterRead: express.RequestHandler; rateLimiterWrite: express.RequestHandler }) {
+  const { rateLimiterRead, rateLimiterWrite } = deps;
   const router = express.Router();
 
   // T094: Cache headers middleware must come AFTER auth middleware
@@ -21,18 +21,18 @@ export function createPostsRoutes(controller: {
   router.post(
     "/",
     requireSessionAuth,
-    rateLimiter,
+    rateLimiterWrite,
     requireCsrf,
     setAuthenticatedCacheHeaders,
     validateBody(PostCreateSchema),
     controller.create,
   );
-  router.get("/", rateLimiter, validateQuery(ListPostsQuerySchema), controller.list);
-  router.get("/:id", rateLimiter, controller.getById);
+  router.get("/", rateLimiterRead, validateQuery(ListPostsQuerySchema), controller.list);
+  router.get("/:id", rateLimiterRead, controller.getById);
   router.put(
     "/:id",
     requireSessionAuth,
-    rateLimiter,
+    rateLimiterWrite,
     requireCsrf,
     setAuthenticatedCacheHeaders,
     validateBody(PostCreateSchema),
@@ -41,7 +41,7 @@ export function createPostsRoutes(controller: {
   router.patch(
     "/:id",
     requireSessionAuth,
-    rateLimiter,
+    rateLimiterWrite,
     requireCsrf,
     setAuthenticatedCacheHeaders,
     validateBody(PostUpdateSchema),
@@ -50,7 +50,7 @@ export function createPostsRoutes(controller: {
   router.delete(
     "/:id",
     requireSessionAuth,
-    rateLimiter,
+    rateLimiterWrite,
     requireCsrf,
     setAuthenticatedCacheHeaders,
     controller.delete,
