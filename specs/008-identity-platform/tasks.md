@@ -73,14 +73,14 @@ main
 - [ ] T012 [US2] CSRF double-submit wiring in client (header X-CSRF-Token) — frontend-next/src/lib/auth/
 - [ ] T034 [US2] Token refresh (single getIdToken(true)) and ±5m clock skew accept; otherwise 401 — frontend-next/src/lib/auth/auth.ts; api/src/middleware/auth.ts; api/tests/auth.clock-skew.spec.ts
 - [ ] T035 [US2] JWT verification semantics (aud, iss, sub, exp) and reject other Firebase projects — api/src/middleware/auth.ts
-- [ ] T013 [US2] Owner-only guards in API (authorId === userId) — api/src/core/posts/
-- [ ] T014 [US2] Zod schemas + 1MB body limit + 422 envelope — api/src/schemas/post.ts
-- [ ] T015 [US2] Rate limit 10/min/user, headers on 2xx and 429 — api/src/middleware/rateLimit.ts
-- [ ] T016 [US2] Audit logs for create/update/delete (fields including traceId) — api/src/logging/audit.ts
-- [ ] T017 [US2] Contract updates: per-op security + responses 401/403/422/429/413/503 — specs/008-identity-platform/contracts/openapi.yaml
-- [ ] T018 [US2] Contract tests for 200/401/403/404/422/429/413/503 — api/tests/contracts/
-- [ ] T019 [US2] Independent test criteria recorded in plan — specs/008-identity-platform/plan.md
-- [ ] T036 [US2] Read-only mode (READ_ONLY=true) middleware returning 503 envelope on writes — api/src/middleware/readOnly.ts
+- [X] T013 [US2] Owner-only guards in API (authorId === userId) — api/src/core/posts/ — DEV-651
+- [X] T014 [US2] Zod schemas + 1MB body limit + 422 envelope — api/src/schemas/post.ts — DEV-652
+- [X] T015 [US2] Rate limit 10/min/user, headers on 2xx and 429 — api/src/middleware/rateLimit.ts — DEV-653
+- [X] T016 [US2] Audit logs for create/update/delete (fields including traceId) — api/src/logging/audit.ts — DEV-654
+- [X] T017 [US2] Contract updates: per-op security + responses 401/403/422/429/413/503 — specs/008-identity-platform/contracts/openapi.yaml — DEV-655
+- [X] T018 [US2] Contract tests for 200/401/403/404/422/429/413/503 — api/tests/contracts/ — DEV-656
+- [X] T019 [US2] Independent test criteria recorded in plan — specs/008-identity-platform/plan.md — DEV-657
+- [X] T036 [US2] Read-only mode (READ_ONLY=true) middleware returning 503 envelope on writes — api/src/middleware/readOnly.ts
 - [ ] T037 [US2] Distinguish 404 (non-existent) vs 403 (unauthorized existing) in posts routes — api/src/core/posts/
 - [ ] T038 [US2] Rate-limit precedence userId→IP and omit headers on OPTIONS — api/src/middleware/rateLimit.ts
 - [ ] T047 [US2] 1MB overflow returns 413 `{ code:"PAYLOAD_TOO_LARGE", ... }`, minimal Content-Length — api/src/middleware/bodyLimit.ts

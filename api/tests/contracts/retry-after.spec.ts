@@ -14,12 +14,12 @@ describe('Retry-After semantics (T092)', () => {
   it('includes Retry-After on 429 only', async () => {
     const app = await makeApp(1000, 1, '1kb');
     // First request ok
-    const ok = await request(app).get('/health');
+    const ok = await request(app).get('/posts');
     expect(ok.status).toBe(200);
     expect(ok.headers['retry-after']).toBeUndefined();
 
     // Second within window should be rate-limited
-    const limited = await request(app).get('/health');
+    const limited = await request(app).get('/posts');
     expect(limited.status).toBe(429);
     expect(limited.headers['retry-after']).toBeDefined();
 

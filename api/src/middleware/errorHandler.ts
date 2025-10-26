@@ -12,6 +12,14 @@ export function errorHandler(err: AppError, req: Request, res: Response, _next: 
   const fallbackStatus = err.status ?? err.statusCode;
   const mappedStatus = err.code ? statusByCode[err.code] : undefined;
   const status = fallbackStatus ?? mappedStatus ?? 500;
+  // Derive a stable error code when body parser throws 413 (T014/T047)
+  let effectiveCode = err.code;
+  if (!effectiveCode) {
+    const bodyTooLarge = status === 413 || (err as unknown as { type?: string }).type === 'entity.too.large';
+    if (bodyTooLarge) {
+      effectiveCode = 'payload_too_large';
+    }
+  }
 
   // Prevent caching of error responses for common API errors (T087)
   setCacheControlNoStore(res, status);
@@ -32,7 +40,7 @@ export function errorHandler(err: AppError, req: Request, res: Response, _next: 
   }
 
   res.status(status).json({
-    code: err.code ?? "internal_error",
+    code: effectiveCode ?? "internal_error",
     message: err.message || "Internal Server Error",
     details: err.details,
     ...(requestId ? { requestId } : {}),

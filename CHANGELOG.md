@@ -1,5 +1,24 @@
 ## Changelog
 
+<<<<<<< HEAD
+### 2025-10-25 (US2 guards, validation, rate limit, audit, contracts - DEV-651 to DEV-657)
+
+### Added/Changed
+- T013 (DEV-651): Enforced owner-only guards in posts API; create sets `ownerId`, updates/deletes check `ownerId === userId` (`api/src/core/posts/posts.controller.ts`).
+- T014 (DEV-652): Raised JSON body limit to 1MB and standardized `413` error envelope mapping (`api/src/config.ts`, `api/src/middleware/errorHandler.ts`).
+- T015 (DEV-653): Default rate limit set to 10/min per key (user/IP); headers preserved on 2xx/429 (`api/src/config.ts`, existing `api/src/middleware/rateLimit.ts`).
+- T016 (DEV-654): Added structured audit logs for create/update/delete with `requestId`/`traceId` capture (`api/src/logging/audit.ts`, wired in posts controller).
+- T017 (DEV-655): Ensured OpenAPI per-operation security and standardized responses `401/403/422/429/413/503` (`specs/008-identity-platform/contracts/openapi.yaml`).
+- T018 (DEV-656): Aligned contract tests with envelope codes and added coverage for error cases (`api/tests/contracts/posts.spec.ts`).
+- T019 (DEV-657): Recorded independent test criteria in plan (`specs/008-identity-platform/plan.md`).
+
+### 2025-10-25 (US2 Read-only mode)
+
+### Added
+- T036: Added read-only guard middleware that returns `503 { code: "SERVICE_UNAVAILABLE" }` on mutating requests when `READ_ONLY=true`, wired globally in the API pipeline. Re-enabled 503 contract tests for POST/PUT/DELETE (`api/src/middleware/readOnly.ts`, `api/src/app.ts`, `api/tests/contracts/posts.spec.ts`).
+
+=======
+>>>>>>> origin/main
 ### 2025-10-27 (US2 CSRF follow-up - DEV-645 – DEV-650)
 
 ### Fixed

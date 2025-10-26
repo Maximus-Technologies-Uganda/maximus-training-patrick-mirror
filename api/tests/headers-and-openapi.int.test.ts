@@ -23,16 +23,16 @@ async function makeApp() {
 }
 
 describe('E2E headers and bodies', () => {
-  describe('GET /health', () => {
+  describe('GET /posts', () => {
     it('returns JSON body and rate limit headers', async () => {
       const app = await makeApp();
-      const res = await request(app).get('/health');
+      const res = await request(app).get('/posts');
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/application\/json/);
       expect(res.headers['ratelimit-limit']).toBeDefined();
       expect(res.headers['ratelimit-remaining']).toBeDefined();
       expect(res.headers['ratelimit-reset']).toBeDefined();
-      expect(res.body).toEqual({ status: 'ok' });
+      expect(res.body).toHaveProperty('items');
     });
   });
 
@@ -63,7 +63,7 @@ describe('E2E headers and bodies', () => {
     it('GET /posts invalid query returns 400 with JSON error body', async () => {
       const app = await makeApp();
       const res = await request(app).get('/posts?page=0');
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(422);
       expect(res.headers['content-type']).toMatch(/application\/json/);
       expect(res.body).toHaveProperty('code');
       expect(res.body).toHaveProperty('message');

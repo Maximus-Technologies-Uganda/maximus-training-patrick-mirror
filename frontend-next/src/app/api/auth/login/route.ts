@@ -4,7 +4,7 @@ import { getIdToken } from "../../../../server/auth/getIdToken";
 
 // Keep server-only API base URL; fallback to public var for local dev parity
 const API_BASE_URL: string =
-  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export const runtime = "nodejs";
 

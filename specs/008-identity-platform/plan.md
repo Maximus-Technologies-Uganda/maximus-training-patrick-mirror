@@ -578,6 +578,15 @@ git commit -m "feat(contracts): add 415 response for invalid Content-Type"
   run: npm run contracts:check
 ```
 
+## Independent Test Criteria (US2)
+
+- POST `/posts`: 201 on valid; 401 no auth; 403 not owner; 422 invalid body; 429 over limit; 413 >1MB; 503 when `READ_ONLY=true`.
+- PUT `/posts/{id}`: 200 on valid owner; 401 no auth; 403 not owner; 422 invalid; 429 over limit; 413 >1MB; 503 `READ_ONLY=true`.
+- DELETE `/posts/{id}`: 204 on valid owner; 401 no auth; 403 not owner; 429 over limit; 503 `READ_ONLY=true`.
+- GET `/posts`: 200 public; no auth required.
+- GET `/posts/{id}`: 200 when exists; 404 when not found.
+- Error envelopes include `requestId` when available; `429` includes `Retry-After`; 4xx/5xx set `Cache-Control: no-store`.
+
 ## Commands & CI snippets
 
 * **Run a11y:** `pnpm test:a11y` → outputs to `a11y-frontend-next/`

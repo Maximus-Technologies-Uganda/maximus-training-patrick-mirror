@@ -3,6 +3,7 @@ import type { ListPostsQuery } from "./post.schemas";
 import type { IPostsService } from "../../services/PostsService";
 import { setCacheControlNoStore } from "../../lib/errors";
 import { NotFoundError } from "../../errors/NotFoundError";
+import { auditPost } from "../../logging/audit";
 
 export function createPostsController(postsService: IPostsService) {
   type ServicePost = Awaited<ReturnType<IPostsService["getById"]>>;
@@ -15,9 +16,11 @@ export function createPostsController(postsService: IPostsService) {
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
         }
-        const payload = { ...req.body, ownerId: userId };
-        const created = await postsService.create(payload);
+        const { title, content, tags, published } = req.body;
+        console.log('Controller create received:', { title, content, tags, published });
+        const created = await postsService.create({ title, content, tags, published, ownerId: userId });
         res.status(201).location(`/posts/${created.id}`).json(created);
+        auditPost(req as never, "create", created.id, 201);
       } catch (error) {
         next(error);
       }
@@ -50,6 +53,7 @@ export function createPostsController(postsService: IPostsService) {
         }
         const updated = await postsService.replace(req.params.id, req.body);
         res.json(updated);
+        auditPost(req as never, "update", req.params.id, 200);
       } catch (error) {
         next(error);
       }
@@ -119,6 +123,7 @@ export function createPostsController(postsService: IPostsService) {
         }
         const updated = await postsService.update(req.params.id, req.body);
         res.json(updated);
+        auditPost(req as never, "update", req.params.id, 200);
       } catch (error) {
         next(error);
       }
@@ -152,11 +157,11 @@ export function createPostsController(postsService: IPostsService) {
         }
         await postsService.delete(req.params.id);
         res.status(204).send();
+        auditPost(req as never, "delete", req.params.id, 204);
       } catch (error) {
         next(error);
       }
     },
   };
 }
-
 

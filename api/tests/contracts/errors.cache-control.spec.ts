@@ -71,11 +71,11 @@ describe('Error Cache-Control headers (T087)', () => {
 
   it('sets Cache-Control: no-store on 429 responses, and omits on 200', async () => {
     const { app } = await makeApp();
-    // consume allowed requests
-    await request(app).get('/health');
-    await request(app).get('/health');
-    await request(app).get('/health');
-    const res = await request(app).get('/health');
+    // consume allowed requests on /posts endpoint (which has rate limiting)
+    await request(app).get('/posts');
+    await request(app).get('/posts');
+    await request(app).get('/posts');
+    const res = await request(app).get('/posts');
     expect(res.status).toBe(429);
     expect(res.headers['cache-control']).toBe('no-store');
 

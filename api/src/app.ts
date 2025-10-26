@@ -17,6 +17,7 @@ import { corsHeaders, corsPreflight } from "./middleware/cors";
 import { securityHeaders } from "./middleware/securityHeaders";
 import { assertCorsProdInvariants } from "./config/cors";
 import { verifyFirebaseIdToken } from "./middleware/firebaseAuth";
+import { readOnlyGuard } from "./middleware/readOnly";
 
 import { createRateLimiter as createAppRateLimiter } from "./middleware/rateLimit";
 import path from "path";
@@ -71,7 +72,6 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
   });
-  app.use(limiter);
   app.use(express.json({ limit: config.jsonLimit }));
 
   // Strip privileged identity fields from client payloads (T104)
@@ -80,6 +80,8 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   // Content-Type and Accept validation (T032, T068)
   app.use(requireJsonContentType);
   app.use(requireJsonAccept);
+  // T036: Read-only guard blocks mutating methods with 503 when READ_ONLY=true
+  app.use(readOnlyGuard);
 
   app.use(requestLogger);
 
@@ -97,8 +99,10 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   app.use("/auth", authRouter);
   const postsService = new PostsService(repository);
   const postsController = createPostsController(postsService);
+  const postsRouter = createPostsRoutes(postsController, { rateLimiter: limiter });
   // For write operations on /posts, prefer Firebase bearer if provided; otherwise fallback to cookie session
-  app.use("/posts", verifyFirebaseIdToken, createPostsRoutes(postsController));
+  // Apply the rate limiter after authentication so per-user keys are honoured when available.
+  app.use("/posts", verifyFirebaseIdToken, postsRouter);
 
   // In development, expose OpenAPI JSON for tests
   app.get("/openapi.json", (_req, res) => {
@@ -122,3 +126,4 @@ const defaultRepository = new InMemoryPostsRepository() as unknown as IPostsRepo
 const app = createApp(defaultConfig, defaultRepository);
 export { app };
 export default app;
+
