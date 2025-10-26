@@ -164,10 +164,10 @@ describe('Posts API Integration Tests', () => {
 
       // Fire requests sequentially to avoid race conditions in some CI environments
       for (let i = 0; i < 101; i++) {
-         
-        await supertest(api).get('/health');
+
+        await supertest(api).get('/posts');
       }
-      const res = await supertest(api).get('/health');
+      const res = await supertest(api).get('/posts');
       expect(res.status).toBe(429);
     });
   });

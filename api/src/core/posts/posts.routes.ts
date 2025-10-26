@@ -12,17 +12,49 @@ export function createPostsRoutes(controller: {
   replace: (req: unknown, res: unknown, next: unknown) => unknown;
   update: (req: unknown, res: unknown, next: unknown) => unknown;
   delete: (req: unknown, res: unknown, next: unknown) => unknown;
-}) {
+}, deps: { rateLimiter: express.RequestHandler }) {
+  const { rateLimiter } = deps;
   const router = express.Router();
 
   // T094: Cache headers middleware must come AFTER auth middleware
   // Order: requireSessionAuth (sets req.user) → setAuthenticatedCacheHeaders (reads req.user)
-  router.post("/", requireSessionAuth, requireCsrf, setAuthenticatedCacheHeaders, validateBody(PostCreateSchema), controller.create);
-  router.get("/", validateQuery(ListPostsQuerySchema), controller.list);
-  router.get("/:id", controller.getById);
-  router.put("/:id", requireSessionAuth, requireCsrf, setAuthenticatedCacheHeaders, validateBody(PostCreateSchema), controller.replace);
-  router.patch("/:id", requireSessionAuth, requireCsrf, setAuthenticatedCacheHeaders, validateBody(PostUpdateSchema), controller.update);
-  router.delete("/:id", requireSessionAuth, requireCsrf, setAuthenticatedCacheHeaders, controller.delete);
+  router.post(
+    "/",
+    requireSessionAuth,
+    rateLimiter,
+    requireCsrf,
+    setAuthenticatedCacheHeaders,
+    validateBody(PostCreateSchema),
+    controller.create,
+  );
+  router.get("/", rateLimiter, validateQuery(ListPostsQuerySchema), controller.list);
+  router.get("/:id", rateLimiter, controller.getById);
+  router.put(
+    "/:id",
+    requireSessionAuth,
+    rateLimiter,
+    requireCsrf,
+    setAuthenticatedCacheHeaders,
+    validateBody(PostCreateSchema),
+    controller.replace,
+  );
+  router.patch(
+    "/:id",
+    requireSessionAuth,
+    rateLimiter,
+    requireCsrf,
+    setAuthenticatedCacheHeaders,
+    validateBody(PostUpdateSchema),
+    controller.update,
+  );
+  router.delete(
+    "/:id",
+    requireSessionAuth,
+    rateLimiter,
+    requireCsrf,
+    setAuthenticatedCacheHeaders,
+    controller.delete,
+  );
   return router;
 }
 

@@ -11,12 +11,12 @@ describe('Rate limiting', () => {
     const app = createApp(config, repository);
 
     // Perform max allowed requests
-    await request(app).get('/health');
-    await request(app).get('/health');
-    await request(app).get('/health');
+    await request(app).get('/posts');
+    await request(app).get('/posts');
+    await request(app).get('/posts');
 
     // Next one should be rate limited
-    const res = await request(app).get('/health');
+    const res = await request(app).get('/posts');
     expect(res.status).toBe(429);
     // standardHeaders true -> RateLimit headers present
     expect(res.headers['ratelimit-limit']).toBeDefined();

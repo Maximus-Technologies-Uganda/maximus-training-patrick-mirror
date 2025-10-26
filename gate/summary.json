@@ -25,10 +25,10 @@
       "passed": true,
       "reason": "Coverage thresholds met",
       "metrics": {
-        "statements": 66.8,
-        "branches": 53.8,
-        "functions": 68.46,
-        "lines": 67.81
+        "statements": 68.41,
+        "branches": 56.95,
+        "functions": 73.33,
+        "lines": 69.12
       }
     },
     "tests": {
@@ -80,5 +80,5 @@
       }
     }
   },
-  "generatedAt": "2025-10-17T20:35:50.575Z"
+  "generatedAt": "2025-10-25T17:55:54.503Z"
 }

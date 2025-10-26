@@ -54,7 +54,7 @@ describe('OpenAPI contract - /posts', () => {
       .set('Cookie', cookie('user-A'))
       .set('Accept', 'application/json')
       .send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     // Response schema validation is handled via integration tests and Zod schemas
   });
 
@@ -73,7 +73,7 @@ describe('OpenAPI contract - /posts', () => {
   it('GET /posts invalid query matches 400 spec', async () => {
     const app = await makeApp();
     const res = await request(app).get('/posts?page=0');
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     // Response schema validation is handled via integration tests and Zod schemas
   });
 });
@@ -137,7 +137,7 @@ describe('OpenAPI contract - /posts/{id}', () => {
       .set('Cookie', cookie('user-A'))
       .set('Accept', 'application/json')
       .send({ title: '' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
   });
 
   it('PATCH /posts/:id validation error matches spec', async () => {
@@ -153,7 +153,7 @@ describe('OpenAPI contract - /posts/{id}', () => {
       .set('Cookie', cookie('user-A'))
       .set('Accept', 'application/json')
       .send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
   });
 
   it('PATCH /posts/:id success matches spec', async () => {

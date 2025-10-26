@@ -70,20 +70,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
-      - name: Install root dependencies
+      - name: Enable Corepack (pnpm 9)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+      - name: Resolve pnpm store path
+        id: pnpm-store-root
         shell: bash
         run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          npm config set fetch-retries 5 --location=project
-          npm config set fetch-retry-mintimeout 20000 --location=project
-          npm config set fetch-retry-maxtimeout 600000 --location=project
-          npm cache clean --force || true
-          echo "Installing root and workspace dependencies"
-          npm ci || npm ci
+          set -euo pipefail
+          echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
+          echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install root dependencies (pnpm)
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --ignore-scripts --frozen-lockfile=false --silent
 
   frontend-next-a11y:
     needs: install-root-deps
@@ -92,27 +101,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack (pnpm 9)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
-
-      - name: Install dependencies
+      - name: Resolve pnpm store path
+        id: pnpm-store-a11y
         shell: bash
         run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          npm config set fetch-retries 5 --location=project
-          npm config set fetch-retry-mintimeout 20000 --location=project
-          npm config set fetch-retry-maxtimeout 600000 --location=project
-          npm cache clean --force || true
-          npm ci || npm ci
+          set -euo pipefail
+          echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
+          echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies (pnpm)
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --ignore-scripts --frozen-lockfile=false
           cd frontend-next
-          npm ci || npm ci
-          npx -y playwright install --with-deps
+          pnpm install --ignore-scripts --frozen-lockfile=false
+          pnpm dlx playwright install --with-deps
 
       - name: Run Playwright a11y/e2e tests (HTML report)
         working-directory: frontend-next
@@ -138,28 +158,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack (pnpm 9)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
-
-      - name: Install dependencies
+      - name: Resolve pnpm store path
+        id: pnpm-store-cov
         shell: bash
         run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          npm config set fetch-retries 5 --location=project
-          npm config set fetch-retry-mintimeout 20000 --location=project
-          npm config set fetch-retry-maxtimeout 600000 --location=project
-          npm cache clean --force || true
-          # Install root and workspace dependencies
-          npm ci || npm ci
+          set -euo pipefail
+          echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
+          echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PNPM_STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies (pnpm)
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --ignore-scripts --frozen-lockfile=false
           # Ensure frontend-next has its dependencies
           cd frontend-next
-          npm ci || npm ci
+          pnpm install --ignore-scripts --frozen-lockfile=false
 
       - name: Run frontend-next tests with coverage
         working-directory: frontend-next

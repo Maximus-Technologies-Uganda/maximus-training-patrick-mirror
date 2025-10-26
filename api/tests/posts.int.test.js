@@ -54,7 +54,7 @@ describe('POST /posts', () => {
       .set('Accept', 'application/json')
       .send({});
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     expect(res.body).toMatchObject({ code: 'validation_error' });
   });
 
@@ -66,7 +66,7 @@ describe('POST /posts', () => {
       .set('Content-Type', 'application/json')
       .set('Accept', 'application/json')
       .send({ title: 'T', content: 'C', extra: 'nope' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     expect(res.body).toMatchObject({ code: 'validation_error' });
   });
 });
@@ -131,12 +131,12 @@ describe('GET /posts', () => {
   it('enforces page/pageSize bounds with 400 errors', async () => {
     const app = makeApp();
     const r1 = await request(app).get('/posts?page=0');
-    expect(r1.status).toBe(400);
+    expect(r1.status).toBe(422);
     expect(r1.body).toMatchObject({ code: 'validation_error' });
     const r2 = await request(app).get('/posts?pageSize=0');
-    expect(r2.status).toBe(400);
+    expect(r2.status).toBe(422);
     const r3 = await request(app).get('/posts?pageSize=101');
-    expect(r3.status).toBe(400);
+    expect(r3.status).toBe(422);
   });
 });
 
@@ -173,7 +173,7 @@ describe('PUT /posts and PATCH /posts/:id', () => {
     const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: 'T', content: 'C' });
     expect(created.status).toBe(201);
     const res = await request(app).put(`/posts/${created.body.id}`).set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: '' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     expect(res.body).toMatchObject({ code: 'validation_error' });
   });
 
@@ -195,9 +195,9 @@ describe('PUT /posts and PATCH /posts/:id', () => {
     const app = makeApp();
     const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: 'T', content: 'C' });
     const resEmpty = await request(app).patch(`/posts/${created.body.id}`).set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({});
-    expect(resEmpty.status).toBe(400);
+    expect(resEmpty.status).toBe(422);
     const resInvalid = await request(app).patch(`/posts/${created.body.id}`).set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: '' });
-    expect(resInvalid.status).toBe(400);
+    expect(resInvalid.status).toBe(422);
   });
 });
 

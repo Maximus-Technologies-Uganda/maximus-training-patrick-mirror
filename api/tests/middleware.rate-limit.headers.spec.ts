@@ -20,7 +20,7 @@ describe('RateLimit standard headers numeric (T098)', () => {
    */
   it('emits numeric RateLimit headers', async () => {
     const app = await makeApp();
-    const res = await request(app).get('/health');
+    const res = await request(app).get('/posts');
     expect(res.status).toBe(200);
 
     // Access headers via lowercase keys (Express normalization)
@@ -41,7 +41,7 @@ describe('RateLimit standard headers numeric (T098)', () => {
   it('exposes RateLimit headers via CORS (T061)', async () => {
     const app = await makeApp();
     const res = await request(app)
-      .get('/health')
+      .get('/posts')
       .set('Origin', 'http://localhost:3000');
 
     expect(res.status).toBe(200);

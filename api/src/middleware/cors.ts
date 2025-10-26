@@ -124,9 +124,12 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     res.setHeader('Access-Control-Max-Age', '600');
 
     // Expose headers to the browser (for non-preflight responses, but set here for completeness)
+    // Expose both legacy (X-*) and standard (RateLimit-*) headers.
+    // express-rate-limit is configured with standardHeaders: true, legacyHeaders: false,
+    // so RateLimit-* are the ones actually sent; keep X-* for forward-compat/tests.
     res.setHeader(
       'Access-Control-Expose-Headers',
-      'X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id'
+      'RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id'
     );
 
     // Return 204 No Content (standard for successful preflight)
@@ -206,9 +209,10 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     }
 
     // Expose rate-limit headers (T061)
+    // Expose both legacy (X-*) and standard (RateLimit-*) headers for normal responses as well
     res.setHeader(
       'Access-Control-Expose-Headers',
-      'X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id'
+      'RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id'
     );
 
     // Set Vary header

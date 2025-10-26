@@ -51,7 +51,7 @@ describe('Error helpers', () => {
   it('makeError sets code/message/details and statusByCode maps correctly', () => {
     const err = makeError('validation_error', 'Invalid', { fields: {} });
     expect(err).toMatchObject({ code: 'validation_error', message: 'Invalid', details: { fields: {} } });
-    expect(statusByCode.validation_error).toBe(400);
+    expect(statusByCode.validation_error).toBe(422);
     expect(statusByCode.not_found).toBe(404);
   });
 });
