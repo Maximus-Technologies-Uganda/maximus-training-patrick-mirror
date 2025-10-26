@@ -1,10 +1,25 @@
 import React from "react";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 
 import PostsPageClient from "../../../components/PostsPageClient";
 import type { Post as SsrPost } from "../../lib/schemas";
 
 export const dynamic = "force-dynamic";
+
+function getSsrAppOrigin(): string {
+  const configured = process.env.APP_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) {
+    try {
+      const parsed = new URL(configured);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        return parsed.origin;
+      }
+    } catch {
+      // Ignore invalid URLs and fall back below
+    }
+  }
+  return "http://localhost:3000";
+}
 
 type PageSearchParams = { page?: string; pageSize?: string; q?: string };
 export default async function PostsPage({
@@ -40,13 +55,7 @@ export default async function PostsPage({
   let initialHasNextPage: boolean | undefined;
   try {
     if (page === 1) {
-      const headerStore = await headers();
-      const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-      const host =
-        headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? undefined;
-      const fallbackOrigin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-      const origin = host ? `${protocol}://${host}` : fallbackOrigin;
-      const url = new URL("/api/posts", origin);
+      const url = new URL("/api/posts", getSsrAppOrigin());
       url.searchParams.set("page", String(page));
       // Request one extra to determine if there's a next page without another round trip
       url.searchParams.set("pageSize", String(pageSize + 1));

@@ -68,6 +68,12 @@ A signed-in user with the `admin` role can edit or delete any user’s posts.
 - `401 Unauthorized`: identity is missing, invalid, or expired (e.g., bad/expired token).
 - `403 Forbidden`: identity is valid but the resource/action is not permitted (e.g., owner attempting to mutate another user’s post).
 
+### 404 vs 403 Semantics (T037)
+
+- Return `404 Not Found` when a target resource does not exist.
+- Return `403 Forbidden` when the resource exists but the caller lacks permission to mutate it.
+- Do not mask authorization failures as `404` for existing resources.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -94,6 +100,7 @@ Security & Validation
 - **FR-022**: Return `422 Unprocessable Entity` with envelope `{ code, message, details? }` for validation failures.
 - **FR-023**: Rate‑limit mutating endpoints to 10 requests per minute per authenticated user; for anonymous contexts use IP as a fallback key.
 - **FR-024**: Respond `429 Too Many Requests` when rate limit is exceeded; include retry hints.
+- **FR-025**: Mutating requests MUST use `Content-Type: application/json`; otherwise respond `415 Unsupported Media Type` with a standardized error envelope including `requestId` when available.
 
 Observability & Health
 
@@ -177,6 +184,16 @@ Assumptions & Dependencies
 - **Where required**: `POST/PUT/DELETE` only.
 - **Failure**: `403` with standard envelope.
 
+## Logout (T048)
+
+- `POST /api/logout` clears the session cookie with: `Set-Cookie: session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0` and clears any CSRF cookie similarly (`Max-Age=0`, `Path=/`, `SameSite=Strict`).
+- `Secure` flag is included when served over HTTPS.
+
+## Session Cookie Rotation (T062)
+
+- Rotate the short‑lived session cookie approximately every 15 minutes, or immediately upon role change.
+- New cookie flags: `HttpOnly`, `Secure` (HTTPS), `SameSite=Strict`, `Path=/`, `Max‑Age=1800`.
+
 ## Rate-Limit Spec (pin the algorithm)
 
 - **Window**: fixed window 60s; capacity 10.
@@ -184,6 +201,8 @@ Assumptions & Dependencies
 - **Store**: in-memory for demo; adapter interface for Redis/Cloud Memorystore later.
 - **Headers**: include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After` on 429.
 - **Admin**: NOT exempt.
+ - **Admin**: NOT exempt.
+ - **Preflight**: `OPTIONS` (CORS preflight) requests are not rate limited and MUST NOT include any rate‑limit headers; respond `204` with appropriate `Access-Control-*` headers.
 
 ## Observability (fields & propagation)
 
@@ -243,6 +262,7 @@ paths:
         "403": { $ref: "#/components/responses/Err403" }
         "422": { $ref: "#/components/responses/Err422" }
         "429": { $ref: "#/components/responses/Err429" }
+        "415": { $ref: "#/components/responses/Err415" }
 components:
   responses:
     Err401:
@@ -269,6 +289,12 @@ components:
         Retry-After:
           schema: { type: integer }
           description: Seconds until next allowed request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Err415:
+      description: Unsupported Media Type
       content:
         application/json:
           schema:

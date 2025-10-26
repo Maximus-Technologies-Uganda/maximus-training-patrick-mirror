@@ -55,6 +55,16 @@ components:
             code: "NOT_ACCEPTABLE"
             message: "Accept header must allow application/json responses"
             requestId: "550e8400-e29b-41d4-a716-446655440006"
+    Err415:
+      description: Unsupported Media Type
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: "UNSUPPORTED_MEDIA_TYPE"
+            message: "Content-Type must be application/json"
+            requestId: "550e8400-e29b-41d4-a716-446655440007"
     Err422:
       description: Unprocessable Entity
       content:
@@ -167,6 +177,7 @@ paths:
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
         '406': { $ref: '#/components/responses/Err406' }
+        '415': { $ref: '#/components/responses/Err415' }
         '422': { $ref: '#/components/responses/Err422' }
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
@@ -207,6 +218,7 @@ paths:
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
         '406': { $ref: '#/components/responses/Err406' }
+        '415': { $ref: '#/components/responses/Err415' }
         '422': { $ref: '#/components/responses/Err422' }
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
@@ -230,5 +242,7 @@ paths:
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
         '406': { $ref: '#/components/responses/Err406' }
+        '415': { $ref: '#/components/responses/Err415' }
+        '413': { $ref: '#/components/responses/Err413' }
         '429': { $ref: '#/components/responses/Err429' }
         '503': { $ref: '#/components/responses/Err503' }

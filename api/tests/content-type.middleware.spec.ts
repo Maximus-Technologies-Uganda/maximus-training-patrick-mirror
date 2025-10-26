@@ -51,10 +51,41 @@ describe("requireJsonContentType middleware", () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(status).toHaveBeenCalledWith(415);
-    expect(json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        code: "UNSUPPORTED_MEDIA_TYPE",
-      })
+    expect(json).toHaveBeenCalledWith({
+      code: "UNSUPPORTED_MEDIA_TYPE",
+      message: "Content-Type must be application/json for mutating requests",
+    });
+  });
+
+  it("sets Cache-Control: no-store on 415 responses (T087)", () => {
+    const { req, res, next, status, json } = createMocks(
+      "POST",
+      "application/jsonp"
     );
+
+    requireJsonContentType(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(415);
+  });
+
+  it("includes requestId in 415 response when available", () => {
+    const { req, res, next, status, json } = createMocks(
+      "POST",
+      "application/jsonp"
+    );
+
+    // Set up requestId on the request
+    (req as unknown as { requestId: string }).requestId = "test-request-123";
+
+    requireJsonContentType(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(415);
+    expect(json).toHaveBeenCalledWith({
+      code: "UNSUPPORTED_MEDIA_TYPE",
+      message: "Content-Type must be application/json for mutating requests",
+      requestId: "test-request-123",
+    });
   });
 });

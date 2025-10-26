@@ -17,7 +17,6 @@ export function createPostsController(postsService: IPostsService) {
           return;
         }
         const { title, content, tags, published } = req.body;
-        console.log('Controller create received:', { title, content, tags, published });
         const created = await postsService.create({ title, content, tags, published, ownerId: userId });
         res.status(201).location(`/posts/${created.id}`).json(created);
         auditPost(req as never, "create", created.id, 201);
@@ -29,6 +28,7 @@ export function createPostsController(postsService: IPostsService) {
     async replace(req, res, next) {
       try {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
+        const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
         if (!userId) {
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
           return;
@@ -44,9 +44,9 @@ export function createPostsController(postsService: IPostsService) {
           res.status(404).send();
           return;
         }
-        // Backward compatibility: allow editing posts without ownerId (pre-existing)
-        // Otherwise, enforce ownership check
-        if (existing.ownerId && existing.ownerId !== userId) {
+        // Check authorization: admin can mutate any post, owner can only mutate their own
+        const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
+        if (!isAuthorized) {
           setCacheControlNoStore(res, 403);
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
@@ -98,6 +98,7 @@ export function createPostsController(postsService: IPostsService) {
     async update(req, res, next) {
       try {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
+        const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
         if (!userId) {
           setCacheControlNoStore(res, 401);
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
@@ -114,9 +115,9 @@ export function createPostsController(postsService: IPostsService) {
           res.status(404).send();
           return;
         }
-        // Backward compatibility: allow editing posts without ownerId (pre-existing)
-        // Otherwise, enforce ownership check
-        if (existing.ownerId && existing.ownerId !== userId) {
+        // Check authorization: admin can mutate any post, owner can only mutate their own
+        const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
+        if (!isAuthorized) {
           setCacheControlNoStore(res, 403);
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
@@ -132,6 +133,7 @@ export function createPostsController(postsService: IPostsService) {
     async delete(req, res, next) {
       try {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
+        const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
         if (!userId) {
           setCacheControlNoStore(res, 401);
           res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
@@ -148,9 +150,9 @@ export function createPostsController(postsService: IPostsService) {
           res.status(404).send();
           return;
         }
-        // Backward compatibility: allow editing posts without ownerId (pre-existing)
-        // Otherwise, enforce ownership check
-        if (existing.ownerId && existing.ownerId !== userId) {
+        // Check authorization: admin can mutate any post, owner can only mutate their own
+        const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
+        if (!isAuthorized) {
           setCacheControlNoStore(res, 403);
           res.status(403).json({ code: "forbidden", message: "Forbidden" });
           return;
@@ -164,4 +166,3 @@ export function createPostsController(postsService: IPostsService) {
     },
   };
 }
-

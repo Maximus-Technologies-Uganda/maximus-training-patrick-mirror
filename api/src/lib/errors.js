@@ -8,7 +8,7 @@ const statusByCode = {
   service_unavailable: 503,
 };
 
-const NO_STORE_STATUSES = new Set([401, 403, 413, 422, 429, 503]);
+const NO_STORE_STATUSES = new Set([401, 403, 413, 415, 422, 429, 503]);
 
 function shouldPreventCache(status) {
   const numeric = Number(status);

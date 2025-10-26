@@ -15,6 +15,7 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import { setCacheControlNoStore } from '../lib/errors';
 
 /**
  * Validates Content-Type header for mutating HTTP methods
@@ -108,16 +109,18 @@ export function requireJsonAccept(req: Request, res: Response, next: NextFunctio
 }
 
 /**
- * Send standardized 415 error response
+ * Send standardized 415 error response (T060)
  */
 function sendUnsupportedMediaType(req: Request, res: Response, message: string): void {
   const requestId = getRequestId(req, res);
 
+  // Set cache control to prevent caching of 415 responses (T087)
+  setCacheControlNoStore(res, 415);
+
   res.status(415).json({
     code: 'UNSUPPORTED_MEDIA_TYPE',
     message,
-    requestId,
-    hint: 'Set Content-Type header to application/json for requests with a body'
+    ...(requestId !== 'unknown' ? { requestId } : {}),
   });
 }
 
@@ -127,11 +130,14 @@ function sendUnsupportedMediaType(req: Request, res: Response, message: string):
 function sendNotAcceptable(req: Request, res: Response, message: string): void {
   const requestId = getRequestId(req, res);
 
+  // Set cache control to prevent caching of 406 responses (T087)
+  setCacheControlNoStore(res, 406);
+
   res.status(406).json({
     code: 'NOT_ACCEPTABLE',
     message,
-    requestId,
-    hint: 'Set Accept header to application/json or */* to receive JSON responses'
+    hint: 'Accept header must allow application/json',
+    ...(requestId !== 'unknown' ? { requestId } : {}),
   });
 }
 

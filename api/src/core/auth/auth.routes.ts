@@ -2,6 +2,7 @@ import express from "express";
 import { createHmac } from "node:crypto";
 import { getSessionSecret } from "../../config";
 import { setCacheControlNoStore } from "../../lib/errors";
+import { signJwt } from "../../core/auth/auth.middleware";
 
 const router = express.Router();
 
@@ -22,16 +23,7 @@ function base64urlToBuffer(input: string): Buffer {
   return Buffer.from(padded, "base64");
 }
 
-function signJwt(payload: object, secret: string, expiresInSec: number): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1000);
-  const body = { iat: now, exp: now + expiresInSec, ...payload } as Record<string, unknown>;
-  const encHeader = base64url(JSON.stringify(header));
-  const encPayload = base64url(JSON.stringify(body));
-  const data = `${encHeader}.${encPayload}`;
-  const signature = createHmac("sha256", secret).update(data).digest();
-  return `${data}.${base64url(signature)}`;
-}
+// Note: signJwt function is now in auth.middleware.ts to avoid duplication
 
 router.post("/login", async (req, res) => {
   const { username, password, idToken } = (req.body ?? {}) as { username?: string; password?: string; idToken?: string };
@@ -70,15 +62,14 @@ router.post("/login", async (req, res) => {
   }
 
   const secret = getSessionSecret();
-  const token = signJwt({ userId }, secret, 24 * 60 * 60);
+  // T062: Rotate session cookie every ~15 minutes (900 seconds) for security
+  const token = signJwt({ userId, role: "owner" }, secret, 15 * 60);
 
   res.cookie("session", token, {
     httpOnly: true,
     secure: isProduction,
-    // Use a conservative same-site policy to reduce CSRF risk. If cross-site
-    // API access is required in the future, add CSRF protection (e.g. Origin
-    // checks and a double-submit token) before changing this value.
-    sameSite: "lax",
+    // Use SameSite=Strict for security (T048)
+    sameSite: "strict",
     maxAge: 24 * 60 * 60 * 1000,
   });
   // Mint CSRF token cookie for double-submit protection on writes
@@ -86,7 +77,7 @@ router.post("/login", async (req, res) => {
   res.cookie("csrf", csrf, {
     httpOnly: false,
     secure: isProduction,
-    sameSite: "lax",
+    sameSite: "strict",
     maxAge: 2 * 60 * 60 * 1000,
   });
   const requestId =
@@ -97,17 +88,17 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/logout", (req, res) => {
-  // Idempotent: always clear the session cookie and return 204
+  // Idempotent: always clear the session cookie and return 204 (T048)
   res.cookie("session", "", {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "lax",
+    sameSite: "strict",
     maxAge: 0,
   });
   res.cookie("csrf", "", {
     httpOnly: false,
     secure: isProduction,
-    sameSite: "lax",
+    sameSite: "strict",
     maxAge: 0,
   });
   const requestId =

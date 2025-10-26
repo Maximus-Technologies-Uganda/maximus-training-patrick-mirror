@@ -101,25 +101,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           return new NextResponse(null, { status: 401, headers: { "X-Request-Id": requestId } });
         }
         const userId = username === "admin" ? "admin-1" : "user-alice-1";
-        // Minimal unsigned JWT-like token for local decode-only logic
+        // Minimal unsigned JWT-like token for local decode-only logic (T062)
         const enc = (s: string) => Buffer.from(s).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
         const header = enc(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-        const payload = enc(JSON.stringify({ userId, iat: Math.floor(Date.now() / 1000) }));
+        const role = username === "admin" ? "admin" : "owner";
+        const payload = enc(JSON.stringify({
+          userId,
+          role,
+          iat: Math.floor(Date.now() / 1000)
+        }));
         const token = `${header}.${payload}.dev`;
         const incomingReqId = request.headers.get("x-request-id") || "";
         const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
         const secureAttr = isHttps(request) ? "; Secure" : "";
         const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
-        // Session cookie (HttpOnly)
+        // Session cookie (HttpOnly) with rotation (T062)
         res.headers.append(
           "set-cookie",
-          `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureAttr}`,
+          `session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
         );
         // CSRF cookie (non-HttpOnly) for double-submit header
         const csrf = randomUUID().replace(/-/g, "");
         res.headers.append(
           "set-cookie",
-          `csrf=${csrf}; Path=/; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureAttr}`,
+          `csrf=${csrf}; Path=/; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
         );
         return res;
       } catch {

@@ -105,5 +105,28 @@ describe("Rate limit key precedence (T108)", () => {
       .set("X-Forwarded-For", "5.6.7.8");
     expect(r2.status).toBe(429);
   });
+
+  it("skips rate limiting for OPTIONS requests (T038)", async () => {
+    const app = makeApp(1);
+
+    // OPTIONS request should always succeed regardless of previous requests
+    const r1 = await request(app).options("/health").set("X-Test-User-Id", "u1");
+    expect(r1.status).toBe(200);
+
+    // Make some requests to exhaust the rate limit
+    await request(app).get("/health").set("X-Test-User-Id", "u1");
+    await request(app).get("/health").set("X-Test-User-Id", "u1");
+    // This should be rate limited
+    const r2 = await request(app).get("/health").set("X-Test-User-Id", "u1");
+    expect(r2.status).toBe(429);
+
+    // OPTIONS should still work even after rate limit is hit
+    const r3 = await request(app).options("/health").set("X-Test-User-Id", "u1");
+    expect(r3.status).toBe(200);
+
+    // And OPTIONS should not include rate limit headers
+    const rateLimitHeaders = Object.keys(r3.headers).filter(h => h.includes('ratelimit') || h.includes('retry-after'));
+    expect(rateLimitHeaders).toHaveLength(0);
+  });
 });
 
