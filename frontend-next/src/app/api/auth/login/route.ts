@@ -120,11 +120,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           "set-cookie",
           `session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
         );
-        // CSRF cookie (non-HttpOnly) for double-submit header
-        const csrf = randomUUID().replace(/-/g, "");
+        // CSRF cookie (non-HttpOnly) for double-submit header with timestamp (T063)
+        // Format: timestamp-uuid for TTL validation
+        const now = Math.floor(Date.now() / 1000);
+        const csrfId = randomUUID().replace(/-/g, "");
+        const csrfToken = `${now}-${csrfId}`;
         res.headers.append(
           "set-cookie",
-          `csrf=${csrf}; Path=/; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
+          `csrf=${csrfToken}; Path=/; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
         );
         return res;
       } catch {

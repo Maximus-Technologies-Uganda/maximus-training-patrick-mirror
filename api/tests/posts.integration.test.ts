@@ -45,6 +45,8 @@ describe('Posts API Integration Tests', () => {
         const res = await supertest(api)
           .post('/posts')
           .set('Cookie', cookie('user-A'))
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
           .set('Content-Type', 'application/json')
           .set('Accept', 'application/json')
           .send(p);
@@ -70,7 +72,7 @@ describe('Posts API Integration Tests', () => {
       const api = await resolveApp();
       const res = await supertest(api).get('/health');
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ status: 'ok' });
+      expect(res.body).toEqual({ status: 'ok', service: 'api' });
     });
   });
 
@@ -93,6 +95,8 @@ describe('Posts API Integration Tests', () => {
       const createRes = await supertest(api)
         .post('/posts')
         .set('Cookie', cookie('user-A'))
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .send(createPayload);
@@ -111,6 +115,8 @@ describe('Posts API Integration Tests', () => {
       const patchRes = await supertest(api)
         .patch(`/posts/${id}`)
         .set('Cookie', cookie('user-A'))
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .send(patchPayload);
@@ -126,6 +132,8 @@ describe('Posts API Integration Tests', () => {
       const deleteRes = await supertest(api)
         .delete(`/posts/${id}`)
         .set('Cookie', cookie('user-A'))
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
         .set('Accept', 'application/json');
       expect(deleteRes.status).toBe(204);
 

@@ -22,6 +22,8 @@ describe('Strip identity fields (T104)', () => {
     const res = await request(app)
       .post('/posts')
       .set('Cookie', [cookie])
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
       .set('Content-Type', 'application/json')
       .set('Accept', 'application/json')
       .send({ title: 'T', content: 'C', userId: 'bad', role: 'admin', authorId: 'evil' });
@@ -34,4 +36,3 @@ describe('Strip identity fields (T104)', () => {
     expect(res.body.authorId).toBeUndefined();
   });
 });
-

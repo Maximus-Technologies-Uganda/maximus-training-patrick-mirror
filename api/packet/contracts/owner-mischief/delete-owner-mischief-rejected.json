@@ -1,0 +1,50 @@
+{
+  "test": "delete-owner-mischief-rejected",
+  "timestamp": "2025-10-27T11:35:27.813Z",
+  "request": {
+    "method": "DELETE",
+    "url": "/posts/test-post-123",
+    "headers": {
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTI3LCJleHAiOjE3NjE1Njg1Mjd9.XTbDl2nJ3cRYTBKnStLFt47hOVc9aRFOjS6WqGpzWbA",
+      "X-CSRF-Token": "valid-csrf-token",
+      "X-User-Id": "test-user-123",
+      "X-User-Role": "owner"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "x-request-id": "4cfd50e4-9c4f-48aa-8219-0c96f911d230",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-GdpE1PCWsiEZ+ouIvf9mOA=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "ratelimit-policy": "1000;w=60",
+      "ratelimit-limit": "1000",
+      "ratelimit-remaining": "999",
+      "ratelimit-reset": "60",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "81",
+      "etag": "W/\"51-EKc6BQ+o7vF06/2P1FEheZqtH70\"",
+      "date": "Mon, 27 Oct 2025 11:35:27 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "FORBIDDEN",
+      "message": "Insufficient permissions to access this resource"
+    }
+  }
+}

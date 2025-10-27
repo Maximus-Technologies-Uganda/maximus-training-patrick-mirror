@@ -1,7 +1,7 @@
 // Avoid importing Express types here to reduce type resolution friction in tests
 import type { ListPostsQuery } from "./post.schemas";
 import type { IPostsService } from "../../services/PostsService";
-import { setCacheControlNoStore } from "../../lib/errors";
+import { setCacheControlNoStore, sendErrorResponse, ERROR_CODES } from "../../lib/errors";
 import { NotFoundError } from "../../errors/NotFoundError";
 import { auditPost } from "../../logging/audit";
 
@@ -13,7 +13,7 @@ export function createPostsController(postsService: IPostsService) {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
         if (!userId) {
           setCacheControlNoStore(res, 401);
-          res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
+          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
           return;
         }
         const { title, content, tags, published } = req.body;
@@ -30,17 +30,28 @@ export function createPostsController(postsService: IPostsService) {
         const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
         const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
         if (!userId) {
-          res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
+          setCacheControlNoStore(res, 401);
+          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
           return;
         }
+        const ownerIdInjection = Boolean(((res.locals as unknown as { identityStripped?: { ownerId?: boolean } }).identityStripped)?.ownerId);
         let existing: ServicePost | null = null;
         try {
           existing = await postsService.getById(req.params.id);
         } catch (err) {
-          if (err instanceof NotFoundError) { res.status(404).send(); return; }
+          if (err instanceof NotFoundError) {
+            if (ownerIdInjection) {
+              return sendErrorResponse(res as never, ERROR_CODES.VALIDATION_ERROR, "Request validation failed", { request: req as never });
+            }
+            res.status(404).send();
+            return;
+          }
           throw err;
         }
         if (!existing) {
+          if (ownerIdInjection) {
+            return sendErrorResponse(res as never, ERROR_CODES.VALIDATION_ERROR, "Request validation failed", { request: req as never });
+          }
           res.status(404).send();
           return;
         }
@@ -48,7 +59,8 @@ export function createPostsController(postsService: IPostsService) {
         const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
         if (!isAuthorized) {
           setCacheControlNoStore(res, 403);
-          res.status(403).json({ code: "forbidden", message: "Forbidden" });
+          res.status(403).json({ code: "FORBIDDEN", message: "Insufficient permissions to access this resource" });
+          auditPost(req as never, "update", req.params.id, 403);
           return;
         }
         const updated = await postsService.replace(req.params.id, req.body);
@@ -101,17 +113,27 @@ export function createPostsController(postsService: IPostsService) {
         const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
         if (!userId) {
           setCacheControlNoStore(res, 401);
-          res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
+          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
           return;
         }
+        const ownerIdInjection = Boolean(((res.locals as unknown as { identityStripped?: { ownerId?: boolean } }).identityStripped)?.ownerId);
         let existing: ServicePost | null = null;
         try {
           existing = await postsService.getById(req.params.id);
         } catch (err) {
-          if (err instanceof NotFoundError) { res.status(404).send(); return; }
+          if (err instanceof NotFoundError) {
+            if (ownerIdInjection) {
+              return sendErrorResponse(res as never, ERROR_CODES.VALIDATION_ERROR, "Request validation failed", { request: req as never });
+            }
+            res.status(404).send();
+            return;
+          }
           throw err;
         }
         if (!existing) {
+          if (ownerIdInjection) {
+            return sendErrorResponse(res as never, ERROR_CODES.VALIDATION_ERROR, "Request validation failed", { request: req as never });
+          }
           res.status(404).send();
           return;
         }
@@ -119,7 +141,8 @@ export function createPostsController(postsService: IPostsService) {
         const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
         if (!isAuthorized) {
           setCacheControlNoStore(res, 403);
-          res.status(403).json({ code: "forbidden", message: "Forbidden" });
+          res.status(403).json({ code: "FORBIDDEN", message: "Insufficient permissions to access this resource" });
+          auditPost(req as never, "update", req.params.id, 403);
           return;
         }
         const updated = await postsService.update(req.params.id, req.body);
@@ -136,7 +159,7 @@ export function createPostsController(postsService: IPostsService) {
         const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
         if (!userId) {
           setCacheControlNoStore(res, 401);
-          res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
+          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
           return;
         }
         let existing: ServicePost | null = null;
@@ -154,7 +177,8 @@ export function createPostsController(postsService: IPostsService) {
         const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
         if (!isAuthorized) {
           setCacheControlNoStore(res, 403);
-          res.status(403).json({ code: "forbidden", message: "Forbidden" });
+          res.status(403).json({ code: "FORBIDDEN", message: "Insufficient permissions to access this resource" });
+          auditPost(req as never, "delete", req.params.id, 403);
           return;
         }
         await postsService.delete(req.params.id);

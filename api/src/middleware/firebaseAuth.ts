@@ -1,5 +1,4 @@
 import type { RequestHandler } from "express";
-import { setCacheControlNoStore } from "../lib/errors";
 
 let admin: typeof import("firebase-admin") | null = null;
 type JoseModule = typeof import("jose");
@@ -52,13 +51,19 @@ async function ensureFirebaseAdmin(): Promise<void> {
   }
 }
 
-function base64UrlToBase64(input: string): string {
+/**
+ * Converts a base64url-encoded string into standard base64, adding padding when required.
+ */
+export function base64UrlToBase64(input: string): string {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
   const pad = normalized.length % 4 === 0 ? 0 : 4 - (normalized.length % 4);
   return normalized + "=".repeat(pad);
 }
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
+/**
+ * Decodes the payload section of a JWT. Returns null when the token is malformed or the payload is not valid JSON.
+ */
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const segments = token.split(".");
   if (segments.length !== 3) return null;
   const payloadSegment = segments[1];
@@ -86,7 +91,7 @@ type FirebaseDecodedIdToken = {
   exp?: number | string;
 };
 
-function normalizeAudience(aud: unknown): string | undefined {
+export function normalizeAudience(aud: unknown): string | undefined {
   if (typeof aud === "string" && aud.trim()) return aud;
   if (Array.isArray(aud)) {
     const first = aud.find((value): value is string => typeof value === "string" && value.trim().length > 0);
@@ -95,13 +100,13 @@ function normalizeAudience(aud: unknown): string | undefined {
   return undefined;
 }
 
-function normalizeNumericClaim(value: unknown): number | null {
+export function normalizeNumericClaim(value: unknown): number | null {
   if (typeof value === "number") return value;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function extractAuthTimeSeconds(decoded: FirebaseDecodedIdToken): number | null {
+export function extractAuthTimeSeconds(decoded: FirebaseDecodedIdToken): number | null {
   const authTime = typeof decoded.auth_time === "number" ? decoded.auth_time : Number(decoded.auth_time);
   if (Number.isFinite(authTime)) {
     return Math.trunc(authTime);
@@ -113,7 +118,7 @@ function extractAuthTimeSeconds(decoded: FirebaseDecodedIdToken): number | null 
   return null;
 }
 
-function resolveFirebaseProjectId(): string | undefined {
+export function resolveFirebaseProjectId(): string | undefined {
   return (
     getEnv("FIREBASE_ADMIN_PROJECT_ID") ||
     getEnv("FIREBASE_AUTH_PROJECT_ID") ||
@@ -226,17 +231,17 @@ export const verifyFirebaseIdToken: RequestHandler = async (req, res, next) => {
     return next();
   }
 
-  if (!admin) {
+  const handleVerificationFailure = () => {
+    // Firebase bearer is an additive auth mechanism layered in front of session auth.
+    // If verification fails, fall through to downstream middleware (session auth, etc.)
+    // instead of forcing a 401 so public routes keep their anonymous behaviour and
+    // cookie-backed sessions remain usable even when a stale bearer token is present.
     return next();
-  }
-
-  const requestId = (res.locals.requestId || (req as unknown as { requestId?: string }).requestId) as string | undefined;
-  const unauthorizedResponse = () => {
-    setCacheControlNoStore(res, 401);
-    return res
-      .status(401)
-      .json({ code: "unauthorized", message: "Unauthorized", ...(requestId ? { requestId } : {}) });
   };
+
+  if (!admin) {
+    return handleVerificationFailure();
+  }
 
   const skew = 300; // 5 minutes
   try {
@@ -246,18 +251,18 @@ export const verifyFirebaseIdToken: RequestHandler = async (req, res, next) => {
     const nowSec = Math.floor(Date.now() / 1000);
     const exp = normalizeNumericClaim(decoded.exp);
     if (exp !== null && nowSec > exp + skew) {
-      return unauthorizedResponse();
+      return handleVerificationFailure();
     }
     const iat = normalizeNumericClaim(decoded.iat);
     if (iat !== null && iat > nowSec + skew) {
-      return unauthorizedResponse();
+      return handleVerificationFailure();
     }
 
     const iss = typeof decoded.iss === "string" ? decoded.iss : "";
     const aud = normalizeAudience(decoded.aud);
     const sub = typeof decoded.sub === "string" ? decoded.sub : "";
     if (!iss || !aud || !sub) {
-      return unauthorizedResponse();
+      return handleVerificationFailure();
     }
 
     // Extract role from Firebase custom claims if available with safe narrowing
@@ -282,7 +287,7 @@ export const verifyFirebaseIdToken: RequestHandler = async (req, res, next) => {
     };
     return next();
   } catch {
-    return unauthorizedResponse();
+    return handleVerificationFailure();
   }
 };
 

@@ -23,6 +23,8 @@ describe("Posts Ownership Rules", () => {
     const createRes = await request(api)
       .post("/posts")
       .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({ title: "Owned by A", content: "Post content" });
@@ -43,6 +45,8 @@ describe("Posts Ownership Rules", () => {
     const createRes = await request(api)
       .post("/posts")
       .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({ title: "A's post", content: "Secret" });
@@ -52,6 +56,8 @@ describe("Posts Ownership Rules", () => {
     const patchRes = await request(api)
       .patch(`/posts/${id}`)
       .set("Cookie", [userB])
+      .set("X-User-Id", "user-B")
+      .set("X-User-Role", "owner")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({ title: "Hacked" });
@@ -60,6 +66,8 @@ describe("Posts Ownership Rules", () => {
     const deleteRes = await request(api)
       .delete(`/posts/${id}`)
       .set("Cookie", [userB])
+      .set("X-User-Id", "user-B")
+      .set("X-User-Role", "owner")
       .set("Accept", "application/json");
     expect(deleteRes.status).toBe(403);
   });
@@ -71,6 +79,8 @@ describe("Posts Ownership Rules", () => {
     const createRes = await request(api)
       .post("/posts")
       .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({ title: "A's post", content: "Original" });
@@ -80,6 +90,8 @@ describe("Posts Ownership Rules", () => {
     const patchRes = await request(api)
       .patch(`/posts/${id}`)
       .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({ content: "Updated by owner" });
@@ -89,6 +101,8 @@ describe("Posts Ownership Rules", () => {
     const deleteRes = await request(api)
       .delete(`/posts/${id}`)
       .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Accept", "application/json");
     expect(deleteRes.status).toBe(204);
   });
@@ -100,6 +114,8 @@ describe("Posts Ownership Rules", () => {
     const patchMissing = await request(api)
       .patch("/posts/does-not-exist")
       .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send({ content: "irrelevant" });
@@ -108,6 +124,8 @@ describe("Posts Ownership Rules", () => {
     const deleteMissing = await request(api)
       .delete("/posts/does-not-exist")
       .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Accept", "application/json");
     expect(deleteMissing.status).toBe(404);
   });

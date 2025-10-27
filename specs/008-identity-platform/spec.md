@@ -101,12 +101,78 @@ Security & Validation
 - **FR-023**: Rate‑limit mutating endpoints to 10 requests per minute per authenticated user; for anonymous contexts use IP as a fallback key.
 - **FR-024**: Respond `429 Too Many Requests` when rate limit is exceeded; include retry hints.
 - **FR-025**: Mutating requests MUST use `Content-Type: application/json`; otherwise respond `415 Unsupported Media Type` with a standardized error envelope including `requestId` when available.
+ - **FR-026**: Identity propagation for writes: when an authenticated user is present, mutating operations (POST/PUT/PATCH/DELETE) MUST include `X-User-Id` and `X-User-Role` headers forwarded by the BFF. The API MUST enforce presence and exact match with the server‑resolved identity; otherwise respond `403 Forbidden` with standardized envelope.
+ - **FR-027**: CSRF legacy migration: during a temporary migration window, legacy CSRF tokens without timestamps MAY be accepted only when both the double‑submit header and cookie are present and exactly equal. Timestamped tokens remain the standard with TTL ≤ 2h and ±5m clock skew tolerance; mismatches or expired tokens respond `403 Forbidden`.
 
 Observability & Health
 
 - **FR-030**: Generate or forward a `request-id` for every request and include it in all structured logs across tiers.
 - **FR-031**: Emit audit logs for create/update/delete with fields `{ timestamp, userId, role, verb, targetId, traceId }`.
 - **FR-032**: Provide a `/health` endpoint that returns service status (including commit SHA and dependency checks).
+
+**Audit Log Schema & Examples:**
+
+```json
+// Success audit log (POST /posts)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:30:45.123Z",
+  "verb": "create",
+  "targetType": "post",
+  "targetId": "post-abc123",
+  "userId": "firebase-uid-abc123",
+  "role": "owner",
+  "status": 201,
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+
+// Success audit log (DELETE /posts/post-xyz789 by admin)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:31:12.456Z",
+  "verb": "delete",
+  "targetType": "post",
+  "targetId": "post-xyz789",
+  "userId": "firebase-uid-def456",
+  "role": "admin",
+  "status": 204,
+  "requestId": "550e8400-e29b-41d4-a716-446655440001",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4737"
+}
+
+// Denied audit log (PUT /posts/post-xyz789 - insufficient permissions)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:32:30.789Z",
+  "verb": "update",
+  "targetType": "post",
+  "targetId": "post-xyz789",
+  "userId": "firebase-uid-ghi789",
+  "role": "owner",
+  "status": 403,
+  "requestId": "550e8400-e29b-41d4-a716-446655440002",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4738"
+}
+
+// Denied audit log (POST /posts - rate limit exceeded)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:33:45.012Z",
+  "verb": "create",
+  "targetType": "post",
+  "targetId": "",
+  "userId": "firebase-uid-jkl012",
+  "role": "owner",
+  "status": 429,
+  "requestId": "550e8400-e29b-41d4-a716-446655440003",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4739"
+}
+```
 
 API Design (OpenAPI)
 

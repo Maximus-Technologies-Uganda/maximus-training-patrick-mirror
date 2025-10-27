@@ -29,27 +29,29 @@ function deriveTraceId(req: Request): string | undefined {
   return undefined;
 }
 
+export function createAuditEvent(req: Request, verb: AuditVerb, targetId: string, status: number): AuditEvent {
+  const now = new Date().toISOString();
+  const user = (req as unknown as { user?: { userId?: string; role?: string } }).user || {};
+  const requestId = (req as unknown as { requestId?: string }).requestId || (req.get("x-request-id") as string | undefined);
+  const traceId = deriveTraceId(req);
+  return {
+    level: "info",
+    type: "audit",
+    ts: now,
+    verb,
+    targetType: "post",
+    targetId,
+    userId: user.userId,
+    role: user.role,
+    status,
+    ...(requestId ? { requestId } : {}),
+    ...(traceId ? { traceId } : {}),
+  };
+}
+
 export function auditPost(req: Request, verb: AuditVerb, targetId: string, status: number): void {
   try {
-    const now = new Date().toISOString();
-    const user = (req as unknown as { user?: { userId?: string; role?: string } }).user || {};
-    const requestId = (req as unknown as { requestId?: string }).requestId || (req.get("x-request-id") as string | undefined);
-    const traceId = deriveTraceId(req);
-
-    const event: AuditEvent = {
-      level: "info",
-      type: "audit",
-      ts: now,
-      verb,
-      targetType: "post",
-      targetId,
-      userId: user.userId,
-      role: user.role,
-      status,
-      ...(requestId ? { requestId } : {}),
-      ...(traceId ? { traceId } : {}),
-    };
-    // Emit as structured log line
+    const event = createAuditEvent(req, verb, targetId, status);
     console.log(JSON.stringify(event));
   } catch {
     // Best-effort only; never throw from audit
@@ -57,4 +59,3 @@ export function auditPost(req: Request, verb: AuditVerb, targetId: string, statu
 }
 
 export default auditPost;
-

@@ -47,6 +47,41 @@ async function buildAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+async function extractUserIdentity(request: NextRequest): Promise<{ userId?: string; role?: string } | null> {
+  // Extract from session cookie (matches API implementation)
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+  if (!match) return null;
+
+  const token = match[1];
+  try {
+    // Simple JWT decode (matches API implementation)
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const payloadSegment = parts[1];
+    const json = Buffer.from(
+      payloadSegment.replace(/-/g, "+").replace(/_/g, "/") +
+      "=".repeat((4 - (payloadSegment.length % 4)) % 4),
+      "base64"
+    ).toString("utf8");
+    const payload = JSON.parse(json) as Record<string, unknown>;
+
+    const exp = typeof payload.exp === "number" ? payload.exp : NaN;
+    if (!Number.isFinite(exp)) return null;
+
+    const now = Math.floor(Date.now() / 1000);
+    if (now >= exp) return null; // expired
+
+    const userId = typeof payload.userId === "string" ? payload.userId : undefined;
+    const role = typeof payload.role === "string" ? payload.role : "owner";
+
+    return userId ? { userId, role } : null;
+  } catch {
+    return null;
+  }
+}
+
 function buildUpstreamUrl(pathname: string, search: URLSearchParams): string {
   const url = new URL(pathname, API_BASE_URL);
   // Copy across query params (e.g., page, pageSize)
@@ -213,7 +248,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const sessionMatch = incomingCookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
         if (sessionMatch) cookies.push(`session=${sessionMatch[1]}`);
         const csrfMatch = incomingCookieHeader.match(/(?:^|;\s*)csrf=([^;]+)/);
-        if (csrfMatch) cookies.push(`csrf=${csrfMatch[1]}`);
+        if (csrfMatch) {
+          // Forward CSRF token with timestamp validation (T063)
+          const csrfToken = csrfMatch[1];
+          if (csrfToken.includes('-')) {
+            const parts = csrfToken.split('-');
+            if (parts.length === 2) {
+              const timestamp = parseInt(parts[0], 10);
+              const now = Math.floor(Date.now() / 1000);
+              // Only forward tokens that are not too old (2 hours) or from the future (>5 minutes)
+              if (!isNaN(timestamp) && timestamp <= now + 5 * 60 && now - timestamp <= 2 * 60 * 60) {
+                cookies.push(`csrf=${csrfToken}`);
+              }
+            }
+          } else {
+            // Forward legacy tokens for backward compatibility
+            cookies.push(`csrf=${csrfToken}`);
+          }
+        }
         return cookies.join("; ");
       } catch {
         return "";
@@ -228,6 +280,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     const incomingReqId = request.headers.get("x-request-id") || "";
     const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
+
+    // Extract and forward identity information (T053)
+    const identity = await extractUserIdentity(request);
+    const identityHeaders: Record<string, string> = {};
+    if (identity?.userId) {
+      identityHeaders["X-User-Id"] = identity.userId;
+    }
+    if (identity?.role) {
+      identityHeaders["X-User-Role"] = identity.role;
+    }
+
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
@@ -237,6 +300,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         "X-Request-Id": requestId,
         ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
         ...(originHeader ? { Origin: originHeader } : {}),
+        ...identityHeaders,
       },
       body: bodyText,
     });

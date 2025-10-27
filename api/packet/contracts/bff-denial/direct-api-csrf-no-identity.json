@@ -1,0 +1,49 @@
+{
+  "test": "direct-api-csrf-no-identity",
+  "timestamp": "2025-10-27T11:35:45.462Z",
+  "request": {
+    "method": "POST",
+    "url": "/posts",
+    "headers": {
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ1LCJleHAiOjE3NjE1Njg1NDV9.9i6YKMFnyZoDF8irLSD3GK4ThdceJmNoQ7ya3ExSQZQ",
+      "X-CSRF-Token": "valid-csrf-token"
+    },
+    "body": {
+      "title": "BFF Call Without Identity Headers",
+      "content": "This should be rejected because BFF did not forward identity"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "x-request-id": "20c76cbf-e426-460f-ba11-255ce9ad9ca7",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-quznJUZHjWf1+ZeNG2ZMbg=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "120",
+      "etag": "W/\"78-gHVi+vnYvBeC5bQu0Ak7a5TZGvA\"",
+      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "FORBIDDEN",
+      "message": "Missing identity propagation headers",
+      "requestId": "20c76cbf-e426-460f-ba11-255ce9ad9ca7"
+    }
+  }
+}

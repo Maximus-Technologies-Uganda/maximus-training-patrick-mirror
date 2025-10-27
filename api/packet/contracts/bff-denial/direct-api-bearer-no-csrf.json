@@ -1,0 +1,48 @@
+{
+  "test": "direct-api-bearer-no-csrf",
+  "timestamp": "2025-10-27T11:35:45.409Z",
+  "request": {
+    "method": "POST",
+    "url": "/posts",
+    "headers": {
+      "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGVzdC1wcm9qZWN0IiwiYXVkIjoidGVzdC1wcm9qZWN0Iiwic3ViIjoidGVzdC11c2VyLTEyMyIsImlhdCI6MTc2MTU2NDk0NCwiZXhwIjoxNzYxNTY4NTQ0LCJyb2xlIjoib3duZXIifQ.ZmFrZS1maXJlYmFzZS1zaWduYXR1cmU"
+    },
+    "body": {
+      "title": "Direct API Call Test",
+      "content": "This should be rejected because it bypasses the BFF"
+    }
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "x-request-id": "665b010d-4cef-41b7-8be9-352a1545dc18",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-Rh53BzHm7uMVZbNr7nuftg=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "126",
+      "etag": "W/\"7e-r0CFLl81KKPt2rFN7sAyUCZHYj0\"",
+      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "UNAUTHORIZED",
+      "message": "Invalid or expired authentication token",
+      "requestId": "665b010d-4cef-41b7-8be9-352a1545dc18"
+    }
+  }
+}

@@ -57,6 +57,8 @@ describe("Auth middleware on protected CUD route (POST /posts)", () => {
     const res = await request(app)
       .post("/posts")
       .set("Cookie", [validCookie])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
       .set("Content-Type", "application/json")
       .set("Accept", "application/json")
       .send(body);

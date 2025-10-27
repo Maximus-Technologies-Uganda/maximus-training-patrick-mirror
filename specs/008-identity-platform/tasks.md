@@ -82,13 +82,13 @@ chore/T001-env-flags-setup-DEV-598
 - [X] T048 [US2] Logout semantics (clear cookie Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/) — frontend-next/src/app/api/auth/logout/route.ts
 - [X] T060 [US2] OpenAPI + tests for 415 (extend T017/T018/T042); add `api/tests/contracts/http.415.spec.ts` and include artifact under `packet/contracts/` — specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.415.spec.ts
 - [X] T062 [US2] Session cookie rotation (~15m or on role change) and Set-Cookie assertion (fake timers >15m; new cookie; correct flags) — frontend-next/src/app/api/auth/login/route.ts; api/tests/auth.session-rotation.spec.ts
-- [ ] T063 [US2] CSRF token semantics (entropy, bound to session, TTL ≤2h at BFF; API verifies TTL); add replay-window test and cross-session replay test (403) — specs/008-identity-platform/plan.md; api/tests/csrf.replay.spec.ts
-- [ ] T052 [US2] Standard error envelope helper `{ code, message, details?, requestId }` used by 401/403/422/429/413/503 — api/src/lib/errors.ts
-- [ ] T053 [US2] BFF→API identity propagation check (forward x-user-id/x-user-role; API rejects writes if verified identity present but headers missing/mangled) — frontend-next/src/app/api/posts/[...proxy]/route.ts; api/src/middleware/auth.ts
-- [ ] T074 [US2] Audit schema JSON examples (success + denied) added to plan/spec and aligned with emitted fields — specs/008-identity-platform/plan.md; specs/008-identity-platform/spec.md
-- [ ] T077 [US2] Direct-API denial e2e: curl API POST/PUT with valid bearer but no CSRF/BFF headers → 403; with CSRF but no x-user-* → 403; save outputs under packet/contracts/ — api/tests/contracts/bff-denial.e2e.spec.ts
-- [ ] T093 [US2] CSRF replay-protection clock test: fuzz ±5m around CSRF TTL boundaries to prove expected pass/fail behavior — api/tests/csrf.ttl-fuzz.spec.ts
-- [ ] T099 [US2] Owner-check mischief test: client supplies mismatched `authorId`; API must ignore client field and use server-resolved user — api/tests/posts.owner-mischief.spec.ts
+- [X] T063 [US2] CSRF token semantics (entropy, bound to session, TTL ≤2h at BFF; API verifies TTL); add replay-window test and cross-session replay test (403). Legacy migration: accept legacy CSRF tokens without timestamp only when header and cookie tokens match exactly (temporary compatibility window) — specs/008-identity-platform/plan.md; api/tests/csrf.replay.spec.ts
+- [X] T052 [US2] Standard error envelope helper `{ code, message, details?, requestId }` used by 401/403/422/429/413/503 — api/src/lib/errors.ts
+- [X] T053 [US2] BFF→API identity propagation check (forward x-user-id/x-user-role). API enforces presence of both headers on mutating operations when authenticated, and rejects writes if headers are missing or do not match the server-resolved identity — frontend-next/src/app/api/posts/[...proxy]/route.ts; api/src/middleware/auth.ts
+- [X] T074 [US2] Audit schema JSON examples (success + denied) added to plan/spec and aligned with emitted fields — specs/008-identity-platform/plan.md; specs/008-identity-platform/spec.md
+- [X] T077 [US2] Direct-API denial e2e: curl API POST/PUT with valid bearer but no CSRF/BFF headers → 403; with CSRF but no x-user-* → 403; save outputs under packet/contracts/ — api/tests/contracts/bff-denial.e2e.spec.ts
+- [X] T093 [US2] CSRF replay-protection clock test: fuzz ±5m around CSRF TTL boundaries to prove expected pass/fail behavior — api/tests/csrf.ttl-fuzz.spec.ts
+- [X] T099 [US2] Owner-check mischief test: client supplies mismatched `authorId`; API must ignore client field and use server-resolved user — api/tests/posts.owner-mischief.spec.ts
 
 ## Phase 5 — [US3] Admin moderates any post (P3)
 - [ ] T020 [US3] Admin authorization path (mutate any post) — api/src/core/posts/
@@ -232,13 +232,13 @@ main
 - [X] T048 [US2] Logout semantics (clear cookie Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/) — frontend-next/src/app/api/auth/logout/route.ts
 - [X] T060 [US2] OpenAPI + tests for 415 (extend T017/T018/T042); add `api/tests/contracts/http.415.spec.ts` and include artifact under `packet/contracts/` — specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.415.spec.ts
 - [X] T062 [US2] Session cookie rotation (~15m or on role change) and Set-Cookie assertion (fake timers >15m; new cookie; correct flags) — frontend-next/src/app/api/auth/login/route.ts; api/tests/auth.session-rotation.spec.ts
-- [ ] T063 [US2] CSRF token semantics (entropy, bound to session, TTL ≤2h at BFF; API verifies TTL); add replay-window test and cross-session replay test (403) — specs/008-identity-platform/plan.md; api/tests/csrf.replay.spec.ts
-- [ ] T052 [US2] Standard error envelope helper `{ code, message, details?, requestId }` used by 401/403/422/429/413/503 — api/src/lib/errors.ts
-- [ ] T053 [US2] BFF→API identity propagation check (forward x-user-id/x-user-role; API rejects writes if verified identity present but headers missing/mangled) — frontend-next/src/app/api/posts/[...proxy]/route.ts; api/src/middleware/auth.ts
-- [ ] T074 [US2] Audit schema JSON examples (success + denied) added to plan/spec and aligned with emitted fields — specs/008-identity-platform/plan.md; specs/008-identity-platform/spec.md
-- [ ] T077 [US2] Direct-API denial e2e: curl API POST/PUT with valid bearer but no CSRF/BFF headers → 403; with CSRF but no x-user-* → 403; save outputs under packet/contracts/ — api/tests/contracts/bff-denial.e2e.spec.ts
-- [ ] T093 [US2] CSRF replay-protection clock test: fuzz ±5m around CSRF TTL boundaries to prove expected pass/fail behavior — api/tests/csrf.ttl-fuzz.spec.ts
-- [ ] T099 [US2] Owner-check mischief test: client supplies mismatched `authorId`; API must ignore client field and use server-resolved user — api/tests/posts.owner-mischief.spec.ts
+- [X] T063 [US2] CSRF token semantics (entropy, bound to session, TTL ≤2h at BFF; API verifies TTL); add replay-window test and cross-session replay test (403). Legacy migration: accept legacy CSRF tokens without timestamp only when header and cookie tokens match exactly (temporary compatibility window) — specs/008-identity-platform/plan.md; api/tests/csrf.replay.spec.ts
+- [X] T052 [US2] Standard error envelope helper `{ code, message, details?, requestId }` used by 401/403/422/429/413/503 — api/src/lib/errors.ts
+- [X] T053 [US2] BFF→API identity propagation check (forward x-user-id/x-user-role). API enforces presence of both headers on mutating operations when authenticated, and rejects writes if headers are missing or do not match the server-resolved identity — frontend-next/src/app/api/posts/[...proxy]/route.ts; api/src/middleware/auth.ts
+- [X] T074 [US2] Audit schema JSON examples (success + denied) added to plan/spec and aligned with emitted fields — specs/008-identity-platform/plan.md; specs/008-identity-platform/spec.md
+- [X] T077 [US2] Direct-API denial e2e: curl API POST/PUT with valid bearer but no CSRF/BFF headers → 403; with CSRF but no x-user-* → 403; save outputs under packet/contracts/ — api/tests/contracts/bff-denial.e2e.spec.ts
+- [X] T093 [US2] CSRF replay-protection clock test: fuzz ±5m around CSRF TTL boundaries to prove expected pass/fail behavior — api/tests/csrf.ttl-fuzz.spec.ts
+- [X] T099 [US2] Owner-check mischief test: client supplies mismatched `authorId`; API must ignore client field and use server-resolved user — api/tests/posts.owner-mischief.spec.ts
 
 ## Phase 5 — [US3] Admin moderates any post (P3)
 - [ ] T020 [US3] Admin authorization path (mutate any post) — api/src/core/posts/

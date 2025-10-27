@@ -42,6 +42,8 @@ describe('E2E headers and bodies', () => {
       const res = await request(app)
         .post('/posts')
         .set('Cookie', cookie('user-A'))
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .send({ title: 'Hello', content: 'World' });
@@ -53,7 +55,14 @@ describe('E2E headers and bodies', () => {
 
     it('GET /posts returns JSON list response', async () => {
       const app = await makeApp();
-      await request(app).post('/posts').set('Accept', 'application/json').send({ title: 'A', content: 'aaa' });
+      await request(app)
+        .post('/posts')
+        .set('Cookie', cookie('user-A'))
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
+        .set('Accept', 'application/json')
+        .set('Content-Type', 'application/json')
+        .send({ title: 'A', content: 'aaa' });
       const res = await request(app).get('/posts');
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toMatch(/application\/json/);
@@ -73,7 +82,14 @@ describe('E2E headers and bodies', () => {
   describe('/posts/:id', () => {
     it('GET returns 200 JSON on success and 404 JSON on missing', async () => {
       const app = await makeApp();
-      const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: 'X', content: 'Y' });
+      const created = await request(app)
+        .post('/posts')
+        .set('Cookie', cookie('user-A'))
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
+        .set('Accept', 'application/json')
+        .set('Content-Type', 'application/json')
+        .send({ title: 'X', content: 'Y' });
       const id = created.body.id as string;
 
       const ok = await request(app).get(`/posts/${id}`);
@@ -86,18 +102,44 @@ describe('E2E headers and bodies', () => {
 
     it('PUT and PATCH return JSON body; DELETE returns 204 with no body', async () => {
       const app = await makeApp();
-      const created = await request(app).post('/posts').set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: 'P', content: 'C' });
+      const created = await request(app)
+        .post('/posts')
+        .set('Cookie', cookie('user-A'))
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
+        .set('Accept', 'application/json')
+        .set('Content-Type', 'application/json')
+        .send({ title: 'P', content: 'C' });
       const id = created.body.id as string;
 
-      const putRes = await request(app).put(`/posts/${id}`).set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: 'New', content: 'Text' });
+      const putRes = await request(app)
+        .put(`/posts/${id}`)
+        .set('Cookie', cookie('user-A'))
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
+        .set('Accept', 'application/json')
+        .set('Content-Type', 'application/json')
+        .send({ title: 'New', content: 'Text' });
       expect(putRes.status).toBe(200);
       expect(putRes.headers['content-type']).toMatch(/application\/json/);
 
-      const patchRes = await request(app).patch(`/posts/${id}`).set('Cookie', cookie('user-A')).set('Accept', 'application/json').send({ title: 'Updated' });
+      const patchRes = await request(app)
+        .patch(`/posts/${id}`)
+        .set('Cookie', cookie('user-A'))
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
+        .set('Accept', 'application/json')
+        .set('Content-Type', 'application/json')
+        .send({ title: 'Updated' });
       expect(patchRes.status).toBe(200);
       expect(patchRes.headers['content-type']).toMatch(/application\/json/);
 
-      const delRes = await request(app).delete(`/posts/${id}`).set('Cookie', cookie('user-A')).set('Accept', 'application/json');
+      const delRes = await request(app)
+        .delete(`/posts/${id}`)
+        .set('Cookie', cookie('user-A'))
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
+        .set('Accept', 'application/json');
       expect(delRes.status).toBe(204);
       expect(delRes.text).toBe('');
     });
