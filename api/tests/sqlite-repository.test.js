@@ -3,13 +3,19 @@ const path = require('path');
 const os = require('os');
 
 let SqlitePostsRepository;
+let sqliteAvailable = false;
+
 try {
   ({ SqlitePostsRepository } = require('../src/repositories/SqlitePostsRepository'));
+  // Test if better-sqlite3 native bindings are available by trying to load the Database class
+  const Database = require('better-sqlite3');
+  // Try to create a test database to verify bindings work
+  const testDb = new Database(':memory:');
+  testDb.close();
+  sqliteAvailable = true;
 } catch {
-  // skip all tests if better-sqlite3 is unavailable
-  describe('SqlitePostsRepository', () => {
-    it.skip('skipped because better-sqlite3 is not installed', () => {});
-  });
+  // skip all tests if better-sqlite3 is unavailable or native bindings fail
+  sqliteAvailable = false;
 }
 
 function tempDbFile() {
@@ -17,7 +23,12 @@ function tempDbFile() {
   return path.join(dir, 'test.sqlite');
 }
 
-if (SqlitePostsRepository) describe('SqlitePostsRepository', () => {
+describe('SqlitePostsRepository', () => {
+  if (!sqliteAvailable) {
+    it.skip('skipped because better-sqlite3 is not installed', () => {});
+    return;
+  }
+
   it('performs CRUD operations correctly', async () => {
     const dbFile = tempDbFile();
     const repo = new SqlitePostsRepository(dbFile);
