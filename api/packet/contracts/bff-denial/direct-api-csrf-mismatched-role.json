@@ -1,0 +1,47 @@
+{
+  "test": "direct-api-csrf-mismatched-role",
+  "timestamp": "2025-10-27T11:35:45.523Z",
+  "request": {
+    "method": "DELETE",
+    "url": "/posts/test-post-123",
+    "headers": {
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ1LCJleHAiOjE3NjE1Njg1NDV9.9i6YKMFnyZoDF8irLSD3GK4ThdceJmNoQ7ya3ExSQZQ",
+      "X-CSRF-Token": "valid-csrf-token",
+      "X-User-Id": "test-user-123",
+      "X-User-Role": "admin"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "x-request-id": "c4de3f95-c9af-4f01-a174-51cbee7bb4f3",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-Tq9GhRlJfhMrIE2cZVWAqw=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "138",
+      "etag": "W/\"8a-0vAn/WVkj1FGszzooZ/P0XXgz6I\"",
+      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "FORBIDDEN",
+      "message": "Identity header does not match authenticated user role",
+      "requestId": "c4de3f95-c9af-4f01-a174-51cbee7bb4f3"
+    }
+  }
+}

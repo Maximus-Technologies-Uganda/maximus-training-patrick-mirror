@@ -1,0 +1,56 @@
+{
+  "test": "csrf-cross-session-rejected",
+  "timestamp": "2025-10-27T11:35:49.868Z",
+  "request": {
+    "method": "POST",
+    "url": "/posts",
+    "headers": {
+      "Origin": "http://localhost:3001",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkaWZmZXJlbnQtdXNlci00NTYiLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NjE1NjQ5NDksImV4cCI6MTc2MTU2ODU0OX0.sKeCLuUTv-7JgyEybbCEwxYT0p51JZMP1TjtgUXPSM4; csrf=1761564949-890deabea65c36c5855fb338932981c2",
+      "X-CSRF-Token": "1761564949-890deabea65c36c5855fb338932981c2",
+      "X-User-Id": "different-user-456",
+      "X-User-Role": "owner"
+    },
+    "body": {
+      "title": "Cross-Session CSRF Test",
+      "content": "This should be rejected because token is from different session"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "x-request-id": "7af52d65-8b7c-4b5e-87eb-8c00fe13ed0b",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-Uwfii2yc7Fl3+dXhZLAhAQ=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "ratelimit-policy": "1000;w=60",
+      "ratelimit-limit": "1000",
+      "ratelimit-remaining": "999",
+      "ratelimit-reset": "60",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "103",
+      "etag": "W/\"67-eox4nHhF09me20yW99jKlnlgJeg\"",
+      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "FORBIDDEN",
+      "message": "CSRF token mismatch",
+      "requestId": "7af52d65-8b7c-4b5e-87eb-8c00fe13ed0b"
+    }
+  }
+}

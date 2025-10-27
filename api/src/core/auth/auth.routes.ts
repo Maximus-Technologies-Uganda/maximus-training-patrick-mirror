@@ -8,14 +8,6 @@ const router = express.Router();
 
 const isProduction = process.env.NODE_ENV === "production";
 
-function base64url(input: Buffer | string) {
-  return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
-
 function base64urlToBuffer(input: string): Buffer {
   const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
   const paddingLength = (4 - (normalized.length % 4)) % 4;
@@ -43,7 +35,7 @@ router.post("/login", async (req, res) => {
         (req as unknown as { requestId?: string }).requestId ||
         ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
       setCacheControlNoStore(res, 401);
-      return res.status(401).json({ code: "unauthorized", message: "Unauthorized", ...(requestId ? { requestId } : {}) });
+      return res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token", ...(requestId ? { requestId } : {}) });
     }
   } else {
     const isValid =
@@ -53,10 +45,7 @@ router.post("/login", async (req, res) => {
   }
 
   if (!userId) {
-    const requestId =
-      (req as unknown as { requestId?: string }).requestId ||
-      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    console.log(JSON.stringify({ level: "warn", message: "Invalid credentials", requestId }));
+    // Intentionally avoid console logging in app code per T066
     setCacheControlNoStore(res, 401);
     return res.status(401).send();
   }
@@ -73,17 +62,19 @@ router.post("/login", async (req, res) => {
     maxAge: 24 * 60 * 60 * 1000,
   });
   // Mint CSRF token cookie for double-submit protection on writes
-  const csrf = base64url(Buffer.from(String(Math.random()).slice(2) + Date.now().toString(36)));
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const csrfSignature = createHmac("sha256", secret)
+    .update(`${userId}.${issuedAt}`)
+    .digest("hex")
+    .slice(0, 32);
+  const csrf = `${issuedAt}-${csrfSignature}`;
   res.cookie("csrf", csrf, {
     httpOnly: false,
     secure: isProduction,
     sameSite: "strict",
     maxAge: 2 * 60 * 60 * 1000,
   });
-  const requestId =
-    (req as unknown as { requestId?: string }).requestId ||
-    ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-  console.log(JSON.stringify({ level: "info", message: "User authenticated successfully", requestId, userId }));
+  // Avoid console logging per T066
   return res.status(204).send();
 });
 
@@ -117,18 +108,18 @@ router.post("/logout", (req, res) => {
         if (sig === expect) {
           const payload = JSON.parse(base64urlToBuffer(p).toString("utf8"));
           const userId = typeof payload.userId === "string" ? payload.userId : undefined;
-          console.log(JSON.stringify({ level: "info", message: "User logged out", requestId, ...(userId ? { userId } : {}) }));
+          // Avoid console logging per T066
         } else {
-          console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+          // Avoid console logging per T066
         }
       } else {
-        console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+        // Avoid console logging per T066
       }
     } else {
-      console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+      // Avoid console logging per T066
     }
   } catch {
-    console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+    // Avoid console logging per T066
   }
   return res.status(204).send();
 });

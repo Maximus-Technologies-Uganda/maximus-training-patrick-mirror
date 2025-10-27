@@ -1,5 +1,21 @@
 ## Changelog
 
+### 2025-10-27 (Posts service test harness fixes)
+
+### Fixed
+- Provided the in-memory posts repository when constructing the legacy `PostsService` in unit tests so recent constructor changes no longer throw at runtime (`api/src/core/posts/posts.service.test.ts`).
+
+### 2025-10-27 (Owner mischief guards)
+
+### Fixed
+- T099: Reject client-supplied `ownerId` via schema-style validation at middleware layer. Requests with `ownerId` in body now return `422 { code: "VALIDATION_ERROR", message: "Request validation failed" }` and include `requestId`; error responses set `Cache-Control: no-store` (`api/src/middleware/stripIdentity.ts`).
+- T068 nuance: Do not require `Accept` header for `DELETE` when it is missing (common 204 No Content). Prevents unintended `406` on admin deletes while preserving `406` when an explicit `Accept` excludes JSON (`api/src/middleware/contentType.ts`).
+
+### 2025-10-27 (API coverage guard maintenance)
+
+### Fixed
+- Raised API branch coverage above the 80/70 gate by stubbing `better-sqlite3` in repository tests and exercising Firebase auth helper branches (`api/tests/sqlite-repository.test.js`, `api/tests/firebaseAuth.helpers.spec.ts`, `api/src/middleware/firebaseAuth.ts`).
+
 <<<<<<< HEAD
 ### 2025-10-25 (US2 guards, validation, rate limit, audit, contracts - DEV-651 to DEV-657)
 

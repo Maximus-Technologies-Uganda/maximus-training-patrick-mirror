@@ -1,0 +1,62 @@
+{
+  "test": "csrf-5m-future-within-skew-valid",
+  "timestamp": "2025-10-27T11:35:49.644Z",
+  "request": {
+    "method": "POST",
+    "url": "/posts",
+    "headers": {
+      "Origin": "http://localhost:3001",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=1761565249-1b7664b08233aa5020955999b09cfacf",
+      "X-CSRF-Token": "1761565249-1b7664b08233aa5020955999b09cfacf",
+      "X-User-Id": "test-user-123",
+      "X-User-Role": "owner"
+    },
+    "body": {
+      "title": "CSRF Future Token Test",
+      "content": "This should work with future token within skew tolerance"
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "x-request-id": "c0680993-1576-458a-a59c-f5d677733800",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-jGDWka+N982uCo9xZGPWYA=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "ratelimit-policy": "1000;w=60",
+      "ratelimit-limit": "1000",
+      "ratelimit-remaining": "999",
+      "ratelimit-reset": "60",
+      "cache-control": "no-store, private",
+      "location": "/posts/a882e681-d293-4cb1-bdcc-2018ade3558b",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "279",
+      "etag": "W/\"117-1dN8Tv7AVz1WX2wV/M1k95wtvl4\"",
+      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "id": "a882e681-d293-4cb1-bdcc-2018ade3558b",
+      "ownerId": "test-user-123",
+      "title": "CSRF Future Token Test",
+      "content": "This should work with future token within skew tolerance",
+      "tags": [],
+      "published": false,
+      "createdAt": "2025-10-27T11:35:49.641Z",
+      "updatedAt": "2025-10-27T11:35:49.641Z"
+    }
+  }
+}

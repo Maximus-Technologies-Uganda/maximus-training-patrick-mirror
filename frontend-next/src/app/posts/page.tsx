@@ -50,7 +50,7 @@ export default async function PostsPage({
 
   // Server-side fetch to pre-render posts for first paint (no spinner)
   // Only fetch SSR data for the first page; other pages will be fetched client-side
-  console.log(`[SSR] Fetching posts for initial render at ${new Date().toISOString()}`);
+  // Avoid noisy console logging in SSR path
   let posts: SsrPost[] | undefined;
   let initialHasNextPage: boolean | undefined;
   try {
@@ -115,5 +115,4 @@ export default async function PostsPage({
     />
   );
 }
-
 

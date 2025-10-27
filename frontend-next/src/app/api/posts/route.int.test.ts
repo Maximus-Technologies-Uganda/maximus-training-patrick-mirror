@@ -92,10 +92,12 @@ describe("GET /api/posts route handler", () => {
         text: vi.fn().mockResolvedValue("{\"ok\":true}"),
       } as unknown as Response;
     });
+    const now = Math.floor(Date.now() / 1000);
+    const csrfToken = `${now}-testcsrf123`;
     const req = {
       headers: new Map([
-        ["cookie", "foo=bar; session=abc.def.dev; csrf=csrf-cookie; other=baz"],
-        ["x-csrf-token", "csrf-header"],
+        ["cookie", `foo=bar; session=abc.def.dev; csrf=${csrfToken}; other=baz`],
+        ["x-csrf-token", csrfToken],
       ]),
       nextUrl: new URL("http://localhost:3000/api/posts"),
       text: vi.fn().mockResolvedValue("{\"title\":\"T\"}"),
@@ -104,7 +106,7 @@ describe("GET /api/posts route handler", () => {
     const res = await POST(req);
     expect(res.status).toBe(201);
     const fetchArgs = (global.fetch as unknown as Mock).mock.calls[0];
-    expect(fetchArgs?.[1]?.headers).toMatchObject({ Cookie: "session=abc.def.dev; csrf=csrf-cookie" });
+    expect(fetchArgs?.[1]?.headers).toMatchObject({ Cookie: `session=abc.def.dev; csrf=${csrfToken}` });
   });
 
   it("rejects POST without X-CSRF-Token header", async () => {

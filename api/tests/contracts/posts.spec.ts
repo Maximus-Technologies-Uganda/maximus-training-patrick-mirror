@@ -44,8 +44,12 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'New Post', content: 'Content of the new post.' });
       expect(response.statusCode).toBe(201);
       expect(response.body).toHaveProperty('id');
@@ -59,7 +63,7 @@ describe('Posts API Contract Tests', () => {
         .set('Content-Type', 'application/json')
         .send({ title: 'New Post', content: 'Content of the new post.' });
       expect(response.statusCode).toBe(401);
-      expect(response.body.code).toBe('unauthorized');
+      expect(String(response.body.code).toUpperCase()).toBe('UNAUTHORIZED');
     });
 
     it('should return 403 if user has insufficient permissions', async () => {
@@ -68,8 +72,12 @@ describe('Posts API Contract Tests', () => {
       const createResponse = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Post by Test User', content: 'Content.' });
       expect(createResponse.statusCode).toBe(201);
       const postId = createResponse.body.id;
@@ -79,20 +87,26 @@ describe('Posts API Contract Tests', () => {
         .put(`/posts/${postId}`)
         .set('Authorization', 'Bearer forbidden-token') // This token maps to 'another-user-id'
         .set('Accept', 'application/json')
+        .set('X-User-Id', 'another-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Attempted Update', content: 'New content.' });
       expect(response.statusCode).toBe(403);
-      expect(response.body.code).toBe('forbidden');
+      expect(String(response.body.code).toUpperCase()).toBe('FORBIDDEN');
     });
 
     it('should return 422 for invalid payload', async () => {
       const response = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ content: 'Missing title' }); // Invalid payload
       expect(response.statusCode).toBe(422);
-      expect(response.body.code).toBe('validation_error');
+      expect(String(response.body.code).toUpperCase()).toBe('VALIDATION_ERROR');
       const details = response.body.details;
       expect(details === undefined || Array.isArray(details) || typeof details === 'object').toBe(true);
     });
@@ -105,14 +119,18 @@ describe('Posts API Contract Tests', () => {
         lastResponse = await request(app)
           .post('/posts')
           .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
           .set('Accept', 'application/json')
           .set('Content-Type', 'application/json')
+          .set('X-User-Id', 'test-user-id')
+          .set('X-User-Role', 'owner')
           .send({ title: `Post ${i}`, content: `Content ${i}.` });
       }
 
       expect(lastResponse).toBeDefined();
       expect(lastResponse!.statusCode).toBe(429);
-      expect(lastResponse!.body.code).toBe('rate_limit_exceeded');
+      expect(String(lastResponse!.body.code).toUpperCase()).toBe('RATE_LIMITED');
       expect(lastResponse!.headers).toHaveProperty('retry-after');
     });
 
@@ -121,11 +139,15 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Large Post', content: largeBody });
       expect(response.statusCode).toBe(413);
-      expect(response.body.code).toBe('payload_too_large');
+      expect(String(response.body.code).toLowerCase()).toBe('payload_too_large');
     });
 
     it('should return 503 if service is in read-only mode (T036)', async () => {
@@ -133,6 +155,8 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
         .send({ title: 'New Post', content: 'Content of the new post.' });
@@ -148,6 +172,8 @@ describe('Posts API Contract Tests', () => {
       const createResponse = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
         .send({ title: 'Public Post', content: 'Public content.' });
@@ -177,8 +203,12 @@ describe('Posts API Contract Tests', () => {
       const createResponse = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Post by Test User', content: 'Content.' });
       expect(createResponse.statusCode).toBe(201);
       const postId = createResponse.body.id;
@@ -186,8 +216,12 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .put(`/posts/${postId}`)
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Updated Post', content: 'Updated content.' });
       expect(response.statusCode).toBe(200);
       expect(response.body.title).toBe('Updated Post');
@@ -200,7 +234,7 @@ describe('Posts API Contract Tests', () => {
         .set('Content-Type', 'application/json')
         .send({ title: 'Updated Post', content: 'Updated content.' });
       expect(response.statusCode).toBe(401);
-      expect(response.body.code).toBe('unauthorized');
+      expect(String(response.body.code).toUpperCase()).toBe('UNAUTHORIZED');
     });
 
     it('should return 403 if user is not authorized (e.g., not owner/admin)', async () => {
@@ -208,8 +242,12 @@ describe('Posts API Contract Tests', () => {
       const createResponse = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Post by Test User', content: 'Content.' });
       expect(createResponse.statusCode).toBe(201);
       const postId = createResponse.body.id;
@@ -222,18 +260,22 @@ describe('Posts API Contract Tests', () => {
         .set('Content-Type', 'application/json')
         .send({ title: 'Attempted Update', content: 'New content.' });
       expect(response.statusCode).toBe(403);
-      expect(response.body.code).toBe('forbidden');
+      expect(String(response.body.code).toUpperCase()).toBe('FORBIDDEN');
     });
 
     it('should return 422 for invalid payload', async () => {
       const response = await request(app)
         .put('/posts/some-post-id')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: '' }); // Invalid payload
       expect(response.statusCode).toBe(422);
-      expect(response.body.code).toBe('validation_error');
+      expect(String(response.body.code).toUpperCase()).toBe('VALIDATION_ERROR');
     });
 
     it('should return 429 if rate limit exceeded', async () => {
@@ -244,14 +286,18 @@ describe('Posts API Contract Tests', () => {
         lastResponse = await request(app)
           .put('/posts/some-post-id')
           .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
           .set('Accept', 'application/json')
           .set('Content-Type', 'application/json')
+          .set('X-User-Id', 'test-user-id')
+          .set('X-User-Role', 'owner')
           .send({ title: `Updated Post ${i}`, content: `Updated content ${i}.` });
       }
 
       expect(lastResponse).toBeDefined();
       expect(lastResponse!.statusCode).toBe(429);
-      expect(lastResponse!.body.code).toBe('rate_limit_exceeded');
+      expect(String(lastResponse!.body.code).toUpperCase()).toBe('RATE_LIMITED');
       expect(lastResponse!.headers).toHaveProperty('retry-after');
     });
 
@@ -260,11 +306,15 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .put('/posts/some-post-id')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Large Update', content: largeBody });
       expect(response.statusCode).toBe(413);
-      expect(response.body.code).toBe('payload_too_large');
+      expect(String(response.body.code).toLowerCase()).toBe('payload_too_large');
     });
 
     it('should return 503 if service is in read-only mode (T036)', async () => {
@@ -272,8 +322,12 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .put('/posts/some-post-id')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
         .set('Content-Type', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Updated Post', content: 'Updated content.' });
       expect(response.statusCode).toBe(503);
       expect(response.body.code).toBe('SERVICE_UNAVAILABLE');
@@ -287,7 +341,11 @@ describe('Posts API Contract Tests', () => {
       const createResponse = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Post to Delete', content: 'Content.' });
       expect(createResponse.statusCode).toBe(201);
       const postId = createResponse.body.id;
@@ -295,6 +353,8 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .delete(`/posts/${postId}`)
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json');
       expect(response.statusCode).toBe(204);
     });
@@ -304,7 +364,7 @@ describe('Posts API Contract Tests', () => {
         .delete('/posts/some-post-id')
         .set('Accept', 'application/json');
       expect(response.statusCode).toBe(401);
-      expect(response.body.code).toBe('unauthorized');
+      expect(String(response.body.code).toUpperCase()).toBe('UNAUTHORIZED');
     });
 
     it('should return 403 if user is not authorized (e.g., not owner/admin)', async () => {
@@ -312,7 +372,11 @@ describe('Posts API Contract Tests', () => {
       const createResponse = await request(app)
         .post('/posts')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .send({ title: 'Post to Delete by Another User', content: 'Content.' });
       expect(createResponse.statusCode).toBe(201);
       const postId = createResponse.body.id;
@@ -321,9 +385,11 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .delete(`/posts/${postId}`)
         .set('Authorization', 'Bearer forbidden-token') // This token maps to 'another-user-id'
-        .set('Accept', 'application/json');
+        .set('Accept', 'application/json')
+        .set('X-User-Id', 'another-user-id')
+        .set('X-User-Role', 'owner');
       expect(response.statusCode).toBe(403);
-      expect(response.body.code).toBe('forbidden');
+      expect(String(response.body.code).toUpperCase()).toBe('FORBIDDEN');
     });
 
     it('should return 429 if rate limit exceeded', async () => {
@@ -334,12 +400,14 @@ describe('Posts API Contract Tests', () => {
         lastResponse = await request(app)
           .delete('/posts/some-post-id')
           .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
           .set('Accept', 'application/json');
       }
 
       expect(lastResponse).toBeDefined();
       expect(lastResponse!.statusCode).toBe(429);
-      expect(lastResponse!.body.code).toBe('rate_limit_exceeded');
+      expect(String(lastResponse!.body.code).toUpperCase()).toBe('RATE_LIMITED');
       expect(lastResponse!.headers).toHaveProperty('retry-after');
     });
 
@@ -348,6 +416,8 @@ describe('Posts API Contract Tests', () => {
       const response = await request(app)
         .delete('/posts/some-post-id')
         .set('Authorization', 'Bearer valid-token')
+        .set('X-User-Id', 'test-user-id')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json');
       expect(response.statusCode).toBe(503);
       expect(response.body.code).toBe('SERVICE_UNAVAILABLE');

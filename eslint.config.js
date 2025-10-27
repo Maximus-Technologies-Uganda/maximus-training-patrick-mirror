@@ -112,6 +112,26 @@ module.exports = [
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      // Enforce no-console in API TypeScript (allow warn/error); audit logger gets a specific override below
+      "no-console": ["error", { allow: ["warn", "error"] }],
+    },
+  },
+
+  // Allow console usage only in the structured audit logger
+  {
+    files: ["api/src/logging/audit.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
+
+  // Allow console usage in API test files (helpers often stub/spy console)
+  {
+    files: [
+      "api/tests/**/*.{ts,tsx}",
+      "api/**/*.{test,spec}.{ts,tsx}",
+    ],
+    rules: {
       "no-console": "off",
     },
   },

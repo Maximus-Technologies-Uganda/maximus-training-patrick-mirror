@@ -1,0 +1,50 @@
+{
+  "test": "admin-impersonation-rejected",
+  "timestamp": "2025-10-27T11:35:27.882Z",
+  "request": {
+    "method": "PATCH",
+    "url": "/posts/test-post-123",
+    "headers": {
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJyZWd1bGFyLXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTI3LCJleHAiOjE3NjE1Njg1Mjd9.bN8VwYNNYD8GkCT1Uoqe7YMeEJIH9bLIEa6i2dWPpMs",
+      "X-CSRF-Token": "valid-csrf-token",
+      "X-User-Id": "regular-user-123",
+      "X-User-Role": "admin"
+    },
+    "body": {
+      "title": "Admin Impersonation Attempt"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "x-request-id": "1a686fa5-ed4c-4598-957b-a96da0dde2cb",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-svcmEgQVFFfRYwZtjqfhJA=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "138",
+      "etag": "W/\"8a-XYiMIRi94XKn8biudj909TNhnog\"",
+      "date": "Mon, 27 Oct 2025 11:35:27 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "FORBIDDEN",
+      "message": "Identity header does not match authenticated user role",
+      "requestId": "1a686fa5-ed4c-4598-957b-a96da0dde2cb"
+    }
+  }
+}

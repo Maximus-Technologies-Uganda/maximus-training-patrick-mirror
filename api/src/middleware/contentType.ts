@@ -93,9 +93,12 @@ export function requireJsonAccept(req: Request, res: Response, next: NextFunctio
   const hasExplicitAccept = normalizedAccept.length > 0;
   const acceptsJson = doesAcceptJson(normalizedAccept);
   const methodRequiresHeader = mutatingMethods.includes(req.method);
+  const hasContentTypeHeader = typeof req.headers['content-type'] === 'string' && req.headers['content-type'].trim().length > 0;
 
   if (!acceptsJson) {
-    if (hasExplicitAccept || methodRequiresHeader) {
+    // Require Accept for mutating methods; allow DELETE without Accept when there's no Content-Type
+    const requireForThisMethod = methodRequiresHeader && (req.method !== 'DELETE' || hasContentTypeHeader);
+    if (hasExplicitAccept || requireForThisMethod) {
       return sendNotAcceptable(
         req,
         res,

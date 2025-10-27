@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import { getIdToken } from "../../../../server/auth/getIdToken";
 
@@ -32,11 +32,64 @@ function extractForwardableCookies(cookieHeader: string): string {
     const cookies: string[] = [];
     const sessionMatch = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
     if (sessionMatch) cookies.push(`session=${sessionMatch[1]}`);
+
     const csrfMatch = cookieHeader.match(/(?:^|;\s*)csrf=([^;]+)/);
-    if (csrfMatch) cookies.push(`csrf=${csrfMatch[1]}`);
+    if (csrfMatch) {
+      // Forward CSRF token with timestamp validation (T063)
+      const csrfToken = csrfMatch[1];
+      if (csrfToken.includes('-')) {
+        const parts = csrfToken.split('-');
+        if (parts.length === 2) {
+          const timestamp = parseInt(parts[0], 10);
+          const now = Math.floor(Date.now() / 1000);
+          // Only forward tokens that are not too old (2 hours) or from the future (>5 minutes)
+          if (!isNaN(timestamp) && timestamp <= now + 5 * 60 && now - timestamp <= 2 * 60 * 60) {
+            cookies.push(`csrf=${csrfToken}`);
+          }
+        }
+      } else {
+        // Forward legacy tokens for backward compatibility
+        cookies.push(`csrf=${csrfToken}`);
+      }
+    }
     return cookies.join("; ");
   } catch {
     return "";
+  }
+}
+
+function extractUserIdentity(request: NextRequest): { userId?: string; role?: string } | null {
+  // Extract from session cookie (matches API implementation)
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+  if (!match) return null;
+
+  const token = match[1];
+  try {
+    // Simple JWT decode (matches API implementation)
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const payloadSegment = parts[1];
+    const json = Buffer.from(
+      payloadSegment.replace(/-/g, "+").replace(/_/g, "/") +
+      "=".repeat((4 - (payloadSegment.length % 4)) % 4),
+      "base64"
+    ).toString("utf8");
+    const payload = JSON.parse(json) as Record<string, unknown>;
+
+    const exp = typeof payload.exp === "number" ? payload.exp : NaN;
+    if (!Number.isFinite(exp)) return null;
+
+    const now = Math.floor(Date.now() / 1000);
+    if (now >= exp) return null; // expired
+
+    const userId = typeof payload.userId === "string" ? payload.userId : undefined;
+    const role = typeof payload.role === "string" ? payload.role : "owner";
+
+    return userId ? { userId, role } : null;
+  } catch {
+    return null;
   }
 }
 
@@ -59,7 +112,7 @@ function serviceAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-export async function DELETE(request: Request): Promise<Response> {
+export async function DELETE(request: NextRequest): Promise<Response> {
   const url = new URL(request.url);
   const segments = url.pathname.split("/");
   const id = segments[segments.length - 1] || segments[segments.length - 2];
@@ -77,6 +130,16 @@ export async function DELETE(request: Request): Promise<Response> {
   const incomingReqId = request.headers.get("x-request-id") || "";
   const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
 
+  // Extract and forward identity information (T053)
+  const identity = extractUserIdentity(request);
+  const identityHeaders: Record<string, string> = {};
+  if (identity?.userId) {
+    identityHeaders["X-User-Id"] = identity.userId;
+  }
+  if (identity?.role) {
+    identityHeaders["X-User-Role"] = identity.role;
+  }
+
   try {
     const upstream = await fetch(upstreamUrl, {
       method: "DELETE",
@@ -87,6 +150,7 @@ export async function DELETE(request: Request): Promise<Response> {
         "X-Request-Id": requestId,
         ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
         ...(originHeader ? { Origin: originHeader } : {}),
+        ...identityHeaders,
       },
     });
     const upstreamRequestId = upstream.headers.get("x-request-id") || requestId;
@@ -123,7 +187,7 @@ export async function DELETE(request: Request): Promise<Response> {
   }
 }
 
-export async function PATCH(request: Request): Promise<Response> {
+export async function PATCH(request: NextRequest): Promise<Response> {
   const url = new URL(request.url);
   const segments = url.pathname.split("/");
   const id = segments[segments.length - 1] || segments[segments.length - 2];
@@ -147,6 +211,16 @@ export async function PATCH(request: Request): Promise<Response> {
   const incomingReqId = request.headers.get("x-request-id") || "";
   const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
 
+  // Extract and forward identity information (T053)
+  const identity = extractUserIdentity(request);
+  const identityHeaders: Record<string, string> = {};
+  if (identity?.userId) {
+    identityHeaders["X-User-Id"] = identity.userId;
+  }
+  if (identity?.role) {
+    identityHeaders["X-User-Role"] = identity.role;
+  }
+
   try {
     const upstream = await fetch(upstreamUrl, {
       method: "PATCH",
@@ -158,6 +232,7 @@ export async function PATCH(request: Request): Promise<Response> {
         "X-Request-Id": requestId,
         ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
         ...(originHeader ? { Origin: originHeader } : {}),
+        ...identityHeaders,
       },
       body,
     });

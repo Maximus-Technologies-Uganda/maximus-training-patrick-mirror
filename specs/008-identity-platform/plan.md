@@ -203,7 +203,7 @@ Evidence:
 
 **Source of truth:** `@specs/008-identity-platform/spec.md`
 **Branch family:** `008-identity-roles-hardening/*`
-**Scope window:** Week 8 (Days 2�5)
+**Scope window:** Week 8 (Days 2�5)
 **Traceability:** Every PR references Linear `LINEAR-XXXX` and this spec path.
 
 > This plan breaks the work into **four single-purpose PRs**, aligned to the Week 8 workbook daily goals. Each PR includes goal, scope (files & changes), evidence, merge gates, review checklist, risks/rollback, and acceptance tests.
@@ -519,6 +519,69 @@ Structured logging protects user privacy while maintaining operational observabi
 - **Never log**: Email addresses, passwords, authentication tokens, cookies, raw request bodies
 - **Allowed**: Opaque `userId` (Firebase UID), `role` enum (`owner`|`admin`), HTTP method/path, status code
 - **Audit logs**: Explicit fields only: `{ timestamp, userId, role, verb, targetType, targetId, status, traceId }`
+
+**Audit Log Schema & Examples:**
+```json
+// Success audit log (POST /posts)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:30:45.123Z",
+  "verb": "create",
+  "targetType": "post",
+  "targetId": "post-abc123",
+  "userId": "firebase-uid-abc123",
+  "role": "owner",
+  "status": 201,
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+
+// Success audit log (DELETE /posts/post-xyz789)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:31:12.456Z",
+  "verb": "delete",
+  "targetType": "post",
+  "targetId": "post-xyz789",
+  "userId": "firebase-uid-def456",
+  "role": "admin",
+  "status": 204,
+  "requestId": "550e8400-e29b-41d4-a716-446655440001",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4737"
+}
+
+// Denied audit log (PUT /posts/post-xyz789 - insufficient permissions)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:32:30.789Z",
+  "verb": "update",
+  "targetType": "post",
+  "targetId": "post-xyz789",
+  "userId": "firebase-uid-ghi789",
+  "role": "owner",
+  "status": 403,
+  "requestId": "550e8400-e29b-41d4-a716-446655440002",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4738"
+}
+
+// Denied audit log (POST /posts - rate limit exceeded)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:33:45.012Z",
+  "verb": "create",
+  "targetType": "post",
+  "targetId": "",
+  "userId": "firebase-uid-jkl012",
+  "role": "owner",
+  "status": 429,
+  "requestId": "550e8400-e29b-41d4-a716-446655440003",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4739"
+}
+```
 
 **Retention Policy:**
 - **Application logs**: ≤ 30 days (stdout → Cloud Logging)

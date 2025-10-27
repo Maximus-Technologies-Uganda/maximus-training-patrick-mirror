@@ -1,0 +1,62 @@
+{
+  "test": "csrf-fresh-token-valid",
+  "timestamp": "2025-10-27T11:35:49.690Z",
+  "request": {
+    "method": "POST",
+    "url": "/posts",
+    "headers": {
+      "Origin": "http://localhost:3001",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=1761564949-890deabea65c36c5855fb338932981c2",
+      "X-CSRF-Token": "1761564949-890deabea65c36c5855fb338932981c2",
+      "X-User-Id": "test-user-123",
+      "X-User-Role": "owner"
+    },
+    "body": {
+      "title": "CSRF Fresh Token Test",
+      "content": "This should work with a fresh token"
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "x-request-id": "530ff21c-72ea-4833-a0f6-e60a18390109",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-1VLd2iMH4EUBNQyWU2ntJQ=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "ratelimit-policy": "1000;w=60",
+      "ratelimit-limit": "1000",
+      "ratelimit-remaining": "999",
+      "ratelimit-reset": "60",
+      "cache-control": "no-store, private",
+      "location": "/posts/df9b7baf-188f-4e37-ad79-7caaddfa6ae2",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "257",
+      "etag": "W/\"101-+xPvwwaRpfcRCOvj5aQlt+DXrAY\"",
+      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "id": "df9b7baf-188f-4e37-ad79-7caaddfa6ae2",
+      "ownerId": "test-user-123",
+      "title": "CSRF Fresh Token Test",
+      "content": "This should work with a fresh token",
+      "tags": [],
+      "published": false,
+      "createdAt": "2025-10-27T11:35:49.682Z",
+      "updatedAt": "2025-10-27T11:35:49.682Z"
+    }
+  }
+}

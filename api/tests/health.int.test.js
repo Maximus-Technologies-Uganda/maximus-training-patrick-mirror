@@ -5,7 +5,7 @@ const { loadConfigFromEnv } = require('../src/config');
 const { createRepository } = require('../src/repositories/posts-repository');
 
 describe('GET /health', () => {
-  it('returns 200 with { status: "ok" }', async () => {
+  it('returns 200 with { status: "ok", service: "api" }', async () => {
     const base = loadConfigFromEnv();
     const config = { ...base, rateLimitMax: 1000 };
     const repository = createRepository();
@@ -13,7 +13,7 @@ describe('GET /health', () => {
 
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok' });
+    expect(res.body).toEqual({ status: 'ok', service: 'api' });
   });
 });
 

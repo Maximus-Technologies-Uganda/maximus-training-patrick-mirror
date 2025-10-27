@@ -162,8 +162,8 @@ export function createRateLimiter(config: RateLimitConfig) {
         (res.get("X-Request-Id") as string | undefined) ||
         undefined;
       res.status(429).json({
-        code: "rate_limit_exceeded",
-        message: "Too Many Requests",
+        code: "RATE_LIMITED",
+        message: "Rate limit exceeded. Please try again later.",
         ...(requestId ? { requestId } : {}),
       });
     },

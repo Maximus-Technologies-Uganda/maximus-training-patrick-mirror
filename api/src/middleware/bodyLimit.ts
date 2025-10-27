@@ -21,7 +21,7 @@ export function jsonBodyLimitHandler(_config: { jsonLimit: string }) {
 
       // Return standardized JSON envelope for 413 (T047)
       return res.status(413).json({
-        code: "payload_too_large",
+        code: "PAYLOAD_TOO_LARGE",
         message: "Request payload exceeds 1MB limit",
         ...(requestId ? { requestId } : {}),
       });

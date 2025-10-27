@@ -7,15 +7,15 @@
       "skipped": false,
       "errors": 0,
       "warnings": 0,
-      "durationMs": 8743,
+      "durationMs": 15233,
       "exitCode": 0,
-      "command": "npx -y -p typescript tsc -p C:\\Users\\LENOVO\\Training\\api\\tsconfig.json --noEmit"
+      "command": "npx -y -p typescript tsc -p c:\\Users\\LENOVO\\Training\\api\\tsconfig.json --noEmit"
     }
   ],
-  "generatedAt": "2025-10-26T10:04:59.900Z",
+  "generatedAt": "2025-10-27T10:49:47.376Z",
   "specRefs": {
-    "tasks": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\tasks.md",
-    "plan": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\plan.md",
-    "spec": "C:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\spec.md"
+    "tasks": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\tasks.md",
+    "plan": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\plan.md",
+    "spec": "c:\\Users\\LENOVO\\Training\\specs\\007-spec\\week-7.5-finishers\\spec.md"
   }
 }

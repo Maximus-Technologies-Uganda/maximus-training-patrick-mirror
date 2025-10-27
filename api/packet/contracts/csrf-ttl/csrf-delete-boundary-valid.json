@@ -1,0 +1,45 @@
+{
+  "test": "csrf-delete-boundary-valid",
+  "timestamp": "2025-10-27T11:35:49.826Z",
+  "request": {
+    "method": "DELETE",
+    "url": "/posts/test-post-123",
+    "headers": {
+      "Origin": "http://localhost:3001",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=1761557749-5328d84d187d6c44854d6251e2650e26",
+      "X-CSRF-Token": "1761557749-5328d84d187d6c44854d6251e2650e26",
+      "X-User-Id": "test-user-123",
+      "X-User-Role": "owner"
+    }
+  },
+  "response": {
+    "status": 204,
+    "headers": {
+      "x-request-id": "34559c31-831d-442b-9e3a-d093f87dbb9d",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-2FMo0vCvaaOd+slip5CBgA=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "ratelimit-policy": "1000;w=60",
+      "ratelimit-limit": "1000",
+      "ratelimit-remaining": "999",
+      "ratelimit-reset": "60",
+      "cache-control": "no-store, private",
+      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "connection": "close"
+    },
+    "body": {}
+  }
+}

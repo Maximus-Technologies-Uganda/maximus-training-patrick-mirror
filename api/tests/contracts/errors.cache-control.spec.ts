@@ -123,6 +123,8 @@ describe('Error Cache-Control headers (T087)', () => {
     const res = await request(app)
       .post('/posts')
       .set('Cookie', makeSessionCookie('user-1'))
+      .set('X-User-Id', 'user-1')
+      .set('X-User-Role', 'owner')
       .set('Content-Type', 'application/json')
       .set('Accept', 'application/json')
       .send({ title: 'Valid', content: 'Body content with enough length' });

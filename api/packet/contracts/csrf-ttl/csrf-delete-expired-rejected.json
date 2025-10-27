@@ -1,0 +1,52 @@
+{
+  "test": "csrf-delete-expired-rejected",
+  "timestamp": "2025-10-27T11:35:49.848Z",
+  "request": {
+    "method": "DELETE",
+    "url": "/posts/test-post-123",
+    "headers": {
+      "Origin": "http://localhost:3001",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=1761557748-1e5c58acadf62c37a6e08a3d2485ac14",
+      "X-CSRF-Token": "1761557748-1e5c58acadf62c37a6e08a3d2485ac14",
+      "X-User-Id": "test-user-123",
+      "X-User-Role": "owner"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "x-request-id": "ffb92c77-e29b-437c-ba7a-68e208856488",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-6YnkNsZ5woz23zFxab4PbQ=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "ratelimit-policy": "1000;w=60",
+      "ratelimit-limit": "1000",
+      "ratelimit-remaining": "999",
+      "ratelimit-reset": "60",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "113",
+      "etag": "W/\"71-0W5N+tQgkaR4t9VZBZ6lw3XtgIA\"",
+      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "FORBIDDEN",
+      "message": "Invalid or expired CSRF token",
+      "requestId": "ffb92c77-e29b-437c-ba7a-68e208856488"
+    }
+  }
+}

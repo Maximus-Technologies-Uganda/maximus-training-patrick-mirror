@@ -1,0 +1,44 @@
+{
+  "test": "direct-api-bearer-no-csrf-delete",
+  "timestamp": "2025-10-27T11:35:45.432Z",
+  "request": {
+    "method": "DELETE",
+    "url": "/posts/test-post-123",
+    "headers": {
+      "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGVzdC1wcm9qZWN0IiwiYXVkIjoidGVzdC1wcm9qZWN0Iiwic3ViIjoidGVzdC11c2VyLTEyMyIsImlhdCI6MTc2MTU2NDk0NSwiZXhwIjoxNzYxNTY4NTQ1LCJyb2xlIjoib3duZXIifQ.ZmFrZS1maXJlYmFzZS1zaWduYXR1cmU"
+    }
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "x-request-id": "a7095a6b-67ee-4fb7-a3e7-e77504aa926c",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-UDO/FaCLKPlyiWXkYchJBQ=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "cache-control": "no-store",
+      "content-type": "application/json; charset=utf-8",
+      "content-length": "126",
+      "etag": "W/\"7e-pEMqW2hTTCKLiSMT/CIpMQtyXzA\"",
+      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "connection": "close"
+    },
+    "body": {
+      "code": "UNAUTHORIZED",
+      "message": "Invalid or expired authentication token",
+      "requestId": "a7095a6b-67ee-4fb7-a3e7-e77504aa926c"
+    }
+  }
+}

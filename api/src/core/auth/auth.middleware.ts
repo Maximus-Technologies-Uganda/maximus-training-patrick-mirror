@@ -91,7 +91,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    console.log(JSON.stringify({ level: "warn", message: "Auth failed", requestId }));
+    // Avoid noisy console logs in app code; rely on upstream logs if needed
     // Prevent caching of 401 responses (T087)
     setCacheControlNoStore(res, 401);
     // Include requestId and optional traceId (T111)
@@ -103,7 +103,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
         traceId = parts[1];
       }
     }
-    return res.status(401).json({ code: "unauthorized", message: "Unauthorized", ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}) });
+    return res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token", ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}) });
   }
 
   // T062: Check if token should be rotated (older than 10 minutes or role changed)
@@ -130,15 +130,8 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     });
   }
 
-  {
-    const requestId =
-      (req as unknown as { requestId?: string }).requestId ||
-      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    const userId = (payload as { userId: string }).userId;
-    console.log(JSON.stringify({ level: "info", message: "Auth ok", requestId, userId, ...(shouldRotate ? { rotated: true } : {}) }));
-  }
+  // Avoid raw console logs in app code
   next();
 };
 
 export default requireAuth;
-
