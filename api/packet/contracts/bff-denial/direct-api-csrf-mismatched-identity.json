@@ -1,11 +1,11 @@
 {
   "test": "direct-api-csrf-mismatched-identity",
-  "timestamp": "2025-10-27T11:35:45.500Z",
+  "timestamp": "2025-10-28T09:54:01.512Z",
   "request": {
     "method": "PUT",
     "url": "/posts/test-post-123",
     "headers": {
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ1LCJleHAiOjE3NjE1Njg1NDV9.9i6YKMFnyZoDF8irLSD3GK4ThdceJmNoQ7ya3ExSQZQ",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQxLCJleHAiOjE3NjE2NDg4NDF9.wGWJdYIPoZso2ZnJa_g6FETRwYe6Jp3WoKpIB_cQCDU",
       "X-CSRF-Token": "valid-csrf-token",
       "X-User-Id": "different-user-456",
       "X-User-Role": "owner"
@@ -18,8 +18,9 @@
   "response": {
     "status": 403,
     "headers": {
-      "x-request-id": "ec172818-14ba-4297-9eb9-5c1db9f79bcd",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-dIZl8aZdChPQNGUO7gnRVg=='",
+      "x-request-id": "79e9dccd-e0d4-431c-b8bd-7b655aa07b23",
+      "traceparent": "00-bb6c66741fae22b8a422b555ca650d4b-249fc0efd0004f52-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-PuKV3FDnaQFQIIfOswDvEg=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -38,14 +39,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "133",
-      "etag": "W/\"85-7QN84v+eIDHYHGos7CEun9sSL4A\"",
-      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "etag": "W/\"85-oHFGu4H+pkBgTwzpUewrjQtGfVM\"",
+      "date": "Tue, 28 Oct 2025 09:54:01 GMT",
       "connection": "close"
     },
     "body": {
       "code": "FORBIDDEN",
       "message": "Identity header does not match authenticated user",
-      "requestId": "ec172818-14ba-4297-9eb9-5c1db9f79bcd"
+      "requestId": "79e9dccd-e0d4-431c-b8bd-7b655aa07b23"
     }
   }
 }

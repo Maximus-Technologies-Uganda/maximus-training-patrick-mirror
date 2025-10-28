@@ -1,13 +1,13 @@
 {
   "test": "csrf-put-boundary-valid",
-  "timestamp": "2025-10-27T11:35:49.799Z",
+  "timestamp": "2025-10-28T09:54:04.051Z",
   "request": {
     "method": "PUT",
     "url": "/posts/test-post-123",
     "headers": {
       "Origin": "http://localhost:3001",
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=1761557749-5328d84d187d6c44854d6251e2650e26",
-      "X-CSRF-Token": "1761557749-5328d84d187d6c44854d6251e2650e26",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQ0LCJleHAiOjE3NjE2NDg4NDR9.4sC4KzqPgEudluJurVKM5I2TTP6z4WGRJ2HlYci7QeQ; csrf=1761638044-95c7c8dd0fd130cb7d16fa2711e05a7e",
+      "X-CSRF-Token": "1761638044-95c7c8dd0fd130cb7d16fa2711e05a7e",
       "X-User-Id": "test-user-123",
       "X-User-Role": "owner"
     },
@@ -19,8 +19,9 @@
   "response": {
     "status": 200,
     "headers": {
-      "x-request-id": "7b2a9681-39d3-4c63-a436-400194d6a016",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-PWZPAYqgiCVCbv4dOOGrig=='",
+      "x-request-id": "91568094-93ba-44c7-b7f7-54603b18db6d",
+      "traceparent": "00-d89c8bc3f4f4773a79dcfb606ff82c90-001babbf8c79df4f-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-LXfvqF8e1x1S5b5SJgP90A=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -43,8 +44,8 @@
       "cache-control": "no-store, private",
       "content-type": "application/json; charset=utf-8",
       "content-length": "245",
-      "etag": "W/\"f5-RUt9HkI/TNmwu3bU2QGWeGIFJ2w\"",
-      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "etag": "W/\"f5-syFmhqtTywgGHYhrl6K28+Irp2U\"",
+      "date": "Tue, 28 Oct 2025 09:54:04 GMT",
       "connection": "close"
     },
     "body": {
@@ -54,8 +55,8 @@
       "content": "This should work with boundary CSRF token",
       "tags": [],
       "published": false,
-      "createdAt": "2025-10-27T11:35:49.791Z",
-      "updatedAt": "2025-10-27T11:35:49.791Z"
+      "createdAt": "2025-10-28T09:54:04.047Z",
+      "updatedAt": "2025-10-28T09:54:04.047Z"
     }
   }
 }

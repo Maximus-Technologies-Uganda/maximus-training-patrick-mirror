@@ -26,11 +26,15 @@ function createMockReqRes(initialHeaders?: Record<string, string>) {
   const res: Partial<Response> & {
     setHeader: (n: string, v: string) => void;
     getHeader: (n: string) => string | undefined;
+    on?: (event: string, callback: () => void) => void;
+    locals?: Record<string, unknown>;
   } = {
     setHeader: (n: string, v: string) => {
       resHeaders[n.toLowerCase()] = v;
     },
     getHeader: (n: string) => resHeaders[n.toLowerCase()],
+    on: jest.fn(), // Mock EventEmitter for finish event
+    locals: {},
   };
   const next = jest.fn() as NextFunction;
   return { req: req as Request, res: res as Response, next };

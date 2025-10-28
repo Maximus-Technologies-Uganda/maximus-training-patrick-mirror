@@ -1,11 +1,11 @@
 {
   "test": "valid-bff-identity-headers",
-  "timestamp": "2025-10-27T11:35:45.560Z",
+  "timestamp": "2025-10-28T09:54:01.544Z",
   "request": {
     "method": "POST",
     "url": "/posts",
     "headers": {
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ1LCJleHAiOjE3NjE1Njg1NDV9.9i6YKMFnyZoDF8irLSD3GK4ThdceJmNoQ7ya3ExSQZQ",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQxLCJleHAiOjE3NjE2NDg4NDF9.wGWJdYIPoZso2ZnJa_g6FETRwYe6Jp3WoKpIB_cQCDU",
       "X-CSRF-Token": "valid-csrf-token",
       "X-User-Id": "test-user-123",
       "X-User-Role": "owner"
@@ -18,8 +18,9 @@
   "response": {
     "status": 201,
     "headers": {
-      "x-request-id": "646123bd-871d-458e-9906-afa1413bb8dd",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-OpmCLai2HYL3WwLCYZU2Mg=='",
+      "x-request-id": "ec256276-002f-428a-8ff1-295482252142",
+      "traceparent": "00-0d6cbe715633135dde111e54afb2173f-01de76a10123bdce-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-gHU4k/PKH8kaws0ZKfw/og=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -40,22 +41,22 @@
       "ratelimit-remaining": "999",
       "ratelimit-reset": "60",
       "cache-control": "no-store, private",
-      "location": "/posts/6b405c4f-5e41-47e9-bd8c-587cdb3b1621",
+      "location": "/posts/5aa62f2e-45b7-459f-81de-0c9559534950",
       "content-type": "application/json; charset=utf-8",
       "content-length": "272",
-      "etag": "W/\"110-W6V69oOwCnj9VI/2/DMUXSreS+k\"",
-      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "etag": "W/\"110-C7Yuy0TTiOD8N55jFqqyhz4Jqxc\"",
+      "date": "Tue, 28 Oct 2025 09:54:01 GMT",
       "connection": "close"
     },
     "body": {
-      "id": "6b405c4f-5e41-47e9-bd8c-587cdb3b1621",
+      "id": "5aa62f2e-45b7-459f-81de-0c9559534950",
       "ownerId": "test-user-123",
       "title": "Valid BFF Call",
       "content": "This should work because BFF forwarded identity correctly",
       "tags": [],
       "published": false,
-      "createdAt": "2025-10-27T11:35:45.549Z",
-      "updatedAt": "2025-10-27T11:35:45.549Z"
+      "createdAt": "2025-10-28T09:54:01.538Z",
+      "updatedAt": "2025-10-28T09:54:01.538Z"
     }
   }
 }

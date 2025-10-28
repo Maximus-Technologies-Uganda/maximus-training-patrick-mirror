@@ -14,6 +14,47 @@ gcloud run services describe maximus-training-frontend --region <region> --forma
 gcloud run services describe maximus-training-api --region <region> --format='value(status.url)'
 ```
 
+## Authentication
+
+The identity flow follows the spec’s BFF-first model: browsers never contact the API directly for mutations. Instead, the Next.js App Router handlers verify Firebase credentials, mint session cookies, and forward normalized headers to the Express API so logs, rate limits, and audit records always align with a single `requestId`/`traceId` pair.
+
+### Sign-in flow
+
+1. The client posts credentials to `/api/auth/login`.
+2. The BFF verifies the Firebase ID token (or accepted dev credentials in local smoke tests: `admin/password`, `alice/correct-password`).
+3. On success, the BFF mints an HTTP-only `session` cookie (15-minute rolling expiry, `SameSite=Strict`, `Secure` in production) and issues a CSRF double-submit token (`csrf` cookie + `X-CSRF-Token` header).
+4. Subsequent route handlers forward the verified identity to the API via `X-User-Id` and `X-User-Role` headers while also propagating tracing headers (`X-Request-Id`, `traceparent`, optional `tracestate`).
+5. `/api/auth/logout` clears both cookies and rotates the tracing context so the next request starts fresh.
+
+### Roles and permissions
+
+| Action | Anonymous | Owner | Admin |
+| --- | --- | --- | --- |
+| View posts (`GET /posts`, `/posts/{id}`) | ✅ | ✅ | ✅ |
+| Create post | ❌ | ✅ (attributed to `userId`) | ✅ |
+| Edit/delete own post | ❌ | ✅ | ✅ |
+| Edit/delete others’ posts | ❌ | ❌ (`403 Forbidden`) | ✅ |
+
+Roles are enforced server-side. Client payloads that attempt to spoof `authorId`, `userId`, or `role` are stripped before business logic runs.
+
+### Session, CSRF, and tracing propagation
+
+- Session cookies are rotated on login, logout, and role change; back-end handlers never trust stale cookies.
+- Double-submit CSRF enforcement rejects writes without matching cookie/header pairs or when tokens expire (>2h or ±5m clock skew).
+- `ensureRequestContext` middleware guarantees that every request has a stable `requestId` and W3C trace headers so API logs, audit records, and CI benches correlate across tiers.
+
+### SameSite tradeoffs
+
+`SameSite=Strict` protects against cross-site forgery and remains the default. Pivot to `Lax` only when integrations demand third-party redirects or embedded frames. Document the justification in release notes, enable explicit origin allowlists, and tighten CSRF checks before changing this flag.
+
+### Troubleshooting
+
+- **Clock skew** — Firebase tokens tolerate ±5 minutes. Ensure local devices use NTP/chrony if logins fail with `401` after adjusting clocks.
+- **Revoked token** — Admin revocations force re-authentication. Clear cookies and sign in again; check audit logs (`type:"audit"`) for denial reasons.
+- **Stale session** — If the BFF refuses a request with `401` immediately after deploy, delete cookies and retry; deployments rotate signing secrets when `SESSION_SECRET` changes.
+- **429 loops** — Writes are rate-limited to 10/minute/user. Retry with exponential backoff (e.g., 200ms → 400ms → 800ms) and surface `Retry-After` headers to users.
+- **CORS 401 vs 403** — `401` indicates an unauthenticated request (missing/expired token or cookie). `403` means the identity is valid but lacks access (e.g., owner editing another user's post, CSRF mismatch, or read-only maintenance mode).
+
 ## Local Development
 
 ### Prerequisites
@@ -118,6 +159,8 @@ cd frontend-next && pnpm run test:ci
 
 - Frontend image builds with `NEXT_PUBLIC_API_URL` passed as a build-arg from Cloud Build.
 - Consider setting a Cloud Run service account for least privilege deployments.
+- `/health` dependency probes can optionally call the Firebase Admin SDK when `HEALTHCHECK_FIREBASE_ADMIN_PING=true` and honour
+  `HEALTHCHECK_TIMEOUT_MS` (or per-dependency overrides) to prevent slow checks from delaying responses.
 
 ### Production configuration (required)
 

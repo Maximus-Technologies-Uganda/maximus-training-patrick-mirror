@@ -1,12 +1,12 @@
 {
   "test": "csrf-malformed-token-rejected",
-  "timestamp": "2025-10-27T11:35:49.717Z",
+  "timestamp": "2025-10-28T09:54:03.984Z",
   "request": {
     "method": "POST",
     "url": "/posts",
     "headers": {
       "Origin": "http://localhost:3001",
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=malformedtokenwithoutdash",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQzLCJleHAiOjE3NjE2NDg4NDN9.xSib50L5OIdEbd6W1buYZYBW_mA5Y5iLt8F1gYqw4q4; csrf=malformedtokenwithoutdash",
       "X-CSRF-Token": "malformedtokenwithoutdash",
       "X-User-Id": "test-user-123",
       "X-User-Role": "owner"
@@ -19,8 +19,9 @@
   "response": {
     "status": 403,
     "headers": {
-      "x-request-id": "838ca2bc-0e4b-42fd-a93b-4f77da4e5570",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-X7Np/LZ/jblKzvZs7onLnA=='",
+      "x-request-id": "f5e11013-7bf8-4800-9762-4e4afcf99711",
+      "traceparent": "00-c433218d2dc80e699bc3ffa25409d5a7-cb1d74a576ca3ede-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-AMfergXv6ahVelCF7RL+iA=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -43,14 +44,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "113",
-      "etag": "W/\"71-V+mIFgKcMATt5lCelNTiU1bdv1k\"",
-      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "etag": "W/\"71-UL3zFVfBkUt2fyi5ePLVka7sSn8\"",
+      "date": "Tue, 28 Oct 2025 09:54:03 GMT",
       "connection": "close"
     },
     "body": {
       "code": "FORBIDDEN",
       "message": "Invalid or expired CSRF token",
-      "requestId": "838ca2bc-0e4b-42fd-a93b-4f77da4e5570"
+      "requestId": "f5e11013-7bf8-4800-9762-4e4afcf99711"
     }
   }
 }

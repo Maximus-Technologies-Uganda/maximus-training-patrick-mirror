@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIdToken } from "../../../server/auth/getIdToken";
-import { randomUUID } from "node:crypto";
+import {
+  ensureRequestContext,
+  buildPropagationHeaders,
+  mergeUpstreamContext,
+  responseHeadersFromContext,
+  type RequestContext,
+} from "../../../middleware/requestId";
 
 // Prefer a server-only base URL for backend calls; never expose secrets to the client
 // Fallback to NEXT_PUBLIC_API_URL so server and client target the same host in local dev
@@ -142,8 +148,23 @@ async function fetchWithTimeoutAndRetries(
   throw err;
 }
 
+function initializeContext(request: NextRequest): { context: RequestContext; propagationHeaders: Record<string, string> } {
+  const context = ensureRequestContext(request.headers);
+  return { context, propagationHeaders: buildPropagationHeaders(context) };
+}
+
+function applyUpstreamContext(
+  context: RequestContext,
+  upstream: Response,
+): { context: RequestContext; headers: Record<string, string> } {
+  const merged = mergeUpstreamContext(context, upstream.headers);
+  return { context: merged, headers: responseHeadersFromContext(merged) };
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = buildUpstreamUrl("/posts", request.nextUrl.searchParams);
+  const { context: initialContext, propagationHeaders } = initializeContext(request);
+  let context = initialContext;
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
     const originHeader = (request.headers.get("origin") || "").trim();
@@ -156,8 +177,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         return "";
       }
     })();
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const upstreamResponse = await fetchWithTimeoutAndRetries(
       upstreamUrl,
       {
@@ -165,7 +184,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         headers: {
           ...(await buildAuthHeaders()),
           ...(sessionCookie ? { Cookie: sessionCookie } : {}),
-          "X-Request-Id": requestId,
+          ...propagationHeaders,
           ...(originHeader ? { Origin: originHeader } : {}),
         },
         cache: "no-store",
@@ -175,7 +194,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
 
     const contentType = upstreamResponse.headers.get("content-type") || "";
-    const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
+    const { context: mergedContext, headers: responseHeaders } = applyUpstreamContext(context, upstreamResponse);
+    context = mergedContext;
     const upstreamBodyText = await upstreamResponse.text();
     if (contentType.includes("application/json")) {
       try {
@@ -192,7 +212,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         if (Array.isArray(data)) {
           return NextResponse.json(withPerms(data as Array<Record<string, unknown>>), {
             status: upstreamResponse.status,
-            headers: { "X-Request-Id": upstreamRequestId },
+            headers: responseHeaders,
           });
         }
         if (data && typeof data === "object") {
@@ -201,13 +221,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             const next = { ...obj, items: withPerms(obj.items) };
             return NextResponse.json(next, {
               status: upstreamResponse.status,
-              headers: { "X-Request-Id": upstreamRequestId },
+              headers: responseHeaders,
             });
           }
         }
         return NextResponse.json(data as Record<string, unknown>, {
           status: upstreamResponse.status,
-          headers: { "X-Request-Id": upstreamRequestId },
+          headers: responseHeaders,
         });
       } catch {
         // Fall through to raw response if JSON parsing fails
@@ -215,7 +235,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     return new NextResponse(upstreamBodyText, {
       status: upstreamResponse.status,
-      headers: { "content-type": contentType || "text/plain", "X-Request-Id": upstreamRequestId },
+      headers: { "content-type": contentType || "text/plain", ...responseHeaders },
     });
   } catch (error) {
     // Fallback for local/CI: return an empty list to keep UI flows working
@@ -237,23 +257,29 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         });
       const total = localPostsFallback.length;
       const hasNextPage = start + items.length < total;
-      const incomingReqId = request.headers.get("x-request-id") || "";
-      const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
+      const fallbackHeaders = responseHeadersFromContext(context);
       return NextResponse.json({ page, pageSize, hasNextPage, items }, {
         status: 200,
-        headers: { "X-Request-Id": requestId },
+        headers: fallbackHeaders,
       });
     }
     // Structured error for logs/telemetry
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const errInfo = error instanceof Error
       ? { name: error.name, message: error.message, stack: error.stack }
       : String(error);
-    console.error(JSON.stringify({ level: "error", msg: "GET /api/posts upstream error", upstreamUrl, requestId, error: errInfo }));
+    console.error(
+      JSON.stringify({
+        level: "error",
+        msg: "GET /api/posts upstream error",
+        upstreamUrl,
+        requestId: context.requestId,
+        traceparent: context.traceparent,
+        error: errInfo,
+      }),
+    );
     return NextResponse.json(
       { error: { code: "UPSTREAM_FETCH_FAILED", message: "Failed to fetch posts" } },
-      { status: 500, headers: { "X-Request-Id": requestId } },
+      { status: 500, headers: responseHeadersFromContext(context) },
     );
   }
 }
@@ -266,6 +292,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch {
     bodyText = "{}";
   }
+  const { context: initialContext, propagationHeaders } = initializeContext(request);
+  let context = initialContext;
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
     const originHeader = (request.headers.get("origin") || "").trim();
@@ -306,9 +334,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 400 },
       );
     }
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
-
     // Extract and forward identity information (T053)
     const identity = await extractUserIdentity(request);
     const identityHeaders: Record<string, string> = {};
@@ -325,7 +350,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         "Content-Type": "application/json",
         ...(await buildAuthHeaders()),
         ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
-        "X-Request-Id": requestId,
+        ...propagationHeaders,
         ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
         ...(originHeader ? { Origin: originHeader } : {}),
         ...identityHeaders,
@@ -335,16 +360,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const contentType = upstreamResponse.headers.get("content-type") || "";
     const upstreamBodyText = await upstreamResponse.text();
-    const headers: Record<string, string> = {};
+    const upstreamContext = applyUpstreamContext(context, upstreamResponse);
+    context = upstreamContext.context;
+    const headers: Record<string, string> = { ...upstreamContext.headers };
     const location = upstreamResponse.headers.get("Location");
     if (location) headers["Location"] = location;
-    const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
 
     if (contentType.includes("application/json")) {
       try {
         return NextResponse.json(JSON.parse(upstreamBodyText), {
           status: upstreamResponse.status,
-          headers: { ...headers, "X-Request-Id": upstreamRequestId },
+          headers,
         });
       } catch {
         // Fall through to raw response if JSON parsing fails
@@ -352,7 +378,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     return new NextResponse(upstreamBodyText, {
       status: upstreamResponse.status,
-      headers: { ...headers, "content-type": contentType || "text/plain", "X-Request-Id": upstreamRequestId },
+      headers: { ...headers, "content-type": contentType || "text/plain" },
     });
   } catch (error) {
     // Fallback for local/CI: accept creation and return a fabricated record
@@ -388,23 +414,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         };
         // Store for subsequent GET fallback reads
         localPostsFallback.unshift(created);
-        const incomingReqId = request.headers.get("x-request-id") || "";
-        const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
-        return NextResponse.json(created, { status: 201, headers: { "X-Request-Id": requestId } });
+        return NextResponse.json(created, {
+          status: 201,
+          headers: responseHeadersFromContext(context),
+        });
       } catch {
         // noop and fall through
       }
     }
     // Structured error for logs/telemetry
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
     const errInfo = error instanceof Error
       ? { name: error.name, message: error.message, stack: error.stack }
       : String(error);
-    console.error(JSON.stringify({ level: "error", msg: "POST /api/posts upstream error", upstreamUrl, requestId, error: errInfo }));
+    console.error(
+      JSON.stringify({
+        level: "error",
+        msg: "POST /api/posts upstream error",
+        upstreamUrl,
+        requestId: context.requestId,
+        traceparent: context.traceparent,
+        error: errInfo,
+      }),
+    );
     return NextResponse.json(
       { error: { code: "UPSTREAM_CREATE_FAILED", message: "Failed to create post" } },
-      { status: 500, headers: { "X-Request-Id": requestId } },
+      { status: 500, headers: responseHeadersFromContext(context) },
     );
   }
 }

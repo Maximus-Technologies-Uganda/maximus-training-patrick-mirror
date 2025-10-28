@@ -17,6 +17,7 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import type { AppConfig } from '../config';
 import { setCacheControlNoStore } from '../lib/errors';
+import { sanitizeLogEntry } from '../logging/redaction';
 
 function ensureVaryIncludes(res: Response, token: string): void {
   const current = res.getHeader('Vary');
@@ -84,14 +85,15 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     if (isProd && allowedOrigins.includes('*')) {
       const requestId = res.locals.requestId || req.requestId || 'unknown';
 
-      console.error(JSON.stringify({
+      const logEntry = sanitizeLogEntry({
         level: 'error',
         message: 'SECURITY ERROR: Wildcard CORS origin (*) detected in production',
         context: 'cors-preflight',
         env: process.env.NODE_ENV,
         configuredOrigins: allowedOrigins,
         requestId
-      }));
+      });
+      console.error(JSON.stringify(logEntry));
       setCacheControlNoStore(res, 500);
       res.status(500).json({
         code: 'INVALID_CORS_CONFIG',
@@ -183,14 +185,15 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     if (isProd && allowedOrigins.includes('*')) {
       const requestId = res.locals.requestId || req.requestId || 'unknown';
 
-      console.error(JSON.stringify({
+      const logEntry = sanitizeLogEntry({
         level: 'error',
         message: 'SECURITY ERROR: Wildcard CORS origin (*) detected in production',
         context: 'cors-headers',
         env: process.env.NODE_ENV,
         configuredOrigins: allowedOrigins,
         requestId
-      }));
+      });
+      console.error(JSON.stringify(logEntry));
       setCacheControlNoStore(res, 500);
       res.status(500).json({
         code: 'INVALID_CORS_CONFIG',

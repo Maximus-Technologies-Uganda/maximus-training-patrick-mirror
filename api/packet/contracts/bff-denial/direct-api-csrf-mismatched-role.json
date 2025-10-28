@@ -1,11 +1,11 @@
 {
   "test": "direct-api-csrf-mismatched-role",
-  "timestamp": "2025-10-27T11:35:45.523Z",
+  "timestamp": "2025-10-28T09:54:01.525Z",
   "request": {
     "method": "DELETE",
     "url": "/posts/test-post-123",
     "headers": {
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ1LCJleHAiOjE3NjE1Njg1NDV9.9i6YKMFnyZoDF8irLSD3GK4ThdceJmNoQ7ya3ExSQZQ",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQxLCJleHAiOjE3NjE2NDg4NDF9.wGWJdYIPoZso2ZnJa_g6FETRwYe6Jp3WoKpIB_cQCDU",
       "X-CSRF-Token": "valid-csrf-token",
       "X-User-Id": "test-user-123",
       "X-User-Role": "admin"
@@ -14,8 +14,9 @@
   "response": {
     "status": 403,
     "headers": {
-      "x-request-id": "c4de3f95-c9af-4f01-a174-51cbee7bb4f3",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-Tq9GhRlJfhMrIE2cZVWAqw=='",
+      "x-request-id": "bc694041-bbfc-42b0-ae97-cd51f7c0a627",
+      "traceparent": "00-62901fa3859569f45dd8c72e15c95214-add405b37dc7f56c-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-ioXoOxJyQGoRVXUDAPo+YA=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -34,14 +35,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "138",
-      "etag": "W/\"8a-0vAn/WVkj1FGszzooZ/P0XXgz6I\"",
-      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "etag": "W/\"8a-Dk5ajJrpjtrms63h3K31NGx+838\"",
+      "date": "Tue, 28 Oct 2025 09:54:01 GMT",
       "connection": "close"
     },
     "body": {
       "code": "FORBIDDEN",
       "message": "Identity header does not match authenticated user role",
-      "requestId": "c4de3f95-c9af-4f01-a174-51cbee7bb4f3"
+      "requestId": "bc694041-bbfc-42b0-ae97-cd51f7c0a627"
     }
   }
 }

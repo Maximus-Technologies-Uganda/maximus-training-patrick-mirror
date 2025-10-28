@@ -68,11 +68,23 @@ describe('Posts API Integration Tests', () => {
   });
 
   describe('GET /health', () => {
-    it('should respond with 200 and { status: "ok" }', async () => {
+    it('should respond with 200 and health metadata', async () => {
       const api = await resolveApp();
       const res = await supertest(api).get('/health');
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ status: 'ok', service: 'api' });
+      expect(res.body).toMatchObject({
+        status: 'ok',
+        service: 'api',
+        commit: expect.any(String),
+        time: expect.any(String),
+        uptime_s: expect.any(Number),
+        dependencies: expect.objectContaining({
+          firebase: expect.stringMatching(/^(ok|down)$/),
+          db: expect.stringMatching(/^(ok|down)$/),
+        }),
+        requestId: expect.any(String),
+        traceId: expect.any(String),
+      });
     });
   });
 
