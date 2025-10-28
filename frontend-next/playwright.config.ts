@@ -1,6 +1,18 @@
 import { defineConfig, devices } from "@playwright/test";
 import path from "path";
 
+function resolveCommitSha(): string {
+  const candidates = [process.env.GITHUB_SHA, process.env.VERCEL_GIT_COMMIT_SHA, process.env.COMMIT_SHA];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+  return "local-dev";
+}
+
+const htmlReportDir = path.resolve(__dirname, "..", "a11y-frontend-next", resolveCommitSha());
+
 // Align default with package.json dev script (next dev -p 3001)
 const port = process.env.E2E_PORT || "3001";
 const skipServer = process.env.E2E_SKIP_SERVER === "1";
@@ -42,8 +54,7 @@ export default defineConfig({
       "html",
       {
         open: "never",
-        // Persist HTML report into Review Packet path per T033 (tasks.md)
-        outputFolder: path.resolve(__dirname, "..", "docs", "ReviewPacket", "a11y", "html"),
+        outputFolder: htmlReportDir,
       },
     ],
   ],

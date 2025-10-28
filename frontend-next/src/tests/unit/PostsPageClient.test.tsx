@@ -26,8 +26,10 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
     // Verify guest browsing message is shown
     expect(screen.getByText(/browsing as a guest/i)).toBeInTheDocument();
 
-    // Verify login button is shown
-    expect(screen.getByRole("button", { name: /login/i })).toBeInTheDocument();
+    // Verify login link is shown and points to /login
+    const loginLink = screen.getByRole("link", { name: /sign in/i });
+    expect(loginLink).toBeInTheDocument();
+    expect(loginLink).toHaveAttribute("href", "/login");
 
     // Verify posts list is rendered
     expect(screen.getByRole("region", { name: /posts list/i })).toBeInTheDocument();
@@ -48,7 +50,7 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
     expect(screen.getByLabelText(/content/i)).toBeInTheDocument();
   });
 
-  it("should render posts list section", () => {
+  it("should render posts list for both anonymous and authenticated users", () => {
     const { rerender } = render(
       <PostsPageClient
         page={1}

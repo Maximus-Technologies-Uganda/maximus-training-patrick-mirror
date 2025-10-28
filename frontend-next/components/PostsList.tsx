@@ -24,7 +24,11 @@ function deriveOwner(post: Post): { id: string | null; name: string | null } {
   };
 }
 
-function canManagePost(post: Post, currentUserId: string | null | undefined): {
+function canManagePost(
+  post: Post,
+  currentUserId: string | null | undefined,
+  currentUserRole?: "owner" | "admin",
+): {
   canEdit: boolean;
   canDelete: boolean;
 } {
@@ -37,7 +41,8 @@ function canManagePost(post: Post, currentUserId: string | null | undefined): {
   }
   const owner = deriveOwner(post);
   const isOwner = Boolean(owner.id && currentUserId && owner.id === currentUserId);
-  return { canEdit: isOwner, canDelete: isOwner };
+  const isAdmin = currentUserRole === "admin";
+  return { canEdit: isOwner || isAdmin, canDelete: isOwner || isAdmin };
 }
 
 function truncate(text: string, max = 200): string {
@@ -45,7 +50,7 @@ function truncate(text: string, max = 200): string {
   return text.slice(0, max).trimEnd() + "…";
 }
 
-export default function PostsList({ items, currentUserId }: PostListProps): React.ReactElement {
+export default function PostsList({ items, currentUserId, currentUserRole }: PostListProps): React.ReactElement {
   if (!items.length) {
     return (
       <p className="text-gray-600" aria-live="polite">
@@ -93,7 +98,7 @@ export default function PostsList({ items, currentUserId }: PostListProps): Reac
     <ul role="list" className="space-y-4">
       {items.map((post) => {
         const owner = deriveOwner(post);
-        const permissions = canManagePost(post, currentUserId ?? null);
+        const permissions = canManagePost(post, currentUserId ?? null, currentUserRole);
         return (
           <li
             key={post.id}

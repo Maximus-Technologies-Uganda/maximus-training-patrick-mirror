@@ -50,6 +50,26 @@ describe("GET /health", () => {
     expect(res.body.dependencies.db).toBe("down");
     expect(res.body.dependencies.firebase).toBe("ok");
     expect(res.body.dependencies.details.db).toContain("db offline");
+    expect(res.headers["cache-control"]).toBe("no-store");
+    expect(res.headers["content-type"]).toBe("application/json; charset=utf-8");
+  });
+
+  it("returns 503 with headers when a dependency throws", async () => {
+    const app = buildApp({
+      checkFirebase: async () => {
+        throw new Error("firebase boom");
+      },
+      checkDatabase: async () => ({ status: "ok" }),
+    });
+
+    const res = await request(app).get("/health");
+
+    expect(res.status).toBe(503);
+    expect(res.body.status).toBe("degraded");
+    expect(res.body.dependencies.firebase).toBe("down");
+    expect(res.body.dependencies.details.firebase).toContain("firebase");
+    expect(res.headers["cache-control"]).toBe("no-store");
+    expect(res.headers["content-type"]).toBe("application/json; charset=utf-8");
   });
 
   it("sets no-store caching headers", async () => {

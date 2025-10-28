@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SWRConfig } from "swr";
 import type { Cache, SWRConfiguration } from "swr";
@@ -105,7 +105,6 @@ export default function PostsPageClient({
   initialData?: Post[];
   initialHasNextPage?: boolean;
 }): React.ReactElement {
-  const router = useRouter();
   const { session, signOut } = useSession();
   // useSessionCookieStatus hook is available if needed for future fallback auth
   const _hasSessionCookie = useSessionCookieStatus();
@@ -263,7 +262,7 @@ export default function PostsPageClient({
               Signed in as <span className="font-semibold">{session.name ?? session.userId}</span>
             </p>
           ) : (
-            <p className="text-sm text-gray-600">You are browsing as a guest. Login to manage your posts.</p>
+            <p className="text-sm text-gray-600">You are browsing as a guest. Sign in to manage your posts.</p>
           )}
           {session ? (
             <button
@@ -271,16 +270,15 @@ export default function PostsPageClient({
               className="inline-flex items-center justify-center rounded border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
               onClick={signOut}
             >
-              Logout
+              Sign out
             </button>
           ) : (
-            <button
-              type="button"
+            <Link
               className="inline-flex items-center justify-center rounded bg-indigo-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-indigo-700"
-              onClick={() => router.push('/login')}
+              href="/login"
             >
-              Login
-            </button>
+              Sign in
+            </Link>
           )}
         </div>
 
