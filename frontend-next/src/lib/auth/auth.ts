@@ -14,9 +14,12 @@ let firebaseAuth: null | {
 async function ensureFirebase(): Promise<boolean> {
   if (firebaseAuth) return true;
   try {
-    // Dynamic imports so builds work even if Firebase isn't installed locally
-    const appMod = await import("firebase/app");
-    const authMod = await import("firebase/auth");
+    // Dynamic imports so builds work even if Firebase isn't installed locally.
+    // Use Function constructor to avoid Vite/esbuild static resolution in test/CI.
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    const din = new Function('s', 'return import(s)') as (s: string) => Promise<Record<string, unknown>>;
+    const appMod = (await din('firebase/app')) as Record<string, unknown>;
+    const authMod = (await din('firebase/auth')) as Record<string, unknown>;
     const config = {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -27,13 +30,18 @@ async function ensureFirebase(): Promise<boolean> {
       measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
     } as Record<string, string | undefined>;
     if (!firebaseApp) {
-      firebaseApp = appMod.initializeApp(config);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      firebaseApp = (appMod.initializeApp as any)(config);
     }
     firebaseAuth = {
-      getAuth: authMod.getAuth,
-      signInWithEmailAndPassword: authMod.signInWithEmailAndPassword,
-      signOut: authMod.signOut,
-      getIdToken: authMod.getIdToken,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      getAuth: authMod.getAuth as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      signInWithEmailAndPassword: authMod.signInWithEmailAndPassword as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      signOut: authMod.signOut as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      getIdToken: authMod.getIdToken as any,
     };
     return true;
   } catch {

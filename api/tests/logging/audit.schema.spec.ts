@@ -37,6 +37,7 @@ describe('Audit Log Schema Compliance (T074)', () => {
         userId: 'firebase-uid-abc123',
         role: 'owner',
         status: 201,
+        outcome: 'success',
         requestId: '550e8400-e29b-41d4-a716-446655440000',
         traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
       });
@@ -89,6 +90,7 @@ describe('Audit Log Schema Compliance (T074)', () => {
         userId: 'firebase-uid-ghi789',
         role: 'owner',
         status: 403,
+        outcome: 'denied',
         requestId: '550e8400-e29b-41d4-a716-446655440002',
         traceId: '4bf92f3577b34da6a3ce929d0e0e4738',
       });

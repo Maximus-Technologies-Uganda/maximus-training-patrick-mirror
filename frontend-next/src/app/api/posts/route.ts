@@ -179,15 +179,36 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const upstreamBodyText = await upstreamResponse.text();
     if (contentType.includes("application/json")) {
       try {
-        const data = JSON.parse(upstreamBodyText);
-        // If the upstream returned an array (including empty array), pass it through as JSON
+        const identity = await extractUserIdentity(request);
+        const data = JSON.parse(upstreamBodyText) as unknown;
+        const withPerms = (items: Array<Record<string, unknown>>): Array<Record<string, unknown>> =>
+          items.map((p) => {
+            const ownerId = (p as { ownerId?: unknown }).ownerId;
+            const isOwner = typeof ownerId === "string" && identity?.userId && ownerId === identity.userId;
+            const isAdmin = identity?.role === "admin";
+            const permissions = { canEdit: Boolean(isAdmin || isOwner), canDelete: Boolean(isAdmin || isOwner) };
+            return { ...p, permissions };
+          });
         if (Array.isArray(data)) {
-          return NextResponse.json(data, {
+          return NextResponse.json(withPerms(data as Array<Record<string, unknown>>), {
             status: upstreamResponse.status,
             headers: { "X-Request-Id": upstreamRequestId },
           });
         }
-        // Fall through for non-array JSON payloads below to preserve content-type and body
+        if (data && typeof data === "object") {
+          const obj = data as { items?: Array<Record<string, unknown>> };
+          if (Array.isArray(obj.items)) {
+            const next = { ...obj, items: withPerms(obj.items) };
+            return NextResponse.json(next, {
+              status: upstreamResponse.status,
+              headers: { "X-Request-Id": upstreamRequestId },
+            });
+          }
+        }
+        return NextResponse.json(data as Record<string, unknown>, {
+          status: upstreamResponse.status,
+          headers: { "X-Request-Id": upstreamRequestId },
+        });
       } catch {
         // Fall through to raw response if JSON parsing fails
       }
@@ -203,10 +224,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const page = Number(search.get("page") ?? "1") || 1;
       const pageSize = Number(search.get("pageSize") ?? "10") || 10;
       const start = (page - 1) * pageSize;
+      const identity = await extractUserIdentity(request);
       const items = localPostsFallback
         .slice()
         .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-        .slice(start, start + pageSize);
+        .slice(start, start + pageSize)
+        .map((p) => {
+          const isOwner = Boolean(p.ownerId && identity?.userId && p.ownerId === identity.userId);
+          const isAdmin = identity?.role === "admin";
+          const permissions = { canEdit: Boolean(isAdmin || isOwner), canDelete: Boolean(isAdmin || isOwner) };
+          return { ...p, permissions };
+        });
       const total = localPostsFallback.length;
       const hasNextPage = start + items.length < total;
       const incomingReqId = request.headers.get("x-request-id") || "";

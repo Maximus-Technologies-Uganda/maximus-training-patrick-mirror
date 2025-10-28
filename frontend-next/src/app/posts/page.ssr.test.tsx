@@ -37,11 +37,11 @@ describe("SSR Posts page (server component)", () => {
     expect(el.props.currentUserId).toBeUndefined();
   });
 
-  it("decodes userId from unsigned session token and passes currentUserId", async () => {
+  it("does not pass currentUserId since authentication is now client-side", async () => {
     token = makeUnsignedJwt({ userId: "u123" });
     const el = await PostsPage({ searchParams: Promise.resolve({}) });
     // @ts-expect-error inspecting React element for test purposes
-    expect(el.props.currentUserId).toBe("u123");
+    expect(el.props.currentUserId).toBeUndefined();
   });
 });
 

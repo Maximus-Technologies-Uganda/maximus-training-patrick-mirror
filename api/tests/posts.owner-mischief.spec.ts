@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { createApp } from '../src/app';
 import { loadConfigFromEnv } from '../src/config';
@@ -92,6 +92,18 @@ function saveTestOutput(testName: string, request: any, response: any): void {
 }
 
 describe('Owner-Check Mischief Tests (T099)', () => {
+  // Set up test hook to bypass Firebase Admin revocation checks
+  beforeAll(() => {
+    (global as any).__TEST_ADMIN_REVOCATION_HOOK__ = async () => {
+      // Allow all admin operations in tests
+      return { allowed: true };
+    };
+  });
+
+  afterAll(() => {
+    delete (global as any).__TEST_ADMIN_REVOCATION_HOOK__;
+  });
+
   describe('Schema validation prevents ownerId injection', () => {
     it('POST /posts rejects request body with ownerId field (schema validation)', async () => {
       const { app } = await makeApp();

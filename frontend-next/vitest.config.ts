@@ -5,6 +5,12 @@ export default defineConfig({
     jsx: "automatic",
     jsxInject: 'import React from "react"'
   },
+  optimizeDeps: {
+    exclude: ["firebase/app", "firebase/auth"]
+  },
+  ssr: {
+    external: ["firebase/app", "firebase/auth"]
+  },
   test: {
     include: [
       "src/**/*.test.{ts,tsx}",

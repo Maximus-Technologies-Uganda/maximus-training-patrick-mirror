@@ -650,6 +650,33 @@ git commit -m "feat(contracts): add 415 response for invalid Content-Type"
 - GET `/posts/{id}`: 200 when exists; 404 when not found.
 - Error envelopes include `requestId` when available; `429` includes `Retry-After`; 4xx/5xx set `Cache-Control: no-store`.
 
+## Independent Test Criteria (US3)
+
+### Admin Moderation & Revocation (T020, T021, T022, T023, T064)
+
+**Admin Override Authority (T020)**
+- Admin with `role=admin` can PATCH/PUT/DELETE posts owned by other users → 200/204
+- Admin mutations on non-owned posts succeed and audit logs record admin `userId` + target `ownerId`
+- Owner with `role=owner` can only mutate their own posts → 403 when attempting to mutate others' posts
+
+**Revocation Enforcement (T021, T064)**
+- Admin with revoked Firebase token → 401 + audit entry with `outcome:"denied"`, `denialReason:"admin-token-revoked"`
+- Admin with disabled Firebase account → 401 + audit entry with `outcome:"denied"`, `denialReason:"admin-account-disabled"`
+- Admin mutation when Firebase unavailable → 503 + audit entry with `outcome:"denied"`, `denialReason:"admin-revocation-check-unavailable"`
+- Session cookies embed `authTime` claim; revocation checks compare `authTime * 1000 < tokensValidAfterTime`
+
+**UI Admin Controls (T022)**
+- User with `role=admin` in session → Edit/Delete buttons visible on all posts (owned and non-owned)
+- User with `role=owner` in session → Edit/Delete buttons visible only on owned posts
+- SSR test: JWT payload with `role:"admin"` → `currentUserRole="admin"` prop passed to client component
+
+**Evidence Artifacts**
+- `api/tests/posts-ownership.int.test.ts` → admin override scenarios (admin PATCH/DELETE on others' posts)
+- `api/tests/revocation.int.spec.ts` → revocation denial scenarios + audit log assertions
+- `api/tests/logging/audit.schema.spec.ts` → audit schema compliance (outcome, denialReason fields)
+- `frontend-next/src/tests/unit/PostsList.test.tsx` → UI control visibility for admin vs owner roles
+- `frontend-next/src/app/posts/page.ssr.test.tsx` → SSR role parsing from session JWT
+
 ## Commands & CI snippets
 
 * **Run a11y:** `pnpm test:a11y` → outputs to `a11y-frontend-next/`

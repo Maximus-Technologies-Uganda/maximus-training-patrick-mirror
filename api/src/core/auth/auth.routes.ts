@@ -19,7 +19,9 @@ function base64urlToBuffer(input: string): Buffer {
 
 router.post("/login", async (req, res) => {
   const { username, password, idToken } = (req.body ?? {}) as { username?: string; password?: string; idToken?: string };
-  let userId: string | undefined = undefined;
+  let userId: string | undefined;
+  let resolvedRole: string | undefined;
+  let resolvedAuthTime: number | undefined;
 
   if (typeof idToken === "string" && idToken.trim()) {
     try {
@@ -29,7 +31,22 @@ router.post("/login", async (req, res) => {
         admin.initializeApp();
       }
       const decoded = await admin.auth().verifyIdToken(idToken, true);
-      userId = decoded?.sub;
+      userId = typeof decoded?.sub === "string" ? decoded.sub : undefined;
+      const decodedRecord = decoded as Record<string, unknown>;
+      const directRole = typeof decodedRecord.role === "string" ? decodedRecord.role : undefined;
+      const customClaims = decodedRecord.custom_claims as Record<string, unknown> | undefined;
+      const roleFromCustom =
+        customClaims && typeof customClaims.role === "string" ? (customClaims.role as string) : undefined;
+      resolvedRole = directRole ?? roleFromCustom ?? "owner";
+      const authTimeCandidate =
+        typeof decodedRecord.auth_time === "number"
+          ? decodedRecord.auth_time
+          : typeof decodedRecord.iat === "number"
+          ? decodedRecord.iat
+          : undefined;
+      if (typeof authTimeCandidate === "number" && Number.isFinite(authTimeCandidate)) {
+        resolvedAuthTime = Math.trunc(authTimeCandidate);
+      }
     } catch {
       const requestId =
         (req as unknown as { requestId?: string }).requestId ||
@@ -41,7 +58,11 @@ router.post("/login", async (req, res) => {
     const isValid =
       (username === "admin" && password === "password") ||
       (username === "alice" && password === "correct-password");
-    if (isValid) userId = username === "admin" ? "admin-1" : "user-alice-1";
+    if (isValid) {
+      userId = username === "admin" ? "admin-1" : "user-alice-1";
+      resolvedRole = username === "admin" ? "admin" : "owner";
+      resolvedAuthTime = Math.floor(Date.now() / 1000);
+    }
   }
 
   if (!userId) {
@@ -52,7 +73,17 @@ router.post("/login", async (req, res) => {
 
   const secret = getSessionSecret();
   // T062: Rotate session cookie every ~15 minutes (900 seconds) for security
-  const token = signJwt({ userId, role: "owner" }, secret, 15 * 60);
+  const token = signJwt(
+    {
+      userId,
+      role: typeof resolvedRole === "string" && resolvedRole.trim().length > 0 ? resolvedRole : "owner",
+      ...(typeof resolvedAuthTime === "number" && Number.isFinite(resolvedAuthTime)
+        ? { authTime: Math.trunc(resolvedAuthTime) }
+        : {}),
+    },
+    secret,
+    15 * 60,
+  );
 
   res.cookie("session", token, {
     httpOnly: true,

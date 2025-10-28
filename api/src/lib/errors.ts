@@ -96,7 +96,15 @@ export function createErrorEnvelope(
   // Extract trace ID from request traceparent header if not provided
   let effectiveTraceId = traceId;
   if (!effectiveTraceId && request) {
-    const traceparent = request.get('traceparent');
+    const reqAny = request as unknown as {
+      get?: (name: string) => string | undefined;
+      headers?: Record<string, unknown>;
+    };
+    const getReq = typeof reqAny?.get === 'function' ? reqAny.get.bind(request) : null;
+    const headerValFromObject = typeof reqAny?.headers === 'object' && reqAny.headers
+      ? (reqAny.headers['traceparent'] as string | undefined)
+      : undefined;
+    const traceparent = (getReq ? getReq('traceparent') : undefined) || headerValFromObject;
     if (typeof traceparent === 'string') {
       const parts = traceparent.split('-');
       if (parts.length >= 4 && parts[1] && /^[0-9a-f]{32}$/i.test(parts[1])) {

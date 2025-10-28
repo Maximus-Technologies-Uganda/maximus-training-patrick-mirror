@@ -1,19 +1,44 @@
 // Avoid importing Express types here to reduce type resolution friction in tests
 import type { ListPostsQuery } from "./post.schemas";
 import type { IPostsService } from "../../services/PostsService";
-import { setCacheControlNoStore, sendErrorResponse, ERROR_CODES } from "../../lib/errors";
+import { sendErrorResponse, ERROR_CODES } from "../../lib/errors";
 import { NotFoundError } from "../../errors/NotFoundError";
 import { auditPost } from "../../logging/audit";
+
+type RequestUser = { userId?: string; role?: string };
+
+function resolveRequestUser(req: unknown): RequestUser {
+  const maybeUser = (req as { user?: { userId?: unknown; role?: unknown } }).user;
+  if (!maybeUser || typeof maybeUser !== "object") {
+    return {};
+  }
+  const userId = typeof maybeUser.userId === "string" && maybeUser.userId.trim().length > 0
+    ? maybeUser.userId.trim()
+    : undefined;
+  const role = typeof maybeUser.role === "string" && maybeUser.role.trim().length > 0 ? maybeUser.role.trim() : undefined;
+  return { userId, role };
+}
+
+function respondUnauthorized(req: unknown, res: unknown): void {
+  sendErrorResponse(res as never, ERROR_CODES.UNAUTHORIZED, "Invalid or expired authentication token", {
+    request: req as never,
+  });
+}
+
+function respondForbidden(req: unknown, res: unknown): void {
+  sendErrorResponse(res as never, ERROR_CODES.FORBIDDEN, "Insufficient permissions to access this resource", {
+    request: req as never,
+  });
+}
 
 export function createPostsController(postsService: IPostsService) {
   type ServicePost = Awaited<ReturnType<IPostsService["getById"]>>;
   return {
     async create(req, res, next) {
       try {
-        const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
+        const { userId } = resolveRequestUser(req);
         if (!userId) {
-          setCacheControlNoStore(res, 401);
-          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
+          respondUnauthorized(req, res);
           return;
         }
         const { title, content, tags, published } = req.body;
@@ -27,11 +52,10 @@ export function createPostsController(postsService: IPostsService) {
 
     async replace(req, res, next) {
       try {
-        const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
-        const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
+        const { userId, role } = resolveRequestUser(req);
+        const userRole = role ?? "owner";
         if (!userId) {
-          setCacheControlNoStore(res, 401);
-          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
+          respondUnauthorized(req, res);
           return;
         }
         const ownerIdInjection = Boolean(((res.locals as unknown as { identityStripped?: { ownerId?: boolean } }).identityStripped)?.ownerId);
@@ -58,9 +82,11 @@ export function createPostsController(postsService: IPostsService) {
         // Check authorization: admin can mutate any post, owner can only mutate their own
         const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
         if (!isAuthorized) {
-          setCacheControlNoStore(res, 403);
-          res.status(403).json({ code: "FORBIDDEN", message: "Insufficient permissions to access this resource" });
-          auditPost(req as never, "update", req.params.id, 403);
+          auditPost(req as never, "update", req.params.id, 403, {
+            outcome: "denied",
+            denialReason: "insufficient-permissions",
+          });
+          respondForbidden(req, res);
           return;
         }
         const updated = await postsService.replace(req.params.id, req.body);
@@ -109,11 +135,10 @@ export function createPostsController(postsService: IPostsService) {
 
     async update(req, res, next) {
       try {
-        const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
-        const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
+        const { userId, role } = resolveRequestUser(req);
+        const userRole = role ?? "owner";
         if (!userId) {
-          setCacheControlNoStore(res, 401);
-          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
+          respondUnauthorized(req, res);
           return;
         }
         const ownerIdInjection = Boolean(((res.locals as unknown as { identityStripped?: { ownerId?: boolean } }).identityStripped)?.ownerId);
@@ -140,9 +165,11 @@ export function createPostsController(postsService: IPostsService) {
         // Check authorization: admin can mutate any post, owner can only mutate their own
         const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
         if (!isAuthorized) {
-          setCacheControlNoStore(res, 403);
-          res.status(403).json({ code: "FORBIDDEN", message: "Insufficient permissions to access this resource" });
-          auditPost(req as never, "update", req.params.id, 403);
+          auditPost(req as never, "update", req.params.id, 403, {
+            outcome: "denied",
+            denialReason: "insufficient-permissions",
+          });
+          respondForbidden(req, res);
           return;
         }
         const updated = await postsService.update(req.params.id, req.body);
@@ -155,11 +182,10 @@ export function createPostsController(postsService: IPostsService) {
 
     async delete(req, res, next) {
       try {
-        const userId = (req as unknown as { user?: { userId?: string } }).user?.userId;
-        const userRole = (req as unknown as { user?: { userId?: string; role?: string } }).user?.role || "owner";
+        const { userId, role } = resolveRequestUser(req);
+        const userRole = role ?? "owner";
         if (!userId) {
-          setCacheControlNoStore(res, 401);
-          res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token" });
+          respondUnauthorized(req, res);
           return;
         }
         let existing: ServicePost | null = null;
@@ -176,9 +202,11 @@ export function createPostsController(postsService: IPostsService) {
         // Check authorization: admin can mutate any post, owner can only mutate their own
         const isAuthorized = userRole === "admin" || (existing.ownerId && existing.ownerId === userId);
         if (!isAuthorized) {
-          setCacheControlNoStore(res, 403);
-          res.status(403).json({ code: "FORBIDDEN", message: "Insufficient permissions to access this resource" });
-          auditPost(req as never, "delete", req.params.id, 403);
+          auditPost(req as never, "delete", req.params.id, 403, {
+            outcome: "denied",
+            denialReason: "insufficient-permissions",
+          });
+          respondForbidden(req, res);
           return;
         }
         await postsService.delete(req.params.id);

@@ -1,5 +1,24 @@
 ## Changelog
 
+### 2025-10-27 (Error envelope guard)
+
+### Fixed
+- API: Guarded access to `traceparent` in the error envelope helper to avoid calling `req.get` when unavailable in test doubles, preventing crashes on unauthorized paths and allowing 401 to be set (`api/src/lib/errors.ts`).
+
+### 2025-10-28 (Admin moderation & revocation - DEV-672 to DEV-676)
+
+### Added/Changed
+- T020/T021: Enabled admins to moderate any post and enforced Firebase token revocation checks for admin-sensitive mutations. Session cookies now retain role/authTime claims; admin revocation guard audits denials with reasons (`api/src/core/auth/auth.routes.ts`, `api/src/core/posts/posts.routes.ts`, `api/src/middleware/auth.ts`, `api/src/middleware/firebaseAuth.ts`, `api/src/core/auth/auth.middleware.ts`).
+- T022: Surfaced admin edit/delete controls in the Posts UI when the session role is `admin`, including SSR role parsing (`frontend-next/src/app/posts/page.tsx`, `frontend-next/components/PostsPageClient.tsx`, `frontend-next/components/PostsList.tsx`).
+- T023: Documented US3 independent test criteria covering admin moderation, UI, and revocation evidence (`specs/008-identity-platform/plan.md`).
+- Follow-up: Standardized posts controller unauthorized/forbidden handling via the shared error-envelope helper and added audit denial reasons for permission failures (`api/src/core/posts/posts.controller.ts`).
+- Follow-up: Restored compatibility for the legacy CommonJS posts router by invoking the renamed `controller.delete` handler for DELETE requests (`api/src/routes/posts-routes.js`).
+
+### Tests
+- T020/T064: Added integration coverage for admin ownership overrides and revocation denials, plus updated audit schema assertions (`api/tests/posts-ownership.int.test.ts`, `api/tests/revocation.int.spec.ts`, `api/tests/logging/audit.schema.spec.ts`).
+- T022: Extended frontend unit tests to assert admin controls render for non-owned posts (`frontend-next/src/tests/unit/PostsList.test.tsx`, `frontend-next/src/tests/unit/PostsPageClient.test.tsx`).
+- Follow-up: Integration coverage now asserts security cache headers on admin-denied mutations to prevent accidental caching of 401/403 responses (`api/tests/posts-ownership.int.test.ts`, `api/tests/revocation.int.spec.ts`).
+
 ### 2025-10-27 (Posts service test harness fixes)
 
 ### Fixed
