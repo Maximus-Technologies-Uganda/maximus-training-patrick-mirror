@@ -1,5 +1,4 @@
 import React from "react";
-import { cookies } from "next/headers";
 
 import PostsPageClient from "../../../components/PostsPageClient";
 import type { Post as SsrPost } from "../../lib/schemas";
@@ -32,21 +31,7 @@ export default async function PostsPage({
   const pageSize = Number(incomingQuery.pageSize ?? "10");
   const q = incomingQuery.q ?? "";
 
-  // Read session cookie on the server to derive userId without exposing the cookie to the client
-  const cookieStore = await cookies();
-  const session = cookieStore.get("session")?.value || "";
-  const userId = (() => {
-    try {
-      const parts = session.split(".");
-      if (parts.length !== 3) return null;
-      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-      const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
-      return typeof payload.userId === "string" ? payload.userId : null;
-    } catch {
-      return null;
-    }
-  })();
+  // Auth is now handled client-side with session-based authentication
 
   // Server-side fetch to pre-render posts for first paint (no spinner)
   // Only fetch SSR data for the first page; other pages will be fetched client-side
@@ -60,9 +45,6 @@ export default async function PostsPage({
       // Request one extra to determine if there's a next page without another round trip
       url.searchParams.set("pageSize", String(pageSize + 1));
       const fetchHeaders: Record<string, string> = {};
-      if (session) {
-        fetchHeaders.Cookie = `session=${session}`;
-      }
       const res = await fetch(url.toString(), {
         cache: "no-store",
         headers: fetchHeaders,
@@ -109,7 +91,6 @@ export default async function PostsPage({
       page={page}
       pageSize={pageSize}
       q={q}
-      currentUserId={userId ?? undefined}
       initialData={posts}
       initialHasNextPage={initialHasNextPage}
     />

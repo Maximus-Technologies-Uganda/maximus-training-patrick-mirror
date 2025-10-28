@@ -1,15 +1,28 @@
 import { z } from "zod";
 
 // Core entity schemas
+const PostOwnerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+const PostPermissionsSchema = z.object({
+  canEdit: z.boolean().optional(),
+  canDelete: z.boolean().optional(),
+});
+
 export const PostSchema = z.object({
   id: z.string(),
-  ownerId: z.string().optional(),
   title: z.string(),
   content: z.string(),
   tags: z.array(z.string()).optional(),
   published: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  ownerId: z.string().optional(),
+  ownerName: z.string().optional(),
+  owner: PostOwnerSchema.partial().optional(),
+  permissions: PostPermissionsSchema.optional(),
 });
 
 export const PostListSchema = z.object({

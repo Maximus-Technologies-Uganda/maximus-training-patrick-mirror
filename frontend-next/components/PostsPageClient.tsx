@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SWRConfig } from "swr";
 import type { Cache, SWRConfiguration } from "swr";
@@ -11,7 +12,8 @@ import PageSizeSelect from "./PageSizeSelect";
 import PaginationControls from "./PaginationControls";
 import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
-import { usePostsList, mutatePostsPage1 } from "../src/lib/swr";
+import { usePostsList } from "../src/lib/swr";
+import { useSession } from "../src/lib/auth/use-session";
 import type { Post, PostList } from "../src/lib/schemas";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,6 +25,36 @@ function ErrorState(): React.ReactElement {
       Error loading posts. Please try again.
     </div>
   );
+}
+
+// Utility to check if a valid session cookie exists
+function useSessionCookieStatus(): boolean {
+  const [hasSessionCookie, setHasSessionCookie] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    try {
+      const m = document.cookie.match(/(?:^|;\s*)session=([^;]+)/);
+      const token = m?.[1];
+      if (!token) {
+        setHasSessionCookie(false);
+        return;
+      }
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        setHasSessionCookie(false);
+        return;
+      }
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      const payload = JSON.parse(atob(padded)) as { userId?: string };
+      setHasSessionCookie(typeof payload.userId === 'string');
+    } catch {
+      setHasSessionCookie(false);
+    }
+  }, []);
+
+  return hasSessionCookie;
 }
 
 function EmptyState(): React.ReactElement {
@@ -64,17 +96,19 @@ export default function PostsPageClient({
   page: initialPage = 1,
   pageSize: initialPageSize = 10,
   q: incomingSearchQuery = "",
-  currentUserId,
   initialData,
   initialHasNextPage,
 }: {
   page?: number;
   pageSize?: number;
   q?: string;
-  currentUserId?: string;
   initialData?: Post[];
   initialHasNextPage?: boolean;
 }): React.ReactElement {
+  const router = useRouter();
+  const { session, signOut } = useSession();
+  // useSessionCookieStatus hook is available if needed for future fallback auth
+  const _hasSessionCookie = useSessionCookieStatus();
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
   const [searchQuery, setSearchQuery] = useState<string>(incomingSearchQuery);
@@ -204,13 +238,6 @@ export default function PostsPageClient({
     [],
   );
 
-  const onListChanged = async (): Promise<void> => {
-    await mutatePostsPage1(pageSize);
-    if (page !== 1) {
-      setPage(1);
-      updateUrlQuery({ page: 1 });
-    }
-  };
 
   return (
     <SWRConfig value={swrValue}>
@@ -230,16 +257,36 @@ export default function PostsPageClient({
           <SearchInput value={searchQuery} onChange={onChangeSearchQuery} />
         </div>
 
-        {/* UI-level auth check; API enforces 401 for unauthorized mutations (see T011) */}
-        {currentUserId ? (
-          <section className="mt-6" aria-label="Create new post">
-            <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
-          </section>
-        ) : (
-          <p className="mt-6 text-center text-gray-600">
-            <a href="/login" className="underline">Log in</a> to create a post.
-          </p>
-        )}
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
+          {session ? (
+            <p className="text-sm text-gray-700">
+              Signed in as <span className="font-semibold">{session.name ?? session.userId}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-gray-600">You are browsing as a guest. Login to manage your posts.</p>
+          )}
+          {session ? (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+              onClick={signOut}
+            >
+              Logout
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded bg-indigo-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-indigo-700"
+              onClick={() => router.push('/login')}
+            >
+              Login
+            </button>
+          )}
+        </div>
+
+        <div className="mt-6">
+          <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
+        </div>
 
         <section className="mt-6" aria-label="Posts list">
           {error && effectiveItems.length === 0 ? (
@@ -251,7 +298,7 @@ export default function PostsPageClient({
             return items.length === 0 ? (
               <EmptyState />
             ) : (
-              <PostsList items={items} currentUserId={currentUserId} onChanged={onListChanged} />
+              <PostsList items={items} currentUserId={session?.userId ?? null} currentUserRole={session?.role} />
             );
           })()}
         </section>

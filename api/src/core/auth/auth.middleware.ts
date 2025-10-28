@@ -109,18 +109,35 @@ export const requireAuth: RequestHandler = (req, res, next) => {
   // T062: Check if token should be rotated (older than 10 minutes or role changed)
   const shouldRotate = shouldRotateToken(payload);
 
-  (req as unknown as { user?: { userId: string; role?: string } }).user = {
+  const resolvedRole = (payload as { role?: string }).role;
+  const authTimeClaim = (payload as { authTime?: unknown }).authTime;
+  const iatClaim = (payload as { iat?: unknown }).iat;
+  // FIX (Gap #1): Always provide authTime fallback to current time to prevent loss during rotation
+  const authTime =
+    typeof authTimeClaim === "number" && Number.isFinite(authTimeClaim)
+      ? Math.trunc(authTimeClaim)
+      : typeof iatClaim === "number" && Number.isFinite(iatClaim)
+      ? Math.trunc(iatClaim)
+      : Math.floor(Date.now() / 1000);
+
+  (req as unknown as { user?: { userId: string; role?: string; authTime?: number } }).user = {
     userId: (payload as { userId: string }).userId,
-    role: (payload as { role?: string }).role || "owner"
+    role: typeof resolvedRole === "string" && resolvedRole.trim().length > 0 ? resolvedRole : "owner",
+    ...(authTime !== undefined ? { authTime } : {}),
   };
   (req as unknown as { authContext?: { method?: string } }).authContext = { method: "session-cookie" };
 
   // Rotate token if needed
   if (shouldRotate) {
-    const newToken = signJwt({
-      userId: (payload as { userId: string }).userId,
-      role: (payload as { role?: string }).role || "owner"
-    }, secret, 15 * 60);
+    const newToken = signJwt(
+      {
+        userId: (payload as { userId: string }).userId,
+        role: typeof resolvedRole === "string" && resolvedRole.trim().length > 0 ? resolvedRole : "owner",
+        ...(authTime !== undefined ? { authTime } : {}),
+      },
+      secret,
+      15 * 60,
+    );
 
     res.cookie("session", newToken, {
       httpOnly: true,

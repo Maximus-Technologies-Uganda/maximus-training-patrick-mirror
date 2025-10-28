@@ -95,9 +95,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const isValid =
           (username === "admin" && password === "password") ||
           (username === "alice" && password === "correct-password");
+        const incomingReqId = request.headers.get("x-request-id") || "";
+        const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
         if (!isValid) {
-          const incomingReqId = request.headers.get("x-request-id") || "";
-          const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
           return new NextResponse(null, { status: 401, headers: { "X-Request-Id": requestId } });
         }
         const userId = username === "admin" ? "admin-1" : "user-alice-1";
@@ -105,14 +105,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const enc = (s: string) => Buffer.from(s).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
         const header = enc(JSON.stringify({ alg: "HS256", typ: "JWT" }));
         const role = username === "admin" ? "admin" : "owner";
+        const now = Math.floor(Date.now() / 1000);
+        const exp = now + 15 * 60; // 15 minutes expiry to match cookie Max-Age
         const payload = enc(JSON.stringify({
           userId,
           role,
-          iat: Math.floor(Date.now() / 1000)
+          iat: now,
+          exp,
         }));
         const token = `${header}.${payload}.dev`;
-        const incomingReqId = request.headers.get("x-request-id") || "";
-        const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
         const secureAttr = isHttps(request) ? "; Secure" : "";
         const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
         // Session cookie (HttpOnly) with rotation (T062)
@@ -122,9 +123,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         );
         // CSRF cookie (non-HttpOnly) for double-submit header with timestamp (T063)
         // Format: timestamp-uuid for TTL validation
-        const now = Math.floor(Date.now() / 1000);
         const csrfId = randomUUID().replace(/-/g, "");
-        const csrfToken = `${now}-${csrfId}`;
+        const csrfTs = Math.floor(Date.now() / 1000);
+        const csrfToken = `${csrfTs}-${csrfId}`;
         res.headers.append(
           "set-cookie",
           `csrf=${csrfToken}; Path=/; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,

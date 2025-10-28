@@ -28,9 +28,8 @@ COPY --from=builder /app/dist ./dist
 # Compiled app resolves spec via path.join(__dirname, "..", "openapi.json") with __dirname at /app/dist/src → /app/dist/openapi.json
 COPY --from=builder /app/openapi.json ./openapi.json
 
-# Include JS utilities not emitted by TypeScript build (used by errorHandler)
-# Compiled errorHandler imports ../lib/errors from /app/dist/src/middleware → /app/dist/lib/errors.js
-COPY --from=builder /app/src/lib/errors.js ./dist/lib/errors.js
+# All compiled JS (including lib/errors.js from errors.ts) is already in ./dist from the copy above.
+# Do not attempt to copy source .js files that do not exist in TypeScript projects.
 
 # Preserve package metadata for runtime tooling
 COPY --from=builder /app/package.json ./package.json

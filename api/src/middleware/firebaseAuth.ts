@@ -277,10 +277,12 @@ export const verifyFirebaseIdToken: RequestHandler = async (req, res, next) => {
     const resolvedRole = typeof roleDirect === 'string'
       ? roleDirect
       : (typeof roleFromCustom === 'string' ? roleFromCustom : 'owner');
+    const authTimeSeconds = extractAuthTimeSeconds(decoded);
 
-    (req as unknown as { user?: { userId: string; role?: string } }).user = {
+    (req as unknown as { user?: { userId: string; role?: string; authTime?: number } }).user = {
       userId: sub,
-      role: resolvedRole
+      role: typeof resolvedRole === 'string' && resolvedRole.trim().length > 0 ? resolvedRole : 'owner',
+      ...(authTimeSeconds !== null ? { authTime: authTimeSeconds } : {}),
     };
     (req as unknown as { authContext?: { method?: string } }).authContext = {
       method: "firebase-bearer",

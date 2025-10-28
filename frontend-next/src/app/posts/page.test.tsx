@@ -18,11 +18,23 @@ describe("SSR PostsPage (server component)", () => {
   });
 
   it("renders SSR posts without spinner and shows post title", async () => {
+    const testPost = { id: "1", title: "My Test Post", content: "Test content", published: true, createdAt: "2024-01-01T00:00:00Z", updatedAt: "2024-01-01T00:00:00Z" };
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => [{ id: "1", title: "My Test Post", body: "..." }],
+      json: async () => ({
+        items: [testPost],
+        hasNextPage: false,
+      }),
     } as unknown as Response);
+
+    // Mock SWR to return the test post data
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: { items: [testPost], hasNextPage: false },
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof usePostsList>);
 
     const el = await PostsPage({ searchParams: Promise.resolve({}) });
     render(el);

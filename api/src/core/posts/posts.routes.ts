@@ -5,6 +5,7 @@ import { validateBody, validateQuery } from "../../middleware/validate";
 import { ListPostsQuerySchema, PostCreateSchema, PostUpdateSchema } from "./post.schemas";
 import { requireCsrf } from "../../middleware/csrf";
 import { validateIdentityHeaders } from "../../middleware/identityValidation";
+import { enforceAdminRevocation } from "../../middleware/auth";
 
 export function createPostsRoutes(controller: {
   create: (req: unknown, res: unknown, next: unknown) => unknown;
@@ -17,14 +18,17 @@ export function createPostsRoutes(controller: {
   const { rateLimiterRead, rateLimiterWrite } = deps;
   const router = express.Router();
 
-  // T094: Cache headers middleware must come AFTER auth middleware
-  // Order: requireSessionAuth (sets req.user) → validateIdentityHeaders (validates headers) → requireCsrf → setAuthenticatedCacheHeaders (reads req.user)
+  // T094 + T064: Middleware ordering for performance and security
+  // Order: requireSessionAuth (cheap JWT) → validateIdentityHeaders → rateLimiterWrite → requireCsrf (cheap HMAC)
+  //        → enforceAdminRevocation (expensive Firebase call) → setAuthenticatedCacheHeaders → validateBody → controller
+  // FIX (Gap #2): Perform cheap validations (rate limit, CSRF) before expensive Firebase revocation check
   router.post(
     "/",
     requireSessionAuth,
     validateIdentityHeaders,
     rateLimiterWrite,
     requireCsrf,
+    enforceAdminRevocation,
     setAuthenticatedCacheHeaders,
     validateBody(PostCreateSchema),
     controller.create,
@@ -37,6 +41,7 @@ export function createPostsRoutes(controller: {
     validateIdentityHeaders,
     rateLimiterWrite,
     requireCsrf,
+    enforceAdminRevocation,
     setAuthenticatedCacheHeaders,
     validateBody(PostCreateSchema),
     controller.replace,
@@ -47,6 +52,7 @@ export function createPostsRoutes(controller: {
     validateIdentityHeaders,
     rateLimiterWrite,
     requireCsrf,
+    enforceAdminRevocation,
     setAuthenticatedCacheHeaders,
     validateBody(PostUpdateSchema),
     controller.update,
@@ -57,6 +63,7 @@ export function createPostsRoutes(controller: {
     validateIdentityHeaders,
     rateLimiterWrite,
     requireCsrf,
+    enforceAdminRevocation,
     setAuthenticatedCacheHeaders,
     controller.delete,
   );

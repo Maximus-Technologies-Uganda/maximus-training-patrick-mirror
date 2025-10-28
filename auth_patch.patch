@@ -1,0 +1,1068 @@
+diff --git a/api/src/app.js b/api/src/app.js
+index 12a0ddad4252f56f705f94a50fd2824c4c727a37..9c806e201085938893a25e4f003ecb4647079ff2 100644
+--- a/api/src/app.js
++++ b/api/src/app.js
+@@ -1,50 +1,54 @@
+ const express = require('express');
+ const helmet = require('helmet');
+ const cors = require('cors');
+ const morgan = require('morgan');
+-const { errorHandler } = require('./middleware/error-handler');
+-const { createRateLimiter } = require('./middleware/rate-limit');
+-const { notFoundHandler } = require('./middleware/not-found');
++const { errorHandler } = require('./middleware/error-handler');
++const { createRateLimiter } = require('./middleware/rate-limit');
++const { notFoundHandler } = require('./middleware/not-found');
++const { createHeaderAuthenticationMiddleware } = require('./middleware/authenticate');
+ const { createPostsController } = require('./controllers/posts-controller');
+ const { PostsService } = require('./services/posts-service');
+ const { createPostsRoutes } = require('./routes/posts-routes');
+ const { createHealthRoutes } = require('./routes/health');
+ 
+ function createApp(config, repository) {
+   const app = express();
+   app.use(helmet());
+   app.use(cors());
+   app.use(express.json({ limit: config.jsonLimit }));
+   app.use(morgan('combined'));
+-  app.use(createRateLimiter(config));
++  app.use(createRateLimiter(config));
++
++  const attachUser = createHeaderAuthenticationMiddleware({ headerName: 'x-user-id' });
++  app.use(attachUser);
+ 
+   // Health
+   app.use('/', createHealthRoutes());
+ 
+   // Posts
+   const postsService = new PostsService(repository);
+   const postsController = createPostsController(postsService);
+-  app.use('/posts', createPostsRoutes(postsController));
++  app.use('/posts', createPostsRoutes(postsController));
+ 
+   // In development, expose the OpenAPI spec directly from the repo as the source of truth
+   if (process.env.NODE_ENV !== 'production') {
+     const path = require('path');
+     const specPath = path.join(__dirname, '..', 'openapi.json');
+     app.get('/openapi.json', (_req, res) => {
+       res.set('Cache-Control', 'no-store');
+       res.type('application/json');
+       res.sendFile(specPath);
+     });
+   }
+ 
+   // 404 handler for unmatched routes
+   app.use(notFoundHandler);
+   // Error handler
+   app.use(errorHandler);
+ 
+   return app;
+ }
+ 
+ module.exports = { createApp };
+ 
+ 
+diff --git a/api/src/app.ts b/api/src/app.ts
+index cf6400d543212467885ebc59fa0e5f9f3c497d1c..113e1086c09d7ce33b3a4da159c63ae5888be344 100644
+--- a/api/src/app.ts
++++ b/api/src/app.ts
+@@ -1,48 +1,50 @@
+ import express from "express";
+ import cors from "cors";
+ import helmet from "helmet";
+ import morgan from "morgan";
+-import postsRouter from "./core/posts/posts.routes";
+-import { errorHandler } from "./middleware/errorHandler";
++import postsRouter from "./core/posts/posts.routes";
++import { errorHandler } from "./middleware/errorHandler";
++import { createHeaderAuthenticationMiddleware } from "./middleware/authenticate";
+ 
+ const app = express();
+ 
+ // Core Middleware (order matters)
+ app.use(helmet());
+ app.use(cors());
+ // Default limiter from quality gate workflow
+ import rateLimit from "express-rate-limit";
+ const limiter = rateLimit({
+   windowMs: 15 * 60 * 1000,
+   max: 100,
+   standardHeaders: true,
+   legacyHeaders: false,
+ });
+ app.use(limiter);
+-app.use(express.json());
+-app.use(morgan("dev"));
++app.use(express.json());
++app.use(morgan("dev"));
++app.use(createHeaderAuthenticationMiddleware({ headerName: "x-user-id" }));
+ 
+ // Health Check
+ app.get("/health", (_req, res) => {
+   res.status(200).json({ status: "ok" });
+ });
+ 
+ // Feature Routes
+ app.use("/posts", postsRouter);
+ 
+ // In development, expose OpenAPI JSON for tests
+ import path from "path";
+ app.get("/openapi.json", (_req, res) => {
+   const specPath = path.join(__dirname, "..", "openapi.json");
+   res.set("Cache-Control", "no-store");
+   res.type("application/json");
+   res.sendFile(specPath);
+ });
+ 
+ // Error Handler (must be last)
+ app.use(errorHandler);
+ 
+ export { app };
+ export default app;
+ 
+ // Compatibility factory used by server.ts (TS) and server.js (CJS) callers
+diff --git a/api/src/controllers/posts-controller.js b/api/src/controllers/posts-controller.js
+index 655ef154591482acbfc87f938812572cc0b1c4ba..41c8593880ae2a62eb6c255ad6d82fc4369998fa 100644
+--- a/api/src/controllers/posts-controller.js
++++ b/api/src/controllers/posts-controller.js
+@@ -1,42 +1,48 @@
+ 
+  
+ function createPostsController(postsService) {
+   return {
+     async list(req, res, next) {
+       try {
+         const { page, pageSize } = req.validatedQuery || req.query;
+         const result = await postsService.list(page, pageSize);
+         res.json({ page, pageSize, hasNextPage: result.hasNextPage, items: result.items });
+       } catch (err) { next(err); }
+     },
+-    async create(req, res, next) {
+-      try {
+-        const created = await postsService.create(req.body);
+-        res.status(201).location(`/posts/${created.id}`).json(created);
+-      } catch (err) { next(err); }
+-    },
++    async create(req, res, next) {
++      try {
++        const user = req.user;
++        if (!user || typeof user.id !== 'string' || user.id.trim() === '') {
++          res.status(401).json({ message: 'Unauthorized' });
++          return;
++        }
++
++        const created = await postsService.create(req.body);
++        res.status(201).location(`/posts/${created.id}`).json(created);
++      } catch (err) { next(err); }
++    },
+     async getById(req, res, next) {
+       try {
+         const post = await postsService.getById(req.params.id);
+         res.json(post);
+       } catch (err) { next(err); }
+     },
+     async replace(req, res, next) {
+       try {
+         const updated = await postsService.replace(req.params.id, req.body);
+         res.json(updated);
+       } catch (err) { next(err); }
+     },
+     async update(req, res, next) {
+       try {
+         const updated = await postsService.update(req.params.id, req.body);
+         res.json(updated);
+       } catch (err) { next(err); }
+     },
+     async remove(req, res, next) {
+       try {
+         await postsService.delete(req.params.id);
+         res.status(204).send();
+       } catch (err) { next(err); }
+     }
+   };
+diff --git a/api/src/core/posts/posts.controller.ts b/api/src/core/posts/posts.controller.ts
+index 6ca8befe57e5c391f2f870a957c4b507c2d5558a..aa158237d28ac535ad441fa7de60f69160d778a6 100644
+--- a/api/src/core/posts/posts.controller.ts
++++ b/api/src/core/posts/posts.controller.ts
+@@ -1,40 +1,69 @@
+-import type { RequestHandler } from "express";
++import type { Request, RequestHandler } from "express";
+ import type { ListPostsQuery } from "./post.schemas";
+ import { PostsService } from "./posts.service";
+ 
++type MaybeAuthenticatedRequest = Request & { user?: unknown };
++
++interface AuthenticatedUser {
++  id: string;
++}
++
++/**
++ * Attempts to extract a normalized authenticated user from an Express request.
++ * Returns null when the request does not contain a usable identifier.
++ */
++const extractAuthenticatedUser = (request: MaybeAuthenticatedRequest): AuthenticatedUser | null => {
++  const { user } = request;
++  if (typeof user !== "object" || user === null) {
++    return null;
++  }
++
++  if ("id" in user && typeof (user as { id?: unknown }).id === "string" && (user as { id: string }).id.trim() !== "") {
++    return { id: (user as { id: string }).id };
++  }
++
++  return null;
++};
++
+ const postsService = new PostsService();
+ 
+ export const postsController: {
+   create: RequestHandler;
+   list: RequestHandler;
+   getById: RequestHandler;
+   update: RequestHandler;
+   delete: RequestHandler;
+ } = {
+   async create(req, res, next) {
+     try {
++      const maybeUser = extractAuthenticatedUser(req as MaybeAuthenticatedRequest);
++      if (!maybeUser) {
++        res.status(401).json({ message: "Unauthorized" });
++        return;
++      }
++
+       const created = await postsService.create(req.body);
+       res.status(201).location(`/posts/${created.id}`).json(created);
+     } catch (error) {
+       next(error);
+     }
+   },
+ 
+   async list(req, res, next) {
+     try {
+       const q = (req as typeof req & { validatedQuery?: ListPostsQuery }).validatedQuery ?? req.query;
+       const page = typeof q.page === "number" ? q.page : (typeof q.page === "string" ? parseInt(q.page, 10) : 1);
+       const pageSize = typeof q.pageSize === "number" ? q.pageSize : (typeof q.pageSize === "string" ? parseInt(q.pageSize, 10) : 10);
+       const safePage = Number.isFinite(page) && page >= 1 ? page : 1;
+       const safePageSize = Number.isFinite(pageSize) && pageSize >= 1 ? pageSize : 10;
+       const result = await postsService.list({ page: safePage, pageSize: safePageSize });
+       res.status(200).json({
+         items: result.items,
+         totalItems: result.totalItems,
+         totalPages: result.totalPages,
+         currentPage: result.currentPage,
+         page: result.currentPage,
+         hasNextPage: result.hasNextPage,
+         pageSize: result.pageSize,
+       });
+     } catch (error) {
+diff --git a/api/src/middleware/authenticate.js b/api/src/middleware/authenticate.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e069332a54b115493b86ec09e37fa5ee52c776a4
+--- /dev/null
++++ b/api/src/middleware/authenticate.js
+@@ -0,0 +1,28 @@
++function resolveHeaderValue(req, headerName) {
++  const header = req.headers[headerName] ?? req.headers[headerName.toLowerCase()];
++  if (Array.isArray(header)) {
++    const [first] = header;
++    return typeof first === 'string' ? first : null;
++  }
++  return typeof header === 'string' ? header : null;
++}
++
++function createHeaderAuthenticationMiddleware(options = {}) {
++  const headerName = (options.headerName || 'x-user-id').toLowerCase();
++
++  return function headerAuthentication(req, _res, next) {
++    const rawValue = resolveHeaderValue(req, headerName);
++    const value = typeof rawValue === 'string' ? rawValue.trim() : '';
++
++    if (value) {
++      req.user = { id: value };
++    } else if (req.user) {
++      delete req.user;
++    }
++
++    next();
++  };
++}
++
++module.exports = { createHeaderAuthenticationMiddleware };
++
+diff --git a/api/src/middleware/authenticate.ts b/api/src/middleware/authenticate.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..e17f83d950fab24eac5be5a4333c78fef3d8e968
+--- /dev/null
++++ b/api/src/middleware/authenticate.ts
+@@ -0,0 +1,48 @@
++import type { NextFunction, Request, RequestHandler, Response } from "express";
++
++export interface HeaderAuthenticationOptions {
++  headerName?: string;
++}
++
++export interface AuthenticatedRequest extends Request {
++  user?: { id: string };
++}
++
++const resolveHeaderValue = (request: Request, headerName: string): string | null => {
++  const header = request.headers[headerName] ?? request.headers[headerName.toLowerCase()];
++  if (Array.isArray(header)) {
++    const first = header[0];
++    return typeof first === "string" ? first : null;
++  }
++  if (typeof header === "string") {
++    return header;
+  }
+  return null;
+};
+
++/**
++ * Creates middleware that populates `req.user` from an incoming header value.
++ * The middleware is intentionally lightweight and avoids performing any real
++ * authentication; it simply exposes the supplied user identifier so that
++ * downstream handlers can enforce authorization semantics. A missing or empty
++ * header leaves `req.user` undefined.
++ */
++export const createHeaderAuthenticationMiddleware = (
++  options: HeaderAuthenticationOptions = {},
++): RequestHandler => {
++  const headerName = options.headerName?.toLowerCase() ?? "x-user-id";
++
++  return (req: Request, _res: Response, next: NextFunction) => {
++    const rawValue = resolveHeaderValue(req, headerName);
++    const value = typeof rawValue === "string" ? rawValue.trim() : "";
++
++    if (value) {
++      (req as AuthenticatedRequest).user = { id: value };
++    } else {
++      delete (req as AuthenticatedRequest).user;
++    }
++
++    next();
++  };
++};
++
+diff --git a/api/tests/contract.test.js b/api/tests/contract.test.js
+index 6e28179757afa7e69e7879b77e02b69c3dafdaa2..f27b7fac4175ec81983d3bcd8452834fb7d8830a 100644
+--- a/api/tests/contract.test.js
++++ b/api/tests/contract.test.js
+@@ -1,135 +1,139 @@
+ jest.mock('nanoid', () => ({ nanoid: () => 'test-id' }));
+ const path = require('path');
+ const request = require('supertest');
+ const { execSync } = require('child_process');
+ 
+ const { createApp } = require('../src/app');
+ const { loadConfigFromEnv } = require('../src/config');
+ const { createRepository } = require('../src/repositories/posts-repository');
+ 
+-async function makeApp() {
+-  const base = loadConfigFromEnv();
+-  const config = { ...base, rateLimitMax: 1000 };
+-  const repository = await createRepository();
+-  return createApp(config, repository);
+-}
++async function makeApp() {
++  const base = loadConfigFromEnv();
++  const config = { ...base, rateLimitMax: 1000 };
++  const repository = await createRepository();
++  return createApp(config, repository);
++}
++
++function withAuth(req) {
++  return req.set('X-User-Id', 'test-user');
++}
+ 
+ beforeAll(() => {
+   const specPath = path.join(__dirname, '..', 'openapi.json');
+   // Validate OpenAPI document with Spectral before running contract assertions
+   // This ensures the spec is syntactically valid and conforms to common rulesets
+   execSync(`npx spectral lint "${specPath}"`, { stdio: 'inherit' });
+ });
+ 
+ describe('OpenAPI contract - /health', () => {
+   it('GET /health matches spec', async () => {
+     const app = await makeApp();
+     const res = await request(app).get('/health');
+     expect(res.status).toBe(200);
+     // Response schema validation is handled via integration tests and Zod schemas
+   });
+ });
+ 
+ describe('OpenAPI contract - /posts', () => {
+   it('POST /posts success matches spec', async () => {
+     const app = await makeApp();
+-    const res = await request(app).post('/posts').send({ title: 'T', content: 'C' });
++    const res = await withAuth(request(app).post('/posts')).send({ title: 'T', content: 'C' });
+     expect(res.status).toBe(201);
+     // Response schema validation is handled via integration tests and Zod schemas
+     expect(res.headers.location).toBe(`/posts/${res.body.id}`);
+   });
+ 
+   it('POST /posts validation error matches spec', async () => {
+     const app = await makeApp();
+-    const res = await request(app).post('/posts').send({});
++    const res = await withAuth(request(app).post('/posts')).send({});
+     expect(res.status).toBe(400);
+     // Response schema validation is handled via integration tests and Zod schemas
+   });
+ 
+   it('GET /posts list matches spec', async () => {
+     const app = await makeApp();
+-    await request(app).post('/posts').send({ title: 'A', content: 'aaa' });
++    await withAuth(request(app).post('/posts')).send({ title: 'A', content: 'aaa' });
+     const res = await request(app).get('/posts');
+     expect(res.status).toBe(200);
+     // Response schema validation is handled via integration tests and Zod schemas
+   });
+ 
+   it('GET /posts invalid query matches 400 spec', async () => {
+     const app = await makeApp();
+     const res = await request(app).get('/posts?page=0');
+     expect(res.status).toBe(400);
+     // Response schema validation is handled via integration tests and Zod schemas
+   });
+ });
+ 
+ describe('OpenAPI contract - /posts/{id}', () => {
+   it('GET /posts/:id not found matches spec', async () => {
+     const app = await makeApp();
+     const res = await request(app).get('/posts/missing');
+     expect(res.status).toBe(404);
+     // Response schema validation is handled via integration tests and Zod schemas
+   });
+ 
+   it('GET /posts/:id success matches spec', async () => {
+     const app = await makeApp();
+-    const created = await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
++    const created = await withAuth(request(app).post('/posts')).send({ title: 'Hello', content: 'World' });
+     const res = await request(app).get(`/posts/${created.body.id}`);
+     expect(res.status).toBe(200);
+     // Response schema validation is handled via integration tests and Zod schemas
+   });
+ 
+   it('PUT /posts/:id success matches spec', async () => {
+     const app = await makeApp();
+-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
+-    const res = await request(app).put('/posts/test-id').send({ title: 'New', content: 'Text' });
++    await withAuth(request(app).post('/posts')).send({ title: 'Hello', content: 'World' });
++    const res = await withAuth(request(app).put('/posts/test-id')).send({ title: 'New', content: 'Text' });
+     expect(res.status).toBe(200);
+   });
+ 
+   it('PUT /posts/:id not found matches spec', async () => {
+     const app = await makeApp();
+-    const res = await request(app).put('/posts/missing').send({ title: 'New', content: 'Text' });
++    const res = await withAuth(request(app).put('/posts/missing')).send({ title: 'New', content: 'Text' });
+     expect(res.status).toBe(404);
+   });
+ 
+   it('PUT /posts/:id invalid body matches spec', async () => {
+     const app = await makeApp();
+-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
+-    const res = await request(app).put('/posts/test-id').send({ title: '' });
++    await withAuth(request(app).post('/posts')).send({ title: 'Hello', content: 'World' });
++    const res = await withAuth(request(app).put('/posts/test-id')).send({ title: '' });
+     expect(res.status).toBe(400);
+   });
+ 
+   it('PATCH /posts/:id validation error matches spec', async () => {
+     const app = await makeApp();
+-    const res = await request(app).patch('/posts/test-id').send({});
++    const res = await withAuth(request(app).patch('/posts/test-id')).send({});
+     expect(res.status).toBe(400);
+   });
+ 
+   it('PATCH /posts/:id success matches spec', async () => {
+     const app = await makeApp();
+-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
+-    const res = await request(app).patch('/posts/test-id').send({ title: 'Updated' });
++    const res = await withAuth(request(app).patch('/posts/test-id')).send({ title: 'Updated' });
+     expect(res.status).toBe(200);
+   });
+ 
+   it('PATCH /posts/:id not found matches spec', async () => {
+     const app = await makeApp();
+-    const res = await request(app).patch('/posts/missing').send({ title: 'Updated' });
++    const res = await withAuth(request(app).patch('/posts/missing')).send({ title: 'Updated' });
+     expect(res.status).toBe(404);
+   });
+ 
+   it('DELETE /posts/:id success matches spec', async () => {
+     const app = await makeApp();
+-    await request(app).post('/posts').send({ title: 'Hello', content: 'World' });
+-    const res = await request(app).delete('/posts/test-id');
++    await withAuth(request(app).post('/posts')).send({ title: 'Hello', content: 'World' });
++    const res = await withAuth(request(app).delete('/posts/test-id'));
+     expect(res.status).toBe(204);
+     // No body expected for 204
+   });
+ 
+   it('DELETE /posts/:id not found matches spec', async () => {
+     const app = await makeApp();
+-    const res = await request(app).delete('/posts/missing');
++    const res = await withAuth(request(app).delete('/posts/missing'));
+     expect(res.status).toBe(404);
+   });
+ });
+ 
+ 
+diff --git a/api/tests/headers-and-openapi.int.test.ts b/api/tests/headers-and-openapi.int.test.ts
+index fbed0ddd2c8511f97e5025fd021237506d5a9ce8..8c4dc8ede186e84ee10285285c1d4487fe19c84e 100644
+--- a/api/tests/headers-and-openapi.int.test.ts
++++ b/api/tests/headers-and-openapi.int.test.ts
+@@ -13,102 +13,117 @@ import { createRepository } from "../src/repositories/posts-repository";
+ async function makeApp() {
+   const base = loadConfigFromEnv();
+   // Use generous limiter to avoid flakiness in CI
+   const config = { ...base, rateLimitMax: 1000 };
+   const repository = await createRepository();
+   return createApp(config, repository);
+ }
+ 
+ describe('E2E headers and bodies', () => {
+   describe('GET /health', () => {
+     it('returns JSON body and rate limit headers', async () => {
+       const app = await makeApp();
+       const res = await request(app).get('/health');
+       expect(res.status).toBe(200);
+       expect(res.headers['content-type']).toMatch(/application\/json/);
+       expect(res.headers['ratelimit-limit']).toBeDefined();
+       expect(res.headers['ratelimit-remaining']).toBeDefined();
+       expect(res.headers['ratelimit-reset']).toBeDefined();
+       expect(res.body).toEqual({ status: 'ok' });
+     });
+   });
+ 
+   describe('/posts', () => {
+     it('POST /posts returns 201 with Location and JSON body', async () => {
+       const app = await makeApp();
+-      const res = await request(app)
+-        .post('/posts')
+-        .send({ title: 'Hello', content: 'World' })
+-        .set('Content-Type', 'application/json');
++      const res = await request(app)
++        .post('/posts')
+-        .set('X-User-Id', 'test-user')
+-        .send({ title: 'Hello', content: 'World' })
+-        .set('Content-Type', 'application/json');
+       expect(res.status).toBe(201);
+       expect(res.headers['content-type']).toMatch(/application\/json/);
+       expect(res.headers['location']).toMatch(/^\/posts\/[A-Za-z0-9_-]+$/);
+       expect(typeof res.body.id).toBe('string');
+     });
+ 
+     it('GET /posts returns JSON list response', async () => {
+       const app = await makeApp();
+-      await request(app).post('/posts').send({ title: 'A', content: 'aaa' });
++      await request(app).post('/posts').set('X-User-Id', 'test-user').send({ title: 'A', content: 'aaa' });
+       const res = await request(app).get('/posts');
+       expect(res.status).toBe(200);
+       expect(res.headers['content-type']).toMatch(/application\/json/);
+       expect(res.body).toHaveProperty('items');
+     });
+ 
+     it('GET /posts invalid query returns 400 with JSON error body', async () => {
+       const app = await makeApp();
+       const res = await request(app).get('/posts?page=0');
+       expect(res.status).toBe(400);
+       expect(res.headers['content-type']).toMatch(/application\/json/);
+       expect(res.body).toHaveProperty('code');
+       expect(res.body).toHaveProperty('message');
+     });
+   });
+ 
+-  describe('/posts/:id', () => {
+-    it('GET returns 200 JSON on success and 404 JSON on missing', async () => {
+-      const app = await makeApp();
+-      const created = await request(app).post('/posts').send({ title: 'X', content: 'Y' });
+-      const id = created.body.id as string;
+-
+-      const ok = await request(app).get(`/posts/${id}`);
+-      expect(ok.status).toBe(200);
+-      expect(ok.headers['content-type']).toMatch(/application\/json/);
+-
+-      const missing = await request(app).get('/posts/does-not-exist');
+-      expect(missing.status).toBe(404);
+-      expect(missing.headers['content-type']).toMatch(/application\/json/);
+-      expect(missing.body).toHaveProperty('code', 'not_found');
+-    });
+-
+-    it('PUT and PATCH return JSON body; DELETE returns 204 with no body', async () => {
+-      const app = await makeApp();
+-      // Seed a post; with mocked nanoid, the id will be 'test-id'
+-      await request(app).post('/posts').send({ title: 'P', content: 'C' });
+-
+-      const putRes = await request(app).put('/posts/test-id').send({ title: 'New', content: 'Text' });
+-      expect(putRes.status).toBe(200);
+-      expect(putRes.headers['content-type']).toMatch(/application\/json/);
+-
+-      const patchRes = await request(app).patch('/posts/test-id').send({ title: 'Updated' });
+-      expect(patchRes.status).toBe(200);
+-      expect(patchRes.headers['content-type']).toMatch(/application\/json/);
+-
+-      const delRes = await request(app).delete('/posts/test-id');
+-      expect(delRes.status).toBe(204);
+-      // 204 responses should not include a body
+-      expect(delRes.text).toBe('');
+-    });
+-  });
++  describe('/posts/:id', () => {
++    it('GET returns 200 JSON on success and 404 JSON on missing', async () => {
++      const app = await makeApp();
++      const created = await request(app)
+-        .post('/posts')
+-        .set('X-User-Id', 'test-user')
+-        .send({ title: 'X', content: 'Y' });
++      const id = created.body.id as string;
++
++      const ok = await request(app).get(`/posts/${id}`);
++      expect(ok.status).toBe(200);
++      expect(ok.headers['content-type']).toMatch(/application\/json/);
++
++      const missing = await request(app).get('/posts/does-not-exist');
++      expect(missing.status).toBe(404);
++      expect(missing.headers['content-type']).toMatch(/application\/json/);
++      expect(missing.body).toHaveProperty('code', 'not_found');
++    });
++
++    it('PUT and PATCH return JSON body; DELETE returns 204 with no body', async () => {
++      const app = await makeApp();
++      // Seed a post; with mocked nanoid, the id will be 'test-id'
++      await request(app)
+-        .post('/posts')
+-        .set('X-User-Id', 'test-user')
+-        .send({ title: 'P', content: 'C' });
++
++      const putRes = await request(app)
+-        .put('/posts/test-id')
+-        .set('X-User-Id', 'test-user')
+-        .send({ title: 'New', content: 'Text' });
++      expect(putRes.status).toBe(200);
++      expect(putRes.headers['content-type']).toMatch(/application\/json/);
++
++      const patchRes = await request(app)
+-        .patch('/posts/test-id')
+-        .set('X-User-Id', 'test-user')
+-        .send({ title: 'Updated' });
++      expect(patchRes.status).toBe(200);
++      expect(patchRes.headers['content-type']).toMatch(/application\/json/);
++
++      const delRes = await request(app)
+-        .delete('/posts/test-id')
+-        .set('X-User-Id', 'test-user');
++      expect(delRes.status).toBe(204);
++      // 204 responses should not include a body
++      expect(delRes.text).toBe('');
++    });
++  });
+ });
+ 
+ describe('GET /openapi.json', () => {
+   it('serves the OpenAPI document as JSON', async () => {
+       const app = await makeApp();
+     const res = await request(app).get('/openapi.json');
+     expect(res.status).toBe(200);
+     expect(res.headers['content-type']).toMatch(/application\/json/);
+     expect(res.body).toHaveProperty('openapi', '3.1.0');
+   });
+ });
+ 
+ 
+diff --git a/api/tests/posts.int.test.js b/api/tests/posts.int.test.js
+index 1567d3de4918618e91722401a56964687d9194b7..6c34ccb2e0312fcde960358f059824de220e82ed 100644
+--- a/api/tests/posts.int.test.js
++++ b/api/tests/posts.int.test.js
+@@ -1,193 +1,192 @@
+ jest.mock('nanoid', () => {
+   let counter = 0;
+   const gen = () => `test-id-${++counter}`;
+   return { nanoid: gen };
+ });
+ const request = require('supertest');
+ const { createApp } = require('../src/app');
+ const { loadConfigFromEnv } = require('../src/config');
+ const { createRepository } = require('../src/repositories/posts-repository');
+ 
+ function makeApp() {
+   const base = loadConfigFromEnv();
+   const config = { ...base, rateLimitMax: 1000 };
+   const repository = createRepository();
+   return createApp(config, repository);
+ }
+ 
++function withAuth(req) {
++  return req.set('X-User-Id', 'test-user');
++}
++
+ describe('POST /posts', () => {
+   it('creates a post and returns 201 with Location header', async () => {
+     const app = makeApp();
+     const payload = { title: 'Hello World', content: 'First post content' };
+ 
+-    const res = await request(app)
+-      .post('/posts')
++    const res = await withAuth(request(app).post('/posts'))
+       .send(payload)
+       .set('Content-Type', 'application/json');
+ 
+     expect(res.status).toBe(201);
+     expect(typeof res.body.id).toBe('string');
+     expect(res.headers.location).toBe(`/posts/${res.body.id}`);
+     expect(res.body).toEqual({
+       id: expect.any(String),
+       title: payload.title,
+       content: payload.content,
+       tags: expect.any(Array),
+       published: false,
+       createdAt: expect.any(String),
+       updatedAt: expect.any(String)
+     });
+   });
+ 
+   it('returns 400 when required fields are missing', async () => {
+     const app = makeApp();
+-    const res = await request(app)
+-      .post('/posts')
++    const res = await withAuth(request(app).post('/posts'))
+       .send({})
+       .set('Content-Type', 'application/json');
+ 
+     expect(res.status).toBe(400);
+     expect(res.body).toMatchObject({ code: 'validation_error' });
+   });
+ 
+   it('rejects unknown fields with 400', async () => {
+     const app = makeApp();
+-    const res = await request(app)
+-      .post('/posts')
++    const res = await withAuth(request(app).post('/posts'))
+       .send({ title: 'T', content: 'C', extra: 'nope' });
+     expect(res.status).toBe(400);
+   });
+ });
+ 
+ describe('GET /posts', () => {
+   it('returns a list including previously created posts', async () => {
+     const app = makeApp();
+ 
+-    const p1 = await request(app).post('/posts').send({ title: 'A', content: 'aaa' });
+-    const p2 = await request(app).post('/posts').send({ title: 'B', content: 'bbb' });
++    const p1 = await withAuth(request(app).post('/posts')).send({ title: 'A', content: 'aaa' });
++    const p2 = await withAuth(request(app).post('/posts')).send({ title: 'B', content: 'bbb' });
+ 
+     expect(p1.status).toBe(201);
+     expect(p2.status).toBe(201);
+ 
+     const res = await request(app).get('/posts');
+ 
+     expect(res.status).toBe(200);
+     expect(res.body).toEqual({
+       page: 1,
+       pageSize: 20,
+       hasNextPage: false,
+       items: expect.any(Array)
+     });
+ 
+     const ids = res.body.items.map(p => p.id);
+     expect(ids).toEqual(expect.arrayContaining([p1.body.id, p2.body.id]));
+   });
+ 
+   it('supports pagination parameters', async () => {
+     const app = makeApp();
+ 
+-    await request(app).post('/posts').send({ title: 'A', content: 'aaa' });
+-    await request(app).post('/posts').send({ title: 'B', content: 'bbb' });
++    await withAuth(request(app).post('/posts')).send({ title: 'A', content: 'aaa' });
++    await withAuth(request(app).post('/posts')).send({ title: 'B', content: 'bbb' });
+ 
+     const res = await request(app).get('/posts?page=1&pageSize=1');
+     expect(res.status).toBe(200);
+     expect(res.body.page).toBe(1);
+     expect(res.body.pageSize).toBe(1);
+     expect(res.body.items.length).toBe(1);
+     expect(typeof res.body.hasNextPage).toBe('boolean');
+   });
+ 
+   it('paginates across pages and sets hasNextPage correctly', async () => {
+     const app = makeApp();
+     // create 5 posts
+     for (let i = 0; i < 5; i++) {
+-      const r = await request(app).post('/posts').send({ title: 'T' + i, content: 'C' + i });
++      const r = await withAuth(request(app).post('/posts')).send({ title: 'T' + i, content: 'C' + i });
+       expect(r.status).toBe(201);
+     }
+     const p1 = await request(app).get('/posts?page=1&pageSize=2');
+     expect(p1.status).toBe(200);
+     expect(p1.body.items.length).toBe(2);
+     expect(p1.body.hasNextPage).toBe(true);
+     const p2 = await request(app).get('/posts?page=2&pageSize=2');
+     expect(p2.status).toBe(200);
+     expect(p2.body.items.length).toBe(2);
+     expect(p2.body.hasNextPage).toBe(true);
+     const p3 = await request(app).get('/posts?page=3&pageSize=2');
+     expect(p3.status).toBe(200);
+     expect(p3.body.items.length).toBe(1);
+     expect(p3.body.hasNextPage).toBe(false);
+   });
+ 
+   it('enforces page/pageSize bounds with 400 errors', async () => {
+     const app = makeApp();
+     const r1 = await request(app).get('/posts?page=0');
+     expect(r1.status).toBe(400);
+     expect(r1.body).toMatchObject({ code: 'validation_error' });
+     const r2 = await request(app).get('/posts?pageSize=0');
+     expect(r2.status).toBe(400);
+     const r3 = await request(app).get('/posts?pageSize=101');
+     expect(r3.status).toBe(400);
+   });
+ });
+ 
+ describe('PUT /posts and PATCH /posts/:id', () => {
+   it('PUT replaces the entire post and returns 200', async () => {
+     const app = makeApp();
+-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
++    const created = await withAuth(request(app).post('/posts')).send({ title: 'T', content: 'C' });
+     expect(created.status).toBe(201);
+-    const putRes = await request(app)
+-      .put(`/posts/${created.body.id}`)
+-      .send({ title: 'New', content: 'NewC' });
++    const putRes = await withAuth(request(app).put(`/posts/${created.body.id}`)).send({ title: 'New', content: 'NewC' });
+     expect(putRes.status).toBe(200);
+     expect(putRes.body).toEqual({
+       id: created.body.id,
+       title: 'New',
+       content: 'NewC',
+       tags: [],
+       published: false,
+       createdAt: expect.any(String),
+       updatedAt: expect.any(String)
+     });
+   });
+ 
+   it('PUT returns 404 when id is missing', async () => {
+     const app = makeApp();
+-    const res = await request(app).put('/posts/missing').send({ title: 'T', content: 'C' });
++    const res = await withAuth(request(app).put('/posts/missing')).send({ title: 'T', content: 'C' });
+     expect(res.status).toBe(404);
+   });
+ 
+   it('PUT returns 400 on invalid body', async () => {
+     const app = makeApp();
+-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
++    const created = await withAuth(request(app).post('/posts')).send({ title: 'T', content: 'C' });
+     expect(created.status).toBe(201);
+-    const res = await request(app).put(`/posts/${created.body.id}`).send({ title: '' });
++    const res = await withAuth(request(app).put(`/posts/${created.body.id}`)).send({ title: '' });
+     expect(res.status).toBe(400);
+     expect(res.body).toMatchObject({ code: 'validation_error' });
+   });
+ 
+   it('PATCH updates subset of fields and returns 200', async () => {
+     const app = makeApp();
+-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+-    const res = await request(app).patch(`/posts/${created.body.id}`).send({ title: 'T2' });
++    const created = await withAuth(request(app).post('/posts')).send({ title: 'T', content: 'C' });
++    const res = await withAuth(request(app).patch(`/posts/${created.body.id}`)).send({ title: 'T2' });
+     expect(res.status).toBe(200);
+     expect(res.body).toMatchObject({ id: created.body.id, title: 'T2', content: 'C' });
+   });
+ 
+   it('PATCH returns 404 when id is missing', async () => {
+     const app = makeApp();
+-    const res = await request(app).patch('/posts/missing').send({ title: 'X' });
++    const res = await withAuth(request(app).patch('/posts/missing')).send({ title: 'X' });
+     expect(res.status).toBe(404);
+   });
+ 
+   it('PATCH returns 400 when body is empty or invalid', async () => {
+     const app = makeApp();
+-    const created = await request(app).post('/posts').send({ title: 'T', content: 'C' });
+-    const resEmpty = await request(app).patch(`/posts/${created.body.id}`).send({});
++    const created = await withAuth(request(app).post('/posts')).send({ title: 'T', content: 'C' });
++    const resEmpty = await withAuth(request(app).patch(`/posts/${created.body.id}`)).send({});
+     expect(resEmpty.status).toBe(400);
+-    const resInvalid = await request(app).patch(`/posts/${created.body.id}`).send({ title: '' });
++    const resInvalid = await withAuth(request(app).patch(`/posts/${created.body.id}`)).send({ title: '' });
+     expect(resInvalid.status).toBe(400);
+   });
+ });
+ 
+ 
+diff --git a/api/tests/posts.integration.test.ts b/api/tests/posts.integration.test.ts
+index fe9af8e2997b719b78afeaf0c29afcb6865c9237..9dfd91ce1e64563133637a8dc75705fb52004c7d 100644
+--- a/api/tests/posts.integration.test.ts
++++ b/api/tests/posts.integration.test.ts
+@@ -4,155 +4,157 @@ import * as appModule from "#tsApp";
+ 
+ import type { Express } from "express";
+ import type { AppConfig } from "../src/config";
+ import type { IPostsRepository } from "../src/repositories/posts.repository";
+ import { createApp as createAppFactory } from "../src/app";
+ import { loadConfigFromEnv } from "../src/config";
+ import { createRepository } from "../src/repositories/posts-repository";
+ 
+ async function resolveApp(): Promise<Express> {
+   const mod = appModule as unknown as {
+     default?: Express;
+     app?: Express;
+     createApp?: (config: AppConfig, repository: IPostsRepository) => Express;
+   };
+   if (mod.default && typeof mod.default.use === "function") return mod.default;
+   if (mod.app && typeof mod.app.use === "function") return mod.app;
+   if (typeof mod.createApp === 'function') {
+     const base = loadConfigFromEnv();
+     const config: AppConfig = { ...base, rateLimitMax: 1000 };
+     const repository = (await createRepository()) as IPostsRepository;
+     return mod.createApp(config, repository);
+   }
+   throw new Error('Unable to resolve Express app from ../src/app');
+ }
+ 
++const withAuth = (req: supertest.Test): supertest.Test => req.set("X-User-Id", "test-user");
++
+ describe('Posts API Integration Tests', () => {
+   describe('GET /posts', () => {
+     it('should return a paginated response object', async () => {
+       const api = await resolveApp();
+ 
+       // Seed a few posts
+       const payloads = [
+         { title: 'P1', content: 'Content for P1 post' },
+         { title: 'P2', content: 'Content for P2 post' },
+         { title: 'P3', content: 'Content for P3 post' },
+       ];
+       for (const p of payloads) {
+-        const res = await supertest(api)
+-          .post('/posts')
++        const res = await withAuth(supertest(api)
++          .post('/posts'))
+           .send(p)
+           .set('Content-Type', 'application/json');
+         expect(res.status).toBe(201);
+       }
+ 
+       const res = await supertest(api).get('/posts').query({ page: 1, pageSize: 2 });
+       expect(res.status).toBe(200);
+       const body = res.body;
+       expect(typeof body).toBe('object');
+       expect(Array.isArray(body.items)).toBe(true);
+       expect(typeof body.totalItems).toBe('number');
+       expect(typeof body.totalPages).toBe('number');
+       expect(typeof body.currentPage).toBe('number');
+       expect(typeof body.hasNextPage).toBe('boolean');
+       expect(body.currentPage).toBe(1);
+       expect(body.items.length).toBeLessThanOrEqual(2);
+     });
+   });
+ 
+   describe('GET /health', () => {
+     it('should respond with 200 and { status: "ok" }', async () => {
+       const api = await resolveApp();
+       const res = await supertest(api).get('/health');
+       expect(res.status).toBe(200);
+       expect(res.body).toEqual({ status: 'ok' });
+     });
+   });
+ 
+   describe('POST /posts', () => {
+     it('should return a 4xx client error for invalid input', async () => {
+       const api = await resolveApp();
+-      const res = await supertest(api)
+-        .post('/posts')
++      const res = await withAuth(supertest(api)
++        .post('/posts'))
+         .send({})
+         .set('Content-Type', 'application/json');
+ 
+       expect(res.status).toBeGreaterThanOrEqual(400);
+       expect(res.status).toBeLessThan(500);
+     });
+ 
+     it('should handle the full CRUD lifecycle of a post', async () => {
+       const api = await resolveApp();
+       // CREATE
+       const createPayload = { title: 'Integration Title', content: 'This is the integration test content.' };
+-      const createRes = await supertest(api)
+-        .post('/posts')
++      const createRes = await withAuth(supertest(api)
++        .post('/posts'))
+         .send(createPayload)
+         .set('Content-Type', 'application/json');
+       expect(createRes.status).toBe(201);
+       expect(createRes.headers['location']).toMatch(/^\/posts\/[A-Za-z0-9_-]+$/);
+       expect(typeof createRes.body.id).toBe('string');
+       const id: string = createRes.body.id;
+ 
+       // READ
+       const getRes1 = await supertest(api).get(`/posts/${id}`);
+       expect(getRes1.status).toBe(200);
+       expect(getRes1.body).toMatchObject({ id, ...createPayload });
+ 
+       // UPDATE
+       const patchPayload = { content: 'This content has been updated by the integration test.' };
+-      const patchRes = await supertest(api)
+-        .patch(`/posts/${id}`)
++      const patchRes = await withAuth(supertest(api)
++        .patch(`/posts/${id}`))
+         .send(patchPayload)
+         .set('Content-Type', 'application/json');
+       expect(patchRes.status).toBe(200);
+       expect(patchRes.body).toMatchObject({ id, ...createPayload, ...patchPayload });
+ 
+       // VERIFY UPDATE
+       const getRes2 = await supertest(api).get(`/posts/${id}`);
+       expect(getRes2.status).toBe(200);
+       expect(getRes2.body).toMatchObject({ id, ...createPayload, ...patchPayload });
+ 
+       // DELETE
+-      const deleteRes = await supertest(api).delete(`/posts/${id}`);
++      const deleteRes = await withAuth(supertest(api).delete(`/posts/${id}`));
+       expect(deleteRes.status).toBe(204);
+ 
+       // VERIFY DELETE
+       const getRes3 = await supertest(api).get(`/posts/${id}`);
+       expect(getRes3.status).toBe(404);
+     });
+ 
+     it('should return a 4xx error for requests with unknown fields', async () => {
+       const api = await resolveApp();
+       const payload = {
+         title: 'Valid Title',
+         content: 'Valid content for the post.',
+         unknownField: 'test',
+       };
+ 
+-      const res = await supertest(api)
+-        .post('/posts')
++      const res = await withAuth(supertest(api)
++        .post('/posts'))
+         .send(payload)
+         .set('Content-Type', 'application/json');
+ 
+       expect(res.status).toBeGreaterThanOrEqual(400);
+       expect(res.status).toBeLessThan(500);
+     });
+   });
+ 
+   describe('Rate Limiting', () => {
+     it('should return a 429 Too Many Requests error after exceeding the limit', async () => {
+       // Build an app instance with the default limiter threshold (100)
+       // using the JS factory to avoid TS module resolution issues in tests.
+        
+       const base = loadConfigFromEnv();
+       const config: AppConfig = { ...base, rateLimitMax: 100, rateLimitWindowMs: 15 * 60 * 1000 };
+       const repository = (await createRepository()) as IPostsRepository;
+       const api = createAppFactory(config, repository);
+ 
+       // Fire requests sequentially to avoid race conditions in some CI environments
+       for (let i = 0; i < 101; i++) {
+          
+         await supertest(api).get('/health');
+       }
+       const res = await supertest(api).get('/health');
+       expect(res.status).toBe(429);
+     });
+   });
+ });

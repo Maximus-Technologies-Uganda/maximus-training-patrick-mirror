@@ -2,12 +2,14 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import React from "react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
 // Route Handlers proxy at /api/posts; stub those endpoints directly for tests
+// Need to use real SWR for these integration tests (unmock it)
+vi.unmock("../../lib/swr");
 
 describe("Integration: create post and mutate cache", () => {
   it("creates successfully, clears form, focuses success alert, and refreshes list", async () => {
@@ -41,7 +43,7 @@ describe("Integration: create post and mutate cache", () => {
     );
 
     // Render as an authenticated user so the create form is visible
-    render(<PostsPageClient currentUserId="test-user-1" />);
+    render(<PostsPageClient />);
 
     // Fill and submit the form
     const title = await screen.findByLabelText(/title/i);

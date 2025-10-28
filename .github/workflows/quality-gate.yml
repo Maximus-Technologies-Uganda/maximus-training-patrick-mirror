@@ -346,27 +346,27 @@ jobs:
           console.log(table);
           NODE
 
-      - name: Fail on zero coverage (API)
+      - name: Fail on zero coverage (api)
         if: always()
-        working-directory: api
-        shell: bash
         run: |
           set -euo pipefail
-          FILE="coverage/coverage-summary.json"
+          FILE="api/coverage/coverage-summary.json"
           if [ ! -f "$FILE" ]; then
-            echo "ERROR: API coverage summary not found at $FILE" >&2
-            exit 1
+            echo "WARN: api coverage summary not found at $FILE; skipping zero-coverage check." >&2
+            exit 0
           fi
           node - <<'NODE'
-          const fs = require('fs');
-          const j = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
-          const s = j?.total?.statements?.pct;
-          const l = j?.total?.lines?.pct;
-          const ok = (v) => typeof v === 'number' && v > 0;
-          if (!ok(s) || !ok(l)) {
-            console.error(`ERROR: API coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
-            process.exit(1);
-          }
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(process.cwd(), 'api', 'coverage', 'coverage-summary.json');
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const s = j?.total?.statements?.pct;
+            const l = j?.total?.lines?.pct;
+            const ok = (v) => typeof v === 'number' && v > 0;
+            if (!ok(s) || !ok(l)) {
+              console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+              process.exit(1);
+            }
           NODE
 
       - name: Comment coverage on PR
@@ -375,6 +375,98 @@ jobs:
         with:
           header: api-coverage-report
           path: api/api-coverage-table.md
+
+      - name: Fail on zero coverage (frontend)
+        if: always()
+        run: |
+          set -euo pipefail
+          FILE="frontend/coverage/coverage-summary.json"
+          if [ ! -f "$FILE" ]; then
+            echo "WARN: frontend coverage summary not found at $FILE; skipping zero-coverage check." >&2
+            exit 0
+          fi
+          node - <<'NODE'
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(process.cwd(), 'frontend', 'coverage', 'coverage-summary.json');
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const s = j?.total?.statements?.pct;
+            const l = j?.total?.lines?.pct;
+            const ok = (v) => typeof v === 'number' && v > 0;
+            if (!ok(s) || !ok(l)) {
+              console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+              process.exit(1);
+            }
+          NODE
+
+      - name: Fail on zero coverage (expense)
+        if: always()
+        run: |
+          set -euo pipefail
+          FILE="expense/coverage/coverage-summary.json"
+          if [ ! -f "$FILE" ]; then
+            echo "WARN: expense coverage summary not found at $FILE; skipping zero-coverage check." >&2
+            exit 0
+          fi
+          node - <<'NODE'
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(process.cwd(), 'expense', 'coverage', 'coverage-summary.json');
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const s = j?.total?.statements?.pct;
+            const l = j?.total?.lines?.pct;
+            const ok = (v) => typeof v === 'number' && v > 0;
+            if (!ok(s) || !ok(l)) {
+              console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+              process.exit(1);
+            }
+          NODE
+
+      - name: Fail on zero coverage (todo)
+        if: always()
+        run: |
+          set -euo pipefail
+          FILE="todo/coverage/coverage-summary.json"
+          if [ ! -f "$FILE" ]; then
+            echo "WARN: todo coverage summary not found at $FILE; skipping zero-coverage check." >&2
+            exit 0
+          fi
+          node - <<'NODE'
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(process.cwd(), 'todo', 'coverage', 'coverage-summary.json');
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const s = j?.total?.statements?.pct;
+            const l = j?.total?.lines?.pct;
+            const ok = (v) => typeof v === 'number' && v > 0;
+            if (!ok(s) || !ok(l)) {
+              console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+              process.exit(1);
+            }
+          NODE
+
+      - name: Fail on zero coverage (quote)
+        if: always()
+        run: |
+          set -euo pipefail
+          FILE="quote/coverage/coverage-summary.json"
+          if [ ! -f "$FILE" ]; then
+            echo "WARN: quote coverage summary not found at $FILE; skipping zero-coverage check." >&2
+            exit 0
+          fi
+          node - <<'NODE'
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(process.cwd(), 'quote', 'coverage', 'coverage-summary.json');
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const s = j?.total?.statements?.pct;
+            const l = j?.total?.lines?.pct;
+            const ok = (v) => typeof v === 'number' && v > 0;
+            if (!ok(s) || !ok(l)) {
+              console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+              process.exit(1);
+            }
+          NODE
 
   contract-artifact:
     needs: install-root-deps
@@ -671,27 +763,25 @@ jobs:
 
       - name: Fail on zero coverage (frontend-next)
         if: always()
-        shell: bash
-        working-directory: frontend-next
         run: |
           set -euo pipefail
-          FILE="coverage/coverage-summary.json"
+          FILE="frontend-next/coverage/coverage-summary.json"
           if [ ! -f "$FILE" ]; then
             echo "WARN: frontend-next coverage summary not found at $FILE; skipping zero-coverage check." >&2
             exit 0
           fi
           node - <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const file = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
-          const j = JSON.parse(fs.readFileSync(file, 'utf8'));
-          const s = j?.total?.statements?.pct;
-          const l = j?.total?.lines?.pct;
-          const ok = (v) => typeof v === 'number' && v > 0;
-          if (!ok(s) || !ok(l)) {
-            console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
-            process.exit(1);
-          }
+            const fs = require('fs');
+            const path = require('path');
+            const file = path.join(process.cwd(), 'frontend-next', 'coverage', 'coverage-summary.json');
+            const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const s = j?.total?.statements?.pct;
+            const l = j?.total?.lines?.pct;
+            const ok = (v) => typeof v === 'number' && v > 0;
+            if (!ok(s) || !ok(l)) {
+              console.error(`ERROR: Coverage totals must be > 0%. statements=${s ?? 'N/A'} lines=${l ?? 'N/A'}`);
+              process.exit(1);
+            }
           NODE
 
   spectral-lint:

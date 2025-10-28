@@ -72,19 +72,19 @@ test.describe("Auth /login", () => {
     // Navigate to a page where auth UI is present
     await page.goto("/posts");
 
-    // Assert logged-in indicator: a visible Logout button
-    const logoutButton = page.getByRole("button", { name: "Logout" });
+    // Assert logged-in indicator: a visible Logout button (in main content)
+    const logoutButton = page.getByRole("main").getByRole("button", { name: "Logout" });
     await expect(logoutButton).toBeVisible();
 
     // Perform logout
     await logoutButton.click();
 
-    // Assert logged-out state: Logout disappears, Login becomes visible
-    await expect(page.getByRole("button", { name: "Logout" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
+    // Assert logged-out state: no Logout buttons, Login becomes visible
+    await expect(page.getByRole("main").getByRole("button", { name: "Logout" })).toHaveCount(0);
+    await expect(page.getByRole("main").getByRole("button", { name: "Login" })).toBeVisible();
   });
 
-  test("Ownership: creator sees Edit/Delete; other user cannot", async ({ page }) => {
+  test("Ownership: creator sees Edit/Delete; admin can edit any post", async ({ page }) => {
     // Login as alice and create a post
     await logoutProgrammatically(page);
     await loginProgrammatically(page, { username: "alice", password: "correct-password" });
@@ -104,22 +104,22 @@ test.describe("Auth /login", () => {
     const postItem = page.locator("li", { has: page.getByRole("heading", { name: uniqueTitle }) });
     await expect(postItem).toBeVisible();
 
-    // Creator should see Edit/Delete controls for their own post
+    // Creator (alice) should see Edit/Delete controls for their own post
     await expect(postItem.getByRole("button", { name: "Edit" })).toBeVisible();
     await expect(postItem.getByRole("button", { name: "Delete" })).toBeVisible();
 
-    // Log out and log in as a different user (admin)
+    // Log out alice and log in as admin (different user with elevated privileges)
     await logoutProgrammatically(page);
     await loginProgrammatically(page, { username: "admin", password: "password" });
 
-    // Navigate back to posts and find the same post
+    // Navigate back to posts and find alice's post
     await page.goto("/posts");
-    const otherViewItem = page.locator("li", { has: page.getByRole("heading", { name: uniqueTitle }) });
-    await expect(otherViewItem).toBeVisible();
+    const adminViewItem = page.locator("li", { has: page.getByRole("heading", { name: uniqueTitle }) });
+    await expect(adminViewItem).toBeVisible();
 
-    // Other user should NOT be able to edit/delete that post
-    await expect(otherViewItem.getByRole("button", { name: "Edit" })).toHaveCount(0);
-    await expect(otherViewItem.getByRole("button", { name: "Delete" })).toHaveCount(0);
+    // Admin SHOULD be able to edit/delete any post (T020: Admin authorization)
+    await expect(adminViewItem.getByRole("button", { name: "Edit" })).toBeVisible();
+    await expect(adminViewItem.getByRole("button", { name: "Delete" })).toBeVisible();
   });
 });
 

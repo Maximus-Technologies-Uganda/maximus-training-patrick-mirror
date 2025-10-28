@@ -14,9 +14,27 @@ function signJwt(payload, secret, header = { alg: 'HS256', typ: 'JWT' }) {
   return `${data}.${sigPart}`;
 }
 
-function validToken(userId, expSeconds = 3600) {
+function validToken(userId, options) {
   const now = Math.floor(Date.now() / 1000);
-  const payload = { userId, iat: now, exp: now + expSeconds };
+  let expSeconds = 3600;
+  let role = 'owner';
+  let authTime = now;
+
+  if (typeof options === 'number') {
+    expSeconds = options;
+  } else if (options && typeof options === 'object') {
+    if (typeof options.expSeconds === 'number') {
+      expSeconds = options.expSeconds;
+    }
+    if (typeof options.role === 'string' && options.role.trim().length > 0) {
+      role = options.role;
+    }
+    if (typeof options.authTime === 'number' && Number.isFinite(options.authTime)) {
+      authTime = Math.trunc(options.authTime);
+    }
+  }
+
+  const payload = { userId, iat: now, exp: now + expSeconds, role, authTime };
   const secret = process.env.SESSION_SECRET || 'test-secret';
   return signJwt(payload, secret);
 }
