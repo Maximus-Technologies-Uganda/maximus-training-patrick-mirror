@@ -1,5 +1,34 @@
 ## Changelog
 
+### 2025-11-02 (CI gating & deploy safeguards)
+
+### Fixed
+- Wrapped the Playwright runner in a forwarding script so `pnpm test:e2e -- --grep …` no longer injects an extra separator and breaks targeted runs (`frontend-next/package.json`, `frontend-next/scripts/run-playwright.mjs`).
+- Preserved previously configured IAP audiences during Cloud Run deploys by only appending `IAP_AUDIENCE` when a substitution is provided (`cloudbuild.yaml`).
+- Ensured the keyboard-only accessibility spec writes axe results for attachment while the verification script promotes the hashed Playwright outputs to stable JSON/video filenames so CI consistently finds the artifacts (`frontend-next/tests/a11y.keyboard.spec.ts`, `tests/a11y/verify-artifacts.ts`).
+
+### 2025-11-02 (CI fix follow-up: jest-dom + Playwright browsers)
+
+### Fixed
+- Updated the login and posts client tests to match the current sign-in UI and wired `@testing-library/jest-dom` matchers through an explicit `expect.extend` so Vitest loads assertions reliably (`frontend-next/src/test/setup.ts`, `frontend-next/src/tests/unit/PostsPageClient.test.tsx`).
+- Hardened the Playwright wrapper to install Chromium by default (with optional `--with-deps`) so CI and local runs can fetch browsers automatically while keeping targeted `pnpm test:e2e -- --grep …` invocations working (`frontend-next/scripts/run-playwright.mjs`).
+- Switched the Vitest setup to import `@testing-library/jest-dom/vitest`, relying on the package's official Vitest entrypoint so matcher resolution no longer depends on deep import paths (`frontend-next/src/test/setup.ts`).
+- Corrected the Playwright accessibility test artifact root so axe results and video assets land inside the repository (`frontend-next/tests/a11y.keyboard.spec.ts`).
+- Updated the Playwright auth flow specs to exercise the new User ID + Display name login form and assert the Sign in/Sign out UI states now shown on the posts page (`frontend-next/tests/auth.spec.ts`).
+
+### 2025-11-01 (A11y artifacts, 429 backoff, Firebase docs - T041, T057, T059, T070, T071, T072 / DEV-683 to DEV-688)
+
+### Added
+- **T041 (DEV-683)**: Enhanced `/health` endpoint tests asserting `Cache-Control: no-store` and `Content-Type` headers on all 503 responses (`api/tests/health/health.route.spec.ts`).
+- **T057 (DEV-684)**: Keyboard-only accessibility test with video recording and axe-core scanning, uploaded to `a11y-frontend-next/<SHA>/` with verification script (`frontend-next/tests/a11y.keyboard.spec.ts`, `tests/a11y/verify-artifacts.ts`, `.github/workflows/ci.yml`).
+- **T059 (DEV-685)**: HTTP 429 rate-limit backoff helper with Retry-After RFC 7231 parsing, exponential jitter, and quota metadata extraction; integrated into auth login flow (`frontend-next/src/lib/http/backoff.ts`, `frontend-next/src/lib/auth/auth.ts`).
+- **T070 (DEV-686)**: README idempotency guidance documenting POST non-idempotence, `with429Backoff` usage, and 409 Conflict handling (`README.md`).
+- **T071 (DEV-687)**: Firebase Admin IAM documentation with least-privilege roles and 90-day service account key rotation guidance (`specs/008-identity-platform/quickstart.md`).
+- **T072 (DEV-688)**: Firebase Emulator parity setup for Web SDK and Admin SDK with production credential safety guidance (`specs/008-identity-platform/quickstart.md`).
+
+### Fixed
+- Prevented frontend Cloud Run deploys from clearing existing IAP audience configuration when no override is supplied, preserving token audience expectations (`cloudbuild.yaml`, `frontend-next/cloudbuild.yaml`).
+
 ### 2025-10-31 (Masked token normalization)
 
 ### Fixed
@@ -31,6 +60,14 @@
 - **T027 (DEV-680)**: CI latency micro-benchmark with p50/p95/p99 percentiles (`scripts/quality-gate/run-latency-bench.ts`).
 - **T039 (DEV-681)**: Request correlation across FE→BFF→API tiers (`api/src/middleware/requestId.ts`, `frontend-next/src/middleware/requestId.ts`).
 - **T040 (DEV-682)**: PII redaction engine for logs with retention policies (`api/src/logging/redaction.ts`).
+
+### 2025-10-28 (Admin moderation & revocation - DEV-672 to DEV-676)
+
+### Added/Changed
+- T020/T021: Enabled admins to moderate any post and enforced Firebase token revocation checks for admin-sensitive mutations. Session cookies now retain role/authTime claims; admin revocation guard audits denials with reasons (`api/src/core/auth/auth.routes.ts`, `api/src/core/posts/posts.routes.ts`, `api/src/middleware/auth.ts`, `api/src/middleware/firebaseAuth.ts`, `api/src/core/auth/auth.middleware.ts`).
+- T022: Surfaced admin edit/delete controls in the Posts UI when the session role is `admin`, including SSR role parsing (`frontend-next/src/app/posts/page.tsx`, `frontend-next/components/PostsPageClient.tsx`, `frontend-next/components/PostsList.tsx`).
+- T023: Documented US3 independent test criteria covering admin moderation, UI, and revocation evidence (`specs/008-identity-platform/plan.md`).
+- Follow-up: Standardized posts controller unauthorized/forbidden handling via the shared error-envelope helper and added audit denial reasons for permission failures (`api/src/core/posts/posts.controller.ts`).
 
 ### 2025-10-27 (Error envelope guard)
 

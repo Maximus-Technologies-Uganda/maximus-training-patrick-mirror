@@ -5,7 +5,7 @@ const SESSION_STORAGE_KEY = "training:auth:session" as const;
 const StoredSessionSchema = z.object({
   userId: z.string().min(1),
   name: z.string().min(1),
-  role: z.enum(["owner", "admin"]).optional().default("owner"),
+  role: z.enum(["owner", "admin"]).optional(),
 });
 
 export type StoredSession = z.infer<typeof StoredSessionSchema>;

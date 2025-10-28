@@ -128,12 +128,15 @@ jobs:
         run: |
           set -e
           APP="${{ matrix.app }}"
-          if [ -d "$APP" ]; then
+          # Skip Jest for apps that use Vitest or other test runners
+          if [ "$APP" != "frontend-next" ] && [ -d "$APP" ]; then
             (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "stage/coverage-$APP"
               cp -R "$APP/coverage/." "stage/coverage-$APP/" || true
             fi
+          else
+            echo "Skipping Jest for $APP (uses different test runner)"
           fi
 
       - name: Upload per-app coverage

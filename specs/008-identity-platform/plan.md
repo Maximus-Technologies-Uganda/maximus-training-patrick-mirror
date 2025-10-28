@@ -373,6 +373,8 @@ System is observable end‑to‑end and docs reflect the new Auth behavior.
 * **Health**: `GET /health` returns `{ service, status, commit, dependencies:{firebase, db}, time }`; deep checks documented; SLO p95 < 300ms in CI smoke.
 * **README**: Add **Authentication** section (how sign‑in/out works, owner/admin behaviors, troubleshooting: clock skew, token revoke, 429 backoff, CORS 401 vs 403). Add live URLs and Run & Try table.
   * ✅ Authentication section now covers session rotation, CSRF double-submit requirements, SameSite tradeoffs, and troubleshooting for clock skew, revocations, rate limits, and CORS status splits.
+* **Firebase IAM doc**: Capture least-privilege roles in quickstart.md (§7) and reference it here for release readiness.
+* **Emulator parity doc**: quickstart.md (§8) documents how both Admin and Web SDKs target Firebase emulators for local parity.
 * **Micro‑bench**: Non‑gating CI stage (e.g., `k6`) — 100 GET + 20 writes @ c=5; print p50/p95 in Gate summary; attach CSV to Packet.
 
 **Files (indicative)**
@@ -401,6 +403,12 @@ System is observable end‑to‑end and docs reflect the new Auth behavior.
 * [ ] No sensitive payload data in logs; redaction filter in place.
 * [ ] README “Authentication” is accurate and references spec.
 * [ ] Gate summary renders the latency table.
+* [ ] Firebase IAM & emulator documentation published (quickstart.md §7–§8) and linked from this plan.
+
+### Firebase Admin IAM
+
+- Quickstart §7 enumerates the least-privilege roles (`roles/firebaseauth.admin`, optional `roles/iam.serviceAccountTokenCreator`) and Secret Manager storage expectations for Firebase Admin credentials.
+- Release reviewers should confirm the deployment runbook links back to that section before approving production changes.
 
 **Risks / Rollback**
 

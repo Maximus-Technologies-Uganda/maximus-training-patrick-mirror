@@ -52,8 +52,31 @@ Roles are enforced server-side. Client payloads that attempt to spoof `authorId`
 - **Clock skew** — Firebase tokens tolerate ±5 minutes. Ensure local devices use NTP/chrony if logins fail with `401` after adjusting clocks.
 - **Revoked token** — Admin revocations force re-authentication. Clear cookies and sign in again; check audit logs (`type:"audit"`) for denial reasons.
 - **Stale session** — If the BFF refuses a request with `401` immediately after deploy, delete cookies and retry; deployments rotate signing secrets when `SESSION_SECRET` changes.
-- **429 loops** — Writes are rate-limited to 10/minute/user. Retry with exponential backoff (e.g., 200ms → 400ms → 800ms) and surface `Retry-After` headers to users.
+- **429 loops** — Writes are rate-limited to 10/minute/user. Use exponential backoff (200ms → 400ms → 800ms) and respect `Retry-After` headers before retrying. The `frontend-next/src/lib/http/backoff.ts` helper exposes `with429Backoff` to wrap fetch calls, emit retry telemetry, and avoid hammering the API.
 - **CORS 401 vs 403** — `401` indicates an unauthenticated request (missing/expired token or cookie). `403` means the identity is valid but lacks access (e.g., owner editing another user's post, CSRF mismatch, or read-only maintenance mode).
+
+### Idempotency & retry guidance
+
+- **Idempotency keys explained** — An idempotency key is a unique, client-generated token (for example, a UUID stored alongside the pending request) that the server can use to de-duplicate retries. When a `POST` endpoint supports the pattern it will document the required header (e.g., `Idempotency-Key`) and retention window. The current `/api/posts` `POST` route does **not** yet accept an idempotency key, so treat that mutation as non-idempotent until the API changelog announces support.
+- **Idempotent verbs first** — Prefer `PUT`/`PATCH` for updates so retries can safely re-send the request without creating duplicates. Only retry `POST` when the endpoint explicitly documents an idempotency key.
+- **Use `with429Backoff` for safe retries** — Wrap idempotent requests in [`with429Backoff`](frontend-next/src/lib/http/backoff.ts) to honour `Retry-After`, cap attempts, and emit callbacks with remaining quota information:
+
+  ```ts
+  import { with429Backoff } from "@/lib/http/backoff";
+
+  const response = await with429Backoff(() => fetch("/api/posts", { method: "PUT", body: JSON.stringify(payload) }), {
+    maxAttempts: 3,
+    onRetry: ({ attempt, delayMs, remaining }) => {
+      console.info(`Retry #${attempt} in ${delayMs}ms (remaining quota: ${remaining ?? "unknown"})`);
+    },
+  });
+
+  if (response.status === 429) {
+    // Surface an actionable message: "We are throttling writes for your account. Please retry later."
+  }
+  ```
+- **Surface guidance to users** — When retries are exhausted, display the `Retry-After` value and clarify that the action was not completed to prevent accidental duplicates.
+- **Handle duplicates explicitly** — If a retry results in a `409 Conflict`, show the user which record already exists (e.g., "A post with this slug already exists") and avoid mutating local optimistic caches. Server handlers should log the conflicting idempotency key or unique field to help diagnose repeated submissions.
 
 ## Local Development
 

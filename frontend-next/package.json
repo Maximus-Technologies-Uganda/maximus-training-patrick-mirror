@@ -10,7 +10,7 @@
     "test": "vitest",
     "test:ci": "vitest run --coverage",
     "test:contract": "vitest run --coverage tests/openapi.validation.test.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "node ./scripts/run-playwright.mjs"
   },
   "dependencies": {
     "google-auth-library": "^10.4.0",

@@ -218,3 +218,63 @@ jobs:
 
       - name: Run latency bench (non-gating)
         run: pnpm exec tsx scripts/quality-gate/run-latency-bench.ts
+
+  frontend-a11y:
+    name: Frontend - A11y Artifacts (HTML + video)
+    needs: [contracts-spectral]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Enable Corepack (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+
+      - name: Install dependencies
+        run: pnpm install --ignore-scripts --frozen-lockfile=false
+
+      - name: Install Playwright browsers
+        run: pnpm --filter frontend-next exec playwright install --with-deps chromium
+
+      - name: Run frontend a11y suite
+        env:
+          CI: true
+        run: pnpm --filter frontend-next test:e2e -- --grep "keyboard-only"
+
+      - name: Verify a11y artifact layout
+        run: pnpm exec tsx tests/a11y/verify-artifacts.ts
+
+      - name: Upload a11y artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-frontend-next
+          path: a11y-frontend-next
+          if-no-files-found: error
+          retention-days: 21
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "### Frontend A11y" >> "$GITHUB_STEP_SUMMARY"
+          if [ -d a11y-frontend-next ]; then
+            SHA_DIR=$(ls a11y-frontend-next | head -n 1)
+            if [ -n "$SHA_DIR" ]; then
+              echo "- HTML: a11y-frontend-next/${SHA_DIR}/index.html" >> "$GITHUB_STEP_SUMMARY"
+              if [ -f "a11y-frontend-next/${SHA_DIR}/keyboard-only.webm" ]; then
+                echo "- Video: a11y-frontend-next/${SHA_DIR}/keyboard-only.webm" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            else
+              echo "- a11y artifact directory was created but commit subdirectory is missing." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "- a11y artifacts directory not produced." >> "$GITHUB_STEP_SUMMARY"
+          fi

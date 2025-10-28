@@ -1,15 +1,43 @@
 // Lightweight auth client with optional Firebase support.
 // If Firebase SDK is not available, falls back to BFF endpoints.
 
+import { with429Backoff } from "../http/backoff";
+
 type SignInResult = { ok: boolean };
 
 let firebaseApp: unknown | null = null;
 let firebaseAuth: null | {
-  getAuth: () => import("firebase/auth").Auth;
-  signInWithEmailAndPassword: typeof import("firebase/auth").signInWithEmailAndPassword;
-  signOut: typeof import("firebase/auth").signOut;
-  getIdToken: typeof import("firebase/auth").getIdToken;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getAuth: () => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  signInWithEmailAndPassword: (...args: unknown[]) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  signOut: (...args: unknown[]) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getIdToken: (...args: unknown[]) => Promise<any>;
 } = null;
+let emulatorConfigured = false;
+
+function connectAuthEmulatorIfNeeded(authMod: Record<string, unknown>): void {
+  if (emulatorConfigured) return;
+  const host = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
+  if (!host) return;
+  const connect = authMod.connectAuthEmulator;
+  const getAuth = authMod.getAuth;
+  if (typeof connect !== "function" || typeof getAuth !== "function") {
+    return;
+  }
+  const url = host.startsWith("http://") || host.startsWith("https://") ? host : `http://${host}`;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (connect as any)((getAuth as (...args: unknown[]) => unknown)(firebaseApp as unknown), url, {
+      disableWarnings: true,
+    });
+    emulatorConfigured = true;
+  } catch {
+    // Ignore emulator wiring errors; fallback to production hosts.
+  }
+}
 
 async function ensureFirebase(): Promise<boolean> {
   if (firebaseAuth) return true;
@@ -33,6 +61,7 @@ async function ensureFirebase(): Promise<boolean> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       firebaseApp = (appMod.initializeApp as any)(config);
     }
+    connectAuthEmulatorIfNeeded(authMod);
     firebaseAuth = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       getAuth: authMod.getAuth as any,
@@ -49,27 +78,29 @@ async function ensureFirebase(): Promise<boolean> {
   }
 }
 
+async function postLogin(body: Record<string, unknown>): Promise<Response> {
+  const payload = JSON.stringify(body);
+  return with429Backoff(() =>
+    fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: payload,
+    }),
+  );
+}
+
 export async function signIn(email: string, password: string): Promise<SignInResult> {
   const hasFirebase = await ensureFirebase();
   if (hasFirebase && firebaseAuth?.getAuth && firebaseAuth.signInWithEmailAndPassword) {
     const auth = firebaseAuth.getAuth();
     await firebaseAuth.signInWithEmailAndPassword(auth, email, password);
     // Call BFF to establish HttpOnly session and CSRF cookie
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ idToken: await getIdToken(false) }),
-    });
+    const res = await postLogin({ idToken: await getIdToken(false) });
     return { ok: res.ok };
   }
   // Fallback: legacy demo username/password to BFF
-  const res = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ username: email, password }),
-  });
+  const res = await postLogin({ username: email, password });
   return { ok: res.ok };
 }
 
