@@ -42,7 +42,8 @@
     "governance:report": "node scripts/generate-governance-report.js --out governance/report.json",
     "gate:aggregate": "node scripts/quality-gate/aggregate-results.js",
     "gate:packet": "node scripts/quality-gate/build-review-packet.js --force",
-    "gate:secrets": "node scripts/quality-gate/check-secret-patterns.js"
+    "gate:secrets": "node scripts/quality-gate/check-secret-patterns.js",
+    "gate:latency": "tsx scripts/quality-gate/run-latency-bench.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",

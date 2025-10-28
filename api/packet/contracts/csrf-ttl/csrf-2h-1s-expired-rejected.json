@@ -1,13 +1,13 @@
 {
   "test": "csrf-2h-1s-expired-rejected",
-  "timestamp": "2025-10-27T11:35:49.621Z",
+  "timestamp": "2025-10-28T09:54:03.888Z",
   "request": {
     "method": "POST",
     "url": "/posts",
     "headers": {
       "Origin": "http://localhost:3001",
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=1761557748-1e5c58acadf62c37a6e08a3d2485ac14",
-      "X-CSRF-Token": "1761557748-1e5c58acadf62c37a6e08a3d2485ac14",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQzLCJleHAiOjE3NjE2NDg4NDN9.xSib50L5OIdEbd6W1buYZYBW_mA5Y5iLt8F1gYqw4q4; csrf=1761638042-442603a5f6c1c7f97be438eca5254dbe",
+      "X-CSRF-Token": "1761638042-442603a5f6c1c7f97be438eca5254dbe",
       "X-User-Id": "test-user-123",
       "X-User-Role": "owner"
     },
@@ -19,8 +19,9 @@
   "response": {
     "status": 403,
     "headers": {
-      "x-request-id": "3c638e73-c16b-459b-8712-ec82ca6ca7eb",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-F6LbSeuLc4xHquBonO5fZA=='",
+      "x-request-id": "56c27c43-e275-477f-b6f8-4a1f0fc3c2fd",
+      "traceparent": "00-2a46ab61df7c777c1ce3dba6390173f2-58353020e70e47f1-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-nNoi+FqbqhSVG9rwTNyeiw=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -43,14 +44,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "113",
-      "etag": "W/\"71-vAMUAM6DsYNcubrLnw8ON5OJp/A\"",
-      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "etag": "W/\"71-b5ykJ3bxoj+c90qbjSXvoKQ1ng4\"",
+      "date": "Tue, 28 Oct 2025 09:54:03 GMT",
       "connection": "close"
     },
     "body": {
       "code": "FORBIDDEN",
       "message": "Invalid or expired CSRF token",
-      "requestId": "3c638e73-c16b-459b-8712-ec82ca6ca7eb"
+      "requestId": "56c27c43-e275-477f-b6f8-4a1f0fc3c2fd"
     }
   }
 }

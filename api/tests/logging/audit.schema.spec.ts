@@ -40,6 +40,7 @@ describe('Audit Log Schema Compliance (T074)', () => {
         outcome: 'success',
         requestId: '550e8400-e29b-41d4-a716-446655440000',
         traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
+        retentionDays: 90,
       });
 
       // Verify all required fields are present
@@ -93,6 +94,7 @@ describe('Audit Log Schema Compliance (T074)', () => {
         outcome: 'denied',
         requestId: '550e8400-e29b-41d4-a716-446655440002',
         traceId: '4bf92f3577b34da6a3ce929d0e0e4738',
+        retentionDays: 90,
       });
 
     } finally {
@@ -193,6 +195,7 @@ describe('Audit Log Schema Compliance (T074)', () => {
       expect(auditEvent).toHaveProperty('status');
       expect(auditEvent).toHaveProperty('requestId');
       expect(auditEvent).toHaveProperty('traceId');
+      expect(auditEvent).toHaveProperty('retentionDays', 90);
 
       // Should not include PII or sensitive data
       expect(auditEvent).not.toHaveProperty('email');

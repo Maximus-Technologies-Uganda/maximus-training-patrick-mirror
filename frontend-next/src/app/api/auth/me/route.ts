@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ensureRequestContext, responseHeadersFromContext } from "../../../../middleware/requestId";
 
 export const runtime = "nodejs";
 
@@ -29,11 +30,16 @@ function decodeSession(token: string): { userId?: string; role?: string } | null
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const context = ensureRequestContext(request.headers);
+  const propagationHeaders = responseHeadersFromContext(context);
   const cookies = parseCookies(request.headers.get("cookie"));
   const token = cookies["session"];
-  if (!token) return new NextResponse(null, { status: 401 });
+  if (!token) return new NextResponse(null, { status: 401, headers: propagationHeaders });
   const claims = decodeSession(token);
-  if (!claims?.userId) return new NextResponse(null, { status: 401 });
-  return NextResponse.json({ userId: claims.userId, role: claims.role ?? "owner" }, { status: 200 });
+  if (!claims?.userId) return new NextResponse(null, { status: 401, headers: propagationHeaders });
+  return NextResponse.json({ userId: claims.userId, role: claims.role ?? "owner" }, {
+    status: 200,
+    headers: propagationHeaders,
+  });
 }
 

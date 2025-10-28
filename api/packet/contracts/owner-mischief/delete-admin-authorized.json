@@ -1,0 +1,45 @@
+{
+  "test": "delete-admin-authorized",
+  "timestamp": "2025-10-28T09:53:45.022Z",
+  "request": {
+    "method": "DELETE",
+    "url": "/posts/test-post-123",
+    "headers": {
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhZG1pbi11c2VyLTc4OSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MTY0NTIyNSwiZXhwIjoxNzYxNjQ4ODI1fQ.IWZTHLgLijKIjioeHrrVR1D2kPN1gqJCoBU_D4UAqMs",
+      "X-CSRF-Token": "valid-csrf-token",
+      "X-User-Id": "admin-user-789",
+      "X-User-Role": "admin"
+    }
+  },
+  "response": {
+    "status": 204,
+    "headers": {
+      "x-request-id": "37b1e23f-8333-4383-a4d3-7fd507057986",
+      "traceparent": "00-ac97414870c61df9c326955716638803-a6acdedc776921ad-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-8Hg1bagHX/1F21ik6UzK/w=='",
+      "cross-origin-opener-policy": "same-origin",
+      "cross-origin-resource-policy": "same-origin",
+      "origin-agent-cluster": "?1",
+      "referrer-policy": "strict-origin-when-cross-origin",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-content-type-options": "nosniff",
+      "x-dns-prefetch-control": "off",
+      "x-download-options": "noopen",
+      "x-frame-options": "DENY",
+      "x-permitted-cross-domain-policies": "none",
+      "x-xss-protection": "0",
+      "permissions-policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+      "access-control-expose-headers": "RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id",
+      "vary": "Origin",
+      "access-control-allow-credentials": "true",
+      "ratelimit-policy": "1000;w=60",
+      "ratelimit-limit": "1000",
+      "ratelimit-remaining": "999",
+      "ratelimit-reset": "60",
+      "cache-control": "no-store, private",
+      "date": "Tue, 28 Oct 2025 09:53:45 GMT",
+      "connection": "close"
+    },
+    "body": {}
+  }
+}

@@ -18,6 +18,8 @@ servers:
 tags:
   - name: Posts
     description: Operations for listing and managing posts
+  - name: Observability
+    description: Health and diagnostics endpoints
 components:
   securitySchemes:
     BearerAuth:
@@ -116,6 +118,56 @@ components:
             message: "Service is in read-only mode"
             requestId: "550e8400-e29b-41d4-a716-446655440005"
   schemas:
+    HealthDependencyStatus:
+      type: string
+      description: Operational status reported by a dependency health probe
+      enum: [ok, down]
+    HealthDependencies:
+      type: object
+      required: [firebase, db]
+      properties:
+        firebase:
+          $ref: '#/components/schemas/HealthDependencyStatus'
+          description: Firebase Admin SDK connectivity status
+        db:
+          $ref: '#/components/schemas/HealthDependencyStatus'
+          description: Primary database connectivity status
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Optional human-readable diagnostic details keyed by dependency name
+    HealthResponse:
+      type: object
+      required: [service, status, commit, time, uptime_s, dependencies]
+      properties:
+        service:
+          type: string
+          description: Logical service identifier responding to the probe
+        status:
+          type: string
+          description: Aggregated health status derived from dependency probes
+          enum: [ok, degraded]
+        commit:
+          type: string
+          description: Git commit SHA deployed for the responding service
+        time:
+          type: string
+          format: date-time
+          description: ISO-8601 timestamp when the health payload was generated
+        uptime_s:
+          type: number
+          format: double
+          description: Process uptime in whole seconds at the time of the probe
+        dependencies:
+          $ref: '#/components/schemas/HealthDependencies'
+        requestId:
+          type: string
+          description: Request correlation identifier echoed from the request or generated server-side
+        traceId:
+          type: string
+          description: Trace identifier extracted from W3C trace context headers
+          pattern: '^[0-9a-fA-F]{32}$'
     ErrorEnvelope:
       type: object
       required: [code, message]
@@ -246,3 +298,83 @@ paths:
         '413': { $ref: '#/components/responses/Err413' }
         '429': { $ref: '#/components/responses/Err429' }
         '503': { $ref: '#/components/responses/Err503' }
+  /health:
+    get:
+      operationId: getHealth
+      tags: [Observability]
+      summary: Retrieve service health and dependency status
+      description: >-
+        Returns health information for the API including dependency readiness, tracing identifiers, and deployment metadata.
+      security: []
+      responses:
+        '200':
+          description: Service and dependencies are healthy
+          headers:
+            X-Request-Id:
+              description: Correlation identifier propagated from or generated for the request
+              schema:
+                type: string
+            traceparent:
+              description: W3C trace context header identifying the trace and current span
+              schema:
+                type: string
+            tracestate:
+              description: Vendor-specific trace context data preserved across services when provided
+              schema:
+                type: string
+            Cache-Control:
+              description: Indicates the response must not be cached by clients or intermediaries
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                service: api
+                status: ok
+                commit: 2b1f3e8
+                time: '2025-02-14T12:00:00.000Z'
+                uptime_s: 128
+                dependencies:
+                  firebase: ok
+                  db: ok
+                requestId: 550e8400-e29b-41d4-a716-446655440000
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4739
+        '503':
+          description: One or more dependencies are unavailable or degraded
+          headers:
+            X-Request-Id:
+              description: Correlation identifier propagated from or generated for the request
+              schema:
+                type: string
+            traceparent:
+              description: W3C trace context header identifying the trace and current span
+              schema:
+                type: string
+            tracestate:
+              description: Vendor-specific trace context data preserved across services when provided
+              schema:
+                type: string
+            Cache-Control:
+              description: Indicates the response must not be cached by clients or intermediaries
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                service: api
+                status: degraded
+                commit: 2b1f3e8
+                time: '2025-02-14T12:05:00.000Z'
+                uptime_s: 256
+                dependencies:
+                  firebase: ok
+                  db: down
+                  details:
+                    db: "db error: connection timeout"
+                requestId: 550e8400-e29b-41d4-a716-446655440001
+                traceId: 4bf92f3577b34da6a3ce929d0e0e4740
+        '406': { $ref: '#/components/responses/Err406' }

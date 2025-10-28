@@ -22,6 +22,7 @@ import { jsonBodyLimitHandler } from "./middleware/bodyLimit";
 
 import { createRateLimiter as createAppRateLimiter } from "./middleware/rateLimit";
 import path from "path";
+import { createHealthRouter } from "./routes/health";
 
 /**
  * Handle CORS preflight OPTIONS requests
@@ -109,10 +110,7 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     res.status(200).json({ status: "ok" });
   });
 
-  // Health Check
-  app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok", service: "api" });
-  });
+  app.use(createHealthRouter(repository, { serviceName: "api" }));
 
   // Feature Routes
   app.use("/auth", authLimiter, authRouter);

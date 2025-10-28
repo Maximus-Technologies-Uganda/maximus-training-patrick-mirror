@@ -51,6 +51,11 @@ async function ensureFirebaseAdmin(): Promise<void> {
   }
 }
 
+export async function getFirebaseAdmin(): Promise<typeof import("firebase-admin") | null> {
+  await ensureFirebaseAdmin();
+  return admin;
+}
+
 /**
  * Converts a base64url-encoded string into standard base64, adding padding when required.
  */

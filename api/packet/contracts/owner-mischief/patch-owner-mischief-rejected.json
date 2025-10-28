@@ -1,11 +1,11 @@
 {
   "test": "patch-owner-mischief-rejected",
-  "timestamp": "2025-10-27T11:35:27.760Z",
+  "timestamp": "2025-10-28T09:53:45.006Z",
   "request": {
     "method": "PATCH",
     "url": "/posts/test-post-123",
     "headers": {
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTI3LCJleHAiOjE3NjE1Njg1Mjd9.XTbDl2nJ3cRYTBKnStLFt47hOVc9aRFOjS6WqGpzWbA",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjI1LCJleHAiOjE3NjE2NDg4MjV9.IBppZJ8h4uaDJRNHHGTndqXS2spz-23dB9jFXgfU8Y8",
       "X-CSRF-Token": "valid-csrf-token",
       "X-User-Id": "test-user-123",
       "X-User-Role": "owner"
@@ -18,8 +18,9 @@
   "response": {
     "status": 403,
     "headers": {
-      "x-request-id": "78e97c78-b35a-4ccc-a0cc-02797e58aac4",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-zfsAQXurlH8SbskA/BBRuw=='",
+      "x-request-id": "035207c3-cced-4c9b-a6d0-7b4ae0dbe251",
+      "traceparent": "00-a23620c9f8c5a5178c01d4d8a18485d9-595168df26d333e6-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-AVrlqZhwOBZW1HC6gSkiYQ=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -41,14 +42,15 @@
       "ratelimit-reset": "60",
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
-      "content-length": "81",
-      "etag": "W/\"51-EKc6BQ+o7vF06/2P1FEheZqtH70\"",
-      "date": "Mon, 27 Oct 2025 11:35:27 GMT",
+      "content-length": "132",
+      "etag": "W/\"84-FVNStRaWo+EoYZQmp02Ng2g0n/s\"",
+      "date": "Tue, 28 Oct 2025 09:53:45 GMT",
       "connection": "close"
     },
     "body": {
       "code": "FORBIDDEN",
-      "message": "Insufficient permissions to access this resource"
+      "message": "Insufficient permissions to access this resource",
+      "requestId": "035207c3-cced-4c9b-a6d0-7b4ae0dbe251"
     }
   }
 }

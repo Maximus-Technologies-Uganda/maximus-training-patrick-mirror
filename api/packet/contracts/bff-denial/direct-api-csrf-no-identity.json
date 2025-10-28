@@ -1,11 +1,11 @@
 {
   "test": "direct-api-csrf-no-identity",
-  "timestamp": "2025-10-27T11:35:45.462Z",
+  "timestamp": "2025-10-28T09:54:01.497Z",
   "request": {
     "method": "POST",
     "url": "/posts",
     "headers": {
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ1LCJleHAiOjE3NjE1Njg1NDV9.9i6YKMFnyZoDF8irLSD3GK4ThdceJmNoQ7ya3ExSQZQ",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQxLCJleHAiOjE3NjE2NDg4NDF9.wGWJdYIPoZso2ZnJa_g6FETRwYe6Jp3WoKpIB_cQCDU",
       "X-CSRF-Token": "valid-csrf-token"
     },
     "body": {
@@ -16,8 +16,9 @@
   "response": {
     "status": 403,
     "headers": {
-      "x-request-id": "20c76cbf-e426-460f-ba11-255ce9ad9ca7",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-quznJUZHjWf1+ZeNG2ZMbg=='",
+      "x-request-id": "cfaccd5f-8b6b-46a8-a5ad-ad8565e8ddf3",
+      "traceparent": "00-2bd9f49734a74b7c6b64a0141be5fd49-39206465ddae786d-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-QdmqqUDjjzzlVqH0vzQ2wA=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -36,14 +37,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "120",
-      "etag": "W/\"78-gHVi+vnYvBeC5bQu0Ak7a5TZGvA\"",
-      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "etag": "W/\"78-3O5iR0resNAvgt0NPXKfwMhyNEM\"",
+      "date": "Tue, 28 Oct 2025 09:54:01 GMT",
       "connection": "close"
     },
     "body": {
       "code": "FORBIDDEN",
       "message": "Missing identity propagation headers",
-      "requestId": "20c76cbf-e426-460f-ba11-255ce9ad9ca7"
+      "requestId": "cfaccd5f-8b6b-46a8-a5ad-ad8565e8ddf3"
     }
   }
 }

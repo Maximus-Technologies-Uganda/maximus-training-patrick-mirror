@@ -1,4 +1,7 @@
 import type { Request } from "express";
+import { extractTraceId } from "../lib/tracing";
+import { sanitizeLogEntry } from "./redaction";
+import { withAuditLogRetention, AUDIT_LOG_RETENTION_DAYS } from "./retention";
 
 export type AuditVerb = "create" | "update" | "delete";
 
@@ -16,21 +19,8 @@ export interface AuditEvent {
   traceId?: string;
   outcome?: "success" | "denied";
   denialReason?: string;
+  retentionDays: typeof AUDIT_LOG_RETENTION_DAYS;
 }
-
-function deriveTraceId(req: Request): string | undefined {
-  const explicit = (req.get("x-trace-id") || req.headers["x-trace-id"]) as string | undefined;
-  if (explicit) return explicit;
-  const traceparent = (req.get("traceparent") || req.headers["traceparent"]) as string | undefined;
-  if (typeof traceparent === "string") {
-    const parts = traceparent.split("-");
-    if (parts.length >= 4 && parts[1] && /^[0-9a-f]{32}$/i.test(parts[1])) {
-      return parts[1];
-    }
-  }
-  return undefined;
-}
-
 /**
  * Creates an audit event with automatic outcome derivation.
  *
@@ -58,9 +48,9 @@ export function createAuditEvent(
   const now = new Date().toISOString();
   const user = (req as unknown as { user?: { userId?: string; role?: string } }).user || {};
   const requestId = (req as unknown as { requestId?: string }).requestId || (req.get("x-request-id") as string | undefined);
-  const traceId = deriveTraceId(req);
+  const traceId = extractTraceId((req.get("traceparent") || req.headers["traceparent"]) as string | undefined);
   const defaultOutcome = status >= 200 && status < 300 ? "success" : "denied";
-  const event: AuditEvent = {
+  const event: AuditEvent = withAuditLogRetention({
     level: "info",
     type: "audit",
     ts: now,
@@ -73,7 +63,7 @@ export function createAuditEvent(
     ...(requestId ? { requestId } : {}),
     ...(traceId ? { traceId } : {}),
     outcome: options.outcome ?? defaultOutcome,
-  };
+  });
   if (options.denialReason) {
     event.denialReason = options.denialReason;
   }
@@ -101,7 +91,7 @@ export function auditPost(
   options: { outcome?: "success" | "denied"; denialReason?: string } = {},
 ): void {
   try {
-    const event = createAuditEvent(req, verb, targetId, status, options);
+    const event = sanitizeLogEntry(createAuditEvent(req, verb, targetId, status, options));
     console.log(JSON.stringify(event));
   } catch {
     // Best-effort only; never throw from audit

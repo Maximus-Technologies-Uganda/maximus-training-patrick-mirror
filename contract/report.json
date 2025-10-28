@@ -1,4 +1,13 @@
 {
   "breakingMismatches": 0,
-  "checked": true
+  "checked": true,
+  "generatedAt": "2025-10-28T00:00:00.000Z",
+  "suites": [
+    {
+      "name": "GET /health contract",
+      "file": "api/tests/contracts/health.spec.ts",
+      "status": "pass",
+      "notes": "Covers tracing headers, dependency degradation, and metadata fields"
+    }
+  ]
 }

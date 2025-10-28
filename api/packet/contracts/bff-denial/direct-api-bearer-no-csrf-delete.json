@@ -1,18 +1,19 @@
 {
   "test": "direct-api-bearer-no-csrf-delete",
-  "timestamp": "2025-10-27T11:35:45.432Z",
+  "timestamp": "2025-10-28T09:54:01.478Z",
   "request": {
     "method": "DELETE",
     "url": "/posts/test-post-123",
     "headers": {
-      "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGVzdC1wcm9qZWN0IiwiYXVkIjoidGVzdC1wcm9qZWN0Iiwic3ViIjoidGVzdC11c2VyLTEyMyIsImlhdCI6MTc2MTU2NDk0NSwiZXhwIjoxNzYxNTY4NTQ1LCJyb2xlIjoib3duZXIifQ.ZmFrZS1maXJlYmFzZS1zaWduYXR1cmU"
+      "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGVzdC1wcm9qZWN0IiwiYXVkIjoidGVzdC1wcm9qZWN0Iiwic3ViIjoidGVzdC11c2VyLTEyMyIsImlhdCI6MTc2MTY0NTI0MSwiZXhwIjoxNzYxNjQ4ODQxLCJyb2xlIjoib3duZXIifQ.ZmFrZS1maXJlYmFzZS1zaWduYXR1cmU"
     }
   },
   "response": {
     "status": 401,
     "headers": {
-      "x-request-id": "a7095a6b-67ee-4fb7-a3e7-e77504aa926c",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-UDO/FaCLKPlyiWXkYchJBQ=='",
+      "x-request-id": "de5eb702-f281-415d-99fb-d83fd516e0b2",
+      "traceparent": "00-a0d044ab1e84cf684418797d60a5a355-ba862c8ba92cd3a0-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-/79545Yd6EEGhI8332zQ0A=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -31,14 +32,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "126",
-      "etag": "W/\"7e-pEMqW2hTTCKLiSMT/CIpMQtyXzA\"",
-      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "etag": "W/\"7e-kXpF+TbX/lS+0qdT3poonfp1bC0\"",
+      "date": "Tue, 28 Oct 2025 09:54:01 GMT",
       "connection": "close"
     },
     "body": {
       "code": "UNAUTHORIZED",
       "message": "Invalid or expired authentication token",
-      "requestId": "a7095a6b-67ee-4fb7-a3e7-e77504aa926c"
+      "requestId": "de5eb702-f281-415d-99fb-d83fd516e0b2"
     }
   }
 }

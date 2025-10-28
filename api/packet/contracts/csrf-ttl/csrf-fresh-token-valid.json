@@ -1,13 +1,13 @@
 {
   "test": "csrf-fresh-token-valid",
-  "timestamp": "2025-10-27T11:35:49.690Z",
+  "timestamp": "2025-10-28T09:54:03.964Z",
   "request": {
     "method": "POST",
     "url": "/posts",
     "headers": {
       "Origin": "http://localhost:3001",
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNTY0OTQ5LCJleHAiOjE3NjE1Njg1NDl9.qG09Sg5YgxZY81yChpbxQyRc47c0ABeN8J8eZ0aEyRI; csrf=1761564949-890deabea65c36c5855fb338932981c2",
-      "X-CSRF-Token": "1761564949-890deabea65c36c5855fb338932981c2",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItMTIzIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzYxNjQ1MjQzLCJleHAiOjE3NjE2NDg4NDN9.xSib50L5OIdEbd6W1buYZYBW_mA5Y5iLt8F1gYqw4q4; csrf=1761645243-e151411a8394afa612d699accbb7ee47",
+      "X-CSRF-Token": "1761645243-e151411a8394afa612d699accbb7ee47",
       "X-User-Id": "test-user-123",
       "X-User-Role": "owner"
     },
@@ -19,8 +19,9 @@
   "response": {
     "status": 201,
     "headers": {
-      "x-request-id": "530ff21c-72ea-4833-a0f6-e60a18390109",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-1VLd2iMH4EUBNQyWU2ntJQ=='",
+      "x-request-id": "a27121e7-2cc2-4052-96ce-c867da1b1a38",
+      "traceparent": "00-1b7c6c9d37ddf97b05ee482de38a8fe9-1ed5823ffc038e9e-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-I/ckgK1R14EV+vefUzC+NA=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -41,22 +42,22 @@
       "ratelimit-remaining": "999",
       "ratelimit-reset": "60",
       "cache-control": "no-store, private",
-      "location": "/posts/df9b7baf-188f-4e37-ad79-7caaddfa6ae2",
+      "location": "/posts/c10f08ba-672a-4cca-996b-37b55424a7c9",
       "content-type": "application/json; charset=utf-8",
       "content-length": "257",
-      "etag": "W/\"101-+xPvwwaRpfcRCOvj5aQlt+DXrAY\"",
-      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "etag": "W/\"101-3ZKuBHvngHYGGoTJDxqddmvTerg\"",
+      "date": "Tue, 28 Oct 2025 09:54:03 GMT",
       "connection": "close"
     },
     "body": {
-      "id": "df9b7baf-188f-4e37-ad79-7caaddfa6ae2",
+      "id": "c10f08ba-672a-4cca-996b-37b55424a7c9",
       "ownerId": "test-user-123",
       "title": "CSRF Fresh Token Test",
       "content": "This should work with a fresh token",
       "tags": [],
       "published": false,
-      "createdAt": "2025-10-27T11:35:49.682Z",
-      "updatedAt": "2025-10-27T11:35:49.682Z"
+      "createdAt": "2025-10-28T09:54:03.952Z",
+      "updatedAt": "2025-10-28T09:54:03.952Z"
     }
   }
 }

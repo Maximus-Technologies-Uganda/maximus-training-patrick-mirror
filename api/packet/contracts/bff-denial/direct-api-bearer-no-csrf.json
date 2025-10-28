@@ -1,11 +1,11 @@
 {
   "test": "direct-api-bearer-no-csrf",
-  "timestamp": "2025-10-27T11:35:45.409Z",
+  "timestamp": "2025-10-28T09:54:01.458Z",
   "request": {
     "method": "POST",
     "url": "/posts",
     "headers": {
-      "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGVzdC1wcm9qZWN0IiwiYXVkIjoidGVzdC1wcm9qZWN0Iiwic3ViIjoidGVzdC11c2VyLTEyMyIsImlhdCI6MTc2MTU2NDk0NCwiZXhwIjoxNzYxNTY4NTQ0LCJyb2xlIjoib3duZXIifQ.ZmFrZS1maXJlYmFzZS1zaWduYXR1cmU"
+      "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGVzdC1wcm9qZWN0IiwiYXVkIjoidGVzdC1wcm9qZWN0Iiwic3ViIjoidGVzdC11c2VyLTEyMyIsImlhdCI6MTc2MTY0NTI0MCwiZXhwIjoxNzYxNjQ4ODQwLCJyb2xlIjoib3duZXIifQ.ZmFrZS1maXJlYmFzZS1zaWduYXR1cmU"
     },
     "body": {
       "title": "Direct API Call Test",
@@ -15,8 +15,9 @@
   "response": {
     "status": 401,
     "headers": {
-      "x-request-id": "665b010d-4cef-41b7-8be9-352a1545dc18",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-Rh53BzHm7uMVZbNr7nuftg=='",
+      "x-request-id": "3d24f8b8-d539-48f9-81f5-4d957b95bd0d",
+      "traceparent": "00-01502721f3374f59eef08015bd446b6b-611917c09fea74d8-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-5mcJ4jvOVK7Ms1fH/lc/NQ=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -35,14 +36,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "126",
-      "etag": "W/\"7e-r0CFLl81KKPt2rFN7sAyUCZHYj0\"",
-      "date": "Mon, 27 Oct 2025 11:35:45 GMT",
+      "etag": "W/\"7e-3iZELAu72ID2M8w9jMs6bEVPP0I\"",
+      "date": "Tue, 28 Oct 2025 09:54:01 GMT",
       "connection": "close"
     },
     "body": {
       "code": "UNAUTHORIZED",
       "message": "Invalid or expired authentication token",
-      "requestId": "665b010d-4cef-41b7-8be9-352a1545dc18"
+      "requestId": "3d24f8b8-d539-48f9-81f5-4d957b95bd0d"
     }
   }
 }

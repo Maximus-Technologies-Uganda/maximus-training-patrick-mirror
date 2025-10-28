@@ -1,11 +1,11 @@
 {
   "test": "put-admin-owner-unchanged",
-  "timestamp": "2025-10-27T11:35:27.731Z",
+  "timestamp": "2025-10-28T09:53:44.990Z",
   "request": {
     "method": "PUT",
     "url": "/posts/test-post-123",
     "headers": {
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhZG1pbi11c2VyLTc4OSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MTU2NDkyNywiZXhwIjoxNzYxNTY4NTI3fQ.CLquKyoUWC-xT5PyJkjbamhcVSr6uiSk-Zmk6GgPa34",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhZG1pbi11c2VyLTc4OSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MTY0NTIyNCwiZXhwIjoxNzYxNjQ4ODI0fQ.u-oIEf9EVq-CFVI-QiJ87bhr60v8FAqTH9d_UWQ-hWs",
       "X-CSRF-Token": "valid-csrf-token",
       "X-User-Id": "admin-user-789",
       "X-User-Role": "admin"
@@ -19,8 +19,9 @@
   "response": {
     "status": 200,
     "headers": {
-      "x-request-id": "2d1dc2eb-8f39-41e2-b110-72837503967f",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-u/EBAGn3ucuaUwyiguWo7A=='",
+      "x-request-id": "a188adeb-276a-4077-853b-ccfabcb8c845",
+      "traceparent": "00-69e0a30f31866b007cd5eddaaaec2207-b988ff49cd80852d-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-+sDhPkcW5Zqsg1SQR/4stA=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -43,8 +44,8 @@
       "cache-control": "no-store, private",
       "content-type": "application/json; charset=utf-8",
       "content-length": "238",
-      "etag": "W/\"ee-mAALr8i7r7wBSTnBAHRkGUyyuPg\"",
-      "date": "Mon, 27 Oct 2025 11:35:27 GMT",
+      "etag": "W/\"ee-PlaTJAmKnWEZNj7tMjQI2Iec8NQ\"",
+      "date": "Tue, 28 Oct 2025 09:53:44 GMT",
       "connection": "close"
     },
     "body": {
@@ -54,8 +55,8 @@
       "content": "Admin should be able to update any post",
       "tags": [],
       "published": false,
-      "createdAt": "2025-10-27T11:35:27.719Z",
-      "updatedAt": "2025-10-27T11:35:27.719Z"
+      "createdAt": "2025-10-28T09:53:44.986Z",
+      "updatedAt": "2025-10-28T09:53:44.986Z"
     }
   }
 }

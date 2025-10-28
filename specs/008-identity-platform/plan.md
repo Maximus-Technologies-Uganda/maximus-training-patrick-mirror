@@ -372,6 +372,7 @@ System is observable end‑to‑end and docs reflect the new Auth behavior.
 * **Tracing/IDs**: Propagate W3C `traceparent/tracestate` if present; always include `x-request-id` (generate UUID if missing). Structured logs fields: `{ ts, level, requestId, traceId, userId?, role?, method, path, status, latency_ms, msg }`.
 * **Health**: `GET /health` returns `{ service, status, commit, dependencies:{firebase, db}, time }`; deep checks documented; SLO p95 < 300ms in CI smoke.
 * **README**: Add **Authentication** section (how sign‑in/out works, owner/admin behaviors, troubleshooting: clock skew, token revoke, 429 backoff, CORS 401 vs 403). Add live URLs and Run & Try table.
+  * ✅ Authentication section now covers session rotation, CSRF double-submit requirements, SameSite tradeoffs, and troubleshooting for clock skew, revocations, rate limits, and CORS status splits.
 * **Micro‑bench**: Non‑gating CI stage (e.g., `k6`) — 100 GET + 20 writes @ c=5; print p50/p95 in Gate summary; attach CSV to Packet.
 
 **Files (indicative)**

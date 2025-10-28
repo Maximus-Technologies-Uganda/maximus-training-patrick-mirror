@@ -1,5 +1,37 @@
 ## Changelog
 
+### 2025-10-31 (Masked token normalization)
+
+### Fixed
+- Normalize already-masked secret values such as `***` to the canonical `[redacted]` marker so tests and downstream log processors receive consistent output (`api/src/logging/redaction.ts`).
+
+### 2025-10-31 (CORS log redaction coverage)
+
+### Fixed
+- Wrapped CORS wildcard violation logs with the shared sanitize helper so console output cannot leak email addresses and added targeted Jest coverage to guard the behavior (`api/src/middleware/cors.ts`, `api/tests/middleware/cors.redaction.spec.ts`).
+
+### 2025-10-30 (Retention enforcement & correlation coverage)
+
+### Added/Changed
+- Enforced 30-day application log and 90-day audit log retention directly in code with helper utilities and request logger/audit coverage (`api/src/logging/retention.ts`, `api/src/middleware/logger.ts`, `api/src/logging/audit.ts`, `api/tests/logging/retention.spec.ts`, `api/tests/middleware/logger.retention.spec.ts`, `api/tests/logging/audit.schema.spec.ts`).
+- Added a BFF integration test to confirm correlation headers flow from the Next.js route handler to the API and back (`frontend-next/tests/request-context.test.ts`).
+
+### 2025-10-29 (Health endpoint safeguards)
+
+### Changed
+- `/health` now supports optional Firebase Admin connectivity pings and dependency timeouts to keep responses predictable (`api/src/routes/health.ts`, `api/tests/health/health.route.spec.ts`).
+- Documented the new health check controls and environment variables (`README.md`).
+
+### 2025-10-28 (Observability & request correlation - T024-T027, T039-T040 / DEV-677 to DEV-682)
+
+### Added
+- **T024 (DEV-677)**: W3C traceparent RFC 9110 parsing, generation, and propagation utilities (`api/src/lib/tracing.ts`).
+- **T025 (DEV-678)**: Comprehensive `/health` endpoint with dependency probes and structured JSON responses (`api/src/routes/health.ts`).
+- **T026 (DEV-679)**: Authentication documentation with sign-in flow, roles matrix, and troubleshooting (`README.md`).
+- **T027 (DEV-680)**: CI latency micro-benchmark with p50/p95/p99 percentiles (`scripts/quality-gate/run-latency-bench.ts`).
+- **T039 (DEV-681)**: Request correlation across FE→BFF→API tiers (`api/src/middleware/requestId.ts`, `frontend-next/src/middleware/requestId.ts`).
+- **T040 (DEV-682)**: PII redaction engine for logs with retention policies (`api/src/logging/redaction.ts`).
+
 ### 2025-10-27 (Error envelope guard)
 
 ### Fixed
@@ -35,7 +67,6 @@
 ### Fixed
 - Raised API branch coverage above the 80/70 gate by stubbing `better-sqlite3` in repository tests and exercising Firebase auth helper branches (`api/tests/sqlite-repository.test.js`, `api/tests/firebaseAuth.helpers.spec.ts`, `api/src/middleware/firebaseAuth.ts`).
 
-<<<<<<< HEAD
 ### 2025-10-25 (US2 guards, validation, rate limit, audit, contracts - DEV-651 to DEV-657)
 
 ### Added/Changed
@@ -52,8 +83,6 @@
 ### Added
 - T036: Added read-only guard middleware that returns `503 { code: "SERVICE_UNAVAILABLE" }` on mutating requests when `READ_ONLY=true`, wired globally in the API pipeline. Re-enabled 503 contract tests for POST/PUT/DELETE (`api/src/middleware/readOnly.ts`, `api/src/app.ts`, `api/tests/contracts/posts.spec.ts`).
 
-=======
->>>>>>> origin/main
 ### 2025-10-27 (US2 CSRF follow-up - DEV-645 – DEV-650)
 
 ### Fixed

@@ -1,13 +1,13 @@
 {
   "test": "csrf-cross-session-rejected",
-  "timestamp": "2025-10-27T11:35:49.868Z",
+  "timestamp": "2025-10-28T09:54:04.111Z",
   "request": {
     "method": "POST",
     "url": "/posts",
     "headers": {
       "Origin": "http://localhost:3001",
-      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkaWZmZXJlbnQtdXNlci00NTYiLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NjE1NjQ5NDksImV4cCI6MTc2MTU2ODU0OX0.sKeCLuUTv-7JgyEybbCEwxYT0p51JZMP1TjtgUXPSM4; csrf=1761564949-890deabea65c36c5855fb338932981c2",
-      "X-CSRF-Token": "1761564949-890deabea65c36c5855fb338932981c2",
+      "Cookie": "session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJkaWZmZXJlbnQtdXNlci00NTYiLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NjE2NDUyNDQsImV4cCI6MTc2MTY0ODg0NH0.GvWB9KrXJ7m6KjyoKPFf0b82443bxHZKuVKBVkAvO_c; csrf=1761645244-a858485429ff78707790cafdb1ae74c0",
+      "X-CSRF-Token": "1761645244-a858485429ff78707790cafdb1ae74c0",
       "X-User-Id": "different-user-456",
       "X-User-Role": "owner"
     },
@@ -19,8 +19,9 @@
   "response": {
     "status": 403,
     "headers": {
-      "x-request-id": "7af52d65-8b7c-4b5e-87eb-8c00fe13ed0b",
-      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-Uwfii2yc7Fl3+dXhZLAhAQ=='",
+      "x-request-id": "df16e279-ec4d-4248-a5d4-b420055bfc8e",
+      "traceparent": "00-25a4a741c8b6a7171f7e81764de6f30c-4d5d60bd2f189701-01",
+      "content-security-policy": "frame-ancestors 'none'; default-src 'self'; script-src 'self' 'nonce-fljWMMpBRqonnlQJcGNM2A=='",
       "cross-origin-opener-policy": "same-origin",
       "cross-origin-resource-policy": "same-origin",
       "origin-agent-cluster": "?1",
@@ -43,14 +44,14 @@
       "cache-control": "no-store",
       "content-type": "application/json; charset=utf-8",
       "content-length": "103",
-      "etag": "W/\"67-eox4nHhF09me20yW99jKlnlgJeg\"",
-      "date": "Mon, 27 Oct 2025 11:35:49 GMT",
+      "etag": "W/\"67-VF/J6Z8Vd1HaeF042IRhV6H+IQ0\"",
+      "date": "Tue, 28 Oct 2025 09:54:04 GMT",
       "connection": "close"
     },
     "body": {
       "code": "FORBIDDEN",
       "message": "CSRF token mismatch",
-      "requestId": "7af52d65-8b7c-4b5e-87eb-8c00fe13ed0b"
+      "requestId": "df16e279-ec4d-4248-a5d4-b420055bfc8e"
     }
   }
 }
