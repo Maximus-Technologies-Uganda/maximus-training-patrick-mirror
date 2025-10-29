@@ -63,3 +63,6 @@ export function scrubSerializedPayload(serialized: string): string {
 }
 
 export { REDACTED };
+
+// Alias for backward compatibility
+export const sanitizeLogEntry = sanitize;

@@ -1,5 +1,6 @@
 ## Changelog
 
+<<<<<<< HEAD
 ### 2025-11-04 (CI trigger coverage restore)
 
 ### Fixed
@@ -236,6 +237,13 @@
 
 - **Contracts**:
   - Synced `api/openapi.json` from canonical `specs/008-identity-platform/contracts/openapi.yaml` to resolve CI contract drift failure for PR #685 (T054/T058). Includes Err406 responses, requestId in error envelope, and updated servers list.
+=======
+### 2025-10-25 (Trace context span regeneration - DEV-697)
+
+### Fixed
+- **API**:
+  - Request ID middleware now regenerates span IDs when normalizing `traceparent` headers so downstream services receive distinct spans per hop in compliance with W3C Trace Context. (DEV-697)
+>>>>>>> 5455166ca345a7b6fd2dc33e93e7e1c0b86bcded
 
 ### 2025-10-24 (Posts offline fallback parity - DEV-EXEMPT)
 

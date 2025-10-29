@@ -89,4 +89,83 @@ export async function retryWithIdempotencyBackoff<T>(
   throw new Error(String(lastError ?? "Retry operation failed"));
 }
 
+export interface With429BackoffOptions {
+  maxAttempts?: number;
+  baseDelayMs?: number;
+  jitterRatio?: number;
+  random?: () => number;
+  sleepFn?: (ms: number, signal?: AbortSignal) => Promise<void>;
+  onRetry?: (info: { retryAfterMs: number; limit?: number; remaining?: number }) => void;
+  signal?: AbortSignal;
+}
+
+function parseRetryAfter(header: string | undefined): number {
+  if (!header) return 1000; // Default 1 second
+  const seconds = parseInt(header, 10);
+  if (!isNaN(seconds)) {
+    return seconds * 1000;
+  }
+  const date = new Date(header);
+  if (!isNaN(date.getTime())) {
+    return Math.max(0, date.getTime() - Date.now());
+  }
+  return 1000;
+}
+
+function computeExponentialDelay(attempt: number, baseDelayMs: number, jitterRatio: number, rng: () => number): number {
+  const exponential = Math.pow(2, attempt) * baseDelayMs;
+  const jitter = exponential * jitterRatio * rng();
+  return Math.round(exponential + jitter);
+}
+
+export async function with429Backoff(
+  operation: () => Promise<Response>,
+  options: With429BackoffOptions = {},
+): Promise<Response> {
+  const maxAttempts = options.maxAttempts ?? 3;
+  const baseDelayMs = options.baseDelayMs ?? 100;
+  const jitterRatio = options.jitterRatio ?? 0.1;
+  const sleepFn = options.sleepFn ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+  const rng = options.random ?? Math.random;
+  const signal = options.signal;
+
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    if (signal?.aborted) {
+      throw signal.reason instanceof Error ? signal.reason : new Error("Aborted");
+    }
+
+    const res = await operation();
+    if (res.status !== 429) {
+      return res;
+    }
+
+    attempt += 1;
+    if (attempt >= maxAttempts) {
+      return res;
+    }
+
+    const retryAfter = parseRetryAfter(res.headers.get("Retry-After") ?? undefined);
+    const limit = res.headers.get("X-RateLimit-Limit");
+    const remaining = res.headers.get("X-RateLimit-Remaining");
+
+    if (options.onRetry) {
+      options.onRetry({
+        retryAfterMs: retryAfter,
+        limit: limit ? parseInt(limit, 10) : undefined,
+        remaining: remaining ? parseInt(remaining, 10) : undefined,
+      });
+    }
+
+    // Use exponential backoff if Retry-After is not available (default 1000ms)
+    const delay = res.headers.has("Retry-After")
+      ? retryAfter
+      : computeExponentialDelay(attempt - 1, baseDelayMs, jitterRatio, rng);
+
+    await sleepFn(delay, signal);
+  }
+
+  return operation();
+}
+
 export default retryWithIdempotencyBackoff;

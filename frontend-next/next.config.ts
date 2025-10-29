@@ -12,10 +12,7 @@ const nextConfig: NextConfig = {
 
   // Good practice for Docker deployments.
   images: { unoptimized: true },
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/main
   // Necessary if you are in a monorepo (e.g., with a `packages` or `libs` folder).
   // If `frontend-next` is your root, you can safely remove this line.
   outputFileTracingRoot: path.join(__dirname, ".."),
