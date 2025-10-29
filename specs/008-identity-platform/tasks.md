@@ -44,7 +44,7 @@ main
 - [ ] T086 406 guard (content negotiation): if `Accept` excludes `application/json`, return 406; extend OpenAPI/examples + tests — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.406.spec.ts
 - [ ] T087 Error cache headers: set `Cache-Control: no-store` on 401/403/422/429/413/503 responses; assert in contract tests — api/src/lib/errors.ts; api/tests/contracts/errors.cache-control.spec.ts
 - [ ] T090 Dependency policy gate (non-gating at first): CI fails on high/critical vulns with allowlist — .github/workflows/ci.yml
-- [ ] T092 Retry-After semantics: document and assert `Retry-After` present on 429 only (absent on 413/503); add contract checks — specs/008-identity-platform/plan.md; api/tests/contracts/retry-after.spec.ts
+- [ ] T092 Retry-After semantics: document and assert `Retry-After` present on 429 and `/health` 503 responses (absent on 413); add contract checks — specs/008-identity-platform/plan.md; api/tests/contracts/retry-after.spec.ts
 - [ ] T094 Cache rules on authenticated routes: set `Cache-Control: no-store, private` on any response that required auth; add contract test — api/src/middleware/cacheHeaders.ts; api/tests/contracts/cache.auth-routes.spec.ts
 - [ ] T095 CORS credentials guard: allow `Access-Control-Allow-Credentials: true` only when `Access-Control-Allow-Origin` is an exact origin (never `*`); contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.credentials.guard.spec.ts
 - [ ] T096 415 vs 406 matrix doc: add a 2×2 decision chart in contentType.ts/OpenAPI comments (“invalid Content-Type → 415; Accept excludes JSON → 406”) — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml

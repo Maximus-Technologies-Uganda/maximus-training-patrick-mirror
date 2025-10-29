@@ -155,3 +155,87 @@ paths:
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
         '503': { $ref: '#/components/responses/Err503' }
+  /health:
+    get:
+      operationId: getHealth
+      tags: [Health]
+      summary: Service health probe
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [service, status, commit, time, uptime_s, dependencies]
+                additionalProperties: false
+                properties:
+                  service:
+                    type: string
+                  status:
+                    type: string
+                    enum: [ok, error]
+                  commit:
+                    type: string
+                    description: Git commit SHA deployed
+                  time:
+                    type: string
+                    format: date-time
+                  uptime_s:
+                    type: integer
+                    minimum: 0
+                  dependencies:
+                    type: object
+                    required: [firebase, db]
+                    additionalProperties:
+                      type: string
+                    properties:
+                      firebase:
+                        type: string
+                        enum: [ok, degraded, down]
+                      db:
+                        type: string
+                        enum: [ok, degraded, down]
+              examples:
+                default:
+                  value:
+                    service: api
+                    status: ok
+                    commit: abc1234
+                    time: '2025-10-29T12:00:00.000Z'
+                    uptime_s: 42
+                    dependencies:
+                      firebase: ok
+                      db: ok
+                dependencyDown:
+                  value:
+                    service: api
+                    status: error
+                    commit: abc1234
+                    time: '2025-10-29T12:00:00.000Z'
+                    uptime_s: 42
+                    dependencies:
+                      firebase: down
+                      db: ok
+        '503':
+          description: Dependency failure
+          headers:
+            Retry-After:
+              description: Number of seconds clients should wait before retrying the probe.
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/json:
+              schema: { $ref: '#/paths/~1health/get/responses/200/content/application~1json/schema' }
+              examples:
+                dependencyDown:
+                  value:
+                    service: api
+                    status: error
+                    commit: abc1234
+                    time: '2025-10-29T12:00:00.000Z'
+                    uptime_s: 42
+                    dependencies:
+                      firebase: down
+                      db: ok

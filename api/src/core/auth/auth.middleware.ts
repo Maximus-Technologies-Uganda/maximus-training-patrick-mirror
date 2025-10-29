@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { createHmac } from "node:crypto";
 import { getSessionSecret } from "../../config";
+import { defaultLogger } from "../../logging/observability";
 
 function parseCookies(header: string | undefined): Record<string, string> {
   const result: Record<string, string> = {};
@@ -65,7 +66,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    console.log(JSON.stringify({ level: "warn", message: "Auth failed", requestId }));
+    defaultLogger.warn("auth failed", { requestId });
     return res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
   }
   (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };
@@ -74,7 +75,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
     const userId = (payload as { userId: string }).userId;
-    console.log(JSON.stringify({ level: "info", message: "Auth ok", requestId, userId }));
+    defaultLogger.info("auth ok", { requestId, userId });
   }
   next();
 };

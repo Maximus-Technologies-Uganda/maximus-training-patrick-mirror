@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-// import morgan from "morgan";
 import { requestId as requestIdMiddleware } from "./middleware/requestId";
 import { requestLogger } from "./middleware/logger";
 import authRouter from "./core/auth/auth.routes";
@@ -11,6 +10,7 @@ import { createPostsController } from "./core/posts/posts.controller";
 import { PostsService } from "./services/PostsService";
 import type { IPostsRepository } from "./repositories/posts.repository";
 import type { AppConfig } from "./config";
+import { createHealthRouter } from "./routes/health";
 
 import rateLimit from "express-rate-limit";
 import path from "path";
@@ -47,9 +47,7 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   });
 
   // Health Check
-  app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok" });
-  });
+  app.use(createHealthRouter());
 
   // Feature Routes
   app.use("/auth", authRouter);

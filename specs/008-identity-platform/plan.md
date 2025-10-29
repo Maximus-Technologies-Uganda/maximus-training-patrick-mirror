@@ -318,7 +318,7 @@ API service only.
 **Merge Gates**
 
 * Coverage ≥ **API 80% lines / 70% branches** (scope of touched packages).
-* Rate‑limit headers present on **429 and non-429** responses for visibility (`X-RateLimit-Limit: 10`, `X-RateLimit-Remaining: <int>`, and on 429 `Retry-After: <seconds>`).
+* Rate‑limit headers present on **429 and non-429** responses for visibility (`X-RateLimit-Limit: 10`, `X-RateLimit-Remaining: <int>`, and on 429 `Retry-After: <seconds>`); `/health` emits a fixed `Retry-After: 60` when dependencies return 503 to advertise back-off guidance.
 * CSRF enforced on writes; anonymous writes impossible.
 * Logging policy enforced: do not log emails, tokens, cookies, request bodies; only `userId` (opaque UID) + `role`.
 

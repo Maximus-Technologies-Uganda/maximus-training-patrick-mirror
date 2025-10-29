@@ -363,3 +363,20 @@ jobs:
           name: review-packet
           path: review-packet.zip
 
+
+  k6-verdict:
+    name: k6 Threshold Verdict
+    needs: contracts-spectral
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Print k6 threshold verdict (non-gating)
+        run: node scripts/ci/print-k6-verdict.mjs bench/results/k6-summary.json
