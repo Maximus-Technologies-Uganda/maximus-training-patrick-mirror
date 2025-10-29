@@ -14,7 +14,6 @@ chore/T001-env-flags-setup-DEV-598
  
 
 ## Phase 2 — Foundational
-<<<<<<< HEAD
 - [ ] T004 Add canonical OpenAPI skeleton (bearer + protected ops) — specs/008-identity-platform/contracts/openapi.yaml
 - [ ] T005 [P] Add rate-limit header policy docs (headers on 2xx, 429; none on preflight) — specs/008-identity-platform/plan.md
 - [ ] T006 Add logging policy & retention (PII redaction, 30d; audit 90d) — specs/008-identity-platform/plan.md
@@ -37,44 +36,13 @@ chore/T001-env-flags-setup-DEV-598
 - [ ] T069 CORS hardening: reject `Origin: null` (unless explicitly allowed) and assert no wildcard `Access-Control-Allow-Origin` in prod — api/src/middleware/cors.ts; api/tests/contracts/cors.preflight.spec.ts
 - [ ] T076 Env validation on boot (fail fast; names only, not values) — api/src/config/env.ts; api/tests/env.validation.spec.ts; frontend-next/src/config/env.ts
 - [ ] T084 Security headers++: add `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and a minimal `Permissions-Policy`; add tests — api/src/middleware/securityHeaders.ts; api/tests/security.headers.spec.ts
-- [ ] T085 CORS vary on normal responses: ensure `Vary: Origin` on CORS’d non-preflight responses; add contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.vary-normal.spec.ts
+- [ ] T085 CORS vary on normal responses: ensure `Vary: Origin` on CORS'd non-preflight responses; add contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.vary-normal.spec.ts
 - [ ] T086 406 guard (content negotiation): if `Accept` excludes `application/json`, return 406; extend OpenAPI/examples + tests — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.406.spec.ts
 - [ ] T087 Error cache headers: set `Cache-Control: no-store` on 401/403/422/429/413/503 responses; assert in contract tests — api/src/lib/errors.ts; api/tests/contracts/errors.cache-control.spec.ts
 - [ ] T090 Dependency policy gate (non-gating at first): CI fails on high/critical vulns with allowlist — .github/workflows/ci.yml
 - [ ] T092 Retry-After semantics: document and assert `Retry-After` present on 429 and `/health` 503 responses (absent on 413); add contract checks — specs/008-identity-platform/plan.md; api/tests/contracts/retry-after.spec.ts
 - [ ] T094 Cache rules on authenticated routes: set `Cache-Control: no-store, private` on any response that required auth; add contract test — api/src/middleware/cacheHeaders.ts; api/tests/contracts/cache.auth-routes.spec.ts
 - [ ] T095 CORS credentials guard: allow `Access-Control-Allow-Credentials: true` only when `Access-Control-Allow-Origin` is an exact origin (never `*`); contract test — api/src/middleware/cors.ts; api/tests/contracts/cors.credentials.guard.spec.ts
-=======
-- [X] T004 Add canonical OpenAPI skeleton (bearer + protected ops) — specs/008-identity-platform/contracts/openapi.yaml
-- [X] T005 [P] Add rate-limit header policy docs (headers on 2xx, 429; none on preflight) — specs/008-identity-platform/plan.md
-- [X] T006 Add logging policy & retention (PII redaction, 30d; audit 90d) — specs/008-identity-platform/plan.md
-- [X] T031 CORS & preflight policy (OPTIONS 204 with Access-Control-*; add `Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers`; no rate-limit headers on preflight) — api/src/middleware/cors.ts; frontend-next/next.config.js
-- [X] T032 Content-Type guard for mutations (require application/json; else 415 envelope) — api/src/middleware/contentType.ts
-- [X] T042 OpenAPI CI checks (operationId uniqueness, examples for 401/403/422/429/413/503; fail if global `security` block present; verify `servers` map to local/staging/prod) — scripts/validate-openapi.ts
-- [X] T044 Time sync assumption documented (NTP/chrony) to honor ±5m skew — specs/008-identity-platform/spec.md
-- [X] T049 Canonical contracts path + CI sync documented — specs/008-identity-platform/plan.md
-- [X] T050 Security headers baseline (Referrer-Policy: `strict-origin-when-cross-origin`; X-Content-Type-Options: `nosniff`; X-Frame-Options: `DENY` or CSP `frame-ancestors 'none'`; minimal CSP with nonce `default-src 'self'; script-src 'self' 'nonce-<nonce>'`) — api/src/middleware/securityHeaders.ts
-- [X] T051 OPTIONS contract tests (204 + Access-Control-*; no auth; add `Vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers`; no rate-limit headers; assert `Access-Control-Max-Age: 600` or intentional omission) — api/tests/contracts/cors.preflight.spec.ts
-- [X] T054 Spectral ruleset pin & CI gate (stoplight/spectral@6.11.0) — .spectral.yaml; .github/workflows/ci.yml
-- [X] T055 Secret scanning (partial - CI job pending) in CI (gitleaks or equivalent; whitelist fixtures) — .github/workflows/ci.yml; .gitleaks.toml
-- [X] T056 App Router lint/CI check (no pages/ or pages/api/; only app/api/.../route.ts) — .eslintrc.js; .github/workflows/ci.yml
-- [X] T058 Contract drift CI (diff canonical specs/.../contracts/openapi.yaml vs app) — scripts/quality-gate/check-contract-drift.ts
-- [X] T061 Expose rate-limit headers to browsers (Access-Control-Expose-Headers: X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id); assert presence on GET/POST responses — api/src/middleware/cors.ts; api/tests/contracts/cors.expose-headers.spec.ts
-- [X] T065 Ensure OpenAPI error examples include `requestId` in envelope for 401/403/422/429/413/503 — specs/008-identity-platform/contracts/openapi.yaml; scripts/validate-openapi.ts
-- [X] T066 Log guard CI to prevent `console.log`/PII logs in app code — .eslintrc.js; .github/workflows/ci.yml
-- [X] T067 CSP nonce/strict policy (tighten T050; automated check) — api/src/middleware/securityHeaders.ts; scripts/quality-gate/check-csp.ts
-- [X] T068 Content negotiation guard: mutating routes require `Accept: application/json`; extend 415 tests accordingly — api/src/middleware/contentType.ts; api/tests/contracts/http.415.spec.ts
-- [X] T069 CORS hardening: reject `Origin: null` (unless explicitly allowed) and assert no wildcard `Access-Control-Allow-Origin` in prod — api/src/middleware/cors.ts; api/tests/contracts/cors.preflight.spec.ts
-- [X] T076 Env validation on boot (fail fast; names only, not values) - api/src/config/env.ts; api/tests/env.validation.spec.ts; frontend-next/src/config/env.ts
-- [X] T084 Security headers++: add `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, and a minimal `Permissions-Policy`; add tests - api/src/middleware/securityHeaders.ts; api/tests/security.headers.spec.ts
-- [X] T085 CORS vary on normal responses: ensure `Vary: Origin` on CORS'd non-preflight responses; add contract test - api/src/middleware/cors.ts; api/tests/contracts/cors.vary-normal.spec.ts
-- [X] T086 406 guard (content negotiation): if `Accept` excludes `application/json`, return 406; extend OpenAPI/examples + tests - api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml; api/tests/contracts/http.406.spec.ts
-- [X] T087 Error cache headers: set `Cache-Control: no-store` on 401/403/422/429/413/503 responses; assert in contract tests - api/src/lib/errors.ts; api/tests/contracts/errors.cache-control.spec.ts
-- [X] T090 Dependency policy gate (non-gating at first): CI fails on high/critical vulns with allowlist - .github/workflows/ci.yml
-- [X] T092 Retry-After semantics: document and assert `Retry-After` present on 429 only (absent on 413/503); add contract checks - specs/008-identity-platform/plan.md; api/tests/contracts/retry-after.spec.ts
-- [X] T094 Cache rules on authenticated routes: set `Cache-Control: no-store, private` on any response that required auth; add contract test - api/src/middleware/cacheHeaders.ts; api/tests/contracts/cache.auth-routes.spec.ts
-- [X] T095 CORS credentials guard: allow `Access-Control-Allow-Credentials: true` only when `Access-Control-Allow-Origin` is an exact origin (never `*`); contract test - api/src/middleware/cors.ts; api/tests/contracts/cors.credentials.guard.spec.ts
->>>>>>> origin/main
 - [ ] T096 415 vs 406 matrix doc: add a 2×2 decision chart in contentType.ts/OpenAPI comments (“invalid Content-Type → 415; Accept excludes JSON → 406”) — api/src/middleware/contentType.ts; specs/008-identity-platform/contracts/openapi.yaml
 - [X] T097 Origin=null dev carve-out: add dev allowlist toggle for `Origin: null` and test it is OFF in prod - api/src/middleware/cors.ts; api/tests/contracts/cors.origin-null.spec.ts
 - [X] T098 Spectral custom rules: forbid `additionalProperties: true` on error envelopes; require integer types for rate-limit headers (assert numeric emission in test); require at least one 2xx example per operation - .spectral.yaml; scripts/validate-openapi.ts; api/tests/middleware.rate-limit.headers.spec.ts
@@ -175,27 +143,6 @@ chore/T001-env-flags-setup-DEV-598
 
 ## MVP Strategy
 - MVP = US1 (public read + UI without mutation controls) with Foundational complete
-=======
-# Tasks — 008-identity-platform
-
-Purpose: Actionable, dependency-ordered tasks for Week 8 implementation.
-Source of truth: specs/008-identity-platform/spec.md
-Plan: specs/008-identity-platform/plan.md
-
-## Phase 1 — Setup
-chore/T001-env-flags-setup-DEV-598
-- [X] T001 Establish env/flags (.env examples) per plan (NEXT_PUBLIC_API_URL, FIREBASE_*, SESSION_SECRET) — specs/008-identity-platform/quickstart.md
-- [X] T002 Create CI spectral step and artifacts path — .github/workflows/ci.yml
-- [X] T003 Add `scripts/sync-openapi.ts` to copy canonical contract to app — scripts/sync-openapi.ts
-- [X] T045 Document Secret Manager wiring (FIREBASE_ADMIN_*), add .env.example placeholders and secret-pattern checks — specs/008-identity-platform/quickstart.md
-=======
-- [ ] T001 Establish env/flags (.env examples) per plan (NEXT_PUBLIC_API_URL, FIREBASE_*, SESSION_SECRET) — specs/008-identity-platform/quickstart.md
-- [ ] T002 Create CI spectral step and artifacts path — .github/workflows/ci.yml
-- [ ] T003 Add `scripts/sync-openapi.ts` to copy canonical contract to app — scripts/sync-openapi.ts
-- [ ] T045 Document Secret Manager wiring (FIREBASE_ADMIN_*), add .env.example placeholders and secret-pattern checks — specs/008-identity-platform/quickstart.md
-main
-
-## Phase 2 — Foundational
 - [X] T004 Add canonical OpenAPI skeleton (bearer + protected ops) — specs/008-identity-platform/contracts/openapi.yaml
 - [X] T005 [P] Add rate-limit header policy docs (headers on 2xx, 429; none on preflight) — specs/008-identity-platform/plan.md
 - [X] T006 Add logging policy & retention (PII redaction, 30d; audit 90d) — specs/008-identity-platform/plan.md
