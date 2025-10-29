@@ -1,5 +1,11 @@
 ## Changelog
 
+### 2025-10-25 (Trace context span regeneration - DEV-697)
+
+### Fixed
+- **API**:
+  - Request ID middleware now regenerates span IDs when normalizing `traceparent` headers so downstream services receive distinct spans per hop in compliance with W3C Trace Context. (DEV-697)
+
 ### 2025-10-24 (Posts offline fallback parity - DEV-EXEMPT)
 
 ### Fixed
