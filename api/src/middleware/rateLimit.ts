@@ -153,18 +153,28 @@ export function createRateLimiter(config: RateLimitConfig) {
     // Skip rate limiting for OPTIONS requests (CORS preflight) - T038
     skip: (req: Request) => req.method === "OPTIONS",
     handler: (req: Request, res: Response) => {
-      const seconds = Math.ceil(config.windowMs / 1000);
-      res.setHeader("Retry-After", String(seconds));
+      const retryAfterSeconds = Math.max(1, Math.ceil(config.windowMs / 1000));
+      const timeUnit = retryAfterSeconds === 1 ? "second" : "seconds";
+      res.setHeader("Retry-After", String(retryAfterSeconds));
       setCacheControlNoStore(res, 429);
       const requestId =
         (req as unknown as { requestId?: string }).requestId ||
         ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined) ||
         (res.get("X-Request-Id") as string | undefined) ||
         undefined;
+      const scope = getUserId(req) ? "user" : "ip";
+      const limitDescription = `${config.max} requests per ${retryAfterSeconds} ${timeUnit}`;
       res.status(429).json({
         code: "RATE_LIMITED",
         message: "Rate limit exceeded. Please try again later.",
         ...(requestId ? { requestId } : {}),
+        details: [
+          {
+            scope,
+            limit: limitDescription,
+            retryAfterSeconds,
+          },
+        ],
       });
     },
   });

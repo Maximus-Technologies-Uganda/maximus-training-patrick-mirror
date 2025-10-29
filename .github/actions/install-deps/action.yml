@@ -1,0 +1,73 @@
+name: Install Dependencies
+description: Setup Node, pnpm, cache, and install all dependencies
+author: Your Team
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+  frozen-lockfile:
+    description: 'Whether to use frozen lockfile (pnpm install --frozen-lockfile)'
+    required: false
+    default: 'false'
+  ignore-scripts:
+    description: 'Whether to ignore scripts (pnpm install --ignore-scripts)'
+    required: false
+    default: 'false'
+  scope:
+    description: 'Optional workspace scope (e.g., frontend-next). If set, only installs that workspace.'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - uses: ./.github/actions/setup-pnpm
+
+    - name: Resolve pnpm store path
+      id: pnpm-store
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
+        echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+        echo "version=$(pnpm -v | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.PNPM_STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store.outputs.version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store.outputs.version }}-
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+        INSTALL_CMD="pnpm install"
+
+        # Add optional flags
+        if [ "${{ inputs.ignore-scripts }}" = "true" ]; then
+          INSTALL_CMD="$INSTALL_CMD --ignore-scripts"
+        fi
+        if [ "${{ inputs.frozen-lockfile }}" = "true" ]; then
+          INSTALL_CMD="$INSTALL_CMD --frozen-lockfile"
+        else
+          INSTALL_CMD="$INSTALL_CMD --frozen-lockfile=false"
+        fi
+
+        # If scope provided, filter to workspace
+        if [ -n "${{ inputs.scope }}" ]; then
+          INSTALL_CMD="$INSTALL_CMD --filter ${{ inputs.scope }}"
+        fi
+
+        # Run with silent output (reduce noise)
+        $INSTALL_CMD --silent 2>&1 || $INSTALL_CMD

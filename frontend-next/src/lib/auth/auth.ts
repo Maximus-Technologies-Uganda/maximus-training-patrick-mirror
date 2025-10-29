@@ -44,10 +44,11 @@ async function ensureFirebase(): Promise<boolean> {
   try {
     // Dynamic imports so builds work even if Firebase isn't installed locally.
     // Use Function constructor to avoid Vite/esbuild static resolution in test/CI.
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
-    const din = new Function('s', 'return import(s)') as (s: string) => Promise<Record<string, unknown>>;
-    const appMod = (await din('firebase/app')) as Record<string, unknown>;
-    const authMod = (await din('firebase/auth')) as Record<string, unknown>;
+    const din = new Function("s", "return import(s)") as (
+      s: string
+    ) => Promise<Record<string, unknown>>;
+    const appMod = (await din("firebase/app")) as Record<string, unknown>;
+    const authMod = (await din("firebase/auth")) as Record<string, unknown>;
     const config = {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -86,7 +87,7 @@ async function postLogin(body: Record<string, unknown>): Promise<Response> {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: payload,
-    }),
+    })
   );
 }
 
@@ -108,7 +109,9 @@ export async function signOut(): Promise<void> {
   const hasFirebase = await ensureFirebase();
   if (hasFirebase && firebaseAuth?.getAuth && firebaseAuth.signOut) {
     const auth = firebaseAuth.getAuth();
-    try { await firebaseAuth.signOut(auth); } catch {}
+    try {
+      await firebaseAuth.signOut(auth);
+    } catch {}
   }
   await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
 }
@@ -128,7 +131,10 @@ export async function getIdToken(forceRefresh?: boolean): Promise<string> {
   return "";
 }
 
-export async function fetchWithAuthRetry(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function fetchWithAuthRetry(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
   const res = await fetch(input, init);
   if (res.status !== 401) return res;
   // Single retry with token refresh
@@ -137,5 +143,3 @@ export async function fetchWithAuthRetry(input: RequestInfo | URL, init?: Reques
   } catch {}
   return fetch(input, init);
 }
-
-

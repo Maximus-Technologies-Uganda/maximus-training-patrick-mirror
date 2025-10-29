@@ -2,20 +2,30 @@ import request from 'supertest';
 import { createApp } from '../../src/app';
 import { loadConfigFromEnv } from '../../src/config'; // Corrected import path
 import { InMemoryPostsRepository } from '../../src/repositories/posts.repository';
-import { Application } from 'express';
+import { Application, Request } from 'express';
+
+interface RequestUser {
+  userId?: string;
+  role?: string;
+  authTime?: number;
+}
+
+interface RequestWithUser extends Request {
+  user?: RequestUser;
+}
 
 // Mock the firebaseAuth middleware to control req.user.userId
 jest.mock('../../src/middleware/firebaseAuth', () => ({
-  verifyFirebaseIdToken: jest.fn((req, res, next) => {
+  verifyFirebaseIdToken: jest.fn((req: RequestWithUser, res, next) => {
     const authz = req.get('Authorization');
     if (authz && authz.startsWith('Bearer ')) {
       const token = authz.slice('Bearer '.length);
       if (token === 'valid-token') {
-        (req as any).user = { userId: 'test-user-id' };
+        req.user = { userId: 'test-user-id' };
       } else if (token === 'forbidden-token') {
-        (req as any).user = { userId: 'another-user-id' };
+        req.user = { userId: 'another-user-id' };
       } else if (token === 'admin-token') {
-        (req as any).user = { userId: 'admin-user-id' };
+        req.user = { userId: 'admin-user-id' };
       }
     }
     next();
@@ -108,7 +118,9 @@ describe('Posts API Contract Tests', () => {
       expect(response.statusCode).toBe(422);
       expect(String(response.body.code).toUpperCase()).toBe('VALIDATION_ERROR');
       const details = response.body.details;
-      expect(details === undefined || Array.isArray(details) || typeof details === 'object').toBe(true);
+      expect(details === undefined || Array.isArray(details) || typeof details === 'object').toBe(
+        true,
+      );
     });
 
     it('should return 429 if rate limit exceeded', async () => {
@@ -119,8 +131,8 @@ describe('Posts API Contract Tests', () => {
         lastResponse = await request(app)
           .post('/posts')
           .set('Authorization', 'Bearer valid-token')
-        .set('X-User-Id', 'test-user-id')
-        .set('X-User-Role', 'owner')
+          .set('X-User-Id', 'test-user-id')
+          .set('X-User-Role', 'owner')
           .set('Accept', 'application/json')
           .set('Content-Type', 'application/json')
           .set('X-User-Id', 'test-user-id')
@@ -180,9 +192,7 @@ describe('Posts API Contract Tests', () => {
       expect(createResponse.statusCode).toBe(201);
       const postId = createResponse.body.id;
 
-      const response = await request(app)
-        .get(`/posts/${postId}`)
-        .set('Accept', 'application/json');
+      const response = await request(app).get(`/posts/${postId}`).set('Accept', 'application/json');
       expect(response.statusCode).toBe(200);
       expect(response.body).toHaveProperty('id', postId);
     });
@@ -286,8 +296,8 @@ describe('Posts API Contract Tests', () => {
         lastResponse = await request(app)
           .put('/posts/some-post-id')
           .set('Authorization', 'Bearer valid-token')
-        .set('X-User-Id', 'test-user-id')
-        .set('X-User-Role', 'owner')
+          .set('X-User-Id', 'test-user-id')
+          .set('X-User-Role', 'owner')
           .set('Accept', 'application/json')
           .set('Content-Type', 'application/json')
           .set('X-User-Id', 'test-user-id')
@@ -400,8 +410,8 @@ describe('Posts API Contract Tests', () => {
         lastResponse = await request(app)
           .delete('/posts/some-post-id')
           .set('Authorization', 'Bearer valid-token')
-        .set('X-User-Id', 'test-user-id')
-        .set('X-User-Role', 'owner')
+          .set('X-User-Id', 'test-user-id')
+          .set('X-User-Role', 'owner')
           .set('Accept', 'application/json');
       }
 

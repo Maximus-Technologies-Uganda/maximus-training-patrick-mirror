@@ -1,14 +1,14 @@
-import { createHmac } from "node:crypto";
-import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { performance } from "node:perf_hooks";
-import path from "node:path";
-import request from "supertest";
-import type { Response as SupertestResponse } from "supertest";
-import { z } from "zod";
-import { createApp } from "../../api/src/app";
-import { loadConfigFromEnv } from "../../api/src/config";
-import { InMemoryPostsRepository } from "../../api/src/repositories/posts.repository";
-import { signJwt } from "../../api/src/core/auth/auth.middleware";
+import { createHmac } from 'node:crypto';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { performance } from 'node:perf_hooks';
+import path from 'node:path';
+import request from 'supertest';
+import type { Response as SupertestResponse } from 'supertest';
+import { z } from 'zod';
+import { createApp } from '../../api/src/app';
+import { loadConfigFromEnv } from '../../api/src/config';
+import { InMemoryPostsRepository } from '../../api/src/repositories/posts.repository';
+import { signJwt } from '../../api/src/core/auth/auth.middleware';
 
 type ScenarioResult = {
   name: string;
@@ -35,6 +35,8 @@ type BenchConfig = {
   thresholdMs: number;
   artifactPath: string;
   artifactRelative: string;
+  httpMetricsPath: string;
+  httpMetricsRelative: string;
 };
 
 const DEFAULT_CONFIG: BenchConfig = {
@@ -43,8 +45,10 @@ const DEFAULT_CONFIG: BenchConfig = {
   writeIterations: 20,
   writeConcurrency: 5,
   thresholdMs: 300,
-  artifactPath: path.join(process.cwd(), "gate", "latency.json"),
-  artifactRelative: path.join("gate", "latency.json"),
+  artifactPath: path.join(process.cwd(), 'gate', 'latency.json'),
+  artifactRelative: path.join('gate', 'latency.json'),
+  httpMetricsPath: path.join(process.cwd(), 'gate', 'http-metrics.json'),
+  httpMetricsRelative: path.join('gate', 'http-metrics.json'),
 };
 
 /**
@@ -53,7 +57,7 @@ const DEFAULT_CONFIG: BenchConfig = {
  */
 function ensureSessionSecret(): string {
   if (!process.env.SESSION_SECRET) {
-    process.env.SESSION_SECRET = "bench-secret-please-change";
+    process.env.SESSION_SECRET = 'bench-secret-please-change';
   }
   return process.env.SESSION_SECRET;
 }
@@ -73,7 +77,10 @@ function createSessionCookie(userId: string, role: string): string {
 function createCsrfToken(userId: string): string {
   const secret = ensureSessionSecret();
   const timestamp = Math.floor(Date.now() / 1000);
-  const sig = createHmac("sha256", secret).update(`${userId}.${timestamp}`).digest("hex").slice(0, 32);
+  const sig = createHmac('sha256', secret)
+    .update(`${userId}.${timestamp}`)
+    .digest('hex')
+    .slice(0, 32);
   return `${timestamp}-${sig}`;
 }
 
@@ -124,8 +131,8 @@ async function runScenario(
 
 function summarizeResponse(response: SupertestResponse): string {
   const parts: string[] = [];
-  if (response.headers?.["content-type"]) {
-    parts.push(`content-type=${response.headers["content-type"]}`);
+  if (response.headers?.['content-type']) {
+    parts.push(`content-type=${response.headers['content-type']}`);
   }
   if (response.body && Object.keys(response.body).length > 0) {
     try {
@@ -139,7 +146,7 @@ function summarizeResponse(response: SupertestResponse): string {
   if (response.error) {
     parts.push(`error=${response.error.message}`);
   }
-  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
+  return parts.length > 0 ? ` (${parts.join(', ')})` : '';
 }
 
 function assertStatus(response: SupertestResponse, expectedStatus: number, label: string): void {
@@ -156,7 +163,10 @@ function assertStatus(response: SupertestResponse, expectedStatus: number, label
 function percentile(values: number[], target: number): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
-  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil((target / 100) * sorted.length) - 1));
+  const index = Math.min(
+    sorted.length - 1,
+    Math.max(0, Math.ceil((target / 100) * sorted.length) - 1),
+  );
   return sorted[index];
 }
 
@@ -181,35 +191,39 @@ function formatRow(summary: ScenarioSummary): string {
 /**
  * Writes a GitHub summary (when available) and mirrors the report to stdout for local execution.
  */
-function appendSummary(results: ScenarioSummary[], thresholdMs: number, artifactRelativePath: string): void {
+function appendSummary(
+  results: ScenarioSummary[],
+  thresholdMs: number,
+  artifactRelativePath: string,
+  metricsRelativePath: string,
+): void {
   const lines = [
-    "## Latency Bench",
-    "",
-    "| Operation | N | Concurrency | P50(ms) | P95(ms) |",
-    "| --- | --- | --- | --- | --- |",
+    '## Latency Bench',
+    '',
+    '| Operation | N | Concurrency | P50(ms) | P95(ms) |',
+    '| --- | --- | --- | --- | --- |',
     ...results.map(formatRow),
-    "",
+    '',
     `Threshold: ${thresholdMs}ms p95 (warnings emitted when exceeded)`,
     `Artifact: ${artifactRelativePath}`,
-    "",
+    `HTTP Metrics: ${metricsRelativePath}`,
+    '',
   ];
   const summaryFile = process.env.GITHUB_STEP_SUMMARY;
   if (summaryFile) {
-    appendFileSync(summaryFile, `${lines.join("\n")}\n`);
+    appendFileSync(summaryFile, `${lines.join('\n')}\n`);
   }
-  console.log(lines.join("\n"));
+  console.log(lines.join('\n'));
 }
 
-const positiveIntegerSchema = z
-  .coerce
-  .number({ invalid_type_error: "Expected a numeric value" })
-  .int({ message: "Expected an integer" })
-  .gt(0, { message: "Value must be greater than zero" });
+const positiveIntegerSchema = z.coerce
+  .number({ invalid_type_error: 'Expected a numeric value' })
+  .int({ message: 'Expected an integer' })
+  .gt(0, { message: 'Value must be greater than zero' });
 
-const nonNegativeNumberSchema = z
-  .coerce
-  .number({ invalid_type_error: "Expected a numeric value" })
-  .min(0, { message: "Value must be greater than or equal to zero" });
+const nonNegativeNumberSchema = z.coerce
+  .number({ invalid_type_error: 'Expected a numeric value' })
+  .min(0, { message: 'Value must be greater than or equal to zero' });
 
 function parsePositiveInteger(name: string, fallback: number): number {
   const rawValue = process.env[name];
@@ -241,19 +255,48 @@ function parseNonNegativeNumber(name: string, fallback: number): number {
 function loadBenchConfig(): BenchConfig {
   const repoRoot = process.cwd();
   const artifactEnv = process.env.LATENCY_BENCH_ARTIFACT;
-  const artifactRelative = artifactEnv && artifactEnv.trim().length > 0 ? artifactEnv.trim() : DEFAULT_CONFIG.artifactRelative;
-  const artifactPath = path.isAbsolute(artifactRelative) ? artifactRelative : path.join(repoRoot, artifactRelative);
+  const artifactRelative =
+    artifactEnv && artifactEnv.trim().length > 0
+      ? artifactEnv.trim()
+      : DEFAULT_CONFIG.artifactRelative;
+  const artifactPath = path.isAbsolute(artifactRelative)
+    ? artifactRelative
+    : path.join(repoRoot, artifactRelative);
+  const httpMetricsEnv = process.env.LATENCY_BENCH_HTTP_METRICS;
+  const httpMetricsRelative =
+    httpMetricsEnv && httpMetricsEnv.trim().length > 0
+      ? httpMetricsEnv.trim()
+      : DEFAULT_CONFIG.httpMetricsRelative;
+  const httpMetricsPath = path.isAbsolute(httpMetricsRelative)
+    ? httpMetricsRelative
+    : path.join(repoRoot, httpMetricsRelative);
 
   return {
-    readIterations: parsePositiveInteger("LATENCY_BENCH_READ_ITERATIONS", DEFAULT_CONFIG.readIterations),
-    readConcurrency: parsePositiveInteger("LATENCY_BENCH_READ_CONCURRENCY", DEFAULT_CONFIG.readConcurrency),
-    writeIterations: parsePositiveInteger("LATENCY_BENCH_WRITE_ITERATIONS", DEFAULT_CONFIG.writeIterations),
-    writeConcurrency: parsePositiveInteger("LATENCY_BENCH_WRITE_CONCURRENCY", DEFAULT_CONFIG.writeConcurrency),
-    thresholdMs: parseNonNegativeNumber("LATENCY_BENCH_THRESHOLD", DEFAULT_CONFIG.thresholdMs),
+    readIterations: parsePositiveInteger(
+      'LATENCY_BENCH_READ_ITERATIONS',
+      DEFAULT_CONFIG.readIterations,
+    ),
+    readConcurrency: parsePositiveInteger(
+      'LATENCY_BENCH_READ_CONCURRENCY',
+      DEFAULT_CONFIG.readConcurrency,
+    ),
+    writeIterations: parsePositiveInteger(
+      'LATENCY_BENCH_WRITE_ITERATIONS',
+      DEFAULT_CONFIG.writeIterations,
+    ),
+    writeConcurrency: parsePositiveInteger(
+      'LATENCY_BENCH_WRITE_CONCURRENCY',
+      DEFAULT_CONFIG.writeConcurrency,
+    ),
+    thresholdMs: parseNonNegativeNumber('LATENCY_BENCH_THRESHOLD', DEFAULT_CONFIG.thresholdMs),
     artifactPath,
     artifactRelative: path.isAbsolute(artifactRelative)
       ? path.relative(repoRoot, artifactRelative) || path.basename(artifactRelative)
       : artifactRelative,
+    httpMetricsPath,
+    httpMetricsRelative: path.isAbsolute(httpMetricsRelative)
+      ? path.relative(repoRoot, httpMetricsRelative) || path.basename(httpMetricsRelative)
+      : httpMetricsRelative,
   };
 }
 
@@ -269,10 +312,10 @@ function ensureArtifactDir(artifactPath: string): void {
  * Normalizes unknown error shapes into readable strings for inclusion in artifacts and console logs.
  */
 function normalizeErrorMessage(error: unknown): string {
-  if (error instanceof Error && typeof error.message === "string") {
+  if (error instanceof Error && typeof error.message === 'string') {
     return error.message;
   }
-  if (error && typeof (error as { message?: unknown }).message === "string") {
+  if (error && typeof (error as { message?: unknown }).message === 'string') {
     return String((error as { message?: unknown }).message);
   }
   try {
@@ -308,7 +351,24 @@ function writeArtifact(
       })),
     })),
   };
-  writeFileSync(artifactPath, `${JSON.stringify(payload, null, 2)}\n`, { encoding: "utf8" });
+  writeFileSync(artifactPath, `${JSON.stringify(payload, null, 2)}\n`, { encoding: 'utf8' });
+}
+
+function recordStatus(collector: Map<number, number>, status: number): void {
+  const current = collector.get(status) ?? 0;
+  collector.set(status, current + 1);
+}
+
+function writeHttpMetrics(collector: Map<number, number>, outputPath: string): void {
+  ensureArtifactDir(outputPath);
+  const metrics = Array.from(collector.entries())
+    .map(([status, count]) => ({ status, count }))
+    .sort((a, b) => a.status - b.status);
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    metrics,
+  };
+  writeFileSync(outputPath, `${JSON.stringify(payload, null, 2)}\n`, { encoding: 'utf8' });
 }
 
 /**
@@ -321,50 +381,67 @@ async function main(): Promise<void> {
   const repository = new InMemoryPostsRepository();
   const app = createApp(config, repository);
 
-  const userId = "bench-user";
-  const role = "owner";
+  const userId = 'bench-user';
+  const role = 'owner';
   const sessionCookie = createSessionCookie(userId, role);
   const csrfToken = createCsrfToken(userId);
   const baseHeaders = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
     Cookie: `${sessionCookie}; csrf=${csrfToken}`,
-    "X-CSRF-Token": csrfToken,
-    "X-User-Id": userId,
-    "X-User-Role": role,
-    Origin: "http://localhost:3000",
+    'X-CSRF-Token': csrfToken,
+    'X-User-Id': userId,
+    'X-User-Role': role,
+    Origin: 'http://localhost:3000',
   } as const;
 
-  const readScenario = await runScenario("GET /posts", benchConfig.readIterations, benchConfig.readConcurrency, async () => {
-    const response = await request(app).get("/posts").set("Accept", "application/json");
-    assertStatus(response, 200, "GET /posts");
-  });
+  const statusCounts = new Map<number, number>();
+
+  const readScenario = await runScenario(
+    'GET /posts',
+    benchConfig.readIterations,
+    benchConfig.readConcurrency,
+    async () => {
+      const response = await request(app).get('/posts').set('Accept', 'application/json');
+      recordStatus(statusCounts, response.status);
+      assertStatus(response, 200, 'GET /posts');
+    },
+  );
 
   const writeScenario = await runScenario(
-    "POST /posts",
+    'POST /posts',
     benchConfig.writeIterations,
     benchConfig.writeConcurrency,
     async (index) => {
       const response = await request(app)
-        .post("/posts")
+        .post('/posts')
         .set(baseHeaders)
         .send({
           title: `Bench Post ${index}`,
           content: `Bench content ${index}`,
         });
-      assertStatus(response, 201, "POST /posts");
+      recordStatus(statusCounts, response.status);
+      assertStatus(response, 201, 'POST /posts');
     },
   );
 
   const rawResults = [readScenario, writeScenario];
   const summaries = rawResults.map(toSummary);
-  appendSummary(summaries, benchConfig.thresholdMs, benchConfig.artifactRelative);
+  appendSummary(
+    summaries,
+    benchConfig.thresholdMs,
+    benchConfig.artifactRelative,
+    benchConfig.httpMetricsRelative,
+  );
   writeArtifact(summaries, benchConfig.thresholdMs, benchConfig.artifactPath, rawResults);
+  writeHttpMetrics(statusCounts, benchConfig.httpMetricsPath);
 
   summaries.forEach((summary, index) => {
     const raw = rawResults[index];
     if (summary.p95 > benchConfig.thresholdMs) {
-      console.warn(`⚠️ ${summary.name} p95=${summary.p95.toFixed(2)}ms exceeds ${benchConfig.thresholdMs}ms threshold`);
+      console.warn(
+        `⚠️ ${summary.name} p95=${summary.p95.toFixed(2)}ms exceeds ${benchConfig.thresholdMs}ms threshold`,
+      );
     }
     if (summary.errorCount > 0) {
       console.warn(`⚠️ ${summary.name} encountered ${summary.errorCount} error(s)`);
@@ -376,7 +453,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  console.error("Latency bench failed", error);
+  console.error('Latency bench failed', error);
   process.exitCode = 1;
 });
-

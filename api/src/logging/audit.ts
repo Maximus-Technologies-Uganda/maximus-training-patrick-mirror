@@ -1,23 +1,23 @@
-import type { Request } from "express";
-import { extractTraceId } from "../lib/tracing";
-import { sanitizeLogEntry } from "./redaction";
-import { withAuditLogRetention, AUDIT_LOG_RETENTION_DAYS } from "./retention";
+import type { Request } from 'express';
+import { extractTraceId } from '../lib/tracing';
+import { sanitizeLogEntry } from './redaction';
+import { withAuditLogRetention, AUDIT_LOG_RETENTION_DAYS } from './retention';
 
-export type AuditVerb = "create" | "update" | "delete";
+export type AuditVerb = 'create' | 'update' | 'delete';
 
 export interface AuditEvent {
-  level: "info";
-  type: "audit";
+  level: 'info';
+  type: 'audit';
   ts: string;
   verb: AuditVerb;
-  targetType: "post";
+  targetType: 'post';
   targetId: string;
   userId?: string;
   role?: string;
   status: number;
   requestId?: string;
   traceId?: string;
-  outcome?: "success" | "denied";
+  outcome?: 'success' | 'denied';
   denialReason?: string;
   retentionDays: typeof AUDIT_LOG_RETENTION_DAYS;
 }
@@ -43,19 +43,23 @@ export function createAuditEvent(
   verb: AuditVerb,
   targetId: string,
   status: number,
-  options: { outcome?: "success" | "denied"; denialReason?: string } = {},
+  options: { outcome?: 'success' | 'denied'; denialReason?: string } = {},
 ): AuditEvent {
   const now = new Date().toISOString();
   const user = (req as unknown as { user?: { userId?: string; role?: string } }).user || {};
-  const requestId = (req as unknown as { requestId?: string }).requestId || (req.get("x-request-id") as string | undefined);
-  const traceId = extractTraceId((req.get("traceparent") || req.headers["traceparent"]) as string | undefined);
-  const defaultOutcome = status >= 200 && status < 300 ? "success" : "denied";
+  const requestId =
+    (req as unknown as { requestId?: string }).requestId ||
+    (req.get('x-request-id') as string | undefined);
+  const traceId = extractTraceId(
+    (req.get('traceparent') || req.headers['traceparent']) as string | undefined,
+  );
+  const defaultOutcome = status >= 200 && status < 300 ? 'success' : 'denied';
   const event: AuditEvent = withAuditLogRetention({
-    level: "info",
-    type: "audit",
+    level: 'info' as const,
+    type: 'audit' as const,
     ts: now,
     verb,
-    targetType: "post",
+    targetType: 'post' as const,
     targetId,
     userId: user.userId,
     role: user.role,
@@ -88,7 +92,7 @@ export function auditPost(
   verb: AuditVerb,
   targetId: string,
   status: number,
-  options: { outcome?: "success" | "denied"; denialReason?: string } = {},
+  options: { outcome?: 'success' | 'denied'; denialReason?: string } = {},
 ): void {
   try {
     const event = sanitizeLogEntry(createAuditEvent(req, verb, targetId, status, options));

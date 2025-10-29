@@ -24,9 +24,11 @@ function createAuthRoutes() {
 
   router.post('/login', (req, res) => {
     const { username, password } = req.body || {};
-    const valid = (username === 'admin' && password === 'password') || (username === 'alice' && password === 'correct-password');
+    const valid =
+      (username === 'admin' && password === 'password') ||
+      (username === 'alice' && password === 'correct-password');
     if (!valid) {
-      const requestId = (req.requestId) || (req.get('X-Request-Id') || req.headers['x-request-id']);
+      const requestId = req.requestId || req.get('X-Request-Id') || req.headers['x-request-id'];
       console.warn(JSON.stringify({ level: 'warn', message: 'Invalid credentials', requestId }));
       return res.status(401).send();
     }
@@ -39,18 +41,25 @@ function createAuthRoutes() {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000
+      maxAge: 24 * 60 * 60 * 1000,
     });
-    const requestId = (req.requestId) || (req.get('X-Request-Id') || req.headers['x-request-id']);
-    console.info(JSON.stringify({ level: 'info', message: 'User authenticated successfully', requestId, userId }));
+    const requestId = req.requestId || req.get('X-Request-Id') || req.headers['x-request-id'];
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        message: 'User authenticated successfully',
+        requestId,
+        userId,
+      }),
+    );
     return res.status(204).send();
   });
 
   router.post('/logout', (req, res) => {
     // Idempotent: clear cookie even if not present
     res.cookie('session', '', { httpOnly: true, secure: isProduction, sameSite: 'lax', maxAge: 0 });
-    const requestId = (req.requestId) || (req.get('X-Request-Id') || req.headers['x-request-id']);
-    console.info(JSON.stringify({ level: 'info', message: 'User logged out', requestId }));
+    const requestId = req.requestId || req.get('X-Request-Id') || req.headers['x-request-id'];
+    console.warn(JSON.stringify({ level: 'warn', message: 'User logged out', requestId }));
     return res.status(204).send();
   });
 
@@ -58,5 +67,3 @@ function createAuthRoutes() {
 }
 
 module.exports = { createAuthRoutes };
-
-

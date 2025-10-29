@@ -18,7 +18,11 @@ function base64urlToBase64(s) {
 }
 
 function safeJson(str) {
-  try { return JSON.parse(str); } catch { return null; }
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
 }
 
 const { getSessionSecret } = require('../config');
@@ -42,7 +46,13 @@ function requireAuth(req, res, next) {
   // Fetch secret at request time to respect env set during tests
   const secret = getSessionSecret();
   const crypto = require('node:crypto');
-  const expected = crypto.createHmac('sha256', secret).update(data).digest('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(data)
+    .digest('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
   if (sig !== expected) {
     const requestId = req.requestId || req.headers['x-request-id'];
     console.warn(JSON.stringify({ level: 'warn', message: 'Auth failed', requestId }));
@@ -66,11 +76,11 @@ function requireAuth(req, res, next) {
   req.user = { userId: payload.userId };
   {
     const requestId = req.requestId || req.headers['x-request-id'];
-    console.info(JSON.stringify({ level: 'info', message: 'Auth ok', requestId, userId: payload.userId }));
+    console.warn(
+      JSON.stringify({ level: 'warn', message: 'Auth ok', requestId, userId: payload.userId }),
+    );
   }
   next();
 }
 
 module.exports = { requireAuth };
-
-

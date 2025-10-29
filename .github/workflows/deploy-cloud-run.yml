@@ -1,11 +1,10 @@
 name: Submit Full Deploy to Cloud Build
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'frontend-next/**'
-      - '.github/workflows/deploy-cloud-run.yml'
+  workflow_run:
+    workflows: ['Quality Gate']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -23,6 +22,7 @@ env:
 jobs:
   submit-build:
     name: Submit Cloud Build Job
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     concurrency:
       group: frontend-cloudbuild-${{ github.ref }}
@@ -118,4 +118,3 @@ jobs:
             echo "  - URL: $API_URL"
             echo "- **Region:** ${{ env.REGION }}"
           } >> "$GITHUB_STEP_SUMMARY"
-

@@ -1,4 +1,5 @@
-import { validateEnvOnBoot } from "./config/env";
+import { validateEnvOnBoot } from './config/env';
+import { logWarn } from './logging/structured';
 
 export interface AppConfig {
   port: number;
@@ -38,10 +39,11 @@ export function getSessionSecret(): string {
     if (isProduction) {
       throw new Error('SESSION_SECRET must be set in production');
     }
-    console.warn('[config] SESSION_SECRET is not set; using insecure dev default');
+    logWarn('SESSION_SECRET is not set; using insecure dev default', {
+      context: 'config',
+      env: process.env.NODE_ENV,
+    });
     return 'dev-secret';
   }
   return raw;
 }
-
-

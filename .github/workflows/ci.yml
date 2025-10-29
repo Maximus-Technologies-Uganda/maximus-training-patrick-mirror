@@ -85,10 +85,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Enable Corepack (pnpm 9)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
+
+      - uses: ./.github/actions/setup-pnpm
+
       - name: Resolve pnpm store path
         id: pnpm-store
         shell: bash
@@ -96,12 +95,15 @@ jobs:
           set -euo pipefail
           echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
           echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-      - name: Cache pnpm store
+          echo "version=$(pnpm -v | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store (with version fallback)
         uses: actions/cache@v4
         with:
           path: ${{ env.PNPM_STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store.outputs.version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
+            ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store.outputs.version }}-
             ${{ runner.os }}-pnpm-store-
 
       - name: Install root dependencies (tsx/yaml for contracts checks)
@@ -180,10 +182,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Enable Corepack (pnpm)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
+
+      - uses: ./.github/actions/setup-pnpm
+
       - name: Install (frozen)
         run: pnpm install --ignore-scripts --frozen-lockfile=false
       - name: Audit for High/Critical
@@ -208,16 +209,29 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Enable Corepack (pnpm)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
+      - uses: ./.github/actions/setup-pnpm
+
+      - name: Cache k6 binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/k6
+          key: ${{ runner.os }}-k6-${{ hashFiles('scripts/quality-gate/run-latency-bench.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-k6-
+
+      - name: Install k6 CLI
+        uses: grafana/setup-k6-action@v1
+        with:
+          version: v0.49.0
 
       - name: Install dependencies
         run: pnpm install --ignore-scripts --frozen-lockfile=false
 
       - name: Run latency bench (non-gating)
         run: pnpm exec tsx scripts/quality-gate/run-latency-bench.ts
+
+      - name: Summarize 5xx/429 alerting stub
+        run: pnpm exec tsx scripts/quality-gate/alerting-stub.ts
 
   frontend-a11y:
     name: Frontend - A11y Artifacts (HTML + video)
@@ -233,15 +247,22 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Enable Corepack (pnpm)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
+      - uses: ./.github/actions/setup-pnpm
 
       - name: Install dependencies
         run: pnpm install --ignore-scripts --frozen-lockfile=false
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter frontend-next exec playwright install --with-deps chromium
 
       - name: Run frontend a11y suite

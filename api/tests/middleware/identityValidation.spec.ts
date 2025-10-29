@@ -3,8 +3,18 @@ import type { Request, Response, NextFunction } from 'express';
 import { validateIdentityHeaders } from '../../src/middleware/identityValidation';
 import * as errors from '../../src/lib/errors';
 
+interface RequestUser {
+  userId?: string;
+  role?: string;
+  authTime?: number;
+}
+
+interface RequestWithUser extends Request {
+  user?: RequestUser;
+}
+
 describe('Identity Validation Middleware (T053)', () => {
-  let mockRequest: Request;
+  let mockRequest: RequestWithUser;
   let mockResponse: Response;
   let nextFunction: NextFunction;
 
@@ -12,7 +22,7 @@ describe('Identity Validation Middleware (T053)', () => {
     mockRequest = {
       get: jest.fn(),
       headers: {},
-    } as unknown as Request;
+    } as unknown as RequestWithUser;
 
     mockResponse = {
       setHeader: jest.fn(),
@@ -35,12 +45,11 @@ describe('Identity Validation Middleware (T053)', () => {
     });
 
     it('rejects request when identity headers present without authentication', () => {
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'user-123';
-          if (header === 'X-User-Role') return 'owner';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'user-123';
+        if (header === 'X-User-Role') return 'owner';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -55,7 +64,7 @@ describe('Identity Validation Middleware (T053)', () => {
 
   describe('when authenticated user present', () => {
     beforeEach(() => {
-      (mockRequest as any).user = {
+      mockRequest.user = {
         userId: 'authenticated-user-123',
         role: 'owner',
       };
@@ -71,12 +80,11 @@ describe('Identity Validation Middleware (T053)', () => {
     });
 
     it('allows request when identity headers match authenticated user', () => {
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'authenticated-user-123';
-          if (header === 'X-User-Role') return 'owner';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'authenticated-user-123';
+        if (header === 'X-User-Role') return 'owner';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -85,12 +93,11 @@ describe('Identity Validation Middleware (T053)', () => {
     });
 
     it('rejects request when X-User-Id header does not match', () => {
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'different-user-456';
-          if (header === 'X-User-Role') return 'owner';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'different-user-456';
+        if (header === 'X-User-Role') return 'owner';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -103,12 +110,11 @@ describe('Identity Validation Middleware (T053)', () => {
     });
 
     it('rejects request when X-User-Role header does not match', () => {
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'authenticated-user-123';
-          if (header === 'X-User-Role') return 'admin';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'authenticated-user-123';
+        if (header === 'X-User-Role') return 'admin';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -152,12 +158,11 @@ describe('Identity Validation Middleware (T053)', () => {
         // no role specified
       };
 
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'authenticated-user-123';
-          if (header === 'X-User-Role') return 'owner';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'authenticated-user-123';
+        if (header === 'X-User-Role') return 'owner';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -171,12 +176,11 @@ describe('Identity Validation Middleware (T053)', () => {
         // no role specified, should default to 'owner'
       };
 
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'authenticated-user-123';
-          if (header === 'X-User-Role') return 'admin';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'authenticated-user-123';
+        if (header === 'X-User-Role') return 'admin';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -209,11 +213,10 @@ describe('Identity Validation Middleware (T053)', () => {
 
     it('prioritizes get() method over headers object', () => {
       (mockRequest.headers as any)['x-user-id'] = 'wrong-user';
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'authenticated-user-123';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'authenticated-user-123';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -229,11 +232,10 @@ describe('Identity Validation Middleware (T053)', () => {
         role: 'owner',
       };
 
-      mockRequest.get = jest.fn()
-        .mockImplementation((header: string) => {
-          if (header === 'X-User-Id') return 'different-user-456';
-          return undefined;
-        });
+      mockRequest.get = jest.fn().mockImplementation((header: string) => {
+        if (header === 'X-User-Id') return 'different-user-456';
+        return undefined;
+      });
 
       validateIdentityHeaders(mockRequest, mockResponse, nextFunction);
 
@@ -241,7 +243,7 @@ describe('Identity Validation Middleware (T053)', () => {
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           code: 'FORBIDDEN',
-        })
+        }),
       );
     });
   });

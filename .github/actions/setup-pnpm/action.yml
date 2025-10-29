@@ -1,0 +1,14 @@
+name: Setup pnpm
+description: Enable Corepack and configure pnpm 9.x
+author: Your Team
+
+runs:
+  using: composite
+  steps:
+    - name: Enable Corepack (pnpm 9)
+      shell: bash
+      run: |
+        set -euo pipefail
+        corepack enable
+        corepack prepare pnpm@9.x --activate
+        pnpm --version

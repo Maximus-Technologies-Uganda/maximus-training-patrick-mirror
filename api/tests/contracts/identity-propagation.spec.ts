@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import request from 'supertest';
 import { createApp } from '../../src/app';
 import { loadConfigFromEnv } from '../../src/config';
 import type { IPostsRepository } from '../../src/repositories/posts.repository';
 import { createRepository } from '../../src/repositories/posts-repository';
 
-const TEST_SESSION_SECRET = process.env.SESSION_SECRET || "test-secret";
+const TEST_SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 process.env.SESSION_SECRET = TEST_SESSION_SECRET;
 
 type MakeAppOptions = {
@@ -23,32 +23,32 @@ async function makeApp(options: MakeAppOptions = {}) {
 
 function base64url(input: Buffer | string): string {
   return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
 }
 
 function makeSessionCookie(userId: string, role: string = 'owner'): string {
-  const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(
     JSON.stringify({
       userId,
       role,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60
-    })
+      exp: Math.floor(Date.now() / 1000) + 60 * 60,
+    }),
   );
   const crypto = require('node:crypto');
   const signature = base64url(
-    crypto.createHmac('sha256', TEST_SESSION_SECRET).update(`${header}.${payload}`).digest()
+    crypto.createHmac('sha256', TEST_SESSION_SECRET).update(`${header}.${payload}`).digest(),
   );
   return `session=${header}.${payload}.${signature}`;
 }
 
 function buildRepository(overrides: Partial<IPostsRepository>): IPostsRepository {
   const notImplemented = async () => {
-    throw new Error("Not implemented in test stub");
+    throw new Error('Not implemented in test stub');
   };
 
   return {
@@ -93,7 +93,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       .set('X-User-Role', 'owner')
       .send({
         title: 'Test Post',
-        content: 'Test content with enough length to pass validation'
+        content: 'Test content with enough length to pass validation',
       });
 
     expect(res.status).toBe(201);
@@ -120,7 +120,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       .set('X-User-Role', 'owner')
       .send({
         title: 'Test Post',
-        content: 'Test content with enough length to pass validation'
+        content: 'Test content with enough length to pass validation',
       });
 
     expect(res.status).toBe(403);
@@ -147,7 +147,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       .set('X-User-Role', 'admin') // Different role
       .send({
         title: 'Test Post',
-        content: 'Test content with enough length to pass validation'
+        content: 'Test content with enough length to pass validation',
       });
 
     expect(res.status).toBe(403);
@@ -173,7 +173,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       .set('X-User-Role', 'owner')
       .send({
         title: 'Test Post',
-        content: 'Test content with enough length to pass validation'
+        content: 'Test content with enough length to pass validation',
       });
 
     expect(res.status).toBe(401);
@@ -184,8 +184,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
   it('accepts request when no identity headers and no authentication (for public endpoints)', async () => {
     const { app } = await makeApp();
 
-    const res = await request(app)
-      .get('/posts');
+    const res = await request(app).get('/posts');
 
     // Should work for public endpoints (no auth required)
     expect([200, 404, 429]).toContain(res.status); // 404 if no posts, 429 if rate limited, but not 403
@@ -193,7 +192,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
 
   it('rejects request when authenticated but no identity headers (writes require propagation)', async () => {
     const repository = buildRepository({
-      create: async (post) => {
+      create: async (_post) => {
         throw new Error('Repository should not be called when identity headers are missing');
       },
     });
@@ -209,7 +208,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       // No identity headers - should be rejected
       .send({
         title: 'Test Post',
-        content: 'Test content with enough length to pass validation'
+        content: 'Test content with enough length to pass validation',
       });
 
     expect(res.status).toBe(403);
@@ -219,7 +218,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
 
   it('validates identity for PUT requests', async () => {
     const repository = buildRepository({
-      replace: async (id, post) => {
+      replace: async (_id, _post) => {
         throw new Error('Repository should not be called when identity validation fails');
       },
     });
@@ -236,7 +235,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       .set('X-User-Role', 'owner')
       .send({
         title: 'Updated Post',
-        content: 'Updated content with enough length'
+        content: 'Updated content with enough length',
       });
 
     expect(res.status).toBe(403);
@@ -282,7 +281,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       .set('X-User-Id', 'different-user-456') // Wrong user
       .set('X-User-Role', 'owner')
       .send({
-        title: 'Updated Post'
+        title: 'Updated Post',
       });
 
     expect(res.status).toBe(403);
@@ -302,7 +301,7 @@ describe('BFF→API Identity Propagation (T053)', () => {
       .set('X-Request-Id', 'test-request-123')
       .send({
         title: 'Test Post',
-        content: 'Test content with enough length to pass validation'
+        content: 'Test content with enough length to pass validation',
       });
 
     expect(res.status).toBe(401);
