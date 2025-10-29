@@ -5,7 +5,7 @@ export interface HeaderAuthenticationOptions {
 }
 
 export interface AuthenticatedRequest extends Request {
-  user?: { id: string };
+  user?: { userId?: string; role?: string };
 }
 
 const resolveHeaderValue = (request: Request, headerName: string): string | null => {
@@ -37,7 +37,7 @@ export const createHeaderAuthenticationMiddleware = (
     const value = typeof rawValue === "string" ? rawValue.trim() : "";
 
     if (value) {
-      (req as AuthenticatedRequest).user = { id: value };
+      (req as AuthenticatedRequest).user = { userId: value };
     } else {
       delete (req as AuthenticatedRequest).user;
     }
