@@ -14,6 +14,70 @@ gcloud run services describe maximus-training-frontend --region <region> --forma
 gcloud run services describe maximus-training-api --region <region> --format='value(status.url)'
 ```
 
+## Authentication
+
+The identity flow follows the spec’s BFF-first model: browsers never contact the API directly for mutations. Instead, the Next.js App Router handlers verify Firebase credentials, mint session cookies, and forward normalized headers to the Express API so logs, rate limits, and audit records always align with a single `requestId`/`traceId` pair.
+
+### Sign-in flow
+
+1. The client posts credentials to `/api/auth/login`.
+2. The BFF verifies the Firebase ID token (or accepted dev credentials in local smoke tests: `admin/password`, `alice/correct-password`).
+3. On success, the BFF mints an HTTP-only `session` cookie (15-minute rolling expiry, `SameSite=Strict`, `Secure` in production) and issues a CSRF double-submit token (`csrf` cookie + `X-CSRF-Token` header).
+4. Subsequent route handlers forward the verified identity to the API via `X-User-Id` and `X-User-Role` headers while also propagating tracing headers (`X-Request-Id`, `traceparent`, optional `tracestate`).
+5. `/api/auth/logout` clears both cookies and rotates the tracing context so the next request starts fresh.
+
+### Roles and permissions
+
+| Action | Anonymous | Owner | Admin |
+| --- | --- | --- | --- |
+| View posts (`GET /posts`, `/posts/{id}`) | ✅ | ✅ | ✅ |
+| Create post | ❌ | ✅ (attributed to `userId`) | ✅ |
+| Edit/delete own post | ❌ | ✅ | ✅ |
+| Edit/delete others’ posts | ❌ | ❌ (`403 Forbidden`) | ✅ |
+
+Roles are enforced server-side. Client payloads that attempt to spoof `authorId`, `userId`, or `role` are stripped before business logic runs.
+
+### Session, CSRF, and tracing propagation
+
+- Session cookies are rotated on login, logout, and role change; back-end handlers never trust stale cookies.
+- Double-submit CSRF enforcement rejects writes without matching cookie/header pairs or when tokens expire (>2h or ±5m clock skew).
+- `ensureRequestContext` middleware guarantees that every request has a stable `requestId` and W3C trace headers so API logs, audit records, and CI benches correlate across tiers.
+
+### SameSite tradeoffs
+
+`SameSite=Strict` protects against cross-site forgery and remains the default. Pivot to `Lax` only when integrations demand third-party redirects or embedded frames. Document the justification in release notes, enable explicit origin allowlists, and tighten CSRF checks before changing this flag.
+
+### Troubleshooting
+
+- **Clock skew** — Firebase tokens tolerate ±5 minutes. Ensure local devices use NTP/chrony if logins fail with `401` after adjusting clocks.
+- **Revoked token** — Admin revocations force re-authentication. Clear cookies and sign in again; check audit logs (`type:"audit"`) for denial reasons.
+- **Stale session** — If the BFF refuses a request with `401` immediately after deploy, delete cookies and retry; deployments rotate signing secrets when `SESSION_SECRET` changes.
+- **429 loops** — Writes are rate-limited to 10/minute/user. Use exponential backoff (200ms → 400ms → 800ms) and respect `Retry-After` headers before retrying. The `frontend-next/src/lib/http/backoff.ts` helper exposes `with429Backoff` to wrap fetch calls, emit retry telemetry, and avoid hammering the API.
+- **CORS 401 vs 403** — `401` indicates an unauthenticated request (missing/expired token or cookie). `403` means the identity is valid but lacks access (e.g., owner editing another user's post, CSRF mismatch, or read-only maintenance mode).
+
+### Idempotency & retry guidance
+
+- **Idempotency keys explained** — An idempotency key is a unique, client-generated token (for example, a UUID stored alongside the pending request) that the server can use to de-duplicate retries. When a `POST` endpoint supports the pattern it will document the required header (e.g., `Idempotency-Key`) and retention window. The current `/api/posts` `POST` route does **not** yet accept an idempotency key, so treat that mutation as non-idempotent until the API changelog announces support.
+- **Idempotent verbs first** — Prefer `PUT`/`PATCH` for updates so retries can safely re-send the request without creating duplicates. Only retry `POST` when the endpoint explicitly documents an idempotency key.
+- **Use `with429Backoff` for safe retries** — Wrap idempotent requests in [`with429Backoff`](frontend-next/src/lib/http/backoff.ts) to honour `Retry-After`, cap attempts, and emit callbacks with remaining quota information:
+
+  ```ts
+  import { with429Backoff } from "@/lib/http/backoff";
+
+  const response = await with429Backoff(() => fetch("/api/posts", { method: "PUT", body: JSON.stringify(payload) }), {
+    maxAttempts: 3,
+    onRetry: ({ attempt, delayMs, remaining }) => {
+      console.info(`Retry #${attempt} in ${delayMs}ms (remaining quota: ${remaining ?? "unknown"})`);
+    },
+  });
+
+  if (response.status === 429) {
+    // Surface an actionable message: "We are throttling writes for your account. Please retry later."
+  }
+  ```
+- **Surface guidance to users** — When retries are exhausted, display the `Retry-After` value and clarify that the action was not completed to prevent accidental duplicates.
+- **Handle duplicates explicitly** — If a retry results in a `409 Conflict`, show the user which record already exists (e.g., "A post with this slug already exists") and avoid mutating local optimistic caches. Server handlers should log the conflicting idempotency key or unique field to help diagnose repeated submissions.
+
 ## Local Development
 
 ### Prerequisites
@@ -128,6 +192,8 @@ cd frontend-next && pnpm run test:ci
 
 - Frontend image builds with `NEXT_PUBLIC_API_URL` passed as a build-arg from Cloud Build.
 - Consider setting a Cloud Run service account for least privilege deployments.
+- `/health` dependency probes can optionally call the Firebase Admin SDK when `HEALTHCHECK_FIREBASE_ADMIN_PING=true` and honour
+  `HEALTHCHECK_TIMEOUT_MS` (or per-dependency overrides) to prevent slow checks from delaying responses.
 
 ### Production configuration (required)
 

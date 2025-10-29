@@ -1,10 +1,12 @@
 import { PostsService } from "./posts.service";
+import { InMemoryPostsRepository } from "../../repositories/posts.repository";
 
 describe("PostsService", () => {
   let service: PostsService;
 
   beforeEach(() => {
-    service = new PostsService();
+    const repository = new InMemoryPostsRepository();
+    service = new PostsService(repository);
   });
 
   describe("create", () => {

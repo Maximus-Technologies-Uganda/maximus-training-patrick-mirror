@@ -21,8 +21,11 @@ export class PostsService {
 
   async create(data: PostCreate & { ownerId?: string }): Promise<Post> {
     const ownerId = data.ownerId ?? "unknown-owner";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const created = await this.impl.create({ ...(data as any), ownerId });
+    type CreateWithOwner = PostCreate & { ownerId: string };
+    // Drop optional ownerId from incoming data to avoid conflicts, then add required ownerId
+    const { ownerId: _omit, ...rest } = data;
+    const payload = { ...(rest as PostCreate), ownerId } as CreateWithOwner;
+    const created = await this.impl.create(payload);
     return created;
   }
 

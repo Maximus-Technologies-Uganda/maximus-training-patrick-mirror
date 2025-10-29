@@ -4,6 +4,7 @@ import React, { useLayoutEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import { mutatePostsPage1 } from "../src/lib/swr";
+import { withCsrf } from "../src/lib/auth/csrf";
 
 const FormSchema = z.object({
   title: z.string().min(1),
@@ -20,8 +21,11 @@ export default function NewPostForm({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; content?: string }>({});
   const [success, setSuccess] = useState<string | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   // Focus the success alert immediately after it is rendered
   useLayoutEffect(() => {
@@ -33,21 +37,37 @@ export default function NewPostForm({
   const onSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
     setSuccess(null);
     const parsed = FormSchema.safeParse({ title, content });
     if (!parsed.success) {
       setError("Please fill in all required fields.");
+      const issues = parsed.error.issues.reduce<Record<string, string>>((acc, issue) => {
+        const path = (issue.path?.[0] as string) || "";
+        if (path && !acc[path]) acc[path] = issue.message || "Required";
+        return acc;
+      }, {});
+      setFieldErrors({ title: issues.title, content: issues.content });
+      // Focus first invalid field for a11y
+      if (issues.title) {
+        titleRef.current?.focus();
+      } else if (issues.content) {
+        contentRef.current?.focus();
+      }
       return;
     }
 
-    const res = await fetch(`/api/posts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Ensure HttpOnly session cookie is sent to the Next.js route handler
-      // which forwards it to the upstream API.
-      credentials: "include",
-      body: JSON.stringify({ title, content, published: true, tags: [] }),
-    });
+    const res = await fetch(
+      `/api/posts`,
+      withCsrf({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Ensure HttpOnly session cookie is sent to the Next.js route handler
+        // which forwards it to the upstream API.
+        credentials: "include",
+        body: JSON.stringify({ title, content, published: true, tags: [] }),
+      }),
+    );
     if (res.status === 201) {
       setTitle("");
       setContent("");
@@ -82,23 +102,39 @@ export default function NewPostForm({
           Title
           <input
             aria-label="Title"
-            className="mt-1 w-full rounded border border-gray-300 px-2 py-1"
+            ref={titleRef}
+            aria-invalid={Boolean(fieldErrors.title) || undefined}
+            aria-describedby={fieldErrors.title ? "title-error" : undefined}
+            className="mt-1 w-full rounded border border-gray-300 px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+          {fieldErrors.title ? (
+            <span id="title-error" role="alert" className="mt-1 block text-sm text-red-700">
+              {fieldErrors.title}
+            </span>
+          ) : null}
         </label>
         <label className="block text-sm text-gray-700 sm:col-span-2">
           Content
           <textarea
             aria-label="Content"
-            className="mt-1 w-full rounded border border-gray-300 px-2 py-1"
+            ref={contentRef}
+            aria-invalid={Boolean(fieldErrors.content) || undefined}
+            aria-describedby={fieldErrors.content ? "content-error" : undefined}
+            className="mt-1 w-full rounded border border-gray-300 px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
+          {fieldErrors.content ? (
+            <span id="content-error" role="alert" className="mt-1 block text-sm text-red-700">
+              {fieldErrors.content}
+            </span>
+          ) : null}
         </label>
       </div>
       <div className="mt-3 flex justify-end">
-        <button type="submit" className="rounded bg-blue-600 px-3 py-1 text-white">
+        <button type="submit" className="rounded bg-blue-600 px-3 py-1 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
           Create
         </button>
       </div>

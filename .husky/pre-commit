@@ -1,8 +1,9 @@
 #!/usr/bin/env sh
 set -e
 
-# Lint the repository before committing
-echo "🔍 Running lint checks..."
-npm run lint
+echo "🚫 Checking for large files and binaries..."
+sh .husky/pre-commit-binary-check
 
+echo "🔍 Running Prettier + ESLint on staged files (lint-staged)..."
+npx lint-staged
 

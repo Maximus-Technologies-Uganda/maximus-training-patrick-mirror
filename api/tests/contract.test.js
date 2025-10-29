@@ -22,7 +22,7 @@ beforeAll(() => {
   const specPath = path.join(__dirname, '..', 'openapi.json');
   // Validate OpenAPI document with Spectral before running contract assertions
   // This ensures the spec is syntactically valid and conforms to common rulesets
-  execSync(`npx spectral lint "${specPath}"`, { stdio: 'inherit' });
+  execSync(`npx @stoplight/spectral-cli@6.11.0 lint "${specPath}"`, { stdio: 'inherit' });
 });
 
 describe('OpenAPI contract - /health', () => {
@@ -40,6 +40,9 @@ describe('OpenAPI contract - /posts', () => {
     const res = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'T', content: 'C' });
     expect(res.status).toBe(201);
     // Response schema validation is handled via integration tests and Zod schemas
@@ -51,8 +54,11 @@ describe('OpenAPI contract - /posts', () => {
     const res = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     // Response schema validation is handled via integration tests and Zod schemas
   });
 
@@ -61,6 +67,9 @@ describe('OpenAPI contract - /posts', () => {
     await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'A', content: 'aaa' });
     const res = await request(app).get('/posts');
     expect(res.status).toBe(200);
@@ -70,7 +79,7 @@ describe('OpenAPI contract - /posts', () => {
   it('GET /posts invalid query matches 400 spec', async () => {
     const app = await makeApp();
     const res = await request(app).get('/posts?page=0');
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
     // Response schema validation is handled via integration tests and Zod schemas
   });
 });
@@ -88,6 +97,9 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
     const res = await request(app).get(`/posts/${created.body.id}`);
     expect(res.status).toBe(200);
@@ -96,13 +108,20 @@ describe('OpenAPI contract - /posts/{id}', () => {
 
   it('PUT /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .put('/posts/test-id')
+      .put(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'New', content: 'Text' });
     expect(res.status).toBe(200);
   });
@@ -112,41 +131,69 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const res = await request(app)
       .put('/posts/missing')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'New', content: 'Text' });
     expect(res.status).toBe(404);
   });
 
   it('PUT /posts/:id invalid body matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .put('/posts/test-id')
+      .put(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: '' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
   });
 
   it('PATCH /posts/:id validation error matches spec', async () => {
     const app = await makeApp();
-    const res = await request(app)
-      .patch('/posts/test-id')
+    const created = await request(app)
+      .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
+      .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
+    const res = await request(app)
+      .patch(`/posts/${id}`)
+      .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
   });
 
   it('PATCH /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .patch('/posts/test-id')
+      .patch(`/posts/${id}`)
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'Updated' });
     expect(res.status).toBe(200);
   });
@@ -156,19 +203,29 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const res = await request(app)
       .patch('/posts/missing')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'Updated' });
     expect(res.status).toBe(404);
   });
 
   it('DELETE /posts/:id success matches spec', async () => {
     const app = await makeApp();
-    await request(app)
+    const created = await request(app)
       .post('/posts')
       .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json')
       .send({ title: 'Hello', content: 'World' });
+    const id = created.body.id;
     const res = await request(app)
-      .delete('/posts/test-id')
-      .set('Cookie', cookie('user-A'));
+      .delete(`/posts/${id}`)
+      .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json');
     expect(res.status).toBe(204);
     // No body expected for 204
   });
@@ -177,7 +234,10 @@ describe('OpenAPI contract - /posts/{id}', () => {
     const app = await makeApp();
     const res = await request(app)
       .delete('/posts/missing')
-      .set('Cookie', cookie('user-A'));
+      .set('Cookie', cookie('user-A'))
+      .set('X-User-Id', 'user-A')
+      .set('X-User-Role', 'owner')
+      .set('Accept', 'application/json');
     expect(res.status).toBe(404);
   });
 });

@@ -1,7 +1,20 @@
 #!/usr/bin/env sh
 set -e
 
-echo "🧪 Running type checks for changed workspaces..."
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║         Mandatory Pre-Push Validation (All Tiers)         ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo "🧪 TIER 1+2: Running type checks and linting for changed workspaces..."
 
 # Compute changed files based on the refs being pushed (from STDIN)
 # pre-push receives lines: <local ref> <local sha> <remote ref> <remote sha>
@@ -75,6 +88,67 @@ else
   npm run typecheck:bail -- --projects="$WORKSPACES"
 fi
 
-# Run lint as a safety net (should be fast due to caching)
-echo "🔍 Running lint checks..."
-npm run lint
+# Lint already ran in pre-commit via lint-staged; skip redundant check
+# Only run full lint if there are .eslintrc config changes
+LINT_CONFIG_CHANGED=$(git diff HEAD~1 .eslintrc.json .eslintignore 2>/dev/null || true)
+if [ -n "$LINT_CONFIG_CHANGED" ]; then
+  echo "🔍 ESLint config changed; running full lint..."
+  npm run lint
+else
+  echo "✅ Lint already checked in pre-commit (via lint-staged)"
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🧪 TIER 3: Running full comprehensive local CI..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Run the full local CI test suite (Tier 3)
+if ! bash scripts/test-locally.sh; then
+  echo ""
+  echo "❌ Local CI tests FAILED. Please fix errors and try again."
+  echo ""
+  exit 1
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🎯 TIER 4: Simulating GitHub Actions locally..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Check if act is available for Tier 4 (MANDATORY)
+if ! command -v act &> /dev/null; then
+  echo ""
+  echo "❌ TIER 4 FAILED: act tool not found (MANDATORY)"
+  echo ""
+  echo "   Install act to enable GitHub Actions simulation:"
+  echo ""
+  echo "   Windows:  choco install act"
+  echo "   macOS:    brew install act"
+  echo "   Linux:    https://github.com/nektos/act/releases"
+  echo ""
+  echo "   After installation, verify with: act --version"
+  echo "   Then try pushing again: git push"
+  echo ""
+  exit 1
+fi
+
+echo "✓ act tool found; running GitHub Actions simulation..."
+
+if ! act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts 2>&1 | tail -50; then
+  echo ""
+  echo "❌ TIER 4 FAILED: GitHub Actions simulation had errors"
+  echo ""
+  exit 1
+else
+  echo "✓ GitHub Actions simulation passed!"
+fi
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║  ✓ All mandatory pre-push validations passed!              ║"
+echo "║  Proceeding with push to GitHub...                        ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""

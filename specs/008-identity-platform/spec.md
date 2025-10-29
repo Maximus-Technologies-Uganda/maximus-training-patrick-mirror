@@ -63,6 +63,17 @@ A signed-in user with the `admin` role can edit or delete any user’s posts.
 - Rate limit exceeded (>10 writes/min/user): respond `429 Too Many Requests` with retry hints.
 - Anonymous user tries to access create/edit/delete UI via deep link: UI redirects or hides controls; API still enforces AuthZ.
 
+### 401 vs 403 Semantics (T107)
+
+- `401 Unauthorized`: identity is missing, invalid, or expired (e.g., bad/expired token).
+- `403 Forbidden`: identity is valid but the resource/action is not permitted (e.g., owner attempting to mutate another user’s post).
+
+### 404 vs 403 Semantics (T037)
+
+- Return `404 Not Found` when a target resource does not exist.
+- Return `403 Forbidden` when the resource exists but the caller lacks permission to mutate it.
+- Do not mask authorization failures as `404` for existing resources.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -89,12 +100,79 @@ Security & Validation
 - **FR-022**: Return `422 Unprocessable Entity` with envelope `{ code, message, details? }` for validation failures.
 - **FR-023**: Rate‑limit mutating endpoints to 10 requests per minute per authenticated user; for anonymous contexts use IP as a fallback key.
 - **FR-024**: Respond `429 Too Many Requests` when rate limit is exceeded; include retry hints.
+- **FR-025**: Mutating requests MUST use `Content-Type: application/json`; otherwise respond `415 Unsupported Media Type` with a standardized error envelope including `requestId` when available.
+ - **FR-026**: Identity propagation for writes: when an authenticated user is present, mutating operations (POST/PUT/PATCH/DELETE) MUST include `X-User-Id` and `X-User-Role` headers forwarded by the BFF. The API MUST enforce presence and exact match with the server‑resolved identity; otherwise respond `403 Forbidden` with standardized envelope.
+ - **FR-027**: CSRF legacy migration: during a temporary migration window, legacy CSRF tokens without timestamps MAY be accepted only when both the double‑submit header and cookie are present and exactly equal. Timestamped tokens remain the standard with TTL ≤ 2h and ±5m clock skew tolerance; mismatches or expired tokens respond `403 Forbidden`.
 
 Observability & Health
 
 - **FR-030**: Generate or forward a `request-id` for every request and include it in all structured logs across tiers.
 - **FR-031**: Emit audit logs for create/update/delete with fields `{ timestamp, userId, role, verb, targetId, traceId }`.
 - **FR-032**: Provide a `/health` endpoint that returns service status (including commit SHA and dependency checks).
+
+**Audit Log Schema & Examples:**
+
+```json
+// Success audit log (POST /posts)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:30:45.123Z",
+  "verb": "create",
+  "targetType": "post",
+  "targetId": "post-abc123",
+  "userId": "firebase-uid-abc123",
+  "role": "owner",
+  "status": 201,
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+}
+
+// Success audit log (DELETE /posts/post-xyz789 by admin)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:31:12.456Z",
+  "verb": "delete",
+  "targetType": "post",
+  "targetId": "post-xyz789",
+  "userId": "firebase-uid-def456",
+  "role": "admin",
+  "status": 204,
+  "requestId": "550e8400-e29b-41d4-a716-446655440001",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4737"
+}
+
+// Denied audit log (PUT /posts/post-xyz789 - insufficient permissions)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:32:30.789Z",
+  "verb": "update",
+  "targetType": "post",
+  "targetId": "post-xyz789",
+  "userId": "firebase-uid-ghi789",
+  "role": "owner",
+  "status": 403,
+  "requestId": "550e8400-e29b-41d4-a716-446655440002",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4738"
+}
+
+// Denied audit log (POST /posts - rate limit exceeded)
+{
+  "level": "info",
+  "type": "audit",
+  "ts": "2025-10-22T15:33:45.012Z",
+  "verb": "create",
+  "targetType": "post",
+  "targetId": "",
+  "userId": "firebase-uid-jkl012",
+  "role": "owner",
+  "status": 429,
+  "requestId": "550e8400-e29b-41d4-a716-446655440003",
+  "traceId": "4bf92f3577b34da6a3ce929d0e0e4739"
+}
+```
 
 API Design (OpenAPI)
 
@@ -163,6 +241,7 @@ Assumptions & Dependencies
 - **Deny lists**: Reserve endpoints for future; none enabled this week.
 - **Secrets**: Firebase Admin keys via Secret Manager; no secrets in env files or code.
 - **Clock skew**: Accept ±5 minutes on ID token `iat/exp` to reduce false 401s.
+- **Time synchronization**: Infrastructure assumes NTP/chrony is configured and operational to maintain ±5m maximum clock drift between API servers, client systems, and Firebase token issuers. This supports the clock skew tolerance for token validation.
 - **Revocation**: Honor Firebase token revocation on privileged actions (admin).
 
 ## CSRF Model (unambiguous)
@@ -171,13 +250,25 @@ Assumptions & Dependencies
 - **Where required**: `POST/PUT/DELETE` only.
 - **Failure**: `403` with standard envelope.
 
+## Logout (T048)
+
+- `POST /api/logout` clears the session cookie with: `Set-Cookie: session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0` and clears any CSRF cookie similarly (`Max-Age=0`, `Path=/`, `SameSite=Strict`).
+- `Secure` flag is included when served over HTTPS.
+
+## Session Cookie Rotation (T062)
+
+- Rotate the short‑lived session cookie approximately every 15 minutes, or immediately upon role change.
+- New cookie flags: `HttpOnly`, `Secure` (HTTPS), `SameSite=Strict`, `Path=/`, `Max‑Age=1800`.
+
 ## Rate-Limit Spec (pin the algorithm)
 
 - **Window**: fixed window 60s; capacity 10.
-- **Key**: `userId`; fallback `ip` when unauthenticated.
+- **Key**: `userId`; fallback `ip` when unauthenticated. Precedence is `userId || ip` (T108).
 - **Store**: in-memory for demo; adapter interface for Redis/Cloud Memorystore later.
 - **Headers**: include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After` on 429.
 - **Admin**: NOT exempt.
+ - **Admin**: NOT exempt.
+ - **Preflight**: `OPTIONS` (CORS preflight) requests are not rate limited and MUST NOT include any rate‑limit headers; respond `204` with appropriate `Access-Control-*` headers.
 
 ## Observability (fields & propagation)
 
@@ -202,6 +293,12 @@ Assumptions & Dependencies
 - CI smoke SLO: p95 < 300ms.
 
 ## OpenAPI Contract Additions (drop-in)
+
+### Public Read Endpoints (Unauthenticated)
+- `GET /posts` — public listing; no authentication required.
+- `GET /posts/{id}` — public detail; no authentication required.
+
+OpenAPI explicitly marks these operations with `security: []` to denote no auth, while protected write operations specify `security: [{ BearerAuth: [] }]`.
 
 - **SecuritySchemes**:
 
@@ -231,6 +328,7 @@ paths:
         "403": { $ref: "#/components/responses/Err403" }
         "422": { $ref: "#/components/responses/Err422" }
         "429": { $ref: "#/components/responses/Err429" }
+        "415": { $ref: "#/components/responses/Err415" }
 components:
   responses:
     Err401:
@@ -257,6 +355,12 @@ components:
         Retry-After:
           schema: { type: integer }
           description: Seconds until next allowed request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Err415:
+      description: Unsupported Media Type
       content:
         application/json:
           schema:

@@ -13,6 +13,8 @@ module.exports = {
   coverageReporters: ["json", "json-summary", "lcov", "text-summary"],
   testPathIgnorePatterns: ["<rootDir>/dist/"],
   moduleNameMapper: {
+    // Force contract tests to use TypeScript app with new middleware
+    '^../../src/app$': '<rootDir>/src/app.ts',
     '^#tsApp$': '<rootDir>/src/app.ts',
   },
 };

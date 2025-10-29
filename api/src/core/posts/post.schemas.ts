@@ -2,7 +2,9 @@ import { z } from "zod";
 
 export const PostSchema = z.object({
   id: z.string().uuid(),
-  ownerId: z.string().min(1),
+  // ownerId is optional for backward compatibility with pre-existing posts
+  // that were created before ownership tracking was added
+  ownerId: z.string().min(1).optional(),
   title: z.string().min(1).max(200),
   content: z.string().min(1).max(10000),
   tags: z.array(z.string().min(1).max(40)).max(20).default([]),

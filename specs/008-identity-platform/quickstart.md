@@ -38,9 +38,11 @@ chore/T001-env-flags-setup-DEV-598
 | `FIREBASE_ADMIN_PROJECT_ID` | No* | none | `my-project` | *Required if using Firebase Admin SDK |
 | `FIREBASE_ADMIN_CLIENT_EMAIL` | No* | none | `firebase-adminsdk@...` | *Required if using Firebase Admin SDK |
 | `FIREBASE_ADMIN_PRIVATE_KEY` | No* | none | `"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"` | *Required; escape newlines as `\n` and wrap in quotes |
+| `HEALTHCHECK_FIREBASE_ADMIN_PING` | No | `true` | `false` | Set to `false` locally when Firebase Admin credentials are absent or when using emulators to avoid 503 noise |
 
 **Note on Secret Manager (Production):**
 In production, `SESSION_SECRET` and Firebase Admin credentials should be loaded from Google Secret Manager, not committed. See T045 for Secret Manager wiring documentation.
+Rotate Firebase Admin service-account keys at least every 90 days: create a new key in Secret Manager, deploy with the new version, then revoke the previous key once rollout completes. Document the rotation date in the runbook (see §7 below).
 
 ## Setup Instructions
 
@@ -109,7 +111,17 @@ ALLOW_ORIGIN=http://localhost:3001,https://staging.example.com,https://prod.exam
 
 **CI Integration:** The gitleaks check runs on every PR (see T055).
 
-### 7. Firebase Emulators (Optional, Local Dev)
+### 7. Firebase Admin IAM (Least Privilege)
+
+- Create a dedicated service account (e.g., `firebase-admin-bff@<project>.iam.gserviceaccount.com`) for the BFF/API tier.
+- Grant only the roles required for token verification and revocation:
+  - `Firebase Authentication Admin` (`roles/firebaseauth.admin`) — verify ID tokens, revoke sessions, inspect disabled users.
+  - `Service Account Token Creator` (`roles/iam.serviceAccountTokenCreator`) — optional, only if you mint custom tokens (not required for standard email/password flows).
+- Remove broad roles such as `Editor` from the service account and store the JSON key in Secret Manager (`FIREBASE_ADMIN_*` secrets).
+- Document the account email in deployment runbooks so rotations can be audited. See [plan.md](./plan.md#firebase-admin-iam) for the release checklist that references this section.
+- Rotate the service account key at most every 90 days: (1) add a new key in Secret Manager as a new secret version, (2) deploy staging/production with the new version, (3) confirm `/health` stays green, then (4) revoke the prior key in the Firebase Console.
+
+### 8. Firebase Emulators (Optional, Local Dev)
 
 For local development without hitting Firebase production:
 
@@ -134,9 +146,42 @@ FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
 FIREBASE_FIRESTORE_EMULATOR_HOST=localhost:8080
 ```
 
+**Runtime wiring:**
+
+- The API honours `FIREBASE_AUTH_EMULATOR_HOST`/`FIREBASE_FIRESTORE_EMULATOR_HOST` automatically; set them before `pnpm --filter api dev` to route Firebase Admin traffic to the emulator.
+- The Next.js client calls `connectAuthEmulator` when `NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST` is defined. Provide the host without a scheme (e.g., `localhost:9099`) to match Firebase CLI defaults.
+- Keep emulator credentials scoped to your local project; never reuse production secrets.
+
+**Verify emulator wiring:**
+
+1. Export the emulator vars and disable the Firebase Admin health ping before starting the API:
+
+   ```bash
+   export FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+   export FIREBASE_FIRESTORE_EMULATOR_HOST=localhost:8080
+   export HEALTHCHECK_FIREBASE_ADMIN_PING=false
+   pnpm --filter api dev
+   ```
+
+2. In another terminal, create a test account via the Firebase CLI (emulator only):
+
+   ```bash
+   firebase auth:import emulator-users.json --project your-project-id
+   ```
+
+   `emulator-users.json` can contain seed credentials for smoke testing.
+
+3. Hit the API health endpoint and confirm the dependency status reports `firebase: "ok"` even when credentials are not present (because the emulator host short-circuits the admin ping):
+
+   ```bash
+   curl -s http://localhost:3000/health | jq '.dependencies'
+   ```
+
+4. Start the frontend with `NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST=localhost:9099`, sign in using the seeded credentials, and verify the login succeeds without contacting production Firebase (inspect the network tab; calls should target `http://localhost:9099`).
+
 See T072 for full emulator parity documentation.
 
-### 8. Google Secret Manager (Production)
+### 9. Google Secret Manager (Production)
 
 For production deployments, sensitive credentials should be stored in Google Secret Manager instead of environment files.
 

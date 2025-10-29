@@ -15,13 +15,15 @@ describe("POST /auth/login", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/auth/login")
-      .send({ username: "alice", password: "correct-password" })
-      .set("Content-Type", "application/json");
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ username: "alice", password: "correct-password" });
 
     expect(res.status).toBe(204);
     const setCookie = res.headers["set-cookie"] as string[] | undefined;
     expect(Array.isArray(setCookie) && setCookie.length > 0).toBe(true);
     expect(setCookie![0]).toMatch(/HttpOnly/i);
+    expect(setCookie![0]).toMatch(/SameSite=Strict/i);
     expect(res.text).toBe("");
   });
 
@@ -29,8 +31,9 @@ describe("POST /auth/login", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/auth/login")
-      .send({ username: "alice", password: "wrong-password" })
-      .set("Content-Type", "application/json");
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ username: "alice", password: "wrong-password" });
 
     expect(res.status).toBe(401);
     expect(res.headers["set-cookie"]).toBeUndefined();
@@ -43,17 +46,22 @@ describe("POST /auth/logout", () => {
     const app = await makeApp();
 
     // First call without any session cookie
-    const res1 = await request(app).post("/auth/logout");
+    const res1 = await request(app)
+      .post("/auth/logout")
+      .set("Accept", "application/json");
     expect(res1.status).toBe(204);
     const setCookie1 = res1.headers["set-cookie"] as string[] | undefined;
     expect(Array.isArray(setCookie1) && setCookie1.length > 0).toBe(true);
     const cookieStr = setCookie1![0];
     expect(cookieStr).toMatch(/HttpOnly/i);
+    expect(cookieStr).toMatch(/SameSite=Strict/i);
     expect(cookieStr).toMatch(/(Max-Age=0|Expires=)/i);
     expect(res1.text).toBe("");
 
     // Second call (still without a session): remains successful
-    const res2 = await request(app).post("/auth/logout");
+    const res2 = await request(app)
+      .post("/auth/logout")
+      .set("Accept", "application/json");
     expect(res2.status).toBe(204);
   });
 });

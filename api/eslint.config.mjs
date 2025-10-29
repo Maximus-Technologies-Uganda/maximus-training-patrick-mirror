@@ -15,7 +15,14 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "no-console": "off",
+      "no-console": ["error", { allow: ["warn", "error"] }],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.object.name='console'][callee.property.name='log']",
+          message: "console.log() is forbidden. Use console.warn() or console.error() instead, or route through logger."
+        }
+      ]
     },
   },
   {
@@ -26,6 +33,10 @@ export default [
         ...globals.node,
       },
     },
-    rules: {},
+    rules: {
+      // Allow test fixtures with sensitive keywords
+      "no-restricted-syntax": "off",
+      "no-console": "off"
+    },
   },
 ];

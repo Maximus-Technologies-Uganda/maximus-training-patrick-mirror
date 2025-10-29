@@ -14,10 +14,33 @@
       "Bash(npx eslint src/services/PostsService.ts src/core/posts/posts.service.test.ts)",
       "Bash(git add api/src/services/PostsService.ts api/src/core/posts/posts.service.test.ts)",
       "Bash(find:*)",
-      "Bash(pnpm -r lint:*)",
-      "Bash(node scripts/quality-gate/check-types.js:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(npx tsx:*)",
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(identity-platform): logging, observability, and health hardening (T089–T112)\n\n## Summary\n\nImplements comprehensive logging, observability, and health checking for the identity platform:\n\n- **T089 (DEV-696)**: Security threat sketch with STRIDE mapping to tasks\n- **T091 (DEV-697)**: Log sampling guard with configurable LOG_SAMPLE_RATE_INFO\n- **T100 (DEV-698)**: PII redaction pipeline with dual-layer (key + pattern) + serialized scrubbing\n- **T101 (DEV-699)**: Health endpoint schema drift guard + OpenAPI contract alignment\n- **T105 (DEV-700)**: Idempotency retry helper blocking unsafe POST retries\n- **T112 (DEV-701)**: k6 verdict printer with non-gating CI job\n\n## Changes\n\n**API Logging & Observability**:\n- New unified `ObservabilityLogger` with automatic redaction and sampling\n- Dual-layer redaction (key-based + pattern-based) covering passwords, tokens, emails, JWTs\n- W3C Traceparent support for distributed tracing\n- Request latency tracking with nanosecond precision\n- Error serialization with stack trace capture\n\n**Health Endpoint**:\n- Rich metadata: commit SHA, uptime, service name, dependencies\n- Pluggable dependency checkers (Firebase, DB)\n- Returns 503 when unhealthy (RFC 8574 compliant)\n- Schema drift guard test anchored to OpenAPI examples\n\n**Auth & Middleware**:\n- Migrated all auth routes from console.log to defaultLogger\n- Request logger enhanced with level determination, trace context, user info\n- RequestId middleware extended with W3C traceparent parsing\n\n**Frontend**:\n- Idempotency retry helper (retryWithIdempotencyBackoff)\n- Blocks POST retries, enforces idempotency keys for PUT/PATCH\n- Exponential backoff with jitter\n- Full Vitest coverage\n\n**CI/CD**:\n- Separate k6-verdict job (non-gating)\n- ESM Node.js script for verdict printing\n- No extra build tool overhead\n\n**Documentation**:\n- Security.md with STRIDE threat model and review checklist\n- README guidance on idempotency and retry safety\n- Test coverage for all 6 tasks\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git reset:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(hardening): implement Week 8 Day 2 foundational security (T004-T051)\n\nImplements production hardening for API and BFF with CORS, content-type validation,\nsecurity headers, and comprehensive OpenAPI contract validation.\n\nChanges:\n- OpenAPI: Enhanced canonical spec with servers, error examples, requestId field\n- Validator: Created scripts/validate-openapi.ts for contract validation\n- CORS: Custom preflight middleware with proper Vary headers, no rate-limit on OPTIONS\n- Content-Type: 415 guard for mutations requiring application/json\n- Security: Baseline headers (Referrer-Policy, nosniff, X-Frame-Options, CSP with nonce)\n- Tests: CORS preflight contract tests (minor failures with helmet interaction to fix)\n- Docs: Rate-limit header policy, logging/retention policy, time sync assumptions\n\nTasks completed: T004, T005, T006, T031, T032, T042, T044, T049, T050, T051\n\nNote: CORS preflight tests have 5 failures due to middleware ordering with helmet/cors\npackage. Headers are being set but helmet is overriding. Follow-up commit needed.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(gh pr view:*)",
+      "Bash(node -e:*)",
+      "Bash(npx @stoplight/spectral-cli@6 lint:*)",
+008-identity-hardening/day2-t054-t069-foundational
+      "Bash(npm run contracts:sync:*)",
+      "Bash(git pull:*)",
+      "Bash(git tag:*)",
+      "Bash(pwsh:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(cat:*)",
+      "Bash(git stash push:*)",
+      "Bash(git push:*)",
+      "Bash(pnpm -r typecheck:*)",
+      "Bash(npm run test:types:*)"
+=======
+      "Bash(npm run contracts:sync:*)"
+main
     ],
     "deny": [],
     "ask": []

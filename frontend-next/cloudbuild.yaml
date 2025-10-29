@@ -62,13 +62,19 @@ steps:
       - -ceu
       - |
         set -euxo pipefail
+        ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${_PROD_API_URL},ID_TOKEN_AUDIENCE=${_PROD_API_URL}"
+        if [ -n "${_IAP_AUDIENCE:-}" ]; then
+          ENV_VARS+=",IAP_AUDIENCE=${_IAP_AUDIENCE}"
+        elif [ -n "${IAP_AUDIENCE:-}" ]; then
+          ENV_VARS+=",IAP_AUDIENCE=${IAP_AUDIENCE}"
+        fi
         DEPLOY_ARGS=(run deploy "${_SERVICE_NAME}" \
           --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}" \
           --project="${PROJECT_ID}" \
           --region="${_REGION}" \
           --platform=managed \
           --port=3000 \
-          --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${_PROD_API_URL},ID_TOKEN_AUDIENCE=${_PROD_API_URL},IAP_AUDIENCE=${_IAP_AUDIENCE}" \
+          --set-env-vars="${ENV_VARS}" \
           --memory=512Mi \
           --cpu=1 \
           --min-instances=0 \

@@ -1,20 +1,38 @@
 import { describe, it, expect, vi } from "vitest";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+vi.mock("next/server", () => {
+  class NextResponse extends Response {
+    constructor(body?: BodyInit | null, init?: ResponseInit) {
+      super(body ?? null, init);
+    }
+    static json(data: unknown, init?: ResponseInit) {
+      const headers = new Headers(init?.headers as HeadersInit);
+      if (!headers.has("content-type")) headers.set("content-type", "application/json");
+      return new NextResponse(JSON.stringify(data), { ...init, headers });
+    }
+  }
+  const NextRequest = class {};
+  return { NextResponse, NextRequest };
+});
 import { POST } from "./route";
 
-function makeRequest(body: object, extraHeaders: Record<string, string> = {}): NextRequest {
-  const req = new Request("http://localhost:3000/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...extraHeaders },
-    body: JSON.stringify(body),
-  });
-  return req as unknown as NextRequest;
+type FakeNextRequest = {
+  headers: Map<string, string>;
+  text?: () => Promise<string>;
+};
+
+function makeRequest(body: object, extraHeaders: Record<string, string> = {}): FakeNextRequest {
+  const headers = new Map<string, string>(Object.entries({ "Content-Type": "application/json", ...extraHeaders }));
+  return {
+    headers,
+    text: async () => JSON.stringify(body),
+  } as FakeNextRequest;
 }
 
 describe("POST /api/auth/login route handler (fallback)", () => {
   it("returns 204 and sets cookie on valid local creds", async () => {
     vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("upstream down"));
-    const res = await POST(makeRequest({ username: "admin", password: "password" }));
+    const res = await POST(makeRequest({ username: "admin", password: "password" }) as unknown as NextRequest);
     expect(res.status).toBe(204);
     expect(res.headers.get("set-cookie")).toBeTruthy();
   });
@@ -25,7 +43,7 @@ describe("POST /api/auth/login route handler (fallback)", () => {
       { username: "admin", password: "password" },
       { "x-forwarded-proto": "https" },
     );
-    const res = await POST(req);
+    const res = await POST(req as unknown as NextRequest);
     const setCookie = res.headers.get("set-cookie") || "";
     expect(setCookie).toMatch(/;\s*Secure/);
   });

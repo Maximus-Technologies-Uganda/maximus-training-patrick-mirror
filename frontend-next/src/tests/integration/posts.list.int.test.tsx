@@ -1,12 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import React from "react";
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
 
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
 // Route Handlers proxy at /api/posts; stub those endpoints directly for tests
+// Need to use real SWR for these integration tests (unmock it)
+vi.unmock("../../lib/swr");
 
 describe("Integration: Posts list states", () => {
   it("shows loading then success state with items", async () => {
