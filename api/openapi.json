@@ -541,7 +541,6 @@
       "get": {
         "operationId": "getHealth",
         "tags": [
-<<<<<<< HEAD
           "Health"
         ],
         "summary": "Service health probe",
@@ -653,46 +652,12 @@
                 "schema": {
                   "type": "integer",
                   "minimum": 1
-=======
-          "Observability"
-        ],
-        "summary": "Retrieve service health and dependency status",
-        "description": "Returns health information for the API including dependency readiness, tracing identifiers, and deployment metadata.",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Service and dependencies are healthy",
-            "headers": {
-              "X-Request-Id": {
-                "description": "Correlation identifier propagated from or generated for the request",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "traceparent": {
-                "description": "W3C trace context header identifying the trace and current span",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "tracestate": {
-                "description": "Vendor-specific trace context data preserved across services when provided",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "Cache-Control": {
-                "description": "Indicates the response must not be cached by clients or intermediaries",
-                "schema": {
-                  "type": "string"
->>>>>>> origin/main
                 }
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-<<<<<<< HEAD
                   "type": "object",
                   "required": [
                     "service",
@@ -783,77 +748,6 @@
                       }
                     }
                   }
-=======
-                  "$ref": "#/components/schemas/HealthResponse"
-                },
-                "example": {
-                  "service": "api",
-                  "status": "ok",
-                  "commit": "2b1f3e8",
-                  "time": "2025-02-14T12:00:00.000Z",
-                  "uptime_s": 128,
-                  "dependencies": {
-                    "firebase": "ok",
-                    "db": "ok"
-                  },
-                  "requestId": "550e8400-e29b-41d4-a716-446655440000",
-                  "traceId": "4bf92f3577b34da6a3ce929d0e0e4739"
-                }
-              }
-            }
-          },
-          "406": {
-            "$ref": "#/components/responses/Err406"
-          },
-          "503": {
-            "description": "One or more dependencies are unavailable or degraded",
-            "headers": {
-              "X-Request-Id": {
-                "description": "Correlation identifier propagated from or generated for the request",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "traceparent": {
-                "description": "W3C trace context header identifying the trace and current span",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "tracestate": {
-                "description": "Vendor-specific trace context data preserved across services when provided",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "Cache-Control": {
-                "description": "Indicates the response must not be cached by clients or intermediaries",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
-                },
-                "example": {
-                  "service": "api",
-                  "status": "degraded",
-                  "commit": "2b1f3e8",
-                  "time": "2025-02-14T12:05:00.000Z",
-                  "uptime_s": 256,
-                  "dependencies": {
-                    "firebase": "ok",
-                    "db": "down",
-                    "details": {
-                      "db": "db error: connection timeout"
-                    }
-                  },
-                  "requestId": "550e8400-e29b-41d4-a716-446655440001",
-                  "traceId": "4bf92f3577b34da6a3ce929d0e0e4740"
->>>>>>> origin/main
                 }
               }
             }
