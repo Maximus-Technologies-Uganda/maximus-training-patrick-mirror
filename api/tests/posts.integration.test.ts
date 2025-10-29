@@ -1,6 +1,6 @@
 import supertest from "supertest";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { validToken } = require('./jwt.util.js');
+import * as jwtUtil from './jwt.util.js';
+const { validToken } = jwtUtil;
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 const cookie = (u: string) => `session=${validToken(u)}`;
 import * as appModule from "#tsApp";
@@ -45,8 +45,11 @@ describe('Posts API Integration Tests', () => {
         const res = await supertest(api)
           .post('/posts')
           .set('Cookie', cookie('user-A'))
-          .send(p)
-          .set('Content-Type', 'application/json');
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
+          .set('Content-Type', 'application/json')
+          .set('Accept', 'application/json')
+          .send(p);
         expect(res.status).toBe(201);
       }
 
@@ -65,11 +68,23 @@ describe('Posts API Integration Tests', () => {
   });
 
   describe('GET /health', () => {
-    it('should respond with 200 and { status: "ok" }', async () => {
+    it('should respond with 200 and health metadata', async () => {
       const api = await resolveApp();
       const res = await supertest(api).get('/health');
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ status: 'ok' });
+      expect(res.body).toMatchObject({
+        status: 'ok',
+        service: 'api',
+        commit: expect.any(String),
+        time: expect.any(String),
+        uptime_s: expect.any(Number),
+        dependencies: expect.objectContaining({
+          firebase: expect.stringMatching(/^(ok|down)$/),
+          db: expect.stringMatching(/^(ok|down)$/),
+        }),
+        requestId: expect.any(String),
+        traceId: expect.any(String),
+      });
     });
   });
 
@@ -92,8 +107,11 @@ describe('Posts API Integration Tests', () => {
       const createRes = await supertest(api)
         .post('/posts')
         .set('Cookie', cookie('user-A'))
-        .send(createPayload)
-        .set('Content-Type', 'application/json');
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+        .send(createPayload);
       expect(createRes.status).toBe(201);
       expect(createRes.headers['location']).toMatch(/^\/posts\/[A-Za-z0-9_-]+$/);
       expect(typeof createRes.body.id).toBe('string');
@@ -109,8 +127,11 @@ describe('Posts API Integration Tests', () => {
       const patchRes = await supertest(api)
         .patch(`/posts/${id}`)
         .set('Cookie', cookie('user-A'))
-        .send(patchPayload)
-        .set('Content-Type', 'application/json');
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
+        .set('Content-Type', 'application/json')
+        .set('Accept', 'application/json')
+        .send(patchPayload);
       expect(patchRes.status).toBe(200);
       expect(patchRes.body).toMatchObject({ id, ...createPayload, ...patchPayload });
 
@@ -120,7 +141,12 @@ describe('Posts API Integration Tests', () => {
       expect(getRes2.body).toMatchObject({ id, ...createPayload, ...patchPayload });
 
       // DELETE
-      const deleteRes = await supertest(api).delete(`/posts/${id}`).set('Cookie', cookie('user-A'));
+      const deleteRes = await supertest(api)
+        .delete(`/posts/${id}`)
+        .set('Cookie', cookie('user-A'))
+          .set('X-User-Id', 'user-A')
+          .set('X-User-Role', 'owner')
+        .set('Accept', 'application/json');
       expect(deleteRes.status).toBe(204);
 
       // VERIFY DELETE
@@ -158,13 +184,11 @@ describe('Posts API Integration Tests', () => {
 
       // Fire requests sequentially to avoid race conditions in some CI environments
       for (let i = 0; i < 101; i++) {
-         
-        await supertest(api).get('/health');
+
+        await supertest(api).get('/posts');
       }
-      const res = await supertest(api).get('/health');
+      const res = await supertest(api).get('/posts');
       expect(res.status).toBe(429);
     });
   });
 });
-
-

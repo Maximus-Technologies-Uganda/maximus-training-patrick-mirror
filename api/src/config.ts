@@ -1,3 +1,6 @@
+import { validateEnvOnBoot } from './config/env';
+import { logWarn } from './logging/structured';
+
 export interface AppConfig {
   port: number;
   jsonLimit: string;
@@ -11,11 +14,14 @@ function toInt(value: unknown, fallback: number): number {
 }
 
 export function loadConfigFromEnv(): AppConfig {
+  validateEnvOnBoot();
   return {
     port: toInt(process.env.PORT, 3000),
-    jsonLimit: process.env.JSON_LIMIT || '256kb',
+    // T014/T047: Enforce 1MB JSON body limit for API requests
+    jsonLimit: process.env.JSON_LIMIT || '1mb',
+    // T015: Default rate limit window 60s and capacity 10 per key (user/IP)
     rateLimitWindowMs: toInt(process.env.RATE_LIMIT_WINDOW_MS, 60 * 1000),
-    rateLimitMax: toInt(process.env.RATE_LIMIT_MAX, 100),
+    rateLimitMax: toInt(process.env.RATE_LIMIT_MAX, 10),
   };
 }
 
@@ -33,11 +39,11 @@ export function getSessionSecret(): string {
     if (isProduction) {
       throw new Error('SESSION_SECRET must be set in production');
     }
-    // eslint-disable-next-line no-console
-    console.warn('[config] SESSION_SECRET is not set; using insecure dev default');
+    logWarn('SESSION_SECRET is not set; using insecure dev default', {
+      context: 'config',
+      env: process.env.NODE_ENV,
+    });
     return 'dev-secret';
   }
   return raw;
 }
-
-

@@ -1,10 +1,24 @@
 import React from "react";
-import { cookies, headers } from "next/headers";
 
 import PostsPageClient from "../../../components/PostsPageClient";
 import type { Post as SsrPost } from "../../lib/schemas";
 
 export const dynamic = "force-dynamic";
+
+function getSsrAppOrigin(): string {
+  const configured = process.env.APP_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) {
+    try {
+      const parsed = new URL(configured);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        return parsed.origin;
+      }
+    } catch {
+      // Ignore invalid URLs and fall back below
+    }
+  }
+  return "http://localhost:3000";
+}
 
 type PageSearchParams = { page?: string; pageSize?: string; q?: string };
 export default async function PostsPage({
@@ -17,43 +31,20 @@ export default async function PostsPage({
   const pageSize = Number(incomingQuery.pageSize ?? "10");
   const q = incomingQuery.q ?? "";
 
-  // Read session cookie on the server to derive userId without exposing the cookie to the client
-  const cookieStore = await cookies();
-  const session = cookieStore.get("session")?.value || "";
-  const userId = (() => {
-    try {
-      const parts = session.split(".");
-      if (parts.length !== 3) return null;
-      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-      const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
-      return typeof payload.userId === "string" ? payload.userId : null;
-    } catch {
-      return null;
-    }
-  })();
+  // Auth is now handled client-side with session-based authentication
 
   // Server-side fetch to pre-render posts for first paint (no spinner)
   // Only fetch SSR data for the first page; other pages will be fetched client-side
-  console.log(`[SSR] Fetching posts for initial render at ${new Date().toISOString()}`);
+  // Avoid noisy console logging in SSR path
   let posts: SsrPost[] | undefined;
   let initialHasNextPage: boolean | undefined;
   try {
     if (page === 1) {
-      const headerStore = await headers();
-      const protocol = headerStore.get("x-forwarded-proto") ?? "http";
-      const host =
-        headerStore.get("x-forwarded-host") ?? headerStore.get("host") ?? undefined;
-      const fallbackOrigin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-      const origin = host ? `${protocol}://${host}` : fallbackOrigin;
-      const url = new URL("/api/posts", origin);
+      const url = new URL("/api/posts", getSsrAppOrigin());
       url.searchParams.set("page", String(page));
       // Request one extra to determine if there's a next page without another round trip
       url.searchParams.set("pageSize", String(pageSize + 1));
       const fetchHeaders: Record<string, string> = {};
-      if (session) {
-        fetchHeaders.Cookie = `session=${session}`;
-      }
       const res = await fetch(url.toString(), {
         cache: "no-store",
         headers: fetchHeaders,
@@ -100,11 +91,9 @@ export default async function PostsPage({
       page={page}
       pageSize={pageSize}
       q={q}
-      currentUserId={userId ?? undefined}
       initialData={posts}
       initialHasNextPage={initialHasNextPage}
     />
   );
 }
-
 

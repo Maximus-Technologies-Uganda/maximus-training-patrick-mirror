@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIdToken } from "../../../../server/auth/getIdToken";
+import {
+  ensureRequestContext,
+  buildPropagationHeaders,
+  mergeUpstreamContext,
+  responseHeadersFromContext,
+} from "../../../../middleware/requestId";
 
 const API_BASE_URL: string =
-  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export const runtime = "nodejs";
 
@@ -28,15 +34,17 @@ function isHttps(request: NextRequest): boolean {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = new URL("/auth/logout", API_BASE_URL).toString();
   try {
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const context = ensureRequestContext(request.headers);
+    const propagationHeaders = buildPropagationHeaders(context);
     const audience = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE || "";
-    const headers: Record<string, string> = { "X-Request-Id": requestId };
+    const headers: Record<string, string> = { ...propagationHeaders };
     if (audience) headers.Authorization = `Bearer ${await getIdToken(audience)}`;
     const upstreamResponse = await fetch(upstreamUrl, {
       method: "POST",
       headers,
     });
+    const upstreamContext = mergeUpstreamContext(context, upstreamResponse.headers);
+    const responseHeaders = responseHeadersFromContext(upstreamContext);
     // Forward cookie clearing headers; upstream may clear multiple cookies
     const getSetCookieValues = (h: Headers): string[] => {
       try {
@@ -56,34 +64,41 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
     const setCookieValues = getSetCookieValues(upstreamResponse.headers);
     if (setCookieValues.length > 0) {
-      const res = new NextResponse(null, { status: upstreamResponse.status });
+      const res = new NextResponse(null, { status: upstreamResponse.status, headers: responseHeaders });
       for (const cookie of setCookieValues) res.headers.append("set-cookie", cookie);
-      const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
-      res.headers.set("X-Request-Id", upstreamRequestId);
       return res;
     }
-    const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
-    return new NextResponse(null, { status: upstreamResponse.status, headers: { "X-Request-Id": upstreamRequestId } });
+    return new NextResponse(null, { status: upstreamResponse.status, headers: responseHeaders });
   } catch (error) {
     // Fallback for local/CI: always clear the session cookie
     if (process.env.NODE_ENV !== "production") {
-      const incomingReqId = request.headers.get("x-request-id") || "";
-      const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
-      const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
+      const context = ensureRequestContext(request.headers);
+      const headers = responseHeadersFromContext(context);
+      const res = new NextResponse(null, { status: 204, headers });
       const secureAttr = isHttps(request) ? "; Secure" : "";
-      res.headers.set("set-cookie", `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttr}`);
+      // Clear both session and csrf cookies (T048)
+      res.headers.append("set-cookie", `session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secureAttr}`);
+      res.headers.append("set-cookie", `csrf=; Path=/; SameSite=Strict; Max-Age=0${secureAttr}`);
       return res;
     }
     // Structured error for logs/telemetry
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const context = ensureRequestContext(request.headers);
     const errInfo = error instanceof Error
       ? { name: error.name, message: error.message, stack: error.stack }
       : String(error);
-    console.error(JSON.stringify({ level: "error", msg: "POST /api/auth/logout upstream error", upstreamUrl, requestId, error: errInfo }));
+    console.error(
+      JSON.stringify({
+        level: "error",
+        msg: "POST /api/auth/logout upstream error",
+        upstreamUrl,
+        requestId: context.requestId,
+        traceparent: context.traceparent,
+        error: errInfo,
+      }),
+    );
     return NextResponse.json(
       { error: { code: "UPSTREAM_LOGOUT_FAILED", message: "Failed to logout" } },
-      { status: 500, headers: { "X-Request-Id": requestId } },
+      { status: 500, headers: responseHeadersFromContext(context) },
     );
   }
 }

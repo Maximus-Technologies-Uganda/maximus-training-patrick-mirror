@@ -1,0 +1,8 @@
+packages:
+  - 'api'
+  - 'frontend-next'
+  - 'frontend'
+  - 'quote'
+  - 'todo'
+  - 'expense'
+  - 'stopwatch'

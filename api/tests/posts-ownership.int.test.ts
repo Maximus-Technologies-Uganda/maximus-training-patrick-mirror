@@ -1,5 +1,5 @@
 import request from "supertest";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { validToken } = require('./jwt.util.js');
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 const cookieForUser = (userId: string): string => `session=${validToken(userId)}`;
@@ -23,8 +23,11 @@ describe("Posts Ownership Rules", () => {
     const createRes = await request(api)
       .post("/posts")
       .set("Cookie", [userA])
-      .send({ title: "Owned by A", content: "Post content" })
-      .set("Content-Type", "application/json");
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ title: "Owned by A", content: "Post content" });
     expect(createRes.status).toBe(201);
     const id = createRes.body.id as string;
 
@@ -42,21 +45,30 @@ describe("Posts Ownership Rules", () => {
     const createRes = await request(api)
       .post("/posts")
       .set("Cookie", [userA])
-      .send({ title: "A's post", content: "Secret" })
-      .set("Content-Type", "application/json");
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ title: "A's post", content: "Secret" });
     expect(createRes.status).toBe(201);
     const id = createRes.body.id as string;
 
     const patchRes = await request(api)
       .patch(`/posts/${id}`)
       .set("Cookie", [userB])
-      .send({ title: "Hacked" })
-      .set("Content-Type", "application/json");
+      .set("X-User-Id", "user-B")
+      .set("X-User-Role", "owner")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ title: "Hacked" });
     expect(patchRes.status).toBe(403);
 
     const deleteRes = await request(api)
       .delete(`/posts/${id}`)
-      .set("Cookie", [userB]);
+      .set("Cookie", [userB])
+      .set("X-User-Id", "user-B")
+      .set("X-User-Role", "owner")
+      .set("Accept", "application/json");
     expect(deleteRes.status).toBe(403);
   });
 
@@ -67,22 +79,31 @@ describe("Posts Ownership Rules", () => {
     const createRes = await request(api)
       .post("/posts")
       .set("Cookie", [userA])
-      .send({ title: "A's post", content: "Original" })
-      .set("Content-Type", "application/json");
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ title: "A's post", content: "Original" });
     expect(createRes.status).toBe(201);
     const id = createRes.body.id as string;
 
     const patchRes = await request(api)
       .patch(`/posts/${id}`)
       .set("Cookie", [userA])
-      .send({ content: "Updated by owner" })
-      .set("Content-Type", "application/json");
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ content: "Updated by owner" });
     expect(patchRes.status).toBeGreaterThanOrEqual(200);
     expect(patchRes.status).toBeLessThan(300);
 
     const deleteRes = await request(api)
       .delete(`/posts/${id}`)
-      .set("Cookie", [userA]);
+      .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
+      .set("Accept", "application/json");
     expect(deleteRes.status).toBe(204);
   });
 
@@ -93,13 +114,19 @@ describe("Posts Ownership Rules", () => {
     const patchMissing = await request(api)
       .patch("/posts/does-not-exist")
       .set("Cookie", [userA])
-      .send({ content: "irrelevant" })
-      .set("Content-Type", "application/json");
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json")
+      .send({ content: "irrelevant" });
     expect(patchMissing.status).toBe(404);
 
     const deleteMissing = await request(api)
       .delete("/posts/does-not-exist")
-      .set("Cookie", [userA]);
+      .set("Cookie", [userA])
+      .set("X-User-Id", "user-A")
+      .set("X-User-Role", "owner")
+      .set("Accept", "application/json");
     expect(deleteMissing.status).toBe(404);
   });
 });

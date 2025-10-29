@@ -5,6 +5,12 @@ export default defineConfig({
     jsx: "automatic",
     jsxInject: 'import React from "react"'
   },
+  optimizeDeps: {
+    exclude: ["firebase/app", "firebase/auth"]
+  },
+  ssr: {
+    external: ["firebase/app", "firebase/auth"]
+  },
   test: {
     include: [
       "src/**/*.test.{ts,tsx}",
@@ -26,6 +32,12 @@ export default defineConfig({
       "node_modules/**",
       // Exclude Playwright specs from Vitest collection
       "tests/playwright/**",
+      // Exclude e2e/a11y Playwright test files (*.spec.ts that are NOT contract tests)
+      "tests/auth.spec.ts",
+      "tests/a11y.*.spec.ts",
+      "tests/core-flows.spec.ts",
+      "tests/observability.spec.ts",
+      "tests/a11y.keyboard.spec.ts",
     ],
     coverage: {
       provider: "v8",

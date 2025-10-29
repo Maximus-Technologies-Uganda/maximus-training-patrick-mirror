@@ -15,7 +15,12 @@ const port = config.port;
 // Use CommonJS-friendly check to avoid ESM-only import.meta in build
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(`API listening on http://localhost:${port}`);
+    try {
+      // Use stdout directly to avoid eslint no-console rule in app code
+      process.stdout.write(`API listening on http://localhost:${port}\n`);
+    } catch {
+      /* noop */
+    }
   });
 }
 

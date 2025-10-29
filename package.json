@@ -17,6 +17,8 @@
   "scripts": {
     "contracts:sync": "tsx scripts/sync-openapi.ts",
     "contracts:check": "tsx scripts/sync-openapi.ts --check",
+    "contracts:validate": "tsx scripts/validate-openapi.ts",
+    "contracts:spectral": "node scripts/generate-spectral-report.mjs",
     "pretest": "npm run contracts:sync",
     "test": "node scripts/run-tests.js",
     "test:quote": "node quote/tests/test.js",
@@ -24,6 +26,8 @@
     "test:stopwatch": "node stopwatch/tests/test.js",
     "test:todo": "node todo/tests/test.js",
     "test:dev": "node scripts/run-tests.js --scope dev-week-1",
+    "test:local-ci": "bash scripts/test-locally.sh",
+    "test:act": "act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts",
     "pages:docs": "node scripts/publish-docs.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "coverage:normalize": "node scripts/normalize-coverage.js",
@@ -40,7 +44,8 @@
     "governance:report": "node scripts/generate-governance-report.js --out governance/report.json",
     "gate:aggregate": "node scripts/quality-gate/aggregate-results.js",
     "gate:packet": "node scripts/quality-gate/build-review-packet.js --force",
-    "gate:secrets": "node scripts/quality-gate/check-secret-patterns.js"
+    "gate:secrets": "node scripts/quality-gate/check-secret-patterns.js",
+    "gate:latency": "tsx scripts/quality-gate/run-latency-bench.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
@@ -57,14 +62,23 @@
     "globals": "^16.4.0",
     "husky": "^9.1.7",
     "jsdom": "^27.0.0",
+    "lint-staged": "^16.2.6",
     "prettier": "^3.3.3",
     "tsx": "^4.19.2",
     "yaml": "^2.6.1"
   },
   "dependencies": {
-    "@stoplight/spectral-cli": "6.11.0",
     "axios": "^1.12.2",
     "zod": "^4.1.11"
   },
-  "overrides": {}
+  "overrides": {},
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{md,yaml,yml}": [
+      "prettier --write"
+    ]
+  }
 }

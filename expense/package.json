@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "test": "jest --coverage"
+    "test": "jest --coverage",
+    "test:ci": "jest --coverage --ci"
   },
   "devDependencies": {
     "jest": "^29.7.0"

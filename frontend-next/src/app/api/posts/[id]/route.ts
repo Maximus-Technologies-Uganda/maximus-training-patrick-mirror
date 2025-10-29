@@ -1,6 +1,12 @@
-import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
+import { NextResponse, NextRequest } from "next/server";
 import { getIdToken } from "../../../../server/auth/getIdToken";
+import {
+  ensureRequestContext,
+  buildPropagationHeaders,
+  mergeUpstreamContext,
+  responseHeadersFromContext,
+  type RequestContext,
+} from "../../../../middleware/requestId";
 
 const API_BASE_URL: string =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -27,12 +33,69 @@ if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_P
   (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ = localPostsFallback;
 }
 
-function extractSessionCookie(cookieHeader: string): string {
+function extractForwardableCookies(cookieHeader: string): string {
   try {
-    const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
-    return match ? `session=${match[1]}` : "";
+    const cookies: string[] = [];
+    const sessionMatch = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+    if (sessionMatch) cookies.push(`session=${sessionMatch[1]}`);
+
+    const csrfMatch = cookieHeader.match(/(?:^|;\s*)csrf=([^;]+)/);
+    if (csrfMatch) {
+      // Forward CSRF token with timestamp validation (T063)
+      const csrfToken = csrfMatch[1];
+      if (csrfToken.includes('-')) {
+        const parts = csrfToken.split('-');
+        if (parts.length === 2) {
+          const timestamp = parseInt(parts[0], 10);
+          const now = Math.floor(Date.now() / 1000);
+          // Only forward tokens that are not too old (2 hours) or from the future (>5 minutes)
+          if (!isNaN(timestamp) && timestamp <= now + 5 * 60 && now - timestamp <= 2 * 60 * 60) {
+            cookies.push(`csrf=${csrfToken}`);
+          }
+        }
+      } else {
+        // Forward legacy tokens for backward compatibility
+        cookies.push(`csrf=${csrfToken}`);
+      }
+    }
+    return cookies.join("; ");
   } catch {
     return "";
+  }
+}
+
+function extractUserIdentity(request: NextRequest): { userId?: string; role?: string } | null {
+  // Extract from session cookie (matches API implementation)
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+  if (!match) return null;
+
+  const token = match[1];
+  try {
+    // Simple JWT decode (matches API implementation)
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const payloadSegment = parts[1];
+    const json = Buffer.from(
+      payloadSegment.replace(/-/g, "+").replace(/_/g, "/") +
+      "=".repeat((4 - (payloadSegment.length % 4)) % 4),
+      "base64"
+    ).toString("utf8");
+    const payload = JSON.parse(json) as Record<string, unknown>;
+
+    const exp = typeof payload.exp === "number" ? payload.exp : NaN;
+    if (!Number.isFinite(exp)) return null;
+
+    const now = Math.floor(Date.now() / 1000);
+    if (now >= exp) return null; // expired
+
+    const userId = typeof payload.userId === "string" ? payload.userId : undefined;
+    const role = typeof payload.role === "string" ? payload.role : "owner";
+
+    return userId ? { userId, role } : null;
+  } catch {
+    return null;
   }
 }
 
@@ -55,15 +118,45 @@ function serviceAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-export async function DELETE(request: Request): Promise<Response> {
+function initializeContext(request: NextRequest): { context: RequestContext; propagationHeaders: Record<string, string> } {
+  const context = ensureRequestContext(request.headers);
+  return { context, propagationHeaders: buildPropagationHeaders(context) };
+}
+
+function applyUpstreamContext(
+  context: RequestContext,
+  upstream: Response,
+): { context: RequestContext; headers: Record<string, string> } {
+  const merged = mergeUpstreamContext(context, upstream.headers);
+  return { context: merged, headers: responseHeadersFromContext(merged) };
+}
+
+export async function DELETE(request: NextRequest): Promise<Response> {
   const url = new URL(request.url);
   const segments = url.pathname.split("/");
   const id = segments[segments.length - 1] || segments[segments.length - 2];
   const upstreamUrl = new URL(`/posts/${encodeURIComponent(id)}`, API_BASE_URL).toString();
+  const { context: initialContext, propagationHeaders } = initializeContext(request);
+  let context = initialContext;
   const incomingCookieHeader = request.headers.get("cookie") || "";
-  const sessionCookie = extractSessionCookie(incomingCookieHeader);
-  const incomingReqId = request.headers.get("x-request-id") || "";
-  const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
+  const forwardCookieHeader = extractForwardableCookies(incomingCookieHeader);
+  const originHeader = (request.headers.get("origin") || "").trim();
+  const csrfHeader = (request.headers.get("x-csrf-token") || "").trim();
+  if (!csrfHeader) {
+    return NextResponse.json(
+      { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
+      { status: 400 },
+    );
+  }
+  // Extract and forward identity information (T053)
+  const identity = extractUserIdentity(request);
+  const identityHeaders: Record<string, string> = {};
+  if (identity?.userId) {
+    identityHeaders["X-User-Id"] = identity.userId;
+  }
+  if (identity?.role) {
+    identityHeaders["X-User-Role"] = identity.role;
+  }
 
   try {
     const upstream = await fetch(upstreamUrl, {
@@ -71,12 +164,16 @@ export async function DELETE(request: Request): Promise<Response> {
       headers: {
         ...serviceAuthHeaders(),
         ...(await authHeader()),
-        ...(sessionCookie ? { Cookie: sessionCookie } : {}),
-        "X-Request-Id": requestId,
+        ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
+        ...propagationHeaders,
+        ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
+        ...(originHeader ? { Origin: originHeader } : {}),
+        ...identityHeaders,
       },
     });
-    const upstreamRequestId = upstream.headers.get("x-request-id") || requestId;
-    return new NextResponse(null, { status: upstream.status, headers: { "X-Request-Id": upstreamRequestId } });
+    const upstreamContext = applyUpstreamContext(context, upstream);
+    context = upstreamContext.context;
+    return new NextResponse(null, { status: upstream.status, headers: upstreamContext.headers });
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       const index = localPostsFallback.findIndex((post) => post.id === id);
@@ -85,7 +182,7 @@ export async function DELETE(request: Request): Promise<Response> {
       }
       return new NextResponse(null, {
         status: 204,
-        headers: { "X-Request-Id": requestId, "X-Fallback": "local" },
+        headers: { ...responseHeadersFromContext(context), "X-Fallback": "local" },
       });
     }
 
@@ -98,18 +195,19 @@ export async function DELETE(request: Request): Promise<Response> {
         level: "error",
         msg: "DELETE /api/posts/:id upstream error",
         upstreamUrl,
-        requestId,
+        requestId: context.requestId,
+        traceparent: context.traceparent,
         error: errInfo,
       }),
     );
     return NextResponse.json(
       { error: { code: "UPSTREAM_DELETE_FAILED", message: "Failed to delete post" } },
-      { status: 500, headers: { "X-Request-Id": requestId } },
+      { status: 500, headers: responseHeadersFromContext(context) },
     );
   }
 }
 
-export async function PATCH(request: Request): Promise<Response> {
+export async function PATCH(request: NextRequest): Promise<Response> {
   const url = new URL(request.url);
   const segments = url.pathname.split("/");
   const id = segments[segments.length - 1] || segments[segments.length - 2];
@@ -120,10 +218,27 @@ export async function PATCH(request: Request): Promise<Response> {
   } catch {
     body = "";
   }
+  const { context: initialContext, propagationHeaders } = initializeContext(request);
+  let context = initialContext;
   const incomingCookieHeader = request.headers.get("cookie") || "";
-  const sessionCookie = extractSessionCookie(incomingCookieHeader);
-  const incomingReqId = request.headers.get("x-request-id") || "";
-  const requestId = incomingReqId.trim() ? incomingReqId.trim() : randomUUID();
+  const forwardCookieHeader = extractForwardableCookies(incomingCookieHeader);
+  const originHeader = (request.headers.get("origin") || "").trim();
+  const csrfHeader = (request.headers.get("x-csrf-token") || "").trim();
+  if (!csrfHeader) {
+    return NextResponse.json(
+      { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
+      { status: 400 },
+    );
+  }
+  // Extract and forward identity information (T053)
+  const identity = extractUserIdentity(request);
+  const identityHeaders: Record<string, string> = {};
+  if (identity?.userId) {
+    identityHeaders["X-User-Id"] = identity.userId;
+  }
+  if (identity?.role) {
+    identityHeaders["X-User-Role"] = identity.role;
+  }
 
   try {
     const upstream = await fetch(upstreamUrl, {
@@ -132,19 +247,23 @@ export async function PATCH(request: Request): Promise<Response> {
         "Content-Type": "application/json",
         ...serviceAuthHeaders(),
         ...(await authHeader()),
-        ...(sessionCookie ? { Cookie: sessionCookie } : {}),
-        "X-Request-Id": requestId,
+        ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
+        ...propagationHeaders,
+        ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
+        ...(originHeader ? { Origin: originHeader } : {}),
+        ...identityHeaders,
       },
       body,
     });
     const upstreamBody = await upstream.text();
     const contentType = upstream.headers.get("content-type") || "";
-    const upstreamRequestId = upstream.headers.get("x-request-id") || requestId;
+    const upstreamContext = applyUpstreamContext(context, upstream);
+    context = upstreamContext.context;
     if (contentType.includes("application/json")) {
       try {
         return NextResponse.json(JSON.parse(upstreamBody), {
           status: upstream.status,
-          headers: { "X-Request-Id": upstreamRequestId },
+          headers: upstreamContext.headers,
         });
       } catch {
         // fall through
@@ -152,7 +271,7 @@ export async function PATCH(request: Request): Promise<Response> {
     }
     return new NextResponse(upstreamBody, {
       status: upstream.status,
-      headers: { "content-type": contentType || "text/plain", "X-Request-Id": upstreamRequestId },
+      headers: { "content-type": contentType || "text/plain", ...upstreamContext.headers },
     });
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
@@ -187,7 +306,7 @@ export async function PATCH(request: Request): Promise<Response> {
       existing.updatedAt = now;
       return NextResponse.json(existing, {
         status: 200,
-        headers: { "X-Request-Id": requestId, "X-Fallback": "local" },
+        headers: { ...responseHeadersFromContext(context), "X-Fallback": "local" },
       });
     }
 
@@ -200,13 +319,14 @@ export async function PATCH(request: Request): Promise<Response> {
         level: "error",
         msg: "PATCH /api/posts/:id upstream error",
         upstreamUrl,
-        requestId,
+        requestId: context.requestId,
+        traceparent: context.traceparent,
         error: errInfo,
       }),
     );
     return NextResponse.json(
       { error: { code: "UPSTREAM_UPDATE_FAILED", message: "Failed to update post" } },
-      { status: 500, headers: { "X-Request-Id": requestId } },
+      { status: 500, headers: responseHeadersFromContext(context) },
     );
   }
 }

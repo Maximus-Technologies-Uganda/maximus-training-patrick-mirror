@@ -1,12 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import React from "react";
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
 
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
 // App proxies the upstream API via Next.js Route Handlers at /api/posts
+// Need to use real SWR for these integration tests (unmock it)
+vi.unmock("../../lib/swr");
 
 describe("A11y: /posts page states have basic roles/labels", () => {
   it("renders loading in aria-live region, then shows content with proper roles", async () => {

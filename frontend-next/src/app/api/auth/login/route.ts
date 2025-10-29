@@ -1,9 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getIdToken } from "../../../../server/auth/getIdToken";
+import {
+  ensureRequestContext,
+  buildPropagationHeaders,
+  mergeUpstreamContext,
+  responseHeadersFromContext,
+} from "../../../../middleware/requestId";
 
 // Keep server-only API base URL; fallback to public var for local dev parity
 const API_BASE_URL: string =
-  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export const runtime = "nodejs";
 
@@ -38,12 +45,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     bodyText = "{}";
   }
   try {
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const context = ensureRequestContext(request.headers);
+    const propagationHeaders = buildPropagationHeaders(context);
+    // Accept Firebase ID token from client when present; forward as-is upstream
+    // to allow upstream API (or BFF API tier) to verify and mint cookies.
+    // If absent, body will contain legacy username/password for local fallback.
     const audience = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE || "";
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "X-Request-Id": requestId,
+      ...propagationHeaders,
     };
     if (audience) headers.Authorization = `Bearer ${await getIdToken(audience)}`;
     const upstreamResponse = await fetch(upstreamUrl, {
@@ -52,6 +62,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Forward raw body text to preserve exact payload
       body: bodyText,
     });
+    const upstreamContext = mergeUpstreamContext(context, upstreamResponse.headers);
+    const responseHeaders = responseHeadersFromContext(upstreamContext);
 
     // Propagate Set-Cookie from upstream so cookies are scoped to this app's host.
     // Some upstreams emit multiple cookies (e.g., session + CSRF). Forward them all.
@@ -73,14 +85,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
     const setCookieValues = getSetCookieValues(upstreamResponse.headers);
     if (setCookieValues.length > 0) {
-      const res = new NextResponse(null, { status: upstreamResponse.status });
+      const res = new NextResponse(null, { status: upstreamResponse.status, headers: responseHeaders });
       for (const cookie of setCookieValues) res.headers.append("set-cookie", cookie);
-      const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
-      res.headers.set("X-Request-Id", upstreamRequestId);
       return res;
     }
-    const upstreamRequestId = upstreamResponse.headers.get("x-request-id") || requestId;
-    return new NextResponse(null, { status: upstreamResponse.status, headers: { "X-Request-Id": upstreamRequestId } });
+    return new NextResponse(null, { status: upstreamResponse.status, headers: responseHeaders });
   } catch (error) {
     // Fallback for local/CI when upstream API is unavailable
     // Only activate outside production to avoid masking real errors
@@ -91,24 +100,40 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const isValid =
           (username === "admin" && password === "password") ||
           (username === "alice" && password === "correct-password");
+        const context = ensureRequestContext(request.headers);
+        const headers = responseHeadersFromContext(context);
         if (!isValid) {
-          const incomingReqId = request.headers.get("x-request-id") || "";
-          const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
-          return new NextResponse(null, { status: 401, headers: { "X-Request-Id": requestId } });
+          return new NextResponse(null, { status: 401, headers });
         }
         const userId = username === "admin" ? "admin-1" : "user-alice-1";
-        // Minimal unsigned JWT-like token for local decode-only logic
+        // Minimal unsigned JWT-like token for local decode-only logic (T062)
         const enc = (s: string) => Buffer.from(s).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
         const header = enc(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-        const payload = enc(JSON.stringify({ userId, iat: Math.floor(Date.now() / 1000) }));
+        const role = username === "admin" ? "admin" : "owner";
+        const now = Math.floor(Date.now() / 1000);
+        const exp = now + 15 * 60; // 15 minutes expiry to match cookie Max-Age
+        const payload = enc(JSON.stringify({
+          userId,
+          role,
+          iat: now,
+          exp,
+        }));
         const token = `${header}.${payload}.dev`;
-        const incomingReqId = request.headers.get("x-request-id") || "";
-        const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
-        const res = new NextResponse(null, { status: 204, headers: { "X-Request-Id": requestId } });
         const secureAttr = isHttps(request) ? "; Secure" : "";
-        res.headers.set(
+        const res = new NextResponse(null, { status: 204, headers });
+        // Session cookie (HttpOnly) with rotation (T062)
+        res.headers.append(
           "set-cookie",
-          `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${24 * 60 * 60}${secureAttr}`,
+          `session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
+        );
+        // CSRF cookie (non-HttpOnly) for double-submit header with timestamp (T063)
+        // Format: timestamp-uuid for TTL validation
+        const csrfId = randomUUID().replace(/-/g, "");
+        const csrfTs = Math.floor(Date.now() / 1000);
+        const csrfToken = `${csrfTs}-${csrfId}`;
+        res.headers.append(
+          "set-cookie",
+          `csrf=${csrfToken}; Path=/; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
         );
         return res;
       } catch {
@@ -116,15 +141,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
     // Structured error for logs/telemetry
-    const incomingReqId = request.headers.get("x-request-id") || "";
-    const requestId = incomingReqId.trim() ? incomingReqId.trim() : crypto.randomUUID();
+    const context = ensureRequestContext(request.headers);
     const errInfo = error instanceof Error
       ? { name: error.name, message: error.message, stack: error.stack }
       : String(error);
-    console.error(JSON.stringify({ level: "error", msg: "POST /api/auth/login upstream error", upstreamUrl, requestId, error: errInfo }));
+    console.error(
+      JSON.stringify({
+        level: "error",
+        msg: "POST /api/auth/login upstream error",
+        upstreamUrl,
+        requestId: context.requestId,
+        traceparent: context.traceparent,
+        error: errInfo,
+      }),
+    );
     return NextResponse.json(
       { error: { code: "UPSTREAM_LOGIN_FAILED", message: "Failed to authenticate" } },
-      { status: 500, headers: { "X-Request-Id": requestId } },
+      { status: 500, headers: responseHeadersFromContext(context) },
     );
   }
 }

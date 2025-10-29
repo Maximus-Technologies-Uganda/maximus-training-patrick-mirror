@@ -1,5 +1,20 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
+vi.mock("next/server", () => {
+  class NextResponse extends Response {
+    constructor(body?: BodyInit | null, init?: ResponseInit) {
+      super(body ?? null, init);
+    }
+    static json(data: unknown, init?: ResponseInit) {
+      const headers = new Headers(init?.headers as HeadersInit);
+      if (!headers.has("content-type")) headers.set("content-type", "application/json");
+      return new NextResponse(JSON.stringify(data), { ...init, headers });
+    }
+  }
+  const NextRequest = class {};
+  return { NextResponse, NextRequest };
+});
+// Avoid importing next/server in Vitest environment
 
 // Minimal polyfill for fetch used by route handler
 const mockJson = vi.fn();
@@ -67,7 +82,7 @@ describe("GET /api/posts route handler", () => {
     expect(res.headers.get("content-type")).toContain("application/json");
   });
 
-  it("filters Cookie header to only session on POST", async () => {
+  it("forwards only session and csrf cookies on POST", async () => {
     // Arrange a fake upstream that echoes cookies back
     (global.fetch as unknown as Mock).mockImplementationOnce(async (_url, _init) => {
       return {
@@ -77,14 +92,36 @@ describe("GET /api/posts route handler", () => {
         text: vi.fn().mockResolvedValue("{\"ok\":true}"),
       } as unknown as Response;
     });
+    const now = Math.floor(Date.now() / 1000);
+    const csrfToken = `${now}-testcsrf123`;
     const req = {
-      headers: new Map([["cookie", "foo=bar; session=abc.def.dev; other=baz"]]),
+      headers: new Map([
+        ["cookie", `foo=bar; session=abc.def.dev; csrf=${csrfToken}; other=baz`],
+        ["x-csrf-token", csrfToken],
+      ]),
       nextUrl: new URL("http://localhost:3000/api/posts"),
       text: vi.fn().mockResolvedValue("{\"title\":\"T\"}"),
     } as unknown as NextRequest;
     const { POST } = await import("./route");
     const res = await POST(req);
     expect(res.status).toBe(201);
+    const fetchArgs = (global.fetch as unknown as Mock).mock.calls[0];
+    expect(fetchArgs?.[1]?.headers).toMatchObject({ Cookie: `session=abc.def.dev; csrf=${csrfToken}` });
+  });
+
+  it("rejects POST without X-CSRF-Token header", async () => {
+    const req = {
+      headers: new Map([["cookie", "session=abc.def.dev"]]),
+      nextUrl: new URL("http://localhost:3000/api/posts"),
+      text: vi.fn().mockResolvedValue("{\"title\":\"T\"}"),
+    } as unknown as NextRequest;
+    const { POST } = await import("./route");
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" },
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
 

@@ -10,7 +10,7 @@ function createPostsRoutes(controller) {
   router.get('/:id', controller.getById);
   router.put('/:id', requireAuth, validateBody(PostCreate), controller.replace);
   router.patch('/:id', requireAuth, validateBody(PostUpdate), controller.update);
-  router.delete('/:id', requireAuth, controller.remove);
+  router.delete('/:id', requireAuth, controller.delete);
   return router;
 }
 
