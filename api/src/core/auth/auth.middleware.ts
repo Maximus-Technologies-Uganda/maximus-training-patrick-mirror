@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { createHmac } from "node:crypto";
 import { getSessionSecret } from "../../config";
-import { setCacheControlNoStore } from "../../lib/errors";
+import { defaultLogger } from "../../logging/observability";
 
 function parseCookies(header: string | undefined): Record<string, string> {
   const result: Record<string, string> = {};
@@ -54,35 +54,10 @@ function verifyJwt(token: string, secret: string): null | Record<string, unknown
   }
 }
 
-export function signJwt(payload: Record<string, unknown>, secret: string, expiresInSec: number): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const now = Math.floor(Date.now() / 1000);
-  const body = { iat: now, exp: now + expiresInSec, ...payload } as Record<string, unknown>;
-  const encHeader = base64urlEncode(Buffer.from(JSON.stringify(header)));
-  const encPayload = base64urlEncode(Buffer.from(JSON.stringify(body)));
-  const data = `${encHeader}.${encPayload}`;
-  const signature = createHmac("sha256", secret).update(data).digest();
-  return `${data}.${base64urlEncode(signature)}`;
-}
-
-function shouldRotateToken(payload: Record<string, unknown>): boolean {
-  const iat = typeof payload.iat === "number" ? payload.iat : NaN;
-  if (!Number.isFinite(iat)) return false;
-
-  const now = Math.floor(Date.now() / 1000);
-  // T062: Rotate if token is older than 10 minutes (5 minutes before 15-minute expiry)
-  const tokenAge = now - iat;
-  return tokenAge > 10 * 60; // 10 minutes
-}
-
 // Resolve the secret per request to ensure tests that set env at runtime work
 // and to avoid caching stale values across test files.
 
 export const requireAuth: RequestHandler = (req, res, next) => {
-  // If a previous middleware already attached a verified user (e.g., Firebase bearer), honor it
-  if ((req as unknown as { user?: { userId?: string } }).user?.userId) {
-    return next();
-  }
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies["session"];
   const secret = getSessionSecret();
@@ -91,64 +66,20 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    // Avoid noisy console logs in app code; rely on upstream logs if needed
-    // Prevent caching of 401 responses (T087)
-    setCacheControlNoStore(res, 401);
-    // Include requestId and optional traceId (T111)
-    const traceparent = (req.get("traceparent") || req.headers["traceparent"]) as string | undefined;
-    let traceId: string | undefined = (req.get("x-trace-id") || req.headers["x-trace-id"]) as string | undefined;
-    if (!traceId && typeof traceparent === 'string') {
-      const parts = traceparent.split('-');
-      if (parts.length >= 4 && parts[1] && /^[0-9a-f]{32}$/i.test(parts[1])) {
-        traceId = parts[1];
-      }
-    }
-    return res.status(401).json({ code: "UNAUTHORIZED", message: "Invalid or expired authentication token", ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}) });
+    defaultLogger.warn("auth failed", { requestId });
+    return res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
   }
-
-  // T062: Check if token should be rotated (older than 10 minutes or role changed)
-  const shouldRotate = shouldRotateToken(payload);
-
-  const resolvedRole = (payload as { role?: string }).role;
-  const authTimeClaim = (payload as { authTime?: unknown }).authTime;
-  const iatClaim = (payload as { iat?: unknown }).iat;
-  // FIX (Gap #1): Always provide authTime fallback to current time to prevent loss during rotation
-  const authTime =
-    typeof authTimeClaim === "number" && Number.isFinite(authTimeClaim)
-      ? Math.trunc(authTimeClaim)
-      : typeof iatClaim === "number" && Number.isFinite(iatClaim)
-      ? Math.trunc(iatClaim)
-      : Math.floor(Date.now() / 1000);
-
-  (req as unknown as { user?: { userId: string; role?: string; authTime?: number } }).user = {
-    userId: (payload as { userId: string }).userId,
-    role: typeof resolvedRole === "string" && resolvedRole.trim().length > 0 ? resolvedRole : "owner",
-    ...(authTime !== undefined ? { authTime } : {}),
-  };
-  (req as unknown as { authContext?: { method?: string } }).authContext = { method: "session-cookie" };
-
-  // Rotate token if needed
-  if (shouldRotate) {
-    const newToken = signJwt(
-      {
-        userId: (payload as { userId: string }).userId,
-        role: typeof resolvedRole === "string" && resolvedRole.trim().length > 0 ? resolvedRole : "owner",
-        ...(authTime !== undefined ? { authTime } : {}),
-      },
-      secret,
-      15 * 60,
-    );
-
-    res.cookie("session", newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 15 * 60 * 1000,
-    });
+  (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };
+  {
+    const requestId =
+      (req as unknown as { requestId?: string }).requestId ||
+      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
+    const userId = (payload as { userId: string }).userId;
+    defaultLogger.info("auth ok", { requestId, userId });
   }
-
-  // Avoid raw console logs in app code
   next();
 };
 
 export default requireAuth;
+
+

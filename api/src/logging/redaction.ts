@@ -1,102 +1,68 @@
-const REDACTED = "[redacted]" as const;
+const REDACTED = "[REDACTED]" as const;
 
-const SENSITIVE_KEYS = new Set([
-  "authorization",
-  "cookie",
-  "set-cookie",
-  "token",
-  "password",
-  "body",
-  "payload",
-]);
+const SENSITIVE_KEY_PATTERNS = [/password/i, /secret/i, /token/i, /authorization/i, /cookie/i, /body/i, /email/i];
+const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi;
+const BASIC_PATTERN = /\bBasic\s+[A-Za-z0-9._~+/=-]+/gi;
+const JWT_PATTERN = /eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g;
 
-const EMAIL_DETECTION_REGEX = /([\p{L}\p{N}._%+-]+)@([\p{L}\p{N}.-]+\.[\p{L}]{2,})/iu;
-const EMAIL_REDACTION_REGEX = /([\p{L}\p{N}._%+-]+)@([\p{L}\p{N}.-]+\.[\p{L}]{2,})/giu;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+function shouldRedactKey(path: readonly string[]): boolean {
+  return path.some((segment) => SENSITIVE_KEY_PATTERNS.some((regex) => regex.test(segment)));
 }
 
-function decodeBase64Url(segment: string): string {
-  const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
-  const padding = normalized.length % 4;
-  const padded = padding === 0 ? normalized : normalized.padEnd(normalized.length + (4 - padding), "=");
-  return Buffer.from(padded, "base64").toString("utf8");
-}
-
-function isLikelyJwt(value: string): boolean {
-  const parts = value.split(".");
-  if (parts.length !== 3) return false;
-  if (!parts.every((segment) => /^[A-Za-z0-9_-]{6,}$/.test(segment))) return false;
-  try {
-    const headerJson = decodeBase64Url(parts[0]);
-    const payloadJson = decodeBase64Url(parts[1]);
-    const header = JSON.parse(headerJson);
-    const payload = JSON.parse(payloadJson);
-    if (!isRecord(header) || !isRecord(payload)) return false;
-    const hasAlg = typeof header.alg === "string" && header.alg.length > 0;
-    const headerTyp = typeof header.typ === "string" ? header.typ.toUpperCase() : undefined;
-    const typLooksJwt = headerTyp ? ["JWT", "JOSE"].includes(headerTyp) : true;
-    const hasJwtClaim = ["sub", "iss", "aud", "exp", "iat", "nbf", "jti"].some((claim) => claim in payload);
-    return hasAlg && (typLooksJwt || hasJwtClaim);
-  } catch {
-    return false;
+function sanitizePrimitive(value: unknown, path: readonly string[]): unknown {
+  if (typeof value !== "string") {
+    return shouldRedactKey(path) ? REDACTED : value;
   }
-}
 
-function isLikelyToken(value: string): boolean {
-  if (value.length < 20) return false;
-  if (isLikelyJwt(value)) return true;
-  return /bearer\s+/i.test(value) || /api[_-]?key/i.test(value) || /secret/i.test(value);
-}
-
-function redactString(value: string): string {
-  if (!value) return value;
-  if (/^\*+$/.test(value.trim())) {
+  if (shouldRedactKey(path)) {
     return REDACTED;
   }
-  if (EMAIL_DETECTION_REGEX.test(value)) {
-    return value.replace(EMAIL_REDACTION_REGEX, `${REDACTED}`);
-  }
-  if (isLikelyToken(value)) return REDACTED;
-  if (/session=|csrf=|token=/i.test(value)) return REDACTED;
-  return value;
+
+  let sanitized = value.replace(EMAIL_PATTERN, REDACTED);
+  sanitized = sanitized.replace(BEARER_PATTERN, "Bearer " + REDACTED);
+  sanitized = sanitized.replace(BASIC_PATTERN, "Basic " + REDACTED);
+  sanitized = sanitized.replace(JWT_PATTERN, REDACTED);
+  return sanitized;
 }
 
-function redactArray(value: unknown[]): unknown[] {
-  return value.map((item) => redactValue(item));
+function sanitizeArray(values: unknown[], path: readonly string[]): unknown[] {
+  return values.map((entry, index) => sanitize(entry, [...path, String(index)]));
 }
 
-function redactObject(obj: Record<string, unknown>): Record<string, unknown> {
+function sanitizeObject(record: Record<string, unknown>, path: readonly string[]): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    const lower = key.toLowerCase();
-    if (SENSITIVE_KEYS.has(lower)) {
-      result[key] = REDACTED;
-      continue;
-    }
-    result[key] = redactValue(value);
+  for (const [key, value] of Object.entries(record)) {
+    const nextPath = [...path, key];
+    result[key] = sanitize(value, nextPath);
   }
   return result;
 }
 
-export function redactValue<T>(value: T): T {
+export function sanitize(value: unknown, path: readonly string[] = []): unknown {
   if (value == null) return value;
-  if (typeof value === "string") return redactString(value) as unknown as T;
-  if (Array.isArray(value)) return redactArray(value) as unknown as T;
-  if (typeof value === "object") {
-    return redactObject(value as Record<string, unknown>) as unknown as T;
+  if (Array.isArray(value)) {
+    return sanitizeArray(value, path);
   }
-  return value;
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === "object") {
+    const plain = value as Record<string, unknown>;
+    return sanitizeObject(plain, path);
+  }
+  return sanitizePrimitive(value, path);
 }
 
-export function sanitizeLogEntry<T>(entry: T): T {
-  if (entry == null) return entry;
-  if (typeof entry === "object" && !Array.isArray(entry)) {
-    return redactObject(entry as Record<string, unknown>) as unknown as T;
-  }
-  return redactValue(entry);
+export function scrubSerializedPayload(serialized: string): string {
+  let result = serialized.replace(EMAIL_PATTERN, REDACTED);
+  result = result.replace(BEARER_PATTERN, "Bearer " + REDACTED);
+  result = result.replace(BASIC_PATTERN, "Basic " + REDACTED);
+  result = result.replace(JWT_PATTERN, REDACTED);
+  return result;
 }
 
 export { REDACTED };
 
+// Alias for backward compatibility
+export const sanitizeLogEntry = sanitize;

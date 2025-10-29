@@ -2,39 +2,30 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Identity Platform & Posts API",
-    "version": "0.0.0",
-    "description": "Production-hardened API for authenticated posts management",
-    "contact": {
-      "name": "Maximus Platform Team",
-      "email": "platform@maximusglobal.com"
-    }
+    "version": "0.0.0"
   },
   "servers": [
     {
-      "url": "http://localhost:8080",
-      "description": "Local development (API)"
+      "url": "http://localhost:3000/",
+      "description": "Local development server"
     },
     {
-      "url": "http://localhost:3000",
-      "description": "Local development (BFF)"
+      "url": "https://maximus-training-api-673209018655.africa-south1.run.app/",
+      "description": "Staging Cloud Run deployment"
     },
     {
-      "url": "https://maximus-training-api-wyb2jsgqyq-bq.a.run.app",
-      "description": "Production API"
-    },
-    {
-      "url": "https://maximus-training-frontend-673209018655.africa-south1.run.app",
-      "description": "Production frontend/BFF"
+      "url": "https://maximus-training-api-wyb2jsgqyq-bq.a.run.app/",
+      "description": "Production Cloud Run deployment"
     }
   ],
   "tags": [
     {
       "name": "Posts",
-      "description": "Operations for listing and managing posts"
+      "description": "CRUD endpoints for the identity platform posts service."
     },
     {
-      "name": "Observability",
-      "description": "Health and diagnostics endpoints"
+      "name": "Health",
+      "description": "Service health and dependency monitoring endpoints."
     }
   ],
   "components": {
@@ -52,11 +43,6 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "example": {
-              "code": "UNAUTHORIZED",
-              "message": "Invalid or expired authentication token",
-              "requestId": "550e8400-e29b-41d4-a716-446655440000"
             }
           }
         }
@@ -67,41 +53,6 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "example": {
-              "code": "FORBIDDEN",
-              "message": "Insufficient permissions to access this resource",
-              "requestId": "550e8400-e29b-41d4-a716-446655440001"
-            }
-          }
-        }
-      },
-      "Err406": {
-        "description": "Not Acceptable",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "example": {
-              "code": "NOT_ACCEPTABLE",
-              "message": "Accept header must allow application/json responses",
-              "requestId": "550e8400-e29b-41d4-a716-446655440006"
-            }
-          }
-        }
-      },
-      "Err415": {
-        "description": "Unsupported Media Type",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "example": {
-              "code": "UNSUPPORTED_MEDIA_TYPE",
-              "message": "Content-Type must be application/json",
-              "requestId": "550e8400-e29b-41d4-a716-446655440007"
             }
           }
         }
@@ -112,21 +63,6 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ValidationErrorEnvelope"
-            },
-            "example": {
-              "code": "VALIDATION_ERROR",
-              "message": "Request validation failed",
-              "requestId": "550e8400-e29b-41d4-a716-446655440002",
-              "details": [
-                {
-                  "path": "title",
-                  "issue": "Title is required"
-                },
-                {
-                  "path": "body",
-                  "issue": "Body must be at least 10 characters"
-                }
-              ]
             }
           }
         }
@@ -145,18 +81,6 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "example": {
-              "code": "RATE_LIMITED",
-              "message": "Rate limit exceeded. Please try again later.",
-              "requestId": "550e8400-e29b-41d4-a716-446655440003",
-              "details": [
-                {
-                  "scope": "ip",
-                  "limit": "100 requests per 60 seconds",
-                  "retryAfterSeconds": 42
-                }
-              ]
             }
           }
         }
@@ -167,11 +91,6 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "example": {
-              "code": "PAYLOAD_TOO_LARGE",
-              "message": "Request payload exceeds 1MB limit",
-              "requestId": "550e8400-e29b-41d4-a716-446655440004"
             }
           }
         }
@@ -182,100 +101,12 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorEnvelope"
-            },
-            "example": {
-              "code": "SERVICE_UNAVAILABLE",
-              "message": "Service is in read-only mode",
-              "requestId": "550e8400-e29b-41d4-a716-446655440005"
             }
           }
         }
       }
     },
     "schemas": {
-      "HealthDependencyStatus": {
-        "type": "string",
-        "description": "Operational status reported by a dependency health probe",
-        "enum": [
-          "ok",
-          "down"
-        ]
-      },
-      "HealthDependencies": {
-        "type": "object",
-        "required": [
-          "firebase",
-          "db"
-        ],
-        "properties": {
-          "firebase": {
-            "$ref": "#/components/schemas/HealthDependencyStatus",
-            "description": "Firebase Admin SDK connectivity status"
-          },
-          "db": {
-            "$ref": "#/components/schemas/HealthDependencyStatus",
-            "description": "Primary database connectivity status"
-          },
-          "details": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Optional human-readable diagnostic details keyed by dependency name"
-          }
-        }
-      },
-      "HealthResponse": {
-        "type": "object",
-        "required": [
-          "service",
-          "status",
-          "commit",
-          "time",
-          "uptime_s",
-          "dependencies"
-        ],
-        "properties": {
-          "service": {
-            "type": "string",
-            "description": "Logical service identifier responding to the probe"
-          },
-          "status": {
-            "type": "string",
-            "description": "Aggregated health status derived from dependency probes",
-            "enum": [
-              "ok",
-              "degraded"
-            ]
-          },
-          "commit": {
-            "type": "string",
-            "description": "Git commit SHA deployed for the responding service"
-          },
-          "time": {
-            "type": "string",
-            "format": "date-time",
-            "description": "ISO-8601 timestamp when the health payload was generated"
-          },
-          "uptime_s": {
-            "type": "number",
-            "format": "double",
-            "description": "Process uptime in whole seconds at the time of the probe"
-          },
-          "dependencies": {
-            "$ref": "#/components/schemas/HealthDependencies"
-          },
-          "requestId": {
-            "type": "string",
-            "description": "Request correlation identifier echoed from the request or generated server-side"
-          },
-          "traceId": {
-            "type": "string",
-            "description": "Trace identifier extracted from W3C trace context headers",
-            "pattern": "^[0-9a-fA-F]{32}$"
-          }
-        }
-      },
       "ErrorEnvelope": {
         "type": "object",
         "required": [
@@ -284,36 +115,14 @@
         ],
         "properties": {
           "code": {
-            "type": "string",
-            "description": "Machine-readable error code"
+            "type": "string"
           },
           "message": {
-            "type": "string",
-            "description": "Human-readable error message"
-          },
-          "requestId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Unique request identifier for tracing"
+            "type": "string"
           },
           "details": {
-            "description": "Additional error context such as validation issues or metadata",
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "object",
-                "additionalProperties": true
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "additionalProperties": true
-                }
-              }
-            ]
+            "type": "object",
+            "additionalProperties": true
           }
         }
       },
@@ -353,14 +162,9 @@
           "Posts"
         ],
         "summary": "List posts (public)",
-        "description": "Retrieve the collection of published posts that are visible to all users.",
-        "security": [],
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "406": {
-            "$ref": "#/components/responses/Err406"
           }
         }
       },
@@ -370,7 +174,6 @@
           "Posts"
         ],
         "summary": "Create a post",
-        "description": "Create a new post owned by the authenticated user.",
         "security": [
           {
             "BearerAuth": []
@@ -386,14 +189,8 @@
           "403": {
             "$ref": "#/components/responses/Err403"
           },
-          "406": {
-            "$ref": "#/components/responses/Err406"
-          },
           "413": {
             "$ref": "#/components/responses/Err413"
-          },
-          "415": {
-            "$ref": "#/components/responses/Err415"
           },
           "422": {
             "$ref": "#/components/responses/Err422"
@@ -414,8 +211,6 @@
           "Posts"
         ],
         "summary": "Get post (public)",
-        "description": "Fetch the details for a single post by identifier.",
-        "security": [],
         "parameters": [
           {
             "in": "path",
@@ -429,9 +224,6 @@
         "responses": {
           "200": {
             "description": "OK"
-          },
-          "406": {
-            "$ref": "#/components/responses/Err406"
           }
         }
       },
@@ -441,7 +233,6 @@
           "Posts"
         ],
         "summary": "Update a post",
-        "description": "Replace the contents of an existing post owned by the authenticated user.",
         "security": [
           {
             "BearerAuth": []
@@ -467,14 +258,8 @@
           "403": {
             "$ref": "#/components/responses/Err403"
           },
-          "406": {
-            "$ref": "#/components/responses/Err406"
-          },
           "413": {
             "$ref": "#/components/responses/Err413"
-          },
-          "415": {
-            "$ref": "#/components/responses/Err415"
           },
           "422": {
             "$ref": "#/components/responses/Err422"
@@ -493,7 +278,6 @@
           "Posts"
         ],
         "summary": "Delete a post",
-        "description": "Remove an existing post owned by the authenticated user.",
         "security": [
           {
             "BearerAuth": []
@@ -519,14 +303,8 @@
           "403": {
             "$ref": "#/components/responses/Err403"
           },
-          "406": {
-            "$ref": "#/components/responses/Err406"
-          },
           "413": {
             "$ref": "#/components/responses/Err413"
-          },
-          "415": {
-            "$ref": "#/components/responses/Err415"
           },
           "429": {
             "$ref": "#/components/responses/Err429"
@@ -541,112 +319,139 @@
       "get": {
         "operationId": "getHealth",
         "tags": [
-          "Observability"
+          "Health"
         ],
-        "summary": "Retrieve service health and dependency status",
-        "description": "Returns health information for the API including dependency readiness, tracing identifiers, and deployment metadata.",
-        "security": [],
+        "summary": "Service health probe",
         "responses": {
           "200": {
-            "description": "Service and dependencies are healthy",
-            "headers": {
-              "X-Request-Id": {
-                "description": "Correlation identifier propagated from or generated for the request",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "traceparent": {
-                "description": "W3C trace context header identifying the trace and current span",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "tracestate": {
-                "description": "Vendor-specific trace context data preserved across services when provided",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "Cache-Control": {
-                "description": "Indicates the response must not be cached by clients or intermediaries",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "status",
+                    "commit",
+                    "time",
+                    "uptime_s",
+                    "dependencies"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "service": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "error"
+                      ]
+                    },
+                    "commit": {
+                      "type": "string",
+                      "description": "Git commit SHA deployed"
+                    },
+                    "time": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "uptime_s": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "dependencies": {
+                      "type": "object",
+                      "required": [
+                        "firebase",
+                        "db"
+                      ],
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "properties": {
+                        "firebase": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "degraded",
+                            "down"
+                          ]
+                        },
+                        "db": {
+                          "type": "string",
+                          "enum": [
+                            "ok",
+                            "degraded",
+                            "down"
+                          ]
+                        }
+                      }
+                    }
+                  }
                 },
-                "example": {
-                  "service": "api",
-                  "status": "ok",
-                  "commit": "2b1f3e8",
-                  "time": "2025-02-14T12:00:00.000Z",
-                  "uptime_s": 128,
-                  "dependencies": {
-                    "firebase": "ok",
-                    "db": "ok"
+                "examples": {
+                  "default": {
+                    "value": {
+                      "service": "api",
+                      "status": "ok",
+                      "commit": "abc1234",
+                      "time": "2025-10-29T12:00:00.000Z",
+                      "uptime_s": 42,
+                      "dependencies": {
+                        "firebase": "ok",
+                        "db": "ok"
+                      }
+                    }
                   },
-                  "requestId": "550e8400-e29b-41d4-a716-446655440000",
-                  "traceId": "4bf92f3577b34da6a3ce929d0e0e4739"
+                  "dependencyDown": {
+                    "value": {
+                      "service": "api",
+                      "status": "error",
+                      "commit": "abc1234",
+                      "time": "2025-10-29T12:00:00.000Z",
+                      "uptime_s": 42,
+                      "dependencies": {
+                        "firebase": "down",
+                        "db": "ok"
+                      }
+                    }
+                  }
                 }
               }
             }
           },
-          "406": {
-            "$ref": "#/components/responses/Err406"
-          },
           "503": {
-            "description": "One or more dependencies are unavailable or degraded",
+            "description": "Dependency failure",
             "headers": {
-              "X-Request-Id": {
-                "description": "Correlation identifier propagated from or generated for the request",
+              "Retry-After": {
+                "description": "Number of seconds clients should wait before retrying the probe.",
                 "schema": {
-                  "type": "string"
-                }
-              },
-              "traceparent": {
-                "description": "W3C trace context header identifying the trace and current span",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "tracestate": {
-                "description": "Vendor-specific trace context data preserved across services when provided",
-                "schema": {
-                  "type": "string"
-                }
-              },
-              "Cache-Control": {
-                "description": "Indicates the response must not be cached by clients or intermediaries",
-                "schema": {
-                  "type": "string"
+                  "type": "integer",
+                  "minimum": 1
                 }
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "$ref": "#/paths/~1health/get/responses/200/content/application~1json/schema"
                 },
-                "example": {
-                  "service": "api",
-                  "status": "degraded",
-                  "commit": "2b1f3e8",
-                  "time": "2025-02-14T12:05:00.000Z",
-                  "uptime_s": 256,
-                  "dependencies": {
-                    "firebase": "ok",
-                    "db": "down",
-                    "details": {
-                      "db": "db error: connection timeout"
+                "examples": {
+                  "dependencyDown": {
+                    "value": {
+                      "service": "api",
+                      "status": "error",
+                      "commit": "abc1234",
+                      "time": "2025-10-29T12:00:00.000Z",
+                      "uptime_s": 42,
+                      "dependencies": {
+                        "firebase": "down",
+                        "db": "ok"
+                      }
                     }
-                  },
-                  "requestId": "550e8400-e29b-41d4-a716-446655440001",
-                  "traceId": "4bf92f3577b34da6a3ce929d0e0e4740"
+                  }
                 }
               }
             }

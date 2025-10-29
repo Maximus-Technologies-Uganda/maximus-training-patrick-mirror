@@ -27,10 +27,10 @@ describe("with429Backoff", () => {
 
     const res = await with429Backoff(op, {
       random: () => 0.5,
-      sleepFn: async (ms) => {
+      sleepFn: async (ms: number) => {
         sleepCalls.push(ms);
       },
-      onRetry: (info) => {
+      onRetry: (info: { retryAfterMs: number; limit?: number; remaining?: number }) => {
         expect(info.retryAfterMs).toBe(1000);
         expect(info.limit).toBe(10);
         expect(info.remaining).toBe(0);
@@ -52,7 +52,7 @@ describe("with429Backoff", () => {
     const delays: number[] = [];
     await with429Backoff(op, {
       random: () => 0.3,
-      sleepFn: async (ms) => {
+      sleepFn: async (ms: number) => {
         delays.push(ms);
       },
     });
@@ -73,7 +73,7 @@ describe("with429Backoff", () => {
     await with429Backoff(op, {
       baseDelayMs: 200,
       jitterRatio: 0,
-      sleepFn: async (ms) => {
+      sleepFn: async (ms: number) => {
         delays.push(ms);
       },
     });
@@ -109,7 +109,7 @@ describe("with429Backoff", () => {
       });
 
     const promise = with429Backoff(op, {
-      sleepFn: async (_ms, signal) => {
+      sleepFn: async (_ms: number, signal?: AbortSignal) => {
         controller.abort();
         if (signal?.aborted) {
           throw signal.reason instanceof Error ? signal.reason : new Error("Aborted");
