@@ -32,8 +32,19 @@ describe("logging integration", () => {
     const app = await makeApp();
     const testId = "test-req-id-123";
 
-    const res = await request(app).get("/health").set("X-Request-Id", testId).set("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
+    const incomingTraceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+    const res = await request(app)
+      .get("/health")
+      .set("X-Request-Id", testId)
+      .set("traceparent", incomingTraceparent);
     expect(res.status).toBeLessThan(600);
+
+    const emittedTraceparent = res.headers["traceparent"] as string | undefined;
+    expect(emittedTraceparent).toBeDefined();
+    expect(emittedTraceparent).not.toBe(incomingTraceparent);
+    expect(emittedTraceparent).toMatch(
+      /^00-4bf92f3577b34da6a3ce929d0e0e4736-[0-9a-f]{16}-01$/,
+    );
 
     const parsed = logs
       .map((line) => {
