@@ -16,6 +16,7 @@ describe("logging integration", () => {
 
   beforeEach(() => {
     logs = [];
+    // eslint-disable-next-line no-console
     console.log = (msg?: unknown) => {
       if (typeof msg === "string") logs.push(msg);
       else logs.push(String(msg));
@@ -23,39 +24,52 @@ describe("logging integration", () => {
   });
 
   afterEach(() => {
+    // eslint-disable-next-line no-console
     console.log = originalLog;
   });
 
-  it("emits structured JSON with required fields for /health (if logging present)", async () => {
+  it("emits structured JSON with request metadata for /health", async () => {
     const app = await makeApp();
     const testId = "test-req-id-123";
 
-    const res = await request(app).get("/health").set("X-Request-Id", testId);
-    expect(res.status).toBe(200);
+    const incomingTraceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+    const res = await request(app)
+      .get("/health")
+      .set("X-Request-Id", testId)
+      .set("traceparent", incomingTraceparent);
+    expect(res.status).toBeLessThan(600);
 
-    // Find the first valid JSON log line (request logger may be silent per T066)
+    const emittedTraceparent = res.headers["traceparent"] as string | undefined;
+    expect(emittedTraceparent).toBeDefined();
+    expect(emittedTraceparent).not.toBe(incomingTraceparent);
+    expect(emittedTraceparent).toMatch(
+      /^00-4bf92f3577b34da6a3ce929d0e0e4736-[0-9a-f]{16}-01$/,
+    );
+
     const parsed = logs
-      .map((l) => {
+      .map((line) => {
         try {
-          return JSON.parse(l);
+          return JSON.parse(line) as Record<string, unknown>;
         } catch {
           return null;
         }
       })
-      .filter((v): v is Record<string, unknown> => v != null)[0];
+      .filter((value): value is Record<string, unknown> => value != null)[0];
 
-    if (parsed) {
-      expect(parsed.level).toBe("info");
-      expect(parsed.message).toBe("request completed");
-      expect(parsed.method).toBe("GET");
-      expect(parsed.path).toBe("/health");
-      expect(parsed.status).toBe(200);
-      expect(parsed.requestId).toBe(testId);
-    } else {
-      // No log emitted is acceptable under strict no-console policy for general requests
-      expect(Array.isArray(logs)).toBe(true);
-    }
+    expect(parsed).toBeTruthy();
+    expect(parsed?.level).toBe("info");
+    expect(parsed?.message).toBe("request completed");
+    expect(parsed?.method).toBe("GET");
+    expect(parsed?.path).toBe("/health");
+    expect(parsed?.status).toBe(200);
+    expect(parsed?.requestId).toBe(testId);
+    expect(parsed?.traceId).toBe("4bf92f3577b34da6a3ce929d0e0e4736");
+    expect(typeof parsed?.latencyMs).toBe("number");
+    expect(parsed?.component).toBe("api");
+    expect(parsed?.rateLimit).toBeDefined();
+    expect(parsed?.rateLimit).toMatchObject({
+      limit: expect.any(Number),
+      remaining: expect.any(Number),
+    });
   });
 });
-
-

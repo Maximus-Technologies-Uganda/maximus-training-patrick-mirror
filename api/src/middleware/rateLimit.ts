@@ -151,7 +151,14 @@ export function createRateLimiter(config: RateLimitConfig) {
     legacyHeaders: false,
     keyGenerator: (req: Request) => deriveKey(req),
     // Skip rate limiting for OPTIONS requests (CORS preflight) - T038
-    skip: (req: Request) => req.method === "OPTIONS",
+    // and always exempt health probes so infrastructure monitoring remains reliable.
+    skip: (req: Request) => {
+      if (req.method === "OPTIONS") {
+        return true;
+      }
+      const path = req.originalUrl || req.url || req.path;
+      return typeof path === "string" && path.startsWith("/health");
+    },
     handler: (req: Request, res: Response) => {
       const retryAfterSeconds = Math.max(1, Math.ceil(config.windowMs / 1000));
       const timeUnit = retryAfterSeconds === 1 ? "second" : "seconds";

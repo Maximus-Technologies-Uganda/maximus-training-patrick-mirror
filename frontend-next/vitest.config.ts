@@ -17,6 +17,7 @@ export default defineConfig({
       "src/**/*.spec.{ts,tsx}",
       // Only include explicit Vitest tests from tests/; avoid Playwright specs
       "tests/**/*.test.{ts,tsx}",
+      "tests/**/*.spec.{ts,tsx}",
       "tests/contract.*.spec.ts",
     ],
     environment: "jsdom",

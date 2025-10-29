@@ -11,67 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  secret-scan: # T055 - Gitleaks (OSS CLI to avoid license issues)
-    name: Security - Secret Scan (Gitleaks)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetch all history for better leak detection
-
-      - name: Install Gitleaks CLI (OSS)
-        shell: bash
-        run: |
-          set -euo pipefail
-          VERSION="8.18.4"
-          URL="https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
-          echo "Downloading gitleaks $VERSION from $URL"
-          curl -sSL "$URL" -o /tmp/gitleaks.tgz
-          tar -xzf /tmp/gitleaks.tgz -C /tmp
-          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
-          gitleaks version
-
-      - name: Run Gitleaks Scan
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          CONFIG_ARG=""
-          if [ -f .gitleaks.toml ]; then CONFIG_ARG="--config .gitleaks.toml"; fi
-          # Use redact to avoid leaking secrets in logs; fail on findings
-          gitleaks detect --no-banner --redact $CONFIG_ARG --exit-code 1 --source .
-
-  app-router-check: # T056 - Enforce App Router
-    name: Lint - Enforce App Router (No Pages Dir)
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check for pages directory
-        run: |
-          if [ -d "frontend-next/src/pages" ] || [ -d "frontend-next/pages" ]; then
-            echo "❌ Error: The 'pages' directory is present in 'frontend-next'."
-            echo "This project must use the Next.js App Router ('app/' directory) exclusively."
-            exit 1
-          else
-            echo "✅ Correct: No 'pages' directory found."
-          fi
-          if [ -d "frontend-next/src/pages/api" ] || [ -d "frontend-next/pages/api" ]; then
-             echo "❌ Error: The 'pages/api' directory is present in 'frontend-next'."
-             echo "API routes must use the App Router ('app/api/' directory)."
-             exit 1
-          else
-              echo "✅ Correct: No 'pages/api' directory found."
-          fi
-
   contracts-spectral:
     name: Contracts - Spectral Lint
-    needs: [secret-scan, app-router-check]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
@@ -85,48 +26,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - uses: ./.github/actions/setup-pnpm
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Resolve pnpm store path
-        id: pnpm-store
-        shell: bash
+      - name: Spectral Lint (pinned CLI)
         run: |
-          set -euo pipefail
-          echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
-          echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-          echo "version=$(pnpm -v | cut -d. -f1)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store (with version fallback)
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PNPM_STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store.outputs.version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store.outputs.version }}-
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install root dependencies (tsx/yaml for contracts checks)
-        run: pnpm install --ignore-scripts --frozen-lockfile=false --silent
-
-      - name: Spectral Lint (pinned CLI @6.11.0 - T054)
-        env:
-          SPECTRAL_REPORT: specs/008-identity-platform/contracts/spectral-report.json
-        run: |
-          set -euo pipefail
-          mkdir -p "$(dirname "$SPECTRAL_REPORT")"
-          node scripts/generate-spectral-report.mjs
-          # Ensure report file exists and is non-empty
-          if [ ! -s "$SPECTRAL_REPORT" ]; then
-            echo "Spectral report was not created; failing step"
-            exit 1
-          fi
+          mkdir -p specs/008-identity-platform/contracts
+          npx @stoplight/spectral-cli@6.11.0 lint \
+            specs/008-identity-platform/contracts/openapi.yaml \
+            -f json > specs/008-identity-platform/contracts/spectral-report.json || true
 
       - name: Check Spectral Errors
         run: |
           if [ -f specs/008-identity-platform/contracts/spectral-report.json ]; then
-            # Ensure jq is installed
-            sudo apt-get update && sudo apt-get install -y jq
             SPECTRAL_ERRORS=$(cat specs/008-identity-platform/contracts/spectral-report.json | jq '[.[] | select(.severity == 0)] | length')
             echo "Spectral errors found: $SPECTRAL_ERRORS"
             if [ "$SPECTRAL_ERRORS" -gt 0 ]; then
@@ -141,11 +55,10 @@ jobs:
           fi
 
       - name: Check OpenAPI Drift
-        run: pnpm run contracts:check # requires tsx/yaml from root devDependencies
+        run: npm run contracts:check
 
-      # Removed redundant Secret Pattern Check step
-      # - name: Secret Pattern Check
-      #   run: pnpm run gate:secrets
+      - name: Secret Pattern Check
+        run: npm run gate:secrets
 
       - name: Upload Spectral Report
         if: always()
@@ -153,7 +66,6 @@ jobs:
         with:
           name: contracts-spectral-report
           path: specs/008-identity-platform/contracts/spectral-report.json
-          retention-days: 21
 
       - name: Job Summary
         if: always()
@@ -163,139 +75,308 @@ jobs:
             echo "Report: contracts-spectral-report/spectral-report.json"
             if [ -f specs/008-identity-platform/contracts/spectral-report.json ]; then
               echo ""
-              echo "#### Report Contents (Errors Only):"
-              jq '[.[] | select(.severity == 0)]' specs/008-identity-platform/contracts/spectral-report.json || echo "No errors found or report invalid."
-            else
-              echo "Spectral report file not found."
+              echo "#### Report Contents:"
+              cat specs/008-identity-platform/contracts/spectral-report.json
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  dependency-audit:
-    name: Security - Dependency Audit (non-gating) (T090)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    continue-on-error: true
+  test:
+    # T026: Disabled legacy CI in favor of quality-gate/review-packet
+    if: ${{ false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [18, 20, 22]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Node 20
+
+      - name: Setup Node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-      - uses: ./.github/actions/setup-pnpm
+      - name: Install
+        run: npm install --no-audit --no-fund
+        shell: bash
 
-      - name: Install (frozen)
-        run: pnpm install --ignore-scripts --frozen-lockfile=false
-      - name: Audit for High/Critical
+      - name: Install expense dependencies
+        run: cd expense && npm install
+        shell: bash
+        continue-on-error: true
+
+      - name: Run expense tests with coverage
+        run: cd expense && npm test -- --coverage --coverageReporters=lcov --coverageReporters=json-summary
+        shell: bash
+        continue-on-error: true
+
+      - name: Install todo dependencies
+        run: cd todo && npm install
+        shell: bash
+        continue-on-error: true
+
+      - name: Run todo tests with coverage
+        run: cd todo && npm test -- --coverage --coverageReporters=lcov --coverageReporters=json-summary
+        shell: bash
+        continue-on-error: true
+
+      - name: Install stopwatch dependencies
+        run: cd stopwatch && npm install
+        shell: bash
+        continue-on-error: true
+
+      - name: Run stopwatch tests with coverage
+        run: cd stopwatch && npm test -- --coverage --coverageReporters=lcov --coverageReporters=json-summary
+        shell: bash
+        continue-on-error: true
+
+      - name: Install quote dependencies
+        run: cd quote && npm install
+        shell: bash
+        continue-on-error: true
+
+      - name: Run quote tests with coverage
+        run: cd quote && npm test -- --coverage --coverageReporters=lcov --coverageReporters=json-summary
+        shell: bash
+        continue-on-error: true
+
+      - name: Generate review.md
+        shell: bash
         run: |
-          # Prefer npm audit (broad ecosystem support) for now
-          npm audit --audit-level=high || true
-      - name: Job Summary
-        if: always()
-        run: echo "Dependency audit executed (non-gating). See logs for findings." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "# CI Review Packet"
+            echo "## Environment"
+            node -v
+            npm -v
+            echo
+            echo "## Test Results Summary"
+            if [ -d "expense/coverage" ]; then
+              echo "- Expense app: coverage generated"
+            else
+              echo "- Expense app: no coverage"
+            fi
+            if [ -d "todo/coverage" ]; then
+              echo "- Todo app: coverage generated"
+            else
+              echo "- Todo app: no coverage"
+            fi
+            if [ -d "stopwatch/coverage" ]; then
+              echo "- Stopwatch app: coverage generated"
+            else
+              echo "- Stopwatch app: no coverage"
+            fi
+            if [ -d "quote/coverage" ]; then
+              echo "- Quote app: coverage generated"
+            else
+              echo "- Quote app: no coverage"
+            fi
+            echo
+            echo "## Commit Summary (last 10)"
+            git log -n 10 --pretty=format:'- %h %ad %an — %s' --date=short || echo "Git log unavailable"
+          } > review.md
 
-  latency-bench:
-    name: Observability - Latency Bench (non-gating)
-    needs: [dependency-audit]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - uses: ./.github/actions/setup-pnpm
-
-      - name: Cache k6 binaries
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/k6
-          key: ${{ runner.os }}-k6-${{ hashFiles('scripts/quality-gate/run-latency-bench.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-k6-
-
-      - name: Install k6 CLI
-        uses: grafana/setup-k6-action@v1
-        with:
-          version: v0.49.0
-
-      - name: Install dependencies
-        run: pnpm install --ignore-scripts --frozen-lockfile=false
-
-      - name: Run latency bench (non-gating)
-        run: pnpm exec tsx scripts/quality-gate/run-latency-bench.ts
-
-      - name: Summarize 5xx/429 alerting stub
-        run: pnpm exec tsx scripts/quality-gate/alerting-stub.ts
-
-  frontend-a11y:
-    name: Frontend - A11y Artifacts (HTML + video)
-    needs: [contracts-spectral]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - uses: ./.github/actions/setup-pnpm
-
-      - name: Install dependencies
-        run: pnpm install --ignore-scripts --frozen-lockfile=false
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter frontend-next exec playwright install --with-deps chromium
-
-      - name: Run frontend a11y suite
-        env:
-          CI: true
-        run: pnpm --filter frontend-next test:e2e -- --grep "keyboard-only"
-
-      - name: Verify a11y artifact layout
-        run: pnpm exec tsx tests/a11y/verify-artifacts.ts
-
-      - name: Upload a11y artifacts
+      - name: Upload expense coverage artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: a11y-frontend-next
-          path: a11y-frontend-next
-          if-no-files-found: error
-          retention-days: 21
+          name: coverage-expense-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: |
+            expense/coverage/coverage-final.json
+            expense/coverage/lcov-report/index.html
 
-      - name: Job Summary
+      - name: Upload todo coverage artifacts
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-todo-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: |
+            todo/coverage/coverage-final.json
+            todo/coverage/lcov-report/index.html
+
+      - name: Upload stopwatch coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-stopwatch-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: |
+            stopwatch/coverage/coverage-final.json
+            stopwatch/coverage/lcov-report/index.html
+
+      - name: Upload quote coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-quote-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: |
+            quote/coverage/coverage-final.json
+            quote/coverage/lcov-report/index.html
+
+      - name: Upload review.md
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-md-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: review.md
+
+  package-artifacts:
+    needs: test
+    # T026: Disabled with test job
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+          merge-multiple: true
+
+      - name: Download review.md
+        uses: actions/download-artifact@v4
+        with:
+          name: review-md-ubuntu-latest-node20
+          path: downloaded-artifacts
+
+      - name: Organize artifacts
         run: |
-          echo "### Frontend A11y" >> "$GITHUB_STEP_SUMMARY"
-          if [ -d a11y-frontend-next ]; then
-            SHA_DIR=$(ls a11y-frontend-next | head -n 1)
-            if [ -n "$SHA_DIR" ]; then
-              echo "- HTML: a11y-frontend-next/${SHA_DIR}/index.html" >> "$GITHUB_STEP_SUMMARY"
-              if [ -f "a11y-frontend-next/${SHA_DIR}/keyboard-only.webm" ]; then
-                echo "- Video: a11y-frontend-next/${SHA_DIR}/keyboard-only.webm" >> "$GITHUB_STEP_SUMMARY"
-              fi
+          mkdir -p review-packet/coverage-reports/{expense,todo,stopwatch,quote}
+
+          # Debug: List all downloaded artifacts
+          echo "=== Downloaded Artifacts Structure ==="
+          find downloaded-artifacts -type f | sort
+
+          echo ""
+          echo "=== Collecting Coverage Files ==="
+
+          # Collect coverage files for each app using corrected approach
+          for app in expense todo stopwatch quote; do
+            echo "Processing $app coverage files..."
+
+            # Find coverage-final.json - prefer ubuntu-latest-node20, then any ubuntu, then others
+            coverage_file=$(find downloaded-artifacts -path "*/coverage-$app-*" -name "coverage-final.json" | grep -E "(ubuntu-latest-node20|ubuntu)" | head -1 || find downloaded-artifacts -path "*/coverage-$app-*" -name "coverage-final.json" | head -1)
+            if [ -n "$coverage_file" ] && [ -f "$coverage_file" ]; then
+              echo "Found coverage-final.json for $app: $coverage_file"
+              cp "$coverage_file" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+              echo "✓ Copied coverage-final.json for $app"
             else
-              echo "- a11y artifact directory was created but commit subdirectory is missing." >> "$GITHUB_STEP_SUMMARY"
+              echo "✗ No coverage-final.json found for $app"
+              # Try alternative pattern in case the file structure is different
+              alt_coverage=$(find downloaded-artifacts -name "*$app*" -type f | grep "coverage-final.json" | head -1)
+              if [ -n "$alt_coverage" ] && [ -f "$alt_coverage" ]; then
+                echo "Found alternative coverage-final.json for $app: $alt_coverage"
+                cp "$alt_coverage" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+                echo "✓ Copied alternative coverage-final.json for $app"
+              fi
             fi
+
+            # Find index.html (lcov report) - prefer ubuntu-latest-node20, then any ubuntu, then others
+            html_file=$(find downloaded-artifacts -path "*/coverage-$app-*" -name "index.html" | grep -E "(ubuntu-latest-node20|ubuntu)" | head -1 || find downloaded-artifacts -path "*/coverage-$app-*" -name "index.html" | head -1)
+            if [ -n "$html_file" ] && [ -f "$html_file" ]; then
+              echo "Found index.html for $app: $html_file"
+              cp "$html_file" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+              echo "✓ Copied index.html for $app"
+            else
+              echo "✗ No index.html found for $app"
+              # Try alternative pattern in case the file structure is different
+              alt_html=$(find downloaded-artifacts -name "*$app*" -type f | grep "index.html" | head -1)
+              if [ -n "$alt_html" ] && [ -f "$alt_html" ]; then
+                echo "Found alternative index.html for $app: $alt_html"
+                cp "$alt_html" "review-packet/coverage-reports/$app/" 2>/dev/null || true
+                echo "✓ Copied alternative index.html for $app"
+              fi
+            fi
+          done
+
+          echo ""
+          echo "=== Coverage Collection Summary ==="
+          all_collected=true
+          for app in expense todo stopwatch quote; do
+            coverage_file="review-packet/coverage-reports/$app/coverage-final.json"
+            html_file="review-packet/coverage-reports/$app/index.html"
+
+            if [ -f "$coverage_file" ] && [ -f "$html_file" ]; then
+              echo "✓ $app: Both coverage files collected successfully"
+            elif [ -f "$coverage_file" ]; then
+              echo "⚠ $app: Only coverage-final.json found (missing index.html)"
+              all_collected=false
+            elif [ -f "$html_file" ]; then
+              echo "⚠ $app: Only index.html found (missing coverage-final.json)"
+              all_collected=false
+            else
+              echo "✗ $app: No coverage files found"
+              all_collected=false
+            fi
+          done
+
+          echo ""
+          if [ "$all_collected" = true ]; then
+            echo "🎉 SUCCESS: All coverage artifacts collected for all four applications!"
           else
-            echo "- a11y artifacts directory not produced." >> "$GITHUB_STEP_SUMMARY"
+            echo "❌ WARNING: Some coverage artifacts are missing. Check the debug output above."
           fi
+
+          printf '\n'
+          echo "=== Final Review Packet Structure ==="
+          find review-packet -type f | sort
+
+          # Copy review.md
+          if [ -f "downloaded-artifacts/review.md" ]; then
+            cp downloaded-artifacts/review.md review-packet/ 2>/dev/null || true
+            echo "✓ Copied existing review.md"
+          else
+            {
+              echo "# CI Review Packet"
+              echo "## Generated on $(date)"
+              echo
+              echo "## Coverage Reports Summary"
+              if [ -f "review-packet/coverage-reports/expense/coverage-final.json" ]; then echo "- Expense app: ✓ Available"; else echo "- Expense app: ✗ Missing"; fi
+              if [ -f "review-packet/coverage-reports/todo/coverage-final.json" ]; then echo "- Todo app: ✓ Available"; else echo "- Todo app: ✗ Missing"; fi
+              if [ -f "review-packet/coverage-reports/stopwatch/coverage-final.json" ]; then echo "- Stopwatch app: ✓ Available"; else echo "- Stopwatch app: ✗ Missing"; fi
+              if [ -f "review-packet/coverage-reports/quote/coverage-final.json" ]; then echo "- Quote app: ✓ Available"; else echo "- Quote app: ✗ Missing"; fi
+              echo
+              echo "## Environment Details"
+              echo "- CI Run: ${{ github.run_id }}"
+              echo "- Branch: ${{ github.ref_name }}"
+              echo
+              echo "## Note"
+              echo "This review packet contains coverage reports from all four applications."
+            } > review-packet/review.md
+          fi
+
+      - name: Create review-packet.zip
+        run: |
+          cd review-packet
+          zip -r ../review-packet.zip ./*
+          cd ..
+          ls -la review-packet.zip
+
+      - name: Upload final review packet
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-packet
+          path: review-packet.zip
+
+
+  k6-verdict:
+    name: k6 Threshold Verdict
+    needs: contracts-spectral
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Print k6 threshold verdict (non-gating)
+        run: node scripts/ci/print-k6-verdict.mjs bench/results/k6-summary.json

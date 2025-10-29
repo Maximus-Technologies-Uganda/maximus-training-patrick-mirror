@@ -110,7 +110,7 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
     res.status(200).json({ status: "ok" });
   });
 
-  app.use(createHealthRouter(repository, { serviceName: "api" }));
+  app.use(createHealthRouter({ serviceName: "api" }));
 
   // Feature Routes
   app.use("/auth", authLimiter, authRouter);

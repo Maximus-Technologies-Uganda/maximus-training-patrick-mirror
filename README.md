@@ -171,6 +171,16 @@ cd api && pnpm run test:ci
 cd frontend-next && pnpm run test:ci
 ```
 
+## Idempotency and retries
+
+- `frontend-next/src/lib/http/backoff.ts` exports `retryWithIdempotencyBackoff`, a shared helper used by Route Handlers and
+  future background jobs to enforce retry safety.
+- POST requests are **never retried**. The helper throws with guidance to use PUT/PATCH plus an idempotency key when retries are
+  required.
+- PUT/PATCH retries must reuse the same idempotency key on every attempt; the helper surfaces the key to each retry via the
+  callback context.
+- See `frontend-next/tests/idempotency.e2e.spec.ts` for contract coverage ensuring retries honour these semantics.
+
 ## Repository Structure
 
 - `api/`: Express API (TypeScript), deployed to Cloud Run
@@ -245,6 +255,7 @@ Environment variables:
 | `NEXT_PUBLIC_APP_URL` | CI/E2E usage | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | Public URL of the app for Playwright and link checks in CI. |
 | `DATABASE_URL` | Server-only | `postgresql://localhost:5432/dev` | `postgresql://...neon.tech/prod` | PostgreSQL connection string (Neon or local). Required for server start and DB tests. |
 | `SESSION_SECRET` | Server-only | `dev-secret-32chars` | `(32+ char random)` | Strong random string for session encryption. Required in production. |
+| `LOG_SAMPLE_RATE_INFO` | Server-only | _leave unset_ | `0.25` | Info-level log sampling rate (0–1). Only honored when `NODE_ENV=production`; setting it elsewhere throws to protect local visibility. |
 | `GCP_PROJECT_ID` | Server-only | `proj-rms-dev` | `proj-rms-prod` | Google Cloud project ID for GCP services. |
 | `GCP_REGION` | Server-only | `africa-south1` | `africa-south1` | Google Cloud region for deployments. |
 | `VERTEX_LOCATION` | Server-only | `us-central1` | `us-central1` | Vertex AI location for model access. |
