@@ -67,14 +67,18 @@ export function createErrorEnvelope(
     response?: Response;
     details?: unknown;
     traceId?: string;
-  } = {}
+  } = {},
 ): ErrorEnvelope {
   const { request, response, details, traceId } = options;
 
   // Extract request ID from request headers or response headers
   let requestId: string | undefined;
   if (request) {
-    const reqAny = request as unknown as { requestId?: string; headers?: Record<string, unknown>; get?: (name: string) => string | undefined };
+    const reqAny = request as unknown as {
+      requestId?: string;
+      headers?: Record<string, unknown>;
+      get?: (name: string) => string | undefined;
+    };
     const getReq = typeof reqAny?.get === 'function' ? reqAny.get.bind(request) : null;
     const getReqHeader = (name: string): string | undefined => {
       const headers = reqAny?.headers as Record<string, unknown> | undefined;
@@ -101,9 +105,10 @@ export function createErrorEnvelope(
       headers?: Record<string, unknown>;
     };
     const getReq = typeof reqAny?.get === 'function' ? reqAny.get.bind(request) : null;
-    const headerValFromObject = typeof reqAny?.headers === 'object' && reqAny.headers
-      ? (reqAny.headers['traceparent'] as string | undefined)
-      : undefined;
+    const headerValFromObject =
+      typeof reqAny?.headers === 'object' && reqAny.headers
+        ? (reqAny.headers['traceparent'] as string | undefined)
+        : undefined;
     const traceparent = (getReq ? getReq('traceparent') : undefined) || headerValFromObject;
     if (typeof traceparent === 'string') {
       const parts = traceparent.split('-');
@@ -143,7 +148,7 @@ export function createValidationErrorEnvelope(
     request?: Request;
     response?: Response;
     traceId?: string;
-  } = {}
+  } = {},
 ): ValidationErrorEnvelope {
   return {
     ...createErrorEnvelope(ERROR_CODES.VALIDATION_ERROR, message, options),
@@ -163,7 +168,7 @@ export function sendErrorResponse(
     details?: unknown;
     traceId?: string;
     statusCode?: number;
-  } = {}
+  } = {},
 ): void {
   const { request, details, traceId, statusCode } = options;
 
@@ -194,12 +199,7 @@ export class StandardError extends Error {
   public readonly details?: unknown;
   public readonly statusCode?: number;
 
-  constructor(
-    code: string,
-    message: string,
-    details?: unknown,
-    statusCode?: number
-  ) {
+  constructor(code: string, message: string, details?: unknown, statusCode?: number) {
     super(message || code);
     this.name = 'StandardError';
     this.code = code;
@@ -282,7 +282,7 @@ export class ServiceUnavailableError extends StandardError {
 export const statusByCode = STATUS_BY_CODE;
 export const NO_STORE_STATUSES = new Set([401, 403, 413, 415, 422, 429, 503]);
 
-export function setCacheControlNoStore(response: any, status?: number): void {
+export function setCacheControlNoStore(response: Response, status?: number): void {
   if (!response || typeof response.setHeader !== 'function') return;
   if (status !== undefined && !NO_STORE_STATUSES.has(status)) return;
   response.setHeader('Cache-Control', 'no-store');
@@ -292,11 +292,16 @@ export function shouldPreventCache(status: number): boolean {
   return Number.isFinite(status) && NO_STORE_STATUSES.has(status);
 }
 
-export function makeError(code: string, message: string, details?: unknown): Error {
-  const err = new Error(message || code);
-  (err as any).code = code;
+interface ErrorWithCode extends Error {
+  code: string;
+  details?: unknown;
+}
+
+export function makeError(code: string, message: string, details?: unknown): ErrorWithCode {
+  const err = new Error(message || code) as ErrorWithCode;
+  err.code = code;
   if (details !== undefined) {
-    (err as any).details = details;
+    err.details = details;
   }
   return err;
 }

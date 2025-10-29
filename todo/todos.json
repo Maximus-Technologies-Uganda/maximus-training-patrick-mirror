@@ -1,26 +1,10 @@
 [
   {
     "id": 1,
-    "text": "Low priority",
-    "due": null,
-    "priority": "low",
-    "createdAt": "2025-10-27T11:33:18.511Z",
-    "completed": false
-  },
-  {
-    "id": 2,
-    "text": "Medium priority",
+    "text": "One",
     "due": null,
     "priority": "medium",
-    "createdAt": "2025-10-27T11:33:18.696Z",
-    "completed": false
-  },
-  {
-    "id": 3,
-    "text": "High priority",
-    "due": null,
-    "priority": "high",
-    "createdAt": "2025-10-27T11:33:18.948Z",
+    "createdAt": "2025-10-29T10:04:16.293Z",
     "completed": false
   }
 ]

@@ -3,15 +3,32 @@ import { EventEmitter } from 'events';
 import { requestLogger } from '../../src/middleware/logger';
 import { APPLICATION_LOG_RETENTION_DAYS } from '../../src/logging/retention';
 
+interface RequestUser {
+  userId: string;
+  role: string;
+}
+
+interface MockRequest {
+  method: string;
+  originalUrl: string;
+  user: RequestUser;
+}
+
+interface MockResponse extends EventEmitter {
+  statusCode: number;
+  locals: { requestId: string };
+  getHeader: jest.MockedFunction<(name: string) => string | undefined>;
+}
+
 describe('requestLogger retention enforcement', () => {
   it('attaches retentionDays to structured log entries', () => {
-    const req = {
+    const req: MockRequest = {
       method: 'get',
       originalUrl: '/posts',
       user: { userId: 'user-1', role: 'owner' },
-    } as any;
+    };
 
-    const res = new EventEmitter() as any;
+    const res: MockResponse = new EventEmitter() as MockResponse;
     res.statusCode = 200;
     res.locals = { requestId: 'req-123' };
     res.getHeader = jest.fn();

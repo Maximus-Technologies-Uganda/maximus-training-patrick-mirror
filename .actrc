@@ -1,0 +1,14 @@
+# GitHub Actions local runner configuration
+# See: https://nektosact.com/
+
+# Use catthehacker's Ubuntu image (closest match to GitHub Actions)
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:full-latest
+
+# Bind mount for faster file access
+--bind
+
+# Verbose output for debugging
+# Uncomment to enable: -v
+
+# Artifact directory (stores artifacts locally)
+--artifact-server-path=/tmp/act-artifacts

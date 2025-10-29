@@ -149,7 +149,14 @@
             "example": {
               "code": "RATE_LIMITED",
               "message": "Rate limit exceeded. Please try again later.",
-              "requestId": "550e8400-e29b-41d4-a716-446655440003"
+              "requestId": "550e8400-e29b-41d4-a716-446655440003",
+              "details": [
+                {
+                  "scope": "ip",
+                  "limit": "100 requests per 60 seconds",
+                  "retryAfterSeconds": 42
+                }
+              ]
             }
           }
         }

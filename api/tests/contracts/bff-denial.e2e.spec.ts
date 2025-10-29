@@ -1,14 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 import { createHmac } from 'node:crypto';
-import request from 'supertest';
+import request, { Test, Response } from 'supertest';
 import { createApp } from '../../src/app';
 import { loadConfigFromEnv } from '../../src/config';
 import type { IPostsRepository } from '../../src/repositories/posts.repository';
 import { createRepository } from '../../src/repositories/posts-repository';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import type { Application } from 'express';
 
-const TEST_SESSION_SECRET = process.env.SESSION_SECRET || "test-secret";
+const TEST_SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 process.env.SESSION_SECRET = TEST_SESSION_SECRET;
 
 type MakeAppOptions = {
@@ -26,48 +27,46 @@ async function makeApp(options: MakeAppOptions = {}) {
 
 function base64url(input: Buffer | string): string {
   return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
 }
 
 function makeSessionCookie(userId: string, role: string = 'owner'): string {
-  const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(
     JSON.stringify({
       userId,
       role,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60
-    })
+      exp: Math.floor(Date.now() / 1000) + 60 * 60,
+    }),
   );
-  const crypto = require('node:crypto');
   const signature = base64url(
-    crypto
-      .createHmac('sha256', TEST_SESSION_SECRET)
-      .update(`${header}.${payload}`)
-      .digest()
+    createHmac('sha256', TEST_SESSION_SECRET).update(`${header}.${payload}`).digest(),
   );
   return `session=${header}.${payload}.${signature}`;
 }
 
 function makeFirebaseToken(userId: string, role: string = 'owner'): string {
   // Create a mock Firebase ID token for testing
-  const header = base64url(JSON.stringify({
-    alg: "RS256",
-    typ: "JWT",
-    kid: "test-key-id"
-  }));
+  const header = base64url(
+    JSON.stringify({
+      alg: 'RS256',
+      typ: 'JWT',
+      kid: 'test-key-id',
+    }),
+  );
   const payload = base64url(
     JSON.stringify({
-      iss: "https://securetoken.google.com/test-project",
-      aud: "test-project",
+      iss: 'https://securetoken.google.com/test-project',
+      aud: 'test-project',
       sub: userId,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 60 * 60,
       role: role,
-    })
+    }),
   );
   const signature = base64url(Buffer.from('fake-firebase-signature'));
   return `${header}.${payload}.${signature}`;
@@ -75,7 +74,7 @@ function makeFirebaseToken(userId: string, role: string = 'owner'): string {
 
 function buildRepository(overrides: Partial<IPostsRepository>): IPostsRepository {
   const notImplemented = async () => {
-    throw new Error("Not implemented in test stub");
+    throw new Error('Not implemented in test stub');
   };
 
   return {
@@ -89,7 +88,7 @@ function buildRepository(overrides: Partial<IPostsRepository>): IPostsRepository
   };
 }
 
-function saveTestOutput(testName: string, request: any, response: any): void {
+function saveTestOutput(testName: string, request: Test, response: Response): void {
   const outputDir = 'packet/contracts/bff-denial';
   mkdirSync(outputDir, { recursive: true });
 
@@ -114,7 +113,7 @@ function saveTestOutput(testName: string, request: any, response: any): void {
 }
 
 describe('Direct-API Denial E2E Tests (T077)', () => {
-  let app: any;
+  let app: Application;
 
   beforeAll(async () => {
     const { app: testApp } = await makeApp();
@@ -131,21 +130,25 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('Accept', 'application/json')
         .send({
           title: 'Direct API Call Test',
-          content: 'This should be rejected because it bypasses the BFF'
+          content: 'This should be rejected because it bypasses the BFF',
         });
 
       expect(res.status).toBe(401);
       expect(String(res.body.code).toUpperCase()).toBe('UNAUTHORIZED');
 
-      saveTestOutput('direct-api-bearer-no-csrf', {
-        method: 'POST',
-        url: '/posts',
-        headers: { Authorization: `Bearer ${firebaseToken}` },
-        body: {
-          title: 'Direct API Call Test',
-          content: 'This should be rejected because it bypasses the BFF'
+      saveTestOutput(
+        'direct-api-bearer-no-csrf',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: { Authorization: `Bearer ${firebaseToken}` },
+          body: {
+            title: 'Direct API Call Test',
+            content: 'This should be rejected because it bypasses the BFF',
+          },
         },
-      }, res);
+        res,
+      );
     });
 
     it('PUT /posts with valid bearer token but no CSRF should return 401 (unauthorized)', async () => {
@@ -157,21 +160,25 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('Accept', 'application/json')
         .send({
           title: 'Updated via Direct API',
-          content: 'This should be rejected'
+          content: 'This should be rejected',
         });
 
       expect(res.status).toBe(401);
       expect(String(res.body.code).toUpperCase()).toBe('UNAUTHORIZED');
 
-      saveTestOutput('direct-api-bearer-no-csrf-put', {
-        method: 'PUT',
-        url: '/posts/test-post-123',
-        headers: { Authorization: `Bearer ${firebaseToken}` },
-        body: {
-          title: 'Updated via Direct API',
-          content: 'This should be rejected'
+      saveTestOutput(
+        'direct-api-bearer-no-csrf-put',
+        {
+          method: 'PUT',
+          url: '/posts/test-post-123',
+          headers: { Authorization: `Bearer ${firebaseToken}` },
+          body: {
+            title: 'Updated via Direct API',
+            content: 'This should be rejected',
+          },
         },
-      }, res);
+        res,
+      );
     });
 
     it('DELETE /posts with valid bearer token but no CSRF should return 401 (unauthorized)', async () => {
@@ -184,11 +191,15 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
       expect(res.status).toBe(401);
       expect(String(res.body.code).toUpperCase()).toBe('UNAUTHORIZED');
 
-      saveTestOutput('direct-api-bearer-no-csrf-delete', {
-        method: 'DELETE',
-        url: '/posts/test-post-123',
-        headers: { Authorization: `Bearer ${firebaseToken}` },
-      }, res);
+      saveTestOutput(
+        'direct-api-bearer-no-csrf-delete',
+        {
+          method: 'DELETE',
+          url: '/posts/test-post-123',
+          headers: { Authorization: `Bearer ${firebaseToken}` },
+        },
+        res,
+      );
     });
 
     it('POST /posts with CSRF token but no identity headers should return 403', async () => {
@@ -209,25 +220,29 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         // Missing identity headers - should be rejected
         .send({
           title: 'BFF Call Without Identity Headers',
-          content: 'This should be rejected because BFF did not forward identity'
+          content: 'This should be rejected because BFF did not forward identity',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Missing identity propagation headers');
 
-      saveTestOutput('direct-api-csrf-no-identity', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Cookie: makeSessionCookie('test-user-123', 'owner'),
-          'X-CSRF-Token': 'valid-csrf-token'
+      saveTestOutput(
+        'direct-api-csrf-no-identity',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Cookie: makeSessionCookie('test-user-123', 'owner'),
+            'X-CSRF-Token': 'valid-csrf-token',
+          },
+          body: {
+            title: 'BFF Call Without Identity Headers',
+            content: 'This should be rejected because BFF did not forward identity',
+          },
         },
-        body: {
-          title: 'BFF Call Without Identity Headers',
-          content: 'This should be rejected because BFF did not forward identity'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('PUT /posts with CSRF token but mismatched identity headers should return 403', async () => {
@@ -249,27 +264,31 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('X-User-Role', 'owner')
         .send({
           title: 'Updated with Wrong Identity',
-          content: 'This should be rejected'
+          content: 'This should be rejected',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Identity header does not match authenticated user');
 
-      saveTestOutput('direct-api-csrf-mismatched-identity', {
-        method: 'PUT',
-        url: '/posts/test-post-123',
-        headers: {
-          Cookie: makeSessionCookie('test-user-123', 'owner'),
-          'X-CSRF-Token': 'valid-csrf-token',
-          'X-User-Id': 'different-user-456',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'direct-api-csrf-mismatched-identity',
+        {
+          method: 'PUT',
+          url: '/posts/test-post-123',
+          headers: {
+            Cookie: makeSessionCookie('test-user-123', 'owner'),
+            'X-CSRF-Token': 'valid-csrf-token',
+            'X-User-Id': 'different-user-456',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Updated with Wrong Identity',
+            content: 'This should be rejected',
+          },
         },
-        body: {
-          title: 'Updated with Wrong Identity',
-          content: 'This should be rejected'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('DELETE /posts with CSRF token but mismatched role should return 403', async () => {
@@ -287,23 +306,25 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('Cookie', makeSessionCookie('test-user-123', 'owner'))
         .set('X-CSRF-Token', 'valid-csrf-token')
         .set('X-User-Id', 'test-user-123')
-        .set('X-User-Role', 'admin') // Mismatched role
-        ;
-
+        .set('X-User-Role', 'admin'); // Mismatched role
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Identity header does not match authenticated user role');
 
-      saveTestOutput('direct-api-csrf-mismatched-role', {
-        method: 'DELETE',
-        url: '/posts/test-post-123',
-        headers: {
-          Cookie: makeSessionCookie('test-user-123', 'owner'),
-          'X-CSRF-Token': 'valid-csrf-token',
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'admin'
+      saveTestOutput(
+        'direct-api-csrf-mismatched-role',
+        {
+          method: 'DELETE',
+          url: '/posts/test-post-123',
+          headers: {
+            Cookie: makeSessionCookie('test-user-123', 'owner'),
+            'X-CSRF-Token': 'valid-csrf-token',
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'admin',
+          },
         },
-      }, res);
+        res,
+      );
     });
 
     it('POST /posts with valid BFF identity headers should work', async () => {
@@ -335,27 +356,31 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('X-User-Role', 'owner')
         .send({
           title: 'Valid BFF Call',
-          content: 'This should work because BFF forwarded identity correctly'
+          content: 'This should work because BFF forwarded identity correctly',
         });
 
       expect(res.status).toBe(201);
       expect(res.body.id).toBeDefined();
       expect(res.body.ownerId).toBe('test-user-123');
 
-      saveTestOutput('valid-bff-identity-headers', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Cookie: makeSessionCookie('test-user-123', 'owner'),
-          'X-CSRF-Token': 'valid-csrf-token',
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'valid-bff-identity-headers',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Cookie: makeSessionCookie('test-user-123', 'owner'),
+            'X-CSRF-Token': 'valid-csrf-token',
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Valid BFF Call',
+            content: 'This should work because BFF forwarded identity correctly',
+          },
         },
-        body: {
-          title: 'Valid BFF Call',
-          content: 'This should work because BFF forwarded identity correctly'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('PUT /posts with valid BFF identity headers should work', async () => {
@@ -394,25 +419,29 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('X-User-Role', 'owner')
         .send({
           title: 'Updated via Valid BFF',
-          content: 'This should work'
+          content: 'This should work',
         });
 
       expect(res.status).toBe(200);
 
-      saveTestOutput('valid-bff-identity-headers-put', {
-        method: 'PUT',
-        url: '/posts/test-post-123',
-        headers: {
-          Cookie: makeSessionCookie('test-user-123', 'owner'),
-          'X-CSRF-Token': 'valid-csrf-token',
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'valid-bff-identity-headers-put',
+        {
+          method: 'PUT',
+          url: '/posts/test-post-123',
+          headers: {
+            Cookie: makeSessionCookie('test-user-123', 'owner'),
+            'X-CSRF-Token': 'valid-csrf-token',
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Updated via Valid BFF',
+            content: 'This should work',
+          },
         },
-        body: {
-          title: 'Updated via Valid BFF',
-          content: 'This should work'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('DELETE /posts with valid BFF identity headers should work', async () => {
@@ -450,16 +479,20 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
 
       expect(res.status).toBe(204);
 
-      saveTestOutput('valid-bff-identity-headers-delete', {
-        method: 'DELETE',
-        url: '/posts/test-post-123',
-        headers: {
-          Cookie: makeSessionCookie('test-user-123', 'owner'),
-          'X-CSRF-Token': 'valid-csrf-token',
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'valid-bff-identity-headers-delete',
+        {
+          method: 'DELETE',
+          url: '/posts/test-post-123',
+          headers: {
+            Cookie: makeSessionCookie('test-user-123', 'owner'),
+            'X-CSRF-Token': 'valid-csrf-token',
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
         },
-      }, res);
+        res,
+      );
     });
   });
 
@@ -475,7 +508,7 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('X-Request-Id', 'test-request-123')
         .send({
           title: 'Test',
-          content: 'Test content'
+          content: 'Test content',
         });
 
       expect(res.status).toBe(401);
@@ -494,7 +527,7 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('Accept', 'application/json')
         .send({
           title: 'Test',
-          content: 'Test content'
+          content: 'Test content',
         });
 
       expect(res.status).toBe(401);
@@ -514,7 +547,7 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('Accept', 'application/json')
         .send({
           title: 'Firebase Direct Call',
-          content: 'This should be rejected as it bypasses BFF'
+          content: 'This should be rejected as it bypasses BFF',
         });
 
       expect(res.status).toBe(401);
@@ -531,7 +564,7 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
         .set('Accept', 'application/json')
         .send({
           title: 'Cookie Direct Call',
-          content: 'This should be rejected as it bypasses BFF'
+          content: 'This should be rejected as it bypasses BFF',
         });
 
       expect(res.status).toBe(403);
@@ -542,8 +575,7 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
     it('allows public GET requests without authentication', async () => {
       const { app } = await makeApp();
 
-      const res = await request(app)
-        .get('/posts');
+      const res = await request(app).get('/posts');
 
       // Should work for public endpoints
       expect([200, 404, 429]).toContain(res.status);
@@ -552,8 +584,7 @@ describe('Direct-API Denial E2E Tests (T077)', () => {
     it('allows GET /health without authentication', async () => {
       const { app } = await makeApp();
 
-      const res = await request(app)
-        .get('/health');
+      const res = await request(app).get('/health');
 
       expect(res.status).toBe(200);
       expect(res.body.service).toBe('api');

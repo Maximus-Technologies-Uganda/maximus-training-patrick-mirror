@@ -17,7 +17,20 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import type { AppConfig } from '../config';
 import { setCacheControlNoStore } from '../lib/errors';
-import { sanitizeLogEntry } from '../logging/redaction';
+import { logError } from '../logging/structured';
+
+function emitCorsSecurityLog(
+  context: 'cors-preflight' | 'cors-headers',
+  allowedOrigins: string[],
+  requestId: string,
+): void {
+  logError('SECURITY ERROR: Wildcard CORS origin (*) detected in production', {
+    context,
+    env: process.env.NODE_ENV,
+    configuredOrigins: allowedOrigins,
+    requestId,
+  });
+}
 
 function ensureVaryIncludes(res: Response, token: string): void {
   const current = res.getHeader('Vary');
@@ -76,7 +89,7 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
         code: 'FORBIDDEN_NULL_ORIGIN',
         message: 'Origin: null is not allowed',
         requestId,
-        hint: 'Requests from local files or sandboxed contexts are blocked. Use a proper origin or set ALLOW_NULL_ORIGIN=true in development.'
+        hint: 'Requests from local files or sandboxed contexts are blocked. Use a proper origin or set ALLOW_NULL_ORIGIN=true in development.',
       });
       return;
     }
@@ -85,21 +98,13 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     if (isProd && allowedOrigins.includes('*')) {
       const requestId = res.locals.requestId || req.requestId || 'unknown';
 
-      const logEntry = sanitizeLogEntry({
-        level: 'error',
-        message: 'SECURITY ERROR: Wildcard CORS origin (*) detected in production',
-        context: 'cors-preflight',
-        env: process.env.NODE_ENV,
-        configuredOrigins: allowedOrigins,
-        requestId
-      });
-      console.error(JSON.stringify(logEntry));
+      emitCorsSecurityLog('cors-preflight', allowedOrigins, requestId);
       setCacheControlNoStore(res, 500);
       res.status(500).json({
         code: 'INVALID_CORS_CONFIG',
         message: 'Internal server error',
         requestId,
-        hint: 'Wildcard CORS origin (*) is not allowed in production. Configure specific allowed origins via CORS_ORIGINS environment variable.'
+        hint: 'Wildcard CORS origin (*) is not allowed in production. Configure specific allowed origins via CORS_ORIGINS environment variable.',
       });
       return;
     }
@@ -119,7 +124,7 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     // Set allowed headers (all headers we accept)
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Authorization, X-CSRF-Token, X-Request-Id, Content-Type'
+      'Authorization, X-CSRF-Token, X-Request-Id, Content-Type',
     );
 
     // Set max age for preflight cache (10 minutes)
@@ -131,7 +136,7 @@ export function corsPreflight(_config: AppConfig): RequestHandler {
     // so RateLimit-* are the ones actually sent; keep X-* for forward-compat/tests.
     res.setHeader(
       'Access-Control-Expose-Headers',
-      'RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id'
+      'RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id',
     );
 
     // Return 204 No Content (standard for successful preflight)
@@ -176,7 +181,7 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
         code: 'FORBIDDEN_NULL_ORIGIN',
         message: 'Origin: null is not allowed',
         requestId,
-        hint: 'Requests from local files or sandboxed contexts are blocked. Use a proper origin or set ALLOW_NULL_ORIGIN=true in development.'
+        hint: 'Requests from local files or sandboxed contexts are blocked. Use a proper origin or set ALLOW_NULL_ORIGIN=true in development.',
       });
       return;
     }
@@ -185,21 +190,13 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     if (isProd && allowedOrigins.includes('*')) {
       const requestId = res.locals.requestId || req.requestId || 'unknown';
 
-      const logEntry = sanitizeLogEntry({
-        level: 'error',
-        message: 'SECURITY ERROR: Wildcard CORS origin (*) detected in production',
-        context: 'cors-headers',
-        env: process.env.NODE_ENV,
-        configuredOrigins: allowedOrigins,
-        requestId
-      });
-      console.error(JSON.stringify(logEntry));
+      emitCorsSecurityLog('cors-headers', allowedOrigins, requestId);
       setCacheControlNoStore(res, 500);
       res.status(500).json({
         code: 'INVALID_CORS_CONFIG',
         message: 'Internal server error',
         requestId,
-        hint: 'Wildcard CORS origin (*) is not allowed in production. Configure specific allowed origins via CORS_ORIGINS environment variable.'
+        hint: 'Wildcard CORS origin (*) is not allowed in production. Configure specific allowed origins via CORS_ORIGINS environment variable.',
       });
       return;
     }
@@ -215,7 +212,7 @@ export function corsHeaders(_config: AppConfig): RequestHandler {
     // Expose both legacy (X-*) and standard (RateLimit-*) headers for normal responses as well
     res.setHeader(
       'Access-Control-Expose-Headers',
-      'RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id'
+      'RateLimit-Limit, RateLimit-Remaining, RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After, X-Request-Id',
     );
 
     // Set Vary header

@@ -34,9 +34,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
-            code: "UNAUTHORIZED"
-            message: "Invalid or expired authentication token"
-            requestId: "550e8400-e29b-41d4-a716-446655440000"
+            code: 'UNAUTHORIZED'
+            message: 'Invalid or expired authentication token'
+            requestId: '550e8400-e29b-41d4-a716-446655440000'
     Err403:
       description: Forbidden
       content:
@@ -44,9 +44,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
-            code: "FORBIDDEN"
-            message: "Insufficient permissions to access this resource"
-            requestId: "550e8400-e29b-41d4-a716-446655440001"
+            code: 'FORBIDDEN'
+            message: 'Insufficient permissions to access this resource'
+            requestId: '550e8400-e29b-41d4-a716-446655440001'
     Err406:
       description: Not Acceptable
       content:
@@ -54,9 +54,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
-            code: "NOT_ACCEPTABLE"
-            message: "Accept header must allow application/json responses"
-            requestId: "550e8400-e29b-41d4-a716-446655440006"
+            code: 'NOT_ACCEPTABLE'
+            message: 'Accept header must allow application/json responses'
+            requestId: '550e8400-e29b-41d4-a716-446655440006'
     Err415:
       description: Unsupported Media Type
       content:
@@ -64,9 +64,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
-            code: "UNSUPPORTED_MEDIA_TYPE"
-            message: "Content-Type must be application/json"
-            requestId: "550e8400-e29b-41d4-a716-446655440007"
+            code: 'UNSUPPORTED_MEDIA_TYPE'
+            message: 'Content-Type must be application/json'
+            requestId: '550e8400-e29b-41d4-a716-446655440007'
     Err422:
       description: Unprocessable Entity
       content:
@@ -74,14 +74,14 @@ components:
           schema:
             $ref: '#/components/schemas/ValidationErrorEnvelope'
           example:
-            code: "VALIDATION_ERROR"
-            message: "Request validation failed"
-            requestId: "550e8400-e29b-41d4-a716-446655440002"
+            code: 'VALIDATION_ERROR'
+            message: 'Request validation failed'
+            requestId: '550e8400-e29b-41d4-a716-446655440002'
             details:
-              - path: "title"
-                issue: "Title is required"
-              - path: "body"
-                issue: "Body must be at least 10 characters"
+              - path: 'title'
+                issue: 'Title is required'
+              - path: 'body'
+                issue: 'Body must be at least 10 characters'
     Err429:
       description: Too Many Requests
       headers:
@@ -94,9 +94,13 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
-            code: "RATE_LIMITED"
-            message: "Rate limit exceeded. Please try again later."
-            requestId: "550e8400-e29b-41d4-a716-446655440003"
+            code: 'RATE_LIMITED'
+            message: 'Rate limit exceeded. Please try again later.'
+            requestId: '550e8400-e29b-41d4-a716-446655440003'
+            details:
+              - scope: 'ip'
+                limit: '100 requests per 60 seconds'
+                retryAfterSeconds: 42
     Err413:
       description: Payload Too Large
       content:
@@ -104,9 +108,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
-            code: "PAYLOAD_TOO_LARGE"
-            message: "Request payload exceeds 1MB limit"
-            requestId: "550e8400-e29b-41d4-a716-446655440004"
+            code: 'PAYLOAD_TOO_LARGE'
+            message: 'Request payload exceeds 1MB limit'
+            requestId: '550e8400-e29b-41d4-a716-446655440004'
     Err503:
       description: Service Unavailable (read-only mode or dependency failure)
       content:
@@ -114,9 +118,9 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
           example:
-            code: "SERVICE_UNAVAILABLE"
-            message: "Service is in read-only mode"
-            requestId: "550e8400-e29b-41d4-a716-446655440005"
+            code: 'SERVICE_UNAVAILABLE'
+            message: 'Service is in read-only mode'
+            requestId: '550e8400-e29b-41d4-a716-446655440005'
   schemas:
     HealthDependencyStatus:
       type: string
@@ -374,7 +378,7 @@ paths:
                   firebase: ok
                   db: down
                   details:
-                    db: "db error: connection timeout"
+                    db: 'db error: connection timeout'
                 requestId: 550e8400-e29b-41d4-a716-446655440001
                 traceId: 4bf92f3577b34da6a3ce929d0e0e4740
         '406': { $ref: '#/components/responses/Err406' }

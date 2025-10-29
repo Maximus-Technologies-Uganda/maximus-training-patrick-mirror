@@ -4,17 +4,17 @@ import { REDACTED } from '../../src/logging/redaction';
 
 function createResponse() {
   const headers: Record<string, unknown> = {};
-  const res: Partial<Response> & { locals: Record<string, string> } = {
+  const res: any = {
     locals: { requestId: 'req-123' },
     setHeader: jest.fn((name: string, value: unknown) => {
       headers[name] = value;
+      return res;
     }),
-    getHeader: jest.fn((name: string) => headers[name] as any),
+    getHeader: jest.fn((name: string) => headers[name] as string | undefined),
     json: jest.fn(),
     end: jest.fn(),
+    status: jest.fn().mockImplementation(() => res),
   };
-
-  res.status = jest.fn().mockImplementation(() => res as Response);
 
   return res as Response;
 }
@@ -44,12 +44,12 @@ describe('cors middleware logging redaction', () => {
       requestId: 'req-123',
     } as unknown as Request;
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const stderrSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     preflight(req, res, jest.fn());
 
-    expect(consoleSpy).toHaveBeenCalledTimes(1);
-    const [payload] = consoleSpy.mock.calls[0];
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
+    const [payload] = stderrSpy.mock.calls[0];
     expect(typeof payload).toBe('string');
     const parsed = JSON.parse(payload as string);
     expect(parsed.context).toBe('cors-preflight');
@@ -68,12 +68,12 @@ describe('cors middleware logging redaction', () => {
       requestId: 'req-123',
     } as unknown as Request;
 
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const stderrSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     headers(req, res, jest.fn());
 
-    expect(consoleSpy).toHaveBeenCalledTimes(1);
-    const [payload] = consoleSpy.mock.calls[0];
+    expect(stderrSpy).toHaveBeenCalledTimes(1);
+    const [payload] = stderrSpy.mock.calls[0];
     expect(typeof payload).toBe('string');
     const parsed = JSON.parse(payload as string);
     expect(parsed.context).toBe('cors-headers');

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { NextRequest } from "next/server";
 import {
   ensureRequestContext,
   buildPropagationHeaders,
@@ -44,7 +45,7 @@ describe("request context helper", () => {
     expect(merged.requestId).toBe("api-req-456");
     expect(merged.traceId).toBe("cccccccccccccccccccccccccccccccc");
     expect(responseHeadersFromContext(merged).traceparent).toBe(
-      "00-cccccccccccccccccccccccccccccccc-dddddddddddddddd-01",
+      "00-cccccccccccccccccccccccccccccccc-dddddddddddddddd-01"
     );
   });
 });
@@ -109,9 +110,12 @@ describe("auth login route correlation", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response(null, { status: 204, headers: upstreamHeaders }));
 
-    const request = new MockNextRequest(JSON.stringify({ username: "admin", password: "password" }), clientHeaders);
+    const request = new MockNextRequest(
+      JSON.stringify({ username: "admin", password: "password" }),
+      clientHeaders
+    );
 
-    const response = await loginPost(request as unknown as Request);
+    const response = await loginPost(request as unknown as NextRequest);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [, fetchOptions] = fetchMock.mock.calls[0];
@@ -119,13 +123,12 @@ describe("auth login route correlation", () => {
     const propagatedHeaders = (fetchOptions as RequestInit).headers as Record<string, string>;
     expect(propagatedHeaders["X-Request-Id"]).toBe("client-req-123");
     expect(propagatedHeaders.traceparent).toBe(
-      "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
+      "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01"
     );
 
     expect(response.headers.get("x-request-id")).toBe("api-req-456");
     expect(response.headers.get("traceparent")).toBe(
-      "00-cccccccccccccccccccccccccccccccc-dddddddddddddddd-01",
+      "00-cccccccccccccccccccccccccccccccc-dddddddddddddddd-01"
     );
   });
 });
-

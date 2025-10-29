@@ -33,6 +33,18 @@ function makeApp(max = 1, options?: { trustProxy?: unknown }) {
   return app;
 }
 
+function expectLimiterDetails(body: unknown, expectedScope: string) {
+  const details = (body as { details?: unknown }).details;
+  expect(Array.isArray(details)).toBe(true);
+  const casted = details as Array<Record<string, unknown>>;
+  expect(casted).toHaveLength(1);
+  expect(casted[0]).toMatchObject({
+    scope: expectedScope,
+    limit: "1 requests per 60 seconds",
+    retryAfterSeconds: 60,
+  });
+}
+
 describe("Rate limit key precedence (T108)", () => {
   it("uses userId when present (separate buckets per user)", async () => {
     const app = makeApp(1);
@@ -44,6 +56,7 @@ describe("Rate limit key precedence (T108)", () => {
     // Same user exceeds limit
     const r2 = await request(app).get("/health").set("X-Test-User-Id", "u1");
     expect(r2.status).toBe(429);
+    expectLimiterDetails(r2.body, "user");
 
     // Different user should have independent bucket
     const r3 = await request(app).get("/health").set("X-Test-User-Id", "u2");
@@ -58,6 +71,7 @@ describe("Rate limit key precedence (T108)", () => {
 
     const r2 = await request(app).get("/health").set("X-Forwarded-For", "5.6.7.8");
     expect(r2.status).toBe(429);
+    expectLimiterDetails(r2.body, "ip");
   });
 
   it("honours X-Forwarded-For when trust proxy is enabled", async () => {

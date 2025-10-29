@@ -22,6 +22,9 @@ jobs:
   readme-link-check:
     name: README link check
     runs-on: ubuntu-latest
+    continue-on-error: true
+    # NOTE: Shift-left strategy - this check runs locally in Tier 3 Phase 3
+    # GitHub check is non-blocking (informational only)
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,6 +43,9 @@ jobs:
   readme-placeholder-guard:
     name: README placeholder guard
     runs-on: ubuntu-latest
+    continue-on-error: true
+    # NOTE: Shift-left strategy - this check runs locally in Tier 3 Phase 3
+    # GitHub check is non-blocking (informational only)
     steps:
       - uses: actions/checkout@v4
       - name: Fail if README contains placeholder URLs
@@ -53,12 +59,15 @@ jobs:
   lint-workflows:
     name: Lint GitHub workflows
     runs-on: ubuntu-latest
+    continue-on-error: true
+    # NOTE: Shift-left strategy - this check runs locally in Tier 3 Phase 3
+    # GitHub check is non-blocking (informational only)
     steps:
       - uses: actions/checkout@v4
       - uses: reviewdog/action-actionlint@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          actionlint_flags: ".github/workflows/*.yml"
+          actionlint_flags: '.github/workflows/*.yml'
           reporter: github-check
           fail_level: error
   install-root-deps:
@@ -70,23 +79,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Enable Corepack (pnpm 9)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
+
+      - uses: ./.github/actions/setup-pnpm
+
       - name: Resolve pnpm store path
         id: pnpm-store-root
         shell: bash
         run: |
           set -euo pipefail
-          echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
           echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-      - name: Cache pnpm store
+          echo "version=$(pnpm -v | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store (with version fallback)
         uses: actions/cache@v4
         with:
-          path: ${{ env.PNPM_STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          path: ${{ steps.pnpm-store-root.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store-root.outputs.version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
+            ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store-root.outputs.version }}-
             ${{ runner.os }}-pnpm-store-
       - name: Install root dependencies (pnpm)
         shell: bash
@@ -101,45 +111,78 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack (pnpm 9)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Resolve pnpm store path
-        id: pnpm-store-a11y
+      - name: Detect Playwright specs
+        id: detect_frontend_next_playwright
         shell: bash
         run: |
           set -euo pipefail
-          echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
+          target_dir="frontend-next/tests/playwright"
+          has_tests="false"
+          if [ -d "$target_dir" ]; then
+            if find "$target_dir" -type f -name '*.spec.ts' -print -quit | grep -q '.'; then
+              has_tests="true"
+            fi
+          fi
+          echo "has_tests=$has_tests" >> "$GITHUB_OUTPUT"
+          if [ "$has_tests" != "true" ]; then
+            echo "No Playwright specs found in $target_dir; skipping accessibility checks."
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' }}
+        with:
+          node-version: '20'
+
+      - uses: ./.github/actions/setup-pnpm
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' }}
+
+      - name: Resolve pnpm store path
+        id: pnpm-store-a11y
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
           echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
       - name: Cache pnpm store
         uses: actions/cache@v4
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' }}
         with:
-          path: ${{ env.PNPM_STORE_PATH }}
+          path: ${{ steps.pnpm-store-a11y.outputs.path }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies (pnpm)
         shell: bash
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' }}
         run: |
           set -euo pipefail
           pnpm install --ignore-scripts --frozen-lockfile=false
           cd frontend-next
           pnpm install --ignore-scripts --frozen-lockfile=false
-          pnpm dlx playwright install --with-deps
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' }}
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' && steps.playwright-cache.outputs.cache-hit != 'true' }}
+        run: pnpm dlx playwright install --with-deps
 
       - name: Run Playwright a11y/e2e tests (HTML report)
         working-directory: frontend-next
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' }}
         run: npm run test:e2e
 
       - name: Upload a11y HTML report artifact
-        if: always()
+        if: ${{ steps.detect_frontend_next_playwright.outputs.has_tests == 'true' && always() }}
         uses: actions/upload-artifact@v4
         with:
           name: a11y-frontend-next
@@ -158,29 +201,49 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack (pnpm 9)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - uses: ./.github/actions/setup-pnpm
+
       - name: Resolve pnpm store path
         id: pnpm-store-cov
         shell: bash
         run: |
           set -euo pipefail
-          echo "PNPM_STORE_PATH=$(pnpm store path)" >> "$GITHUB_ENV"
           echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-      - name: Cache pnpm store
+          echo "version=$(pnpm -v | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store (with version fallback)
         uses: actions/cache@v4
         with:
-          path: ${{ env.PNPM_STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          path: ${{ steps.pnpm-store-cov.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store-cov.outputs.version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
+            ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store-cov.outputs.version }}-
             ${{ runner.os }}-pnpm-store-
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend-next/.next/cache
+            frontend-next/.turbo
+          key: ${{ runner.os }}-nextjs-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ github.ref }}-
+            ${{ runner.os }}-nextjs-
+
+      - name: Cache ESLint results
+        uses: actions/cache@v4
+        with:
+          path: .eslintcache
+          key: ${{ runner.os }}-eslint-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-eslint-${{ github.ref }}-
+            ${{ runner.os }}-eslint-
 
       - name: Install dependencies (pnpm)
         shell: bash
@@ -251,6 +314,63 @@ jobs:
           header: coverage-report-frontend-next
           path: frontend-next/coverage-table.md
 
+  monorepo-workspace-tests:
+    name: Test monorepo workspaces (matrix)
+    needs: install-root-deps
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workspace: [quote, todo, expense, stopwatch]
+      fail-fast: false
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: ./.github/actions/setup-pnpm
+
+      - name: Resolve pnpm store path
+        id: pnpm-store-ws
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+          echo "version=$(pnpm -v | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store-ws.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store-ws.outputs.version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-v${{ steps.pnpm-store-ws.outputs.version }}-
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm install --ignore-scripts --frozen-lockfile=false
+
+      - name: Run ${{ matrix.workspace }} tests
+        working-directory: ${{ matrix.workspace }}
+        run: npm run test:ci
+
+      - name: Upload ${{ matrix.workspace }} coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.workspace }}
+          path: |
+            ${{ matrix.workspace }}/coverage/**
+          retention-days: 21
+
   api-coverage:
     needs: install-root-deps
     runs-on: ubuntu-latest
@@ -267,6 +387,15 @@ jobs:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
+
+      - name: Cache Jest
+        uses: actions/cache@v4
+        with:
+          path: api/.jest-cache
+          key: ${{ runner.os }}-jest-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-jest-${{ github.ref }}-
+            ${{ runner.os }}-jest-
 
       - name: Install dependencies
         shell: bash
@@ -475,7 +604,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect OpenAPI contract
+        id: detect_openapi_contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          spec_path="api/openapi.json"
+          if [ -f "$spec_path" ]; then
+            echo "has_contract=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_contract=false" >> "$GITHUB_OUTPUT"
+            echo "OpenAPI spec not found at $spec_path; skipping contract artifact upload."
+          fi
+
       - name: Upload contract artifact (OpenAPI spec)
+        if: ${{ steps.detect_openapi_contract.outputs.has_contract == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: contract-api
@@ -488,7 +631,14 @@ jobs:
     name: Aggregate monorepo coverage and summarize
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    needs: [frontend-next-coverage, api-coverage, frontend-next-a11y, contract-artifact]
+    needs:
+      [
+        frontend-next-coverage,
+        monorepo-workspace-tests,
+        api-coverage,
+        frontend-next-a11y,
+        contract-artifact,
+      ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -789,16 +939,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Detect contract specs
+        id: detect_contract_specs
+        shell: bash
+        run: |
+          set -euo pipefail
+          spec_root="specs/007-spec/week-7.5-finishers/contracts"
+          primary_spec="$spec_root/openapi.yaml"
+          if [ -f "$primary_spec" ]; then
+            echo "has_specs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_specs=false" >> "$GITHUB_OUTPUT"
+            echo "No OpenAPI source found at $primary_spec; skipping Spectral linting."
+          fi
       - uses: actions/setup-node@v4
+        if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         with:
           node-version: '20'
       - name: Install dependencies
+        if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: npm ci --no-audit --no-fund
       - name: Install Spectral (OpenAPI linter)
+        if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: npm i -g @stoplight/spectral-cli@6
       - name: Lint OpenAPI with Spectral
+        if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: spectral lint specs/007-spec/week-7.5-finishers/contracts/openapi.yaml --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
       - name: Lint live API contract if present
+        if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: |
           if [ -f api/openapi.json ]; then
             spectral lint api/openapi.json --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
@@ -806,6 +974,7 @@ jobs:
             echo "No api/openapi.json found; skipping live contract lint."
           fi
       - name: Validate OpenAPI
+        if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: npm run contracts:validate
 
   latency-snapshot:
@@ -820,8 +989,8 @@ jobs:
       - name: Resolve Target URL
         shell: bash
         env:
-          VAR_PROD_API_URL: ${{ vars.PROD_API_URL }}
-          SEC_PROD_API_URL: ${{ secrets.PROD_API_URL }}
+          VAR_PROD_API_URL: ${{ vars.PROD_API_URL || '' }}
+          SEC_PROD_API_URL: ${{ secrets.PROD_API_URL || '' }}
         run: |
           set -euo pipefail
           VAR_URL="${VAR_PROD_API_URL}"

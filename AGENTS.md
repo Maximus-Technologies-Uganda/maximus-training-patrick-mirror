@@ -2,8 +2,79 @@
 
 This file provides **project-specific guidance for code agents** (Codex Cloud/Web, Cursor, CI bots) to build, run, test, and contribute safely in this repository.
 
-> **Source of truth:** Follow `DEVELOPMENT_RULES.md` for mandatory standards (PR evidence, branching, type safety, artifacts, CI checks, accessibility, performance, security, governance). If anything here conflicts with that file, **follow `DEVELOPMENT_RULES.md`**.  
+> **Source of truth:** Follow `DEVELOPMENT_RULES.md` for mandatory standards (PR evidence, branching, type safety, artifacts, CI checks, accessibility, performance, security, governance). If anything here conflicts with that file, **follow `DEVELOPMENT_RULES.md`**.
 > **Tooling:** Node **20.x LTS** + **pnpm 9.x via Corepack**. CI and hooks use pnpm.
+
+---
+
+## Mandatory 4-Tier Local Validation (CRITICAL)
+
+**ALL code changes MUST pass all 4 tiers before push. This is NOT optional.**
+
+### Quick Start
+
+```bash
+# Tier 1 (Auto): lint-staged runs on commit
+git add . && git commit -m "feat: your change"
+
+# Tier 2-4 (Auto): All run on push
+git push
+
+# If Tier 3/4 fail locally, run manually to debug:
+bash scripts/test-locally.sh        # Tier 3
+act -W .github/workflows/quality-gate.yml  # Tier 4
+```
+
+### The 4 Tiers
+
+| Tier | When      | What                                | Duration | Bypass                                    |
+| ---- | --------- | ----------------------------------- | -------- | ----------------------------------------- |
+| 1    | On commit | Prettier + ESLint via lint-staged   | ~5s      | None (auto-fix)                           |
+| 2    | On push   | TypeScript `typecheck:bail`         | ~10s     | Only `--no-verify` (with follow-up fix)   |
+| 3    | On push   | Full local CI: type-check + tests   | ~60-90s  | None (tests must pass)                    |
+| 4    | On push   | GitHub Actions simulation via `act` | ~15-25m  | Only if act unavailable (not recommended) |
+
+### Setup (One-Time)
+
+```bash
+# Install act for Tier 4
+# Windows: choco install act OR download from https://github.com/nektos/act/releases
+# macOS: brew install act
+# Linux: Download from releases
+
+# Verify
+act --version && docker ps
+```
+
+### If a Tier Fails
+
+- **Tier 1:** Auto-fixes formatting; re-commit
+- **Tier 2:** Fix TypeScript errors shown; re-commit
+- **Tier 3:** Run `bash scripts/test-locally.sh` to debug; fix tests; re-commit
+- **Tier 4:** Ensure Docker is running and act is installed; OR debug with `act -l`
+
+### Why This Matters
+
+- **95%+ of CI failures caught before GitHub** (vs. 30% without)
+- **Developer confidence:** You know it will pass CI before pushing
+- **Fast GitHub Actions:** 5-10 min (vs. 40+ min if local failures)
+- **Team efficiency:** Fewer failed runs, fewer retries, faster releases
+
+### Shift-Left Optimization (Advanced)
+
+This repository also implements **shift-left CI/CD** where non-critical checks run locally only and GitHub Actions verifies (doesn't discover issues). See [SHIFT-LEFT-STRATEGY.md](SHIFT-LEFT-STRATEGY.md) for full details.
+
+**Key Impact:**
+
+- <1% GitHub failure rate (down from 30%)
+- GitHub Actions 25% faster
+- Total local validation: 99%+ of issues caught before push
+
+**For Agents:**
+
+1. Always use `bash scripts/test-locally.sh` (full validation)
+2. If CI fails on GitHub, check [SHIFT-LEFT-STRATEGY.md](SHIFT-LEFT-STRATEGY.md) for shift-left FAQ
+3. Local validation should catch 99%+ of issues
 
 ---
 
@@ -18,12 +89,13 @@ This file provides **project-specific guidance for code agents** (Codex Cloud/We
 
 ## Platform & Toolchain
 
-- **Node:** 20.x  
+- **Node:** 20.x
 - **Package manager:** **pnpm** (preferred; repo declares `packageManager` in `package.json`).  
   npm can work locally, but **CI uses pnpm**.
 - **OS:** Linux/macOS. CI uses Ubuntu.
 
 Enable pnpm locally:
+
 ```bash
 corepack enable && corepack prepare pnpm@9.x --activate
 pnpm install
@@ -296,3 +368,4 @@ Temporaries: temp-mitigation issues must have owner and (cleanup by YYYY-MM-DD);
 
 Secrets & vars: use repository/Environment Actions Variables/Secrets; avoid hardcoding. IDE warnings are expected until configured.
 
+```

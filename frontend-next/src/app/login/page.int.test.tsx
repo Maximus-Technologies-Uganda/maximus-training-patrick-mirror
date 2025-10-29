@@ -23,5 +23,3 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
   });
 });
-
-

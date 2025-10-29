@@ -1,8 +1,10 @@
 name: Deploy
 
 on:
-  push:
-    branches: ["main"]
+  workflow_run:
+    workflows: ['Quality Gate']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -20,6 +22,7 @@ env:
 jobs:
   deploy:
     name: Deploy to Cloud Run
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -139,4 +142,3 @@ jobs:
               fi
             } >> "$GITHUB_STEP_SUMMARY"
           fi
-
