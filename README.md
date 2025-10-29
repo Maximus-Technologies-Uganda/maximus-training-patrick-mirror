@@ -107,6 +107,16 @@ cd api && pnpm run test:ci
 cd frontend-next && pnpm run test:ci
 ```
 
+## Idempotency and retries
+
+- `frontend-next/src/lib/http/backoff.ts` exports `retryWithIdempotencyBackoff`, a shared helper used by Route Handlers and
+  future background jobs to enforce retry safety.
+- POST requests are **never retried**. The helper throws with guidance to use PUT/PATCH plus an idempotency key when retries are
+  required.
+- PUT/PATCH retries must reuse the same idempotency key on every attempt; the helper surfaces the key to each retry via the
+  callback context.
+- See `frontend-next/tests/idempotency.e2e.spec.ts` for contract coverage ensuring retries honour these semantics.
+
 ## Repository Structure
 
 - `api/`: Express API (TypeScript), deployed to Cloud Run

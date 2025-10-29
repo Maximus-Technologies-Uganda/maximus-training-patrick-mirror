@@ -1,21 +1,76 @@
 import type { RequestHandler } from "express";
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomBytes } from "node:crypto";
 
-// Augment Express Request to include requestId for downstream handlers
+const TRACEPARENT_REGEX = /^(?<version>[0-9a-f]{2})-(?<traceId>[0-9a-f]{32})-(?<spanId>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$/i;
+const TRACE_FLAGS = "01";
+
+function generateTraceIdentifiers(): { traceId: string; spanId: string; header: string } {
+  const traceId = randomBytes(16).toString("hex");
+  const spanId = randomBytes(8).toString("hex");
+  const header = `00-${traceId}-${spanId}-${TRACE_FLAGS}`;
+  return { traceId, spanId, header };
+}
+
+function parseTraceparent(value: string | undefined): { traceId: string; header: string } {
+  if (!value) return generateTraceIdentifiers();
+  const match = TRACEPARENT_REGEX.exec(value.trim());
+  if (!match?.groups) {
+    return generateTraceIdentifiers();
+  }
+  const { traceId, spanId, version, flags } = match.groups as Record<string, string>;
+  if (traceId === "00000000000000000000000000000000" || spanId === "0000000000000000") {
+    return generateTraceIdentifiers();
+  }
+  const normalized = `${version}-${traceId}-${spanId}-${flags}`.toLowerCase();
+  return { traceId: traceId.toLowerCase(), header: normalized };
+}
+
+function normalizeTracestate(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return undefined;
+  // Enforce W3C maximum length of 512 characters.
+  return trimmed.slice(0, 512);
+}
+
+// Augment Express Request to include observability metadata.
 declare module "express-serve-static-core" {
   interface Request {
+    requestId?: string;
+    traceId?: string;
+    traceparent?: string;
+    tracestate?: string;
+    user?: {
+      userId?: string;
+      role?: string;
+    };
+  }
+}
+
+declare module "http" {
+  interface IncomingMessage {
     requestId?: string;
   }
 }
 
 export const requestId: RequestHandler = (req, res, next) => {
-  const incoming = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
-  const value = typeof incoming === "string" && incoming.trim() ? incoming.trim() : randomUUID();
-  req.requestId = value;
-  res.setHeader("X-Request-Id", value);
+  const incomingId = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
+  const requestIdValue = typeof incomingId === "string" && incomingId.trim().length > 0 ? incomingId.trim() : randomUUID();
+  req.requestId = requestIdValue;
+  res.setHeader("X-Request-Id", requestIdValue);
+
+  const parsedTraceparent = parseTraceparent(req.get("traceparent") ?? (req.headers["traceparent"] as string | undefined));
+  req.traceId = parsedTraceparent.traceId;
+  req.traceparent = parsedTraceparent.header;
+  res.setHeader("Traceparent", parsedTraceparent.header);
+
+  const incomingTracestate = normalizeTracestate(req.get("tracestate") ?? (req.headers["tracestate"] as string | undefined));
+  if (incomingTracestate) {
+    req.tracestate = incomingTracestate;
+    res.setHeader("Tracestate", incomingTracestate);
+  }
+
   next();
 };
 
 export default requestId;
-
-

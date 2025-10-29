@@ -3,6 +3,7 @@
 const express = require("express");
 import { createHmac } from "node:crypto";
 import { getSessionSecret } from "../../config";
+import { defaultLogger } from "../../logging/observability";
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ router.post("/login", (req, res) => {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
       ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    console.log(JSON.stringify({ level: "warn", message: "Invalid credentials", requestId }));
+    defaultLogger.warn("invalid credentials", { requestId });
     return res.status(401).send();
   }
 
@@ -63,7 +64,7 @@ router.post("/login", (req, res) => {
   const requestId =
     (req as unknown as { requestId?: string }).requestId ||
     ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-  console.log(JSON.stringify({ level: "info", message: "User authenticated successfully", requestId, userId }));
+  defaultLogger.info("user authenticated", { requestId, userId });
   return res.status(204).send();
 });
 
@@ -80,7 +81,8 @@ router.post("/logout", (req, res) => {
     ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
   try {
     const secret = getSessionSecret();
-    const raw = (req as any).cookies?.session || (req.headers.cookie?.match(/(?:^|;)\s*session=([^;]+)/)?.[1] ?? "");
+    const cookieSource = req as unknown as { cookies?: { session?: string } };
+    const raw = cookieSource.cookies?.session || (req.headers.cookie?.match(/(?:^|;)\s*session=([^;]+)/)?.[1] ?? "");
     if (raw) {
       // verify signature minimally to extract userId when valid
       const [h, p, sig] = raw.split(".");
@@ -90,18 +92,18 @@ router.post("/logout", (req, res) => {
         if (sig === expect) {
           const payload = JSON.parse(base64urlToBuffer(p).toString("utf8"));
           const userId = typeof payload.userId === "string" ? payload.userId : undefined;
-          console.log(JSON.stringify({ level: "info", message: "User logged out", requestId, ...(userId ? { userId } : {}) }));
+          defaultLogger.info("user logged out", { requestId, ...(userId ? { userId } : {}) });
         } else {
-          console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+          defaultLogger.info("user logged out", { requestId });
         }
       } else {
-        console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+        defaultLogger.info("user logged out", { requestId });
       }
     } else {
-      console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+      defaultLogger.info("user logged out", { requestId });
     }
   } catch {
-    console.log(JSON.stringify({ level: "info", message: "User logged out", requestId }));
+    defaultLogger.info("user logged out", { requestId });
   }
   return res.status(204).send();
 });
