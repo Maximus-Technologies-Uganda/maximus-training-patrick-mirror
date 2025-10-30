@@ -3,19 +3,15 @@ substitutions:
   _AR_REPOSITORY: cloud-run-images
   _API_SERVICE_NAME: maximus-training-api
   _FRONTEND_SERVICE_NAME: maximus-training-frontend
-  _SERVICE_ACCOUNT: ""
-  _ALLOW_UNAUTH_API: "false"
-  _ALLOW_UNAUTH_FRONTEND: "false"
+  _SERVICE_ACCOUNT: ''
+  _ALLOW_UNAUTH_API: 'false'
+  _ALLOW_UNAUTH_FRONTEND: 'false'
+  _IAP_AUDIENCE: ''
   _API_MEMORY: 512Mi
   _API_CPU: '1'
   _API_MIN_INSTANCES: '0'
   _API_MAX_INSTANCES: '10'
   _API_TIMEOUT: 300s
-  _FRONTEND_MEMORY: 512Mi
-  _FRONTEND_CPU: '1'
-  _FRONTEND_MIN_INSTANCES: '1'
-  _FRONTEND_MAX_INSTANCES: '10'
-  _FRONTEND_TIMEOUT: 300s
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -138,36 +134,28 @@ steps:
     id: Deploy Frontend
     entrypoint: bash
     args:
-      - -ceu
+      - -c
       - |
-        set -euxo pipefail
-        API_URL=$(cat api_url.txt)
-        ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$$API_URL,ID_TOKEN_AUDIENCE=$$API_URL"
-        if [ -n "${_IAP_AUDIENCE:-}" ]; then
-          ENV_VARS+=",IAP_AUDIENCE=${_IAP_AUDIENCE}"
-        elif [ -n "${IAP_AUDIENCE:-}" ]; then
-          ENV_VARS+=",IAP_AUDIENCE=${IAP_AUDIENCE}"
+        set -euo pipefail
+        API_URL=$$(cat api_url.txt)
+        ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$${API_URL},ID_TOKEN_AUDIENCE=$${API_URL}"
+        if [ -n "$${_IAP_AUDIENCE:-}" ]; then
+          ENV_VARS="$${ENV_VARS},IAP_AUDIENCE=${_IAP_AUDIENCE}"
         fi
-        DEPLOY_ARGS=(run deploy "${_FRONTEND_SERVICE_NAME}" \
+        gcloud run deploy "${_FRONTEND_SERVICE_NAME}" \
           --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
           --project="${PROJECT_ID}" \
           --region="${_REGION}" \
           --platform=managed \
           --port=8080 \
-          --set-env-vars="${ENV_VARS}" \
-          --memory="${_FRONTEND_MEMORY}" \
-          --cpu="${_FRONTEND_CPU}" \
-          --min-instances="${_FRONTEND_MIN_INSTANCES}" \
-          --max-instances="${_FRONTEND_MAX_INSTANCES}" \
-          --timeout="${_FRONTEND_TIMEOUT}" \
-          --ingress=all)
-        if [ -n "${_SERVICE_ACCOUNT}" ]; then
-          DEPLOY_ARGS+=(--service-account="${_SERVICE_ACCOUNT}")
-        fi
-        if [ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ]; then
-          DEPLOY_ARGS+=(--allow-unauthenticated)
-        fi
-        gcloud --verbosity=debug "${DEPLOY_ARGS[@]}"
+          --set-env-vars="$${ENV_VARS}" \
+          --memory="512Mi" \
+          --cpu="1" \
+          --min-instances="1" \
+          --max-instances="10" \
+          --timeout="300s" \
+          --ingress=all \
+          --allow-unauthenticated
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: Grant Frontend Invoker on API
@@ -233,4 +221,3 @@ images:
   - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}'
 
 timeout: '1800s'
-
