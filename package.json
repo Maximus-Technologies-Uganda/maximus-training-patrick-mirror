@@ -1,94 +1,92 @@
 {
-    "name":  "training-monorepo",
-    "version":  "0.1.0",
-    "private":  true,
-    "engines":  {
-                    "node":  "20.x"
-                },
-    "workspaces":  [
-                       "frontend",
-                       "frontend-next",
-                       "api",
-                       "quote",
-                       "todo",
-                       "expense",
-                       "stopwatch"
-                   ],
-    "scripts":  {
-                    "contracts:sync":  "tsx scripts/sync-openapi.ts",
-                    "contracts:check":  "tsx scripts/sync-openapi.ts --check",
-                    "contracts:validate":  "tsx scripts/validate-openapi.ts",
-                    "contracts:spectral":  "node scripts/generate-spectral-report.mjs",
-                    "pretest":  "npm run contracts:sync",
-                    "test":  "node scripts/run-tests.js",
-                    "test:quote":  "node quote/tests/test.js",
-                    "test:expense":  "node expense/tests/test.js",
-                    "test:stopwatch":  "node stopwatch/tests/test.js",
-                    "test:todo":  "node todo/tests/test.js",
-                    "test:dev":  "node scripts/run-tests.js --scope dev-week-1",
-                    "test:local-ci":  "bash scripts/test-locally.sh",
-                    "test:act":  "act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts",
-                    "pages:docs":  "node scripts/publish-docs.js",
-                    "lint":  "eslint . --ext .js,.jsx,.ts,.tsx",
-                    "coverage:normalize":  "node scripts/normalize-coverage.js",
-                    "format":  "prettier --write .",
-                    "typecheck":  "node scripts/quality-gate/check-types.js",
-                    "typecheck:bail":  "node scripts/quality-gate/check-types.js --bail",
-                    "verify:node":  "tsx scripts/ci/verify-node-version.ts",
-                    "build":  "npm run build:frontend-next \u0026\u0026 npm run build:frontend \u0026\u0026 npm run build:api",
-                    "build:frontend-next":  "npm --workspace frontend-next ci --no-audit --no-fund \u0026\u0026 npm exec -w frontend-next next build",
-                    "build:frontend":  "npm --workspace frontend ci --no-audit --no-fund \u0026\u0026 npm exec -w frontend vite build",
-                    "build:api":  "npm run contracts:sync \u0026\u0026 npm --workspace api ci --no-audit --no-fund \u0026\u0026 npm --workspace api run build",
-                    "test:playwright:frontend-next":  "npm --prefix frontend-next ci \u0026\u0026 npx --prefix frontend-next playwright install --with-deps chromium \u0026\u0026 npx --prefix frontend-next @playwright/test test",
-                    "prepare":  "node -e \"try{require(\u0027child_process\u0027).execSync(\u0027husky install\u0027,{stdio:\u0027inherit\u0027})}catch(e){console.log(\u0027Skipping husky install:\u0027, (e\u0026\u0026e.message)||e)}\"",
-                    "security:audit":  "node scripts/generate-security-audit.js",
-                    "governance:report":  "node scripts/generate-governance-report.js --out governance/report.json",
-                    "gate:aggregate":  "node scripts/quality-gate/aggregate-results.js",
-                    "gate:packet":  "tsx scripts/quality-gate/build-packet.ts",
-                    "gate:checklists":  "tsx scripts/quality-gate/check-checklist-evidence.ts",
-                    "gate:secrets":  "node scripts/quality-gate/check-secret-patterns.js",
-                    "gate:latency":  "tsx scripts/quality-gate/run-latency-bench.ts",
-                    "release:create":  "tsx scripts/release/create.ts",
-                    "mcp:playwright":  "mcp-server-playwright --stdio",
-                    "mcp:inspect":  "mcp-inspector pnpm mcp:playwright",
-                    "mcp:inspect:cli":  "mcp-inspector --cli pnpm mcp:playwright"
-                },
-    "devDependencies":  {
-                            "@eslint/js":  "^9.37.0",
-                            "@modelcontextprotocol/inspector":  "^0.17.2",
-                            "@playwright/mcp":  "^0.0.44",
-                            "@types/jest":  "^30.0.0",
-                            "@typescript-eslint/eslint-plugin":  "^8.45.0",
-                            "@typescript-eslint/parser":  "^8.45.0",
-                            "archiver":  "^7.0.1",
-                            "c8":  "^9.1.0",
-                            "eslint":  "^9.37.0",
-                            "eslint-config-prettier":  "^9.1.0",
-                            "eslint-plugin-react":  "^7.37.5",
-                            "eslint-plugin-react-hooks":  "^5.2.0",
-                            "glob":  "^7.2.3",
-                            "globals":  "^16.4.0",
-                            "husky":  "^9.1.7",
-                            "jsdom":  "^27.0.0",
-                            "lint-staged":  "^16.2.6",
-                            "prettier":  "^3.3.3",
-                            "tsx":  "^4.19.2",
-                            "yaml":  "^2.6.1"
-                        },
-    "dependencies":  {
-                         "axios":  "^1.12.2",
-                         "zod":  "^4.1.11"
-                     },
-    "overrides":  {
-
-                  },
-    "lint-staged":  {
-                        "*.{js,jsx,ts,tsx,json}":  [
-                                                       "prettier --write",
-                                                       "eslint --fix"
-                                                   ],
-                        "*.{md,yaml,yml}":  [
-                                                "prettier --write"
-                                            ]
-                    }
+  "name": "training-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  },
+  "workspaces": [
+    "frontend",
+    "frontend-next",
+    "api",
+    "quote",
+    "todo",
+    "expense",
+    "stopwatch"
+  ],
+  "scripts": {
+    "contracts:sync": "tsx scripts/sync-openapi.ts",
+    "contracts:check": "tsx scripts/sync-openapi.ts --check",
+    "contracts:validate": "tsx scripts/validate-openapi.ts",
+    "contracts:spectral": "node scripts/generate-spectral-report.mjs",
+    "pretest": "npm run contracts:sync",
+    "test": "node scripts/run-tests.js",
+    "test:quote": "node quote/tests/test.js",
+    "test:expense": "node expense/tests/test.js",
+    "test:stopwatch": "node stopwatch/tests/test.js",
+    "test:todo": "node todo/tests/test.js",
+    "test:dev": "node scripts/run-tests.js --scope dev-week-1",
+    "test:local-ci": "bash scripts/test-locally.sh",
+    "test:act": "act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts",
+    "pages:docs": "node scripts/publish-docs.js",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "coverage:normalize": "node scripts/normalize-coverage.js",
+    "format": "prettier --write .",
+    "typecheck": "node scripts/quality-gate/check-types.js",
+    "typecheck:bail": "node scripts/quality-gate/check-types.js --bail",
+    "verify:node": "tsx scripts/ci/verify-node-version.ts",
+    "build": "npm run build:frontend-next && npm run build:frontend && npm run build:api",
+    "build:frontend-next": "npm --workspace frontend-next ci --no-audit --no-fund && npm exec -w frontend-next next build",
+    "build:frontend": "npm --workspace frontend ci --no-audit --no-fund && npm exec -w frontend vite build",
+    "build:api": "npm run contracts:sync && npm --workspace api ci --no-audit --no-fund && npm --workspace api run build",
+    "test:playwright:frontend-next": "npm --prefix frontend-next ci && npx --prefix frontend-next playwright install --with-deps chromium && npx --prefix frontend-next @playwright/test test",
+    "prepare": "node -e \"try{require('child_process').execSync('husky install',{stdio:'inherit'})}catch(e){console.log('Skipping husky install:', (e&&e.message)||e)}\"",
+    "security:audit": "node scripts/generate-security-audit.js",
+    "governance:report": "node scripts/generate-governance-report.js --out governance/report.json",
+    "gate:aggregate": "node scripts/quality-gate/aggregate-results.js",
+    "gate:packet": "tsx scripts/quality-gate/build-packet.ts",
+    "gate:checklists": "tsx scripts/quality-gate/check-checklist-evidence.ts",
+    "gate:secrets": "node scripts/quality-gate/check-secret-patterns.js",
+    "gate:latency": "tsx scripts/quality-gate/run-latency-bench.ts",
+    "release:create": "tsx scripts/release/create.ts",
+    "mcp:playwright": "mcp-server-playwright --stdio",
+    "mcp:inspect": "mcp-inspector pnpm mcp:playwright",
+    "mcp:inspect:cli": "mcp-inspector --cli pnpm mcp:playwright"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@modelcontextprotocol/inspector": "^0.17.2",
+    "@playwright/mcp": "^0.0.44",
+    "@types/jest": "^30.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "archiver": "^7.0.1",
+    "c8": "^9.1.0",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "glob": "^7.2.3",
+    "globals": "^16.4.0",
+    "husky": "^9.1.7",
+    "jsdom": "^27.0.0",
+    "lint-staged": "^16.2.6",
+    "prettier": "^3.3.3",
+    "tsx": "^4.19.2",
+    "yaml": "^2.6.1"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "zod": "^4.1.11"
+  },
+  "overrides": {},
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{md,yaml,yml}": [
+      "prettier --write"
+    ]
+  }
 }
