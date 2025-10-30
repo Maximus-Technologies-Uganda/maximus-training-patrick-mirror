@@ -1,370 +1,168 @@
-/**
- * SameSite=Strict Cookie Regression Tests (T082/DEV-706)
- *
- * Validates that session cookies are protected against CSRF attacks:
- * - Same-site XHR requests WITH credentials: session is sent
- * - Cross-site requests WITHOUT credentials: session is NOT sent (browser withholds)
- * - Permission boundaries differ between authenticated/unauthenticated states
- *
- * Mock Setup:
- *  - next/server: CookieStore, ResponseCookie
- *  - google-auth-library: validateIdToken
- *  - MSW for API responses
- */
+import { test, expect } from "@playwright/test";
 
-import { describe, it, expect } from "vitest";
+type LoginCredentials = {
+  username: string;
+  password: string;
+};
 
-/**
- * Test: SameSite=Strict session cookie is set on successful login
- */
-describe("SameSite Cookie Security", () => {
-  describe("Login Response", () => {
-    it("should set SameSite=Strict session cookie on successful login", async () => {
-      // Mock successful login flow
-      // In a real test, this would call: POST /auth/login with credentials
-      // Expected response: 204 with Set-Cookie header containing SameSite=Strict
+const DEFAULT_CREDENTIALS: LoginCredentials = {
+  username: "alice",
+  password: "correct-password",
+};
 
-      const mockCookieValue = "session_abc123xyz";
-      const mockSetCookie = `session=${mockCookieValue}; Path=/; HttpOnly; Secure; SameSite=Strict`;
-
-      // Verify cookie attributes
-      expect(mockSetCookie).toContain("SameSite=Strict");
-      expect(mockSetCookie).toContain("HttpOnly");
-      expect(mockSetCookie).toContain("Secure");
+async function loginViaApi(
+  page: import("@playwright/test").Page,
+  creds: LoginCredentials = DEFAULT_CREDENTIALS,
+): Promise<void> {
+  await page.goto("/");
+  await page.evaluate(async (payload) => {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `Login failed: ${res.status} ${res.statusText}${text ? ` - ${text}` : ""}`,
+      );
+    }
+  }, creds);
 
-    it("should return 204 No Content on login", () => {
-      // Login endpoint returns 204 (no body needed, cookie is in Set-Cookie header)
-      const statusCode = 204;
-      expect(statusCode).toBe(204);
-    });
+  await page.waitForFunction(() => document.cookie.includes("csrf="));
+}
+
+function usingHttps(baseUrl: string | undefined): boolean {
+  if (!baseUrl) return false;
+  try {
+    return new URL(baseUrl).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function escapeForRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+test.describe("SameSite Cookie Security", () => {
+  test("login mints SameSite=Strict HttpOnly session cookie", async ({ page, context }) => {
+    const info = test.info();
+    await loginViaApi(page);
+
+    const cookies = await context.cookies();
+    const sessionCookie = cookies.find((cookie) => cookie.name === "session");
+    const csrfCookie = cookies.find((cookie) => cookie.name === "csrf");
+
+    expect(sessionCookie, "session cookie should be present").toBeDefined();
+    expect(sessionCookie?.sameSite).toBe("Strict");
+    expect(sessionCookie?.httpOnly).toBe(true);
+    expect(sessionCookie?.path).toBe("/");
+    expect(sessionCookie?.value).not.toBe("");
+    expect(sessionCookie?.expires ?? 0).toBeGreaterThan(Math.floor(Date.now() / 1000));
+
+    const expectSecure = usingHttps(info.project.use.baseURL);
+    expect(sessionCookie?.secure ?? false).toBe(expectSecure);
+
+    expect(csrfCookie, "csrf double-submit token should be present").toBeDefined();
+    expect(csrfCookie?.sameSite).toBe("Strict");
+    expect(csrfCookie?.httpOnly ?? false).toBe(false);
   });
 
-  describe("Same-Site XHR with Credentials", () => {
-    it("should include session cookie in same-site XHR requests", async () => {
-      /**
-       * Scenario: User at https://app.example.com makes XHR to same origin
-       * Request: GET /api/items with credentials: 'include'
-       * Browser behavior: Includes session cookie (same-site)
-       * Expected: canEdit=true, canDelete=true (authenticated permissions)
-       */
+  test("HttpOnly session cookie is not accessible to client-side JavaScript", async ({ page }) => {
+    await loginViaApi(page);
 
-      const mockItem = {
-        id: "item-1",
-        title: "Test Item",
-        permissions: {
-          canEdit: true,
-          canDelete: true,
-        },
-      };
+    const canReadSession = await page.evaluate(() => document.cookie.includes("session="));
+    const canReadCsrf = await page.evaluate(() => document.cookie.includes("csrf="));
 
-      // Simulate same-site request with session
-      const sessionExists = true;
-      const item = sessionExists
-        ? mockItem
-        : { ...mockItem, permissions: { canEdit: false, canDelete: false } };
+    expect(canReadSession).toBe(false);
+    expect(canReadCsrf).toBe(true);
+  });
 
-      expect(item.permissions.canEdit).toBe(true);
-      expect(item.permissions.canDelete).toBe(true);
+  test("cross-site requests do not send SameSite=Strict session cookie", async ({ browser }) => {
+    const info = test.info();
+    const baseURL = info.project.use.baseURL ?? "http://localhost:3001";
+    const origin = new URL(baseURL).origin;
+
+    const loginContext = await browser.newContext({ baseURL });
+    const loginPage = await loginContext.newPage();
+    await loginViaApi(loginPage);
+    const storageState = await loginContext.storageState();
+    await loginContext.close();
+
+    const attackerOrigin = "http://attacker.test";
+    const attackerContext = await browser.newContext({
+      storageState,
+      baseURL: attackerOrigin,
     });
 
-    it("should maintain session across multiple same-site requests", async () => {
-      /**
-       * Multiple requests in same browsing session should all include the cookie
-       */
-      const requests = [
-        { endpoint: "/api/items", withSession: true },
-        { endpoint: "/api/items/1", withSession: true },
-        { endpoint: "/api/items/1/comments", withSession: true },
-      ];
+    await attackerContext.route(`${attackerOrigin}/**`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<html><body>attacker</body></html>",
+      }),
+    );
 
-      for (const req of requests) {
-        expect(req.withSession).toBe(true);
+    let observedCookie: string | null = null;
+    const originPattern = new RegExp(`^${escapeForRegex(origin)}/`);
+
+    await attackerContext.route(`${origin}/**`, async (route) => {
+      const request = route.request();
+      if (originPattern.test(request.url()) && request.url().startsWith(`${origin}/api/`)) {
+        observedCookie = await request.headerValue("cookie");
+        await route.fulfill({
+          status: 200,
+          headers: {
+            "Access-Control-Allow-Origin": attackerOrigin,
+            "Access-Control-Allow-Credentials": "true",
+          },
+          body: "{}",
+        });
+        return;
       }
+      await route.continue();
     });
+
+    const attackerPage = await attackerContext.newPage();
+    await attackerPage.goto(`${attackerOrigin}/attack`);
+    await attackerPage.evaluate(async (targetUrl) => {
+      try {
+        await fetch(targetUrl, {
+          method: "GET",
+          credentials: "include",
+          mode: "cors",
+        });
+      } catch {
+        // Ignore network errors; cookie policy is asserted separately.
+      }
+    }, `${origin}/api/posts`);
+
+    expect(observedCookie).toBeNull();
+
+    await attackerContext.close();
   });
 
-  describe("Cross-Site Request (Browser Security)", () => {
-    it("should NOT include session cookie in cross-site requests (browser withhold)", () => {
-      /**
-       * Scenario: Attacker site (https://evil.com) makes request to https://app.example.com/api/items
-       * Request type: fetch from <img src>, <form>, or XMLHttpRequest without credentials
-       * Browser behavior: SameSite=Strict cookie is NOT sent (browser enforces this)
-       * Expected: Session is NOT present, so permissions default to unauthenticated
-       */
+  test("logout clears session and CSRF cookies", async ({ page, context }) => {
+    await loginViaApi(page);
 
-      const mockCrossSiteItem = {
-        id: "item-1",
-        title: "Test Item",
-        permissions: {
-          canEdit: false, // No session = no edit permission
-          canDelete: false,
-        },
-      };
+    let sessionCookie = (await context.cookies()).find((cookie) => cookie.name === "session");
+    let csrfCookie = (await context.cookies()).find((cookie) => cookie.name === "csrf");
+    expect(sessionCookie).toBeDefined();
+    expect(csrfCookie).toBeDefined();
 
-      expect(mockCrossSiteItem.permissions.canEdit).toBe(false);
-      expect(mockCrossSiteItem.permissions.canDelete).toBe(false);
-    });
-
-    it("should deny mutations when session is missing (CSRF protection)", () => {
-      /**
-       * Even if attacker can issue a request, without the session cookie,
-       * the backend denies mutations (POST, PUT, DELETE)
-       */
-      const mockResponse = {
-        statusCode: 401,
-        message: "Unauthorized: session required",
-      };
-
-      expect(mockResponse.statusCode).toBe(401);
-    });
-  });
-
-  describe("Cookie Scope and Path", () => {
-    it("should scope session cookie to root path", () => {
-      // Cookie should be: Path=/
-      // This allows all routes within the app to access it
-      const cookiePath = "/";
-      expect(cookiePath).toBe("/");
-    });
-
-    it("should only send HttpOnly cookies to server, not JavaScript", () => {
-      // HttpOnly prevents document.cookie access from JavaScript
-      // Mitigates XSS attacks that try to steal the session
-      const isHttpOnly = true;
-      expect(isHttpOnly).toBe(true);
-    });
-
-    it("should require Secure flag (HTTPS only)", () => {
-      // Secure flag ensures cookie is only sent over HTTPS
-      // Prevents MITM attacks
-      const isSecure = true;
-      expect(isSecure).toBe(true);
-    });
-  });
-
-  describe("Permission Boundaries", () => {
-    it("authenticated users have edit/delete permissions", () => {
-      const authenticatedUser = {
-        sessionExists: true,
-        permissions: {
-          canView: true,
-          canEdit: true,
-          canDelete: true,
-        },
-      };
-
-      expect(authenticatedUser.permissions.canEdit).toBe(true);
-      expect(authenticatedUser.permissions.canDelete).toBe(true);
-    });
-
-    it("unauthenticated users have read-only permissions", () => {
-      const unauthenticatedUser = {
-        sessionExists: false,
-        permissions: {
-          canView: true,
-          canEdit: false,
-          canDelete: false,
-        },
-      };
-
-      expect(unauthenticatedUser.permissions.canView).toBe(true);
-      expect(unauthenticatedUser.permissions.canEdit).toBe(false);
-      expect(unauthenticatedUser.permissions.canDelete).toBe(false);
-    });
-
-    it("should check authentication state before returning sensitive data", () => {
-      // Sensitive fields only returned if authenticated
-      const authenticatedResponse = {
-        id: "item-1",
-        title: "Secret Item",
-        owner: "alice@example.com", // Sensitive
-        createdAt: "2025-01-01T00:00:00Z",
-      };
-
-      const unauthenticatedResponse = {
-        id: "item-1",
-        title: "Secret Item",
-        owner: undefined, // Not returned
-        createdAt: undefined,
-      };
-
-      expect(authenticatedResponse.owner).toBeDefined();
-      expect(unauthenticatedResponse.owner).toBeUndefined();
-    });
-  });
-
-  describe("CSRF Protection Scenarios", () => {
-    it("should block form submissions from attacker sites", () => {
-      /**
-       * Scenario: Attacker embeds <form action="https://app.example.com/api/items/1" method="POST">
-       * Expected: Browser does NOT send session cookie (SameSite=Strict)
-       * Result: Request fails with 401 (no session)
-       */
-
-      const attackerFormSubmission = {
-        to: "https://app.example.com/api/items/1",
+    await page.evaluate(async () => {
+      await fetch("/api/auth/logout", {
         method: "POST",
-        withSession: false, // Browser withholds SameSite=Strict cookie
-        expectedStatusCode: 401,
-      };
-
-      expect(attackerFormSubmission.withSession).toBe(false);
-      expect(attackerFormSubmission.expectedStatusCode).toBe(401);
+        credentials: "include",
+      });
     });
 
-    it("should allow legitimate same-site form submissions", () => {
-      /**
-       * Scenario: User at https://app.example.com submits form to same origin
-       * Expected: Browser DOES send session cookie
-       * Result: Request succeeds with 200/204
-       */
+    sessionCookie = (await context.cookies()).find((cookie) => cookie.name === "session");
+    csrfCookie = (await context.cookies()).find((cookie) => cookie.name === "csrf");
 
-      const legitimateFormSubmission = {
-        from: "https://app.example.com/items",
-        to: "https://app.example.com/api/items/1",
-        withSession: true, // Browser sends SameSite=Strict cookie
-        expectedStatusCode: 204,
-      };
-
-      expect(legitimateFormSubmission.withSession).toBe(true);
-      expect(legitimateFormSubmission.expectedStatusCode).toBe(204);
-    });
-
-    it("should block image tag requests from attacker sites", () => {
-      /**
-       * Scenario: Attacker embeds <img src="https://app.example.com/api/items/1?_method=DELETE">
-       * Expected: No session cookie sent (SameSite=Strict)
-       * Result: Request fails or returns 401
-       */
-
-      const attackerImageRequest = {
-        tag: "<img>",
-        to: "https://app.example.com/api/items/1?_method=DELETE",
-        withSession: false,
-        expectedResult: "fails",
-      };
-
-      expect(attackerImageRequest.withSession).toBe(false);
-    });
-  });
-
-  describe("Session Lifecycle", () => {
-    it("should clear session cookie on logout", () => {
-      /**
-       * Logout flow:
-       * 1. POST /auth/logout
-       * 2. Server responds with Set-Cookie: session=; Max-Age=0 (immediately expires)
-       * 3. Browser removes session cookie
-       */
-
-      const logoutResponse = {
-        statusCode: 204,
-        setCookieHeader: "session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict",
-      };
-
-      expect(logoutResponse.statusCode).toBe(204);
-      expect(logoutResponse.setCookieHeader).toContain("Max-Age=0");
-    });
-
-    it("should regenerate session ID on re-authentication", () => {
-      /**
-       * Security best practice: Invalidate old session, issue new one
-       * Prevents session fixation attacks
-       */
-
-      const oldSessionId = "session_old123";
-      const newSessionId = "session_new456";
-
-      expect(oldSessionId).not.toEqual(newSessionId);
-    });
-
-    it("should not allow expired sessions", () => {
-      const expiredSession = {
-        id: "session_old",
-        expiresAt: new Date("2024-01-01"),
-        isValid: false,
-      };
-
-      expect(expiredSession.isValid).toBe(false);
-    });
-  });
-
-  describe("Defense in Depth", () => {
-    it("combines multiple CSRF defenses: SameSite + token-based", () => {
-      /**
-       * Defense layers:
-       * 1. SameSite=Strict (browser-enforced)
-       * 2. CSRF token in form (server validates)
-       * 3. POST/PUT/DELETE require JSON body (protects against simple forms)
-       */
-
-      const defenses = {
-        sameSite: "Strict",
-        csrfToken: "required",
-        jsonOnly: true,
-      };
-
-      expect(defenses.sameSite).toBe("Strict");
-      expect(defenses.csrfToken).toBe("required");
-      expect(defenses.jsonOnly).toBe(true);
-    });
-
-    it("should validate request origin on sensitive operations", () => {
-      /**
-       * Server-side check: Origin header must match allowed origins
-       * Prevents requests from attacker sites even if they somehow bypass browser
-       */
-
-      const requestOrigin = "https://app.example.com";
-      const allowedOrigins = ["https://app.example.com"];
-      const isAllowed = allowedOrigins.includes(requestOrigin);
-
-      expect(isAllowed).toBe(true);
-    });
-
-    it("should use strong session tokens (cryptographically random)", () => {
-      /**
-       * Session IDs should be:
-       * - At least 128 bits (16 bytes) of entropy
-       * - Cryptographically random (not sequential, predictable)
-       * - Never exposed in URLs or referrer headers (HttpOnly+Secure)
-       */
-
-      const sessionId = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"; // 32 hex chars = 128 bits
-      expect(sessionId.length).toBeGreaterThanOrEqual(32);
-    });
-  });
-
-  describe("Edge Cases and Fallbacks", () => {
-    it("should handle browsers that don't support SameSite (graceful degradation)", () => {
-      /**
-       * Older browsers may not support SameSite attribute
-       * Fallback: CSRF token validation (always present)
-       * Modern browsers: SameSite=Strict blocks + CSRF token (defense in depth)
-       */
-
-      const cookieWithFallback = {
-        sameSite: "Strict",
-        csrfTokenRequired: true, // Fallback for older browsers
-      };
-
-      expect(cookieWithFallback.csrfTokenRequired).toBe(true);
-    });
-
-    it("should not send sensitive cookies for preflight OPTIONS requests", () => {
-      /**
-       * CORS preflight requests (OPTIONS) should not include credentials
-       * Cookies sent only on actual GET/POST/PUT/DELETE
-       */
-
-      const preflightRequest = {
-        method: "OPTIONS",
-        withCredentials: false,
-        withCookies: false,
-      };
-
-      expect(preflightRequest.withCookies).toBe(false);
-    });
+    expect(sessionCookie).toBeUndefined();
+    expect(csrfCookie).toBeUndefined();
   });
 });
