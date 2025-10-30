@@ -1,3 +1,37 @@
+# Release v8.0.0 - Identity Platform Hardening
+
+**Date:** 2025-10-30
+
+This release delivers comprehensive identity platform hardening, quality gate enforcement with per-project coverage thresholds, evidence packet building for release verification, and SameSite=Strict cookie regression testing.
+
+### Major Achievements:
+
+- **Node.js 20.x Enforcement (T028/DEV-702)** — CI/CD now enforces Node 20.x LTS across all jobs with dedicated verification scripts and engines field in package.json
+- **Per-Project Coverage Thresholds (T029/DEV-703)** — API requires ≥80% line coverage and ≥70% branch coverage; frontend-next requires ≥70% line coverage
+- **Quality Gate Aggregation (T030/DEV-704)** — Enhanced aggregator with Spectral enforcement (0 errors required), per-project coverage computation, and immutable coverage accumulation
+- **Evidence Packet Builder (T080/DEV-705)** — Consolidates release artifacts (contracts, a11y, benchmarks, security) with required/optional artifact tracking and manifest generation
+- **SameSite=Strict Regression Tests (T082/DEV-706)** — Comprehensive Vitest suite validating same-site XHR with session, cross-site request blocking, and permission boundaries
+- **Checklist-to-Evidence Validation (T106/DEV-707)** — Validates PR checklist items against packet artifacts before release
+
+### Infrastructure & Quality Assurance:
+
+- **OpenAPI Contract Validation** — Spectral linting enforces 0 errors in api/openapi.json (T030)
+- **Security Audit Integration** — Audit summary included in evidence packet (T080)
+- **Accessibility Compliance** — A11y results with critical violation detection included in packet (T080)
+- **Performance Benchmarks** — k6 latency snapshots included in release artifacts (T080)
+
+### Documentation:
+
+- **Evidence Collection Flow** — 5-step release process documentation (Node Verification → Quality Gate → Packet Building → Checklist Validation → Release Creation)
+- **SameSite Cookie Security Guide** — Defense-in-depth explanation and test coverage reference
+- **Local Gate Commands** — New commands for packet building and checklist validation: `npm run gate:packet`, `npm run gate:checklists`, `npm run release:create`
+
+### Linear Issues Addressed:
+
+DEV-702 (T028), DEV-703 (T029), DEV-704 (T030), DEV-705 (T080), DEV-706 (T082), DEV-707 (T106)
+
+---
+
 # Release v7.0.0 - Finish-to-Green
 
 **Date:** 2025-10-20
@@ -5,23 +39,27 @@
 This release marks the successful completion of the "Week 7.5 Finishers Workbook." The application has been stabilized, and a professional-grade engineering system has been implemented to ensure all code is shippable, verifiable, and maintainable.
 
 ### Major Achievements:
-* **SSR First-Paint:** The `/posts` page now renders content on the server, eliminating the initial "Loading..." spinner for a professional user experience.
-* **CI/CD Hardening:** A comprehensive, automated CI/CD pipeline has been built to enforce quality gates, including test coverage, accessibility, API contract linting, and security checks.
-* **Evidence-Based PRs:** A new, mandatory PR template and workflow ensures every change is documented and linked to its evidence (CI runs, artifacts, demo URLs).
-* **Monorepo Tooling:** The repository now uses `pnpm` workspaces and has a full suite of automated local checks (linting, type-checking, testing) managed by Husky hooks.
-* **Full Documentation:** The project's `README.md` is now truthy with live URLs, and new guides have been created for understanding release artifacts and verifying application health.
+
+- **SSR First-Paint:** The `/posts` page now renders content on the server, eliminating the initial "Loading..." spinner for a professional user experience.
+- **CI/CD Hardening:** A comprehensive, automated CI/CD pipeline has been built to enforce quality gates, including test coverage, accessibility, API contract linting, and security checks.
+- **Evidence-Based PRs:** A new, mandatory PR template and workflow ensures every change is documented and linked to its evidence (CI runs, artifacts, demo URLs).
+- **Monorepo Tooling:** The repository now uses `pnpm` workspaces and has a full suite of automated local checks (linting, type-checking, testing) managed by Husky hooks.
+- **Full Documentation:** The project's `README.md` is now truthy with live URLs, and new guides have been created for understanding release artifacts and verifying application health.
 
 ### Infrastructure & Observability:
-* **SSR Instrumentation:** Server-side rendering now includes logging for initial render timing (DEV-593)
-* **Auditor Runbook:** New operational runbook for verifying application health (DEV-594)
-* **CI Artifact Retention:** 21-day retention policy for all CI artifacts (coverage, a11y, contract) (DEV-595)
+
+- **SSR Instrumentation:** Server-side rendering now includes logging for initial render timing (DEV-593)
+- **Auditor Runbook:** New operational runbook for verifying application health (DEV-594)
+- **CI Artifact Retention:** 21-day retention policy for all CI artifacts (coverage, a11y, contract) (DEV-595)
 
 ### Documentation:
-* **Release Evidence Guide:** Comprehensive guide for interpreting CI/CD artifacts (DEV-587, DEV-574)
-* **SSR Documentation:** Detailed explanation of server-side rendering implementation (DEV-567)
-* **Environment Variables:** Complete environment variables table covering all services (DEV-584)
+
+- **Release Evidence Guide:** Comprehensive guide for interpreting CI/CD artifacts (DEV-587, DEV-574)
+- **SSR Documentation:** Detailed explanation of server-side rendering implementation (DEV-567)
+- **Environment Variables:** Complete environment variables table covering all services (DEV-584)
 
 ### Linear Issues Addressed:
+
 DEV-590, DEV-591, DEV-592, DEV-593, DEV-594, DEV-595, DEV-587, DEV-574, DEV-567, DEV-584
 
 ---
@@ -110,4 +148,3 @@ This release makes `frontend-next` first-class in CI with evidence, deploys the 
 - Replace placeholders above via the release workflow if repository variables/secrets are configured:
   - CLOUD_RUN_URL (secret or repo variable)
   - LINEAR_ISSUE_URL (secret)
-

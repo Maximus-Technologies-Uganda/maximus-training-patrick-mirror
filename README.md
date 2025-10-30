@@ -28,12 +28,12 @@ The identity flow follows the spec’s BFF-first model: browsers never contact t
 
 ### Roles and permissions
 
-| Action | Anonymous | Owner | Admin |
-| --- | --- | --- | --- |
-| View posts (`GET /posts`, `/posts/{id}`) | ✅ | ✅ | ✅ |
-| Create post | ❌ | ✅ (attributed to `userId`) | ✅ |
-| Edit/delete own post | ❌ | ✅ | ✅ |
-| Edit/delete others’ posts | ❌ | ❌ (`403 Forbidden`) | ✅ |
+| Action                                   | Anonymous | Owner                       | Admin |
+| ---------------------------------------- | --------- | --------------------------- | ----- |
+| View posts (`GET /posts`, `/posts/{id}`) | ✅        | ✅                          | ✅    |
+| Create post                              | ❌        | ✅ (attributed to `userId`) | ✅    |
+| Edit/delete own post                     | ❌        | ✅                          | ✅    |
+| Edit/delete others’ posts                | ❌        | ❌ (`403 Forbidden`)        | ✅    |
 
 Roles are enforced server-side. Client payloads that attempt to spoof `authorId`, `userId`, or `role` are stripped before business logic runs.
 
@@ -62,19 +62,25 @@ Roles are enforced server-side. Client payloads that attempt to spoof `authorId`
 - **Use `with429Backoff` for safe retries** — Wrap idempotent requests in [`with429Backoff`](frontend-next/src/lib/http/backoff.ts) to honour `Retry-After`, cap attempts, and emit callbacks with remaining quota information:
 
   ```ts
-  import { with429Backoff } from "@/lib/http/backoff";
+  import { with429Backoff } from '@/lib/http/backoff';
 
-  const response = await with429Backoff(() => fetch("/api/posts", { method: "PUT", body: JSON.stringify(payload) }), {
-    maxAttempts: 3,
-    onRetry: ({ attempt, delayMs, remaining }) => {
-      console.info(`Retry #${attempt} in ${delayMs}ms (remaining quota: ${remaining ?? "unknown"})`);
+  const response = await with429Backoff(
+    () => fetch('/api/posts', { method: 'PUT', body: JSON.stringify(payload) }),
+    {
+      maxAttempts: 3,
+      onRetry: ({ attempt, delayMs, remaining }) => {
+        console.info(
+          `Retry #${attempt} in ${delayMs}ms (remaining quota: ${remaining ?? 'unknown'})`,
+        );
+      },
     },
-  });
+  );
 
   if (response.status === 429) {
     // Surface an actionable message: "We are throttling writes for your account. Please retry later."
   }
   ```
+
 - **Surface guidance to users** — When retries are exhausted, display the `Retry-After` value and clarify that the action was not completed to prevent accidental duplicates.
 - **Handle duplicates explicitly** — If a retry results in a `409 Conflict`, show the user which record already exists (e.g., "A post with this slug already exists") and avoid mutating local optimistic caches. Server handlers should log the conflicting idempotency key or unique field to help diagnose repeated submissions.
 
@@ -82,7 +88,7 @@ Roles are enforced server-side. Client payloads that attempt to spoof `authorId`
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.x (LTS) — enforced via engines field in package.json and CI verification scripts
 - Docker (optional, for container workflows)
 
 ### Run API locally
@@ -137,6 +143,30 @@ Cloud Build file: `cloudbuild.yaml`
 - The Review Packet artifacts include the `coverage-frontend-next` HTML coverage report and the Playwright HTML report. See the Review Packet guide for details and local rebuild steps: [docs/ReviewPacket/README.md](docs/ReviewPacket/README.md)
 - For guidance on finding and interpreting CI/CD evidence artifacts, see [docs/release-evidence.md](docs/release-evidence.md)
 
+### Evidence Collection Flow (T028–T106)
+
+The release process follows a 5-step evidence collection flow:
+
+1. **Node Verification (T028/DEV-702)** — CI verifies Node 20.x via `npm run verify:node`
+2. **Quality Gate (T030/DEV-704)** — Aggregates coverage (API ≥80% lines, ≥70% branches; frontend-next ≥70% lines), a11y (0 critical), security (0 critical/high), and Spectral OpenAPI validation (0 errors)
+3. **Packet Building (T080/DEV-705)** — Consolidates release artifacts: contracts, a11y, benchmarks, security audit via `npm run gate:packet`
+4. **Checklist Validation (T106/DEV-707)** — Maps checked PR items to tasks and packet artifacts via `npm run gate:checklists`
+5. **Release Creation** — Tags version and publishes GitHub release with artifacts via `npm run release:create -- --version v8.0.0`
+
+### Security: SameSite=Strict Cookies (T082/DEV-706)
+
+Session cookies are protected against CSRF attacks via `SameSite=Strict`. The regression test suite (`frontend-next/tests/cookie.samesite.spec.ts`) validates:
+
+- **Same-site XHR with credentials** — Session cookie is sent; authenticated users have edit/delete permissions
+- **Cross-site requests** — Browser withholds session cookie (SameSite enforcement); unauthenticated users see read-only permissions
+- **Defense in depth** — Combines SameSite=Strict, HttpOnly, Secure flags, and origin validation
+
+Run the test locally:
+
+```bash
+cd frontend-next && pnpm test cookie.samesite.spec.ts
+```
+
 Local gate commands (parity with CI):
 
 ```bash
@@ -146,12 +176,15 @@ pnpm run governance:report
 
 # Aggregate Quality Gate and emit Coverage Totals block
 pnpm run gate:aggregate
-```
 
-To package the Review Packet locally (mirrors CI):
+# Verify Node.js version (T028/DEV-702)
+pnpm run verify:node
 
-```bash
-pnpm run gate:packet -- --force
+# Build evidence packet (T080/DEV-705)
+pnpm run gate:packet
+
+# Validate checklist-to-evidence mappings (T106/DEV-707)
+pnpm run gate:checklists -- --pr-body '<markdown-checklist>'
 ```
 
 ## CI Overview
@@ -242,37 +275,38 @@ Local steps:
    ```
 
 4. Verify it works:
-
    - Visit http://localhost:3000/posts
    - You should see a list of posts. If not, ensure the API is running on http://localhost:8080 and that `NEXT_PUBLIC_API_URL` is set accordingly in `.env.local`.
 
 Environment variables:
 
-| Variable | Scope | Local example | Production example | Purpose |
-|---|---|---|---|---|
-| `API_BASE_URL` | Server-only (Cloud Run) | `http://localhost:8080` | `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app` | Upstream API base URL used by server SSR and Route Handlers. Set on Cloud Run service env vars. |
-| `NEXT_PUBLIC_API_URL` | Client and SSR fallback | `http://localhost:8080` | (not required) | Base URL for API in local dev; SSR falls back to this if `API_BASE_URL` is unset. Prefer server proxy (`/api`) in production. |
-| `NEXT_PUBLIC_APP_URL` | CI/E2E usage | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | Public URL of the app for Playwright and link checks in CI. |
-| `DATABASE_URL` | Server-only | `postgresql://localhost:5432/dev` | `postgresql://...neon.tech/prod` | PostgreSQL connection string (Neon or local). Required for server start and DB tests. |
-| `SESSION_SECRET` | Server-only | `dev-secret-32chars` | `(32+ char random)` | Strong random string for session encryption. Required in production. |
-| `GCP_PROJECT_ID` | Server-only | `proj-rms-dev` | `proj-rms-prod` | Google Cloud project ID for GCP services. |
-| `GCP_REGION` | Server-only | `africa-south1` | `africa-south1` | Google Cloud region for deployments. |
-| `VERTEX_LOCATION` | Server-only | `us-central1` | `us-central1` | Vertex AI location for model access. |
-| `VERTEX_MODEL` | Server-only | `gemini-2.5-flash` | `gemini-2.5-flash` | Vertex AI model name. |
-| `ASSISTANT_ENABLED` | Server-only | `false` | `true` | Enable assistant API routes at `/api/assistant/*`. |
-| `ASSISTANT_MACROS_ONLY` | Server-only | `false` | `false` | Restrict assistant to macros-only mode. |
-| `VITE_ASSISTANT_ENABLED` | Client build-time | `false` | `true` | Enable assistant UI in client build. |
-| `ASSISTANT_CORS_ORIGINS` | Server-only | `http://localhost:3000` | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | CSV of allowed CORS origins for assistant endpoints. |
-| `ASSISTANT_FORWARDING_SECRET` | Server-only | (random) | (random) | HMAC secret for assistant ingress authentication. |
+| Variable                      | Scope                   | Local example                     | Production example                                                     | Purpose                                                                                                                       |
+| ----------------------------- | ----------------------- | --------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `API_BASE_URL`                | Server-only (Cloud Run) | `http://localhost:8080`           | `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app`                 | Upstream API base URL used by server SSR and Route Handlers. Set on Cloud Run service env vars.                               |
+| `NEXT_PUBLIC_API_URL`         | Client and SSR fallback | `http://localhost:8080`           | (not required)                                                         | Base URL for API in local dev; SSR falls back to this if `API_BASE_URL` is unset. Prefer server proxy (`/api`) in production. |
+| `NEXT_PUBLIC_APP_URL`         | CI/E2E usage            | `http://localhost:3000`           | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | Public URL of the app for Playwright and link checks in CI.                                                                   |
+| `DATABASE_URL`                | Server-only             | `postgresql://localhost:5432/dev` | `postgresql://...neon.tech/prod`                                       | PostgreSQL connection string (Neon or local). Required for server start and DB tests.                                         |
+| `SESSION_SECRET`              | Server-only             | `dev-secret-32chars`              | `(32+ char random)`                                                    | Strong random string for session encryption. Required in production.                                                          |
+| `GCP_PROJECT_ID`              | Server-only             | `proj-rms-dev`                    | `proj-rms-prod`                                                        | Google Cloud project ID for GCP services.                                                                                     |
+| `GCP_REGION`                  | Server-only             | `africa-south1`                   | `africa-south1`                                                        | Google Cloud region for deployments.                                                                                          |
+| `VERTEX_LOCATION`             | Server-only             | `us-central1`                     | `us-central1`                                                          | Vertex AI location for model access.                                                                                          |
+| `VERTEX_MODEL`                | Server-only             | `gemini-2.5-flash`                | `gemini-2.5-flash`                                                     | Vertex AI model name.                                                                                                         |
+| `ASSISTANT_ENABLED`           | Server-only             | `false`                           | `true`                                                                 | Enable assistant API routes at `/api/assistant/*`.                                                                            |
+| `ASSISTANT_MACROS_ONLY`       | Server-only             | `false`                           | `false`                                                                | Restrict assistant to macros-only mode.                                                                                       |
+| `VITE_ASSISTANT_ENABLED`      | Client build-time       | `false`                           | `true`                                                                 | Enable assistant UI in client build.                                                                                          |
+| `ASSISTANT_CORS_ORIGINS`      | Server-only             | `http://localhost:3000`           | `https://maximus-training-frontend-673209018655.africa-south1.run.app` | CSV of allowed CORS origins for assistant endpoints.                                                                          |
+| `ASSISTANT_FORWARDING_SECRET` | Server-only             | (random)                          | (random)                                                               | HMAC secret for assistant ingress authentication.                                                                             |
 
 ### Running with Docker
 
 Build the container:
+
 ```bash
 docker build -t nextjs-app:latest ./frontend-next
 ```
 
 Run the container:
+
 ```bash
 docker run -p 3000:3000 nextjs-app:latest
 ```
@@ -348,7 +382,7 @@ This writes `governance/report.json`. Add `approvedExceptions` entries as needed
 
 This repo enforces protected checks per **DEVELOPMENT_RULES.md**:
 
-- Required checks: lint, 	ypecheck, unit, coverage, 11y, contract, uild, deploy-preview
+- Required checks: lint, ypecheck, unit, coverage, 11y, contract, uild, deploy-preview
 - PR body must include evidence fields (Linear key, Gate run, Artifacts, Demo URL(s), Screenshots if UI, Linked Plan).
 
 **Docs-only PRs:** If your change only updates documentation and touches no runtime code:

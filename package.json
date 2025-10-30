@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "workspaces": [
     "frontend",
@@ -34,6 +34,7 @@
     "format": "prettier --write .",
     "typecheck": "node scripts/quality-gate/check-types.js",
     "typecheck:bail": "node scripts/quality-gate/check-types.js --bail",
+    "verify:node": "tsx scripts/ci/verify-node-version.ts",
     "build": "npm run build:frontend-next && npm run build:frontend && npm run build:api",
     "build:frontend-next": "npm --workspace frontend-next ci --no-audit --no-fund && npm exec -w frontend-next next build",
     "build:frontend": "npm --workspace frontend ci --no-audit --no-fund && npm exec -w frontend vite build",
@@ -43,12 +44,18 @@
     "security:audit": "node scripts/generate-security-audit.js",
     "governance:report": "node scripts/generate-governance-report.js --out governance/report.json",
     "gate:aggregate": "node scripts/quality-gate/aggregate-results.js",
-    "gate:packet": "node scripts/quality-gate/build-review-packet.js --force",
+    "gate:packet": "tsx scripts/quality-gate/build-packet.ts",
+    "gate:checklists": "tsx scripts/quality-gate/check-checklist-evidence.ts",
     "gate:secrets": "node scripts/quality-gate/check-secret-patterns.js",
-    "gate:latency": "tsx scripts/quality-gate/run-latency-bench.ts"
+    "gate:latency": "tsx scripts/quality-gate/run-latency-bench.ts",
+    "release:create": "tsx scripts/release/create.ts",
+    "mcp:playwright": "mcp-server-playwright --stdio",
+    "mcp:inspect": "mcp-inspector pnpm mcp:playwright"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
+    "@modelcontextprotocol/inspector": "^0.17.2",
+    "@playwright/mcp": "^0.0.44",
     "@types/jest": "^30.0.0",
     "@typescript-eslint/eslint-plugin": "^8.45.0",
     "@typescript-eslint/parser": "^8.45.0",
