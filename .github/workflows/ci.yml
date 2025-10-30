@@ -31,6 +31,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Node.js version (T028/DEV-702)
+        run: npm run verify:node
+
       - name: Spectral Lint (pinned CLI)
         run: |
           mkdir -p specs/008-identity-platform/contracts
@@ -363,7 +366,6 @@ jobs:
           name: review-packet
           path: review-packet.zip
 
-
   k6-verdict:
     name: k6 Threshold Verdict
     needs: contracts-spectral
@@ -377,6 +379,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Node.js version (T028/DEV-702)
+        run: npm run verify:node
 
       - name: Print k6 threshold verdict (non-gating)
         run: node scripts/ci/print-k6-verdict.mjs bench/results/k6-summary.json

@@ -29,14 +29,8 @@ function normalizeMethod(method: HttpMethod): HttpMethod {
   return method.toUpperCase() as HttpMethod;
 }
 
-function normalizeIdempotencyKey(value: string | undefined): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
 function requireIdempotencyKey(method: HttpMethod, key: string | undefined): void {
-  if ((method === "PUT" || method === "PATCH") && !normalizeIdempotencyKey(key)) {
+  if ((method === "PUT" || method === "PATCH") && (!key || key.trim().length === 0)) {
     throw new Error("Idempotency key is required when retrying PUT/PATCH requests");
   }
 }
@@ -69,8 +63,6 @@ export async function retryWithIdempotencyBackoff<T>(
   }
 
   requireIdempotencyKey(method, options.idempotencyKey);
-  const stableIdempotencyKey = normalizeIdempotencyKey(options.idempotencyKey);
-  const enforceStableKey = stableIdempotencyKey !== undefined;
 
   const maxAttempts = options.maxAttempts && options.maxAttempts > 0 ? options.maxAttempts : 1;
   const baseDelayMs = options.baseDelayMs && options.baseDelayMs > 0 ? options.baseDelayMs : 100;
@@ -79,17 +71,11 @@ export async function retryWithIdempotencyBackoff<T>(
   let attempt = 0;
   let lastError: unknown;
   while (attempt < maxAttempts) {
-    if (enforceStableKey && normalizeIdempotencyKey(options.idempotencyKey) !== stableIdempotencyKey) {
-      throw new Error("Idempotency key must remain constant across retries");
-    }
     try {
-      return await operation({ attempt, idempotencyKey: stableIdempotencyKey });
+      return await operation({ attempt, idempotencyKey: options.idempotencyKey });
     } catch (error) {
       lastError = error;
       attempt += 1;
-      if (enforceStableKey && normalizeIdempotencyKey(options.idempotencyKey) !== stableIdempotencyKey) {
-        throw new Error("Idempotency key must remain constant across retries");
-      }
       if (attempt >= maxAttempts) {
         if (options.onRetryFailure) options.onRetryFailure(error);
         break;

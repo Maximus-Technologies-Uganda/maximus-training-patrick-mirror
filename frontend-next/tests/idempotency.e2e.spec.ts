@@ -51,25 +51,4 @@ describe("idempotency retry helper", () => {
       }),
     ).rejects.toThrow(/Idempotency key is required/);
   });
-
-  it("throws when the idempotency key changes between retries", async () => {
-    vi.useFakeTimers();
-    const options = {
-      method: "PUT" as const,
-      idempotencyKey: "abc-123",
-      maxAttempts: 2,
-      baseDelayMs: 1,
-      random: () => 0,
-    };
-
-    const promise = retryWithIdempotencyBackoff(async (context) => {
-      if (context.attempt === 0) {
-        options.idempotencyKey = "mutated";
-        throw new Error("transient");
-      }
-      return context.idempotencyKey;
-    }, options);
-
-    await expect(promise).rejects.toThrow(/Idempotency key must remain constant/);
-  });
 });

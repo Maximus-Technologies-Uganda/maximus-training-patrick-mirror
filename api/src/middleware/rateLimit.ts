@@ -1,6 +1,6 @@
-import type { Request, Response } from "express";
-import rateLimit from "express-rate-limit";
-import { setCacheControlNoStore } from "../lib/errors";
+import type { Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
+import { setCacheControlNoStore } from '../lib/errors';
 
 export interface RateLimitConfig {
   windowMs: number;
@@ -12,9 +12,11 @@ export interface RateLimitConfig {
  */
 function isValidIp(ip: string): boolean {
   // IPv4: 0.0.0.0 to 255.255.255.255
-  const ipv4Pattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  const ipv4Pattern =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
   // IPv6: simplified pattern (full validation is complex, this catches common cases)
-  const ipv6Pattern = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}$|^[0-9a-fA-F]{1,4}::(?:[0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}$/;
+  const ipv6Pattern =
+    /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}$|^[0-9a-fA-F]{1,4}::(?:[0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{1,4}$/;
   return ipv4Pattern.test(ip) || ipv6Pattern.test(ip);
 }
 
@@ -27,11 +29,11 @@ function isValidIp(ip: string): boolean {
  */
 function shouldTrustProxy(req: Request): boolean {
   const remoteAddress = req.socket?.remoteAddress;
-  const trustProxyFn = req.app?.get?.("trust proxy fn") as
+  const trustProxyFn = req.app?.get?.('trust proxy fn') as
     | ((addr: string, index: number) => boolean)
     | undefined;
 
-  if (typeof trustProxyFn === "function" && remoteAddress) {
+  if (typeof trustProxyFn === 'function' && remoteAddress) {
     try {
       return Boolean(trustProxyFn(remoteAddress, 0));
     } catch {
@@ -39,9 +41,9 @@ function shouldTrustProxy(req: Request): boolean {
     }
   }
 
-  const trustProxy = req.app?.get?.("trust proxy");
+  const trustProxy = req.app?.get?.('trust proxy');
 
-  if (typeof trustProxy === "function") {
+  if (typeof trustProxy === 'function') {
     if (!remoteAddress) {
       return false;
     }
@@ -53,20 +55,20 @@ function shouldTrustProxy(req: Request): boolean {
     }
   }
 
-  if (typeof trustProxy === "boolean") {
+  if (typeof trustProxy === 'boolean') {
     return trustProxy;
   }
 
-  if (typeof trustProxy === "number") {
+  if (typeof trustProxy === 'number') {
     return trustProxy > 0;
   }
 
-  if (typeof trustProxy === "string") {
+  if (typeof trustProxy === 'string') {
     const normalized = trustProxy.trim().toLowerCase();
     if (!normalized) {
       return false;
     }
-    return normalized !== "false" && normalized !== "0";
+    return normalized !== 'false' && normalized !== '0';
   }
 
   return Boolean(trustProxy);
@@ -80,7 +82,7 @@ function getUserId(req: Request): string | undefined {
   }
 
   const candidate = maybeUser.userId ?? maybeUser.id;
-  if (typeof candidate === "string" && candidate.trim()) {
+  if (typeof candidate === 'string' && candidate.trim()) {
     return candidate.trim();
   }
 
@@ -98,7 +100,7 @@ function getRemoteIp(req: Request): string {
     return candidate;
   }
 
-  return "unknown";
+  return 'unknown';
 }
 
 function deriveKey(req: Request): string {
@@ -109,9 +111,9 @@ function deriveKey(req: Request): string {
   const salt = (() => {
     try {
       const val = (req.app?.locals as unknown as { rateLimitSalt?: string })?.rateLimitSalt;
-      return typeof val === "string" ? val : "";
+      return typeof val === 'string' ? val : '';
     } catch {
-      return "";
+      return '';
     }
   })();
   // Prefer authenticated user id when present
@@ -124,11 +126,11 @@ function deriveKey(req: Request): string {
   let ip = getRemoteIp(req);
 
   if (shouldTrustProxy(req)) {
-    const header = req.headers["x-forwarded-for"];
+    const header = req.headers['x-forwarded-for'];
     const forwardedValues = Array.isArray(header)
       ? header
-      : typeof header === "string"
-        ? header.split(",")
+      : typeof header === 'string'
+        ? header.split(',')
         : [];
 
     const forwardedIp = forwardedValues
@@ -153,27 +155,27 @@ export function createRateLimiter(config: RateLimitConfig) {
     // Skip rate limiting for OPTIONS requests (CORS preflight) - T038
     // and always exempt health probes so infrastructure monitoring remains reliable.
     skip: (req: Request) => {
-      if (req.method === "OPTIONS") {
+      if (req.method === 'OPTIONS') {
         return true;
       }
       const path = req.originalUrl || req.url || req.path;
-      return typeof path === "string" && path.startsWith("/health");
+      return typeof path === 'string' && path.startsWith('/health');
     },
     handler: (req: Request, res: Response) => {
       const retryAfterSeconds = Math.max(1, Math.ceil(config.windowMs / 1000));
-      const timeUnit = retryAfterSeconds === 1 ? "second" : "seconds";
-      res.setHeader("Retry-After", String(retryAfterSeconds));
+      const timeUnit = retryAfterSeconds === 1 ? 'second' : 'seconds';
+      res.setHeader('Retry-After', String(retryAfterSeconds));
       setCacheControlNoStore(res, 429);
       const requestId =
         (req as unknown as { requestId?: string }).requestId ||
-        ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined) ||
-        (res.get("X-Request-Id") as string | undefined) ||
+        ((req.get('X-Request-Id') || req.headers['x-request-id']) as string | undefined) ||
+        (res.get('X-Request-Id') as string | undefined) ||
         undefined;
-      const scope = getUserId(req) ? "user" : "ip";
+      const scope = getUserId(req) ? 'user' : 'ip';
       const limitDescription = `${config.max} requests per ${retryAfterSeconds} ${timeUnit}`;
       res.status(429).json({
-        code: "RATE_LIMITED",
-        message: "Rate limit exceeded. Please try again later.",
+        code: 'RATE_LIMITED',
+        message: 'Rate limit exceeded. Please try again later.',
         ...(requestId ? { requestId } : {}),
         details: [
           {

@@ -6,26 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000/",
-      "description": "Local development server"
-    },
-    {
-      "url": "https://maximus-training-api-673209018655.africa-south1.run.app/",
-      "description": "Staging Cloud Run deployment"
-    },
-    {
-      "url": "https://maximus-training-api-wyb2jsgqyq-bq.a.run.app/",
-      "description": "Production Cloud Run deployment"
-    }
-  ],
-  "tags": [
-    {
-      "name": "Posts",
-      "description": "CRUD endpoints for the identity platform posts service."
-    },
-    {
-      "name": "Health",
-      "description": "Service health and dependency monitoring endpoints."
+      "url": "http://localhost:3000"
     }
   ],
   "components": {
