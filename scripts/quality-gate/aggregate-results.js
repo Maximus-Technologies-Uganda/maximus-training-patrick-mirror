@@ -670,9 +670,11 @@ module.exports = {
   COVERAGE_THRESHOLDS,
 };
 
-try {
-  main();
-} catch (err) {
-  console.error('Quality Gate aggregator failed:', err && err.stack ? err.stack : err);
-  process.exit(1);
+if (require.main === module) {
+  try {
+    main();
+  } catch (err) {
+    console.error('Quality Gate aggregator failed:', err && err.stack ? err.stack : err);
+    process.exit(1);
+  }
 }
