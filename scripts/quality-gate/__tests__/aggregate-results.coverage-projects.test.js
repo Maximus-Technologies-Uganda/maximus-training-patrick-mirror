@@ -2,6 +2,9 @@ const {
   accumulateCoverageMetrics,
   computeProjectCoverage,
   finalizeCoveragePercentages,
+  evaluateCoverage,
+  API_COVERAGE_THRESHOLDS,
+  FRONTEND_COVERAGE_THRESHOLDS,
 } = require('../aggregate-results');
 
 /**
@@ -179,6 +182,66 @@ describe('Coverage Helpers', () => {
       expect(result.lines.covered).toBe(200);
       expect(result.branches.total).toBe(100);
       expect(result.branches.covered).toBe(75);
+    });
+  });
+
+  describe('evaluateCoverage', () => {
+    const createSummary = (overrides = {}) => ({
+      total: {
+        lines: { pct: 85 },
+        statements: { pct: 85 },
+        functions: { pct: 85 },
+        branches: { pct: 85 },
+      },
+      'api::lines': { total: 200, covered: 170 },
+      'api::branches': { total: 100, covered: 75 },
+      'api::functions': { total: 50, covered: 45 },
+      'api::statements': { total: 200, covered: 170 },
+      'frontend-next::lines': { total: 200, covered: 150 },
+      'frontend-next::branches': { total: 100, covered: 70 },
+      'frontend-next::functions': { total: 50, covered: 40 },
+      'frontend-next::statements': { total: 200, covered: 150 },
+      ...overrides,
+    });
+
+    it('fails when API coverage falls below project thresholds', () => {
+      const summary = createSummary({
+        'api::lines': { total: 200, covered: 140 }, // 70%
+        'api::branches': { total: 100, covered: 60 }, // 60%
+      });
+
+      const result = evaluateCoverage(summary);
+
+      expect(result.passed).toBe(false);
+      expect(result.reason).toContain('API coverage below thresholds');
+      expect(result.metrics.projects.api.lines.pct).toBeCloseTo(70);
+      expect(result.metrics.projects.api.branches.pct).toBeCloseTo(60);
+    });
+
+    it('passes when each project meets its coverage thresholds', () => {
+      const result = evaluateCoverage(createSummary());
+
+      expect(result.passed).toBe(true);
+      expect(result.reason).toBe('Coverage thresholds met');
+      expect(result.metrics.projects.api.lines.pct).toBeGreaterThanOrEqual(
+        API_COVERAGE_THRESHOLDS.lines,
+      );
+      expect(result.metrics.projects['frontend-next'].lines.pct).toBeGreaterThanOrEqual(
+        FRONTEND_COVERAGE_THRESHOLDS.lines,
+      );
+    });
+
+    it('fails when project coverage data is missing', () => {
+      const summary = createSummary({});
+      delete summary['frontend-next::lines'];
+      delete summary['frontend-next::branches'];
+      delete summary['frontend-next::functions'];
+      delete summary['frontend-next::statements'];
+
+      const result = evaluateCoverage(summary);
+
+      expect(result.passed).toBe(false);
+      expect(result.reason).toContain('frontend-next coverage data missing');
     });
   });
 });

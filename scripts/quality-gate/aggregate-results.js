@@ -55,6 +55,28 @@ const FRONTEND_COVERAGE_THRESHOLDS = {
   lines: 70,
 };
 
+const COVERAGE_METRICS = ['lines', 'branches', 'functions', 'statements'];
+
+const PROJECT_COVERAGE_TARGETS = [
+  {
+    id: 'api',
+    displayName: 'API',
+    prefixes: ['api', 'api/src', 'apps/api', 'packages/api'],
+    thresholds: API_COVERAGE_THRESHOLDS,
+  },
+  {
+    id: 'frontend-next',
+    displayName: 'frontend-next',
+    prefixes: [
+      'frontend-next',
+      'frontend-next/src',
+      'apps/frontend-next',
+      'packages/frontend-next',
+    ],
+    thresholds: FRONTEND_COVERAGE_THRESHOLDS,
+  },
+];
+
 const DIM_TO_PATH = {
   coverage: COVERAGE_FILE,
   tests: TEST_SUMMARY_FILE,
@@ -119,6 +141,44 @@ function accumulateCoverageMetrics(accumulator, metrics) {
  * Compute project-specific coverage from a summary object.
  * Prefixes (e.g., ["api", "frontend-next"]) filter to keys like "api::lines".
  */
+function isMetricGroup(metric) {
+  if (!metric || typeof metric !== 'object') return false;
+  return COVERAGE_METRICS.some((key) => metric[key] && typeof metric[key] === 'object');
+}
+
+function extractMetricKey(key) {
+  if (!key) return null;
+  const metricFromDoubleColon = key.includes('::') ? key.split('::')[1] : null;
+  if (metricFromDoubleColon && COVERAGE_METRICS.includes(metricFromDoubleColon)) {
+    return metricFromDoubleColon;
+  }
+
+  if (COVERAGE_METRICS.includes(key)) {
+    return key;
+  }
+
+  const normalized = key.replace(/\\/g, '/');
+  const lastSegment = normalized.slice(normalized.lastIndexOf('/') + 1);
+  if (COVERAGE_METRICS.includes(lastSegment)) {
+    return lastSegment;
+  }
+
+  return null;
+}
+
+function matchesPrefix(key, prefix) {
+  if (!prefix) return false;
+  const normalizedKey = key.replace(/\\/g, '/');
+  const normalizedPrefix = prefix.replace(/\\/g, '/');
+
+  return (
+    normalizedKey === normalizedPrefix ||
+    normalizedKey.startsWith(`${normalizedPrefix}::`) ||
+    normalizedKey.startsWith(`${normalizedPrefix}/`) ||
+    normalizedKey.startsWith(`${normalizedPrefix}.`)
+  );
+}
+
 function computeProjectCoverage(summary, prefixes = []) {
   let accumulated = {
     lines: { total: 0, covered: 0 },
@@ -127,20 +187,47 @@ function computeProjectCoverage(summary, prefixes = []) {
     statements: { total: 0, covered: 0 },
   };
 
+  if (!summary || typeof summary !== 'object') {
+    return finalizeCoveragePercentages(accumulated);
+  }
+
+  const normalizedPrefixes = prefixes.map((prefix) => String(prefix || ''));
+
   for (const key of Object.keys(summary)) {
-    // Match "api::lines", "api::branches", etc.
-    const matched = prefixes.some((prefix) => key.startsWith(`${prefix}::`));
-    if (matched || prefixes.length === 0) {
-      const metric = summary[key];
-      if (metric && typeof metric === 'object') {
-        accumulated = accumulateCoverageMetrics(accumulated, {
-          [key.split('::')[1] || key]: metric,
-        });
-      }
+    if (key === 'total') continue;
+
+    const metric = summary[key];
+    if (!metric || typeof metric !== 'object') continue;
+
+    const shouldConsider =
+      normalizedPrefixes.length === 0 ||
+      normalizedPrefixes.some((prefix) => matchesPrefix(String(key), prefix));
+
+    if (!shouldConsider) continue;
+
+    if (isMetricGroup(metric)) {
+      accumulated = accumulateCoverageMetrics(accumulated, metric);
+      continue;
+    }
+
+    const metricKey = extractMetricKey(String(key));
+    if (metricKey) {
+      accumulated = accumulateCoverageMetrics(accumulated, { [metricKey]: metric });
     }
   }
 
   return finalizeCoveragePercentages(accumulated);
+}
+
+function hasCoverageTotals(projectCoverage) {
+  if (!projectCoverage) return false;
+  return COVERAGE_METRICS.some((metric) => Number(projectCoverage[metric]?.total || 0) > 0);
+}
+
+function formatPercentage(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '0.0';
+  return num.toFixed(1);
 }
 
 /**
@@ -202,14 +289,46 @@ function evaluateCoverage(coverageSummary) {
     functions: functions >= COVERAGE_THRESHOLDS.functions,
   };
 
-  const passed = checks.statements && checks.branches && checks.functions;
+  const failureReasons = [];
+  if (!checks.statements || !checks.branches || !checks.functions) {
+    failureReasons.push(
+      `Aggregate coverage below thresholds (stmt ${formatPercentage(statements)}% / br ${formatPercentage(
+        branches,
+      )}% / fn ${formatPercentage(functions)}%)`,
+    );
+  }
+
+  const projectMetrics = {};
+  for (const project of PROJECT_COVERAGE_TARGETS) {
+    const coverage = computeProjectCoverage(coverageSummary, project.prefixes);
+    projectMetrics[project.id] = coverage;
+
+    if (!hasCoverageTotals(coverage)) {
+      failureReasons.push(`${project.displayName} coverage data missing`);
+      continue;
+    }
+
+    const projectFailures = [];
+    for (const [metric, threshold] of Object.entries(project.thresholds)) {
+      const actual = Number(coverage[metric]?.pct ?? 0);
+      if (!Number.isFinite(actual) || actual < threshold) {
+        projectFailures.push(`${metric} ${formatPercentage(actual)}% < ${threshold}%`);
+      }
+    }
+
+    if (projectFailures.length) {
+      failureReasons.push(
+        `${project.displayName} coverage below thresholds (${projectFailures.join(', ')})`,
+      );
+    }
+  }
+
+  const passed = failureReasons.length === 0;
 
   return {
     passed,
-    reason: passed
-      ? 'Coverage thresholds met'
-      : `Coverage below thresholds (stmt ${statements}% / br ${branches}% / fn ${functions}%)`,
-    metrics: { statements, branches, functions, lines },
+    reason: passed ? 'Coverage thresholds met' : failureReasons.join('; '),
+    metrics: { statements, branches, functions, lines, projects: projectMetrics },
   };
 }
 
@@ -485,6 +604,10 @@ function main() {
     failures: decision.failures,
     thresholds: {
       coverage: COVERAGE_THRESHOLDS,
+      coveragePerProject: {
+        api: API_COVERAGE_THRESHOLDS,
+        'frontend-next': FRONTEND_COVERAGE_THRESHOLDS,
+      },
       a11y: 'no critical/serious',
       contract: 'no breaking mismatches',
       security: 'no high/critical',
