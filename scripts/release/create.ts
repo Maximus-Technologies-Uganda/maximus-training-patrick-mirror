@@ -21,6 +21,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { pathToFileURL } from 'url';
 
 interface ReleaseConfig {
   version: string;
@@ -38,7 +39,7 @@ const RELEASE_NOTES_FILE = path.join(REPO_ROOT, 'RELEASE-NOTES.md');
  * Parse and validate semantic version
  */
 function parseVersion(input: string): { major: number; minor: number; patch: number; raw: string } {
-  const match = /^v?(\d+)\.(\d+)\.(\d+)(?:-[a-zA-Z0-9.]+)?$/.exec(input);
+  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(input);
 
   if (!match) {
     throw new Error(`Invalid semantic version: ${input}. Expected format: v1.0.0 or 1.0.0`);
@@ -222,7 +223,11 @@ function main(): void {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedPath = process.argv[1]
+  ? pathToFileURL(path.resolve(process.argv[1])).href
+  : null;
+
+if (invokedPath && import.meta.url === invokedPath) {
   main();
 }
 

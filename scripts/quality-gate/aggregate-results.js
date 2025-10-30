@@ -97,6 +97,63 @@ const DEFAULT_REQUIRED_DIMENSIONS = [
   'governance',
 ];
 
+function normalizeAccumulatorShape(subject, label) {
+  if (!subject || typeof subject !== 'object') {
+    throw new Error(`${label} must be a non-null object`);
+  }
+
+  return COVERAGE_METRICS.reduce((acc, metric) => {
+    const data = subject[metric];
+    const total = Number(data?.total ?? 0);
+    const covered = Number(data?.covered ?? 0);
+
+    if (!Number.isFinite(total) || total < 0) {
+      throw new Error(`${label}.${metric}.total must be a non-negative number`);
+    }
+
+    if (!Number.isFinite(covered) || covered < 0) {
+      throw new Error(`${label}.${metric}.covered must be a non-negative number`);
+    }
+
+    acc[metric] = { total, covered };
+    return acc;
+  }, {});
+}
+
+function validateCoverageMetricsInput(metrics) {
+  if (!metrics || typeof metrics !== 'object') {
+    throw new Error('metrics must be a non-null object');
+  }
+
+  const providedMetrics = COVERAGE_METRICS.filter((metric) =>
+    Object.prototype.hasOwnProperty.call(metrics, metric),
+  );
+
+  if (providedMetrics.length === 0) {
+    throw new Error(
+      'metrics must include at least one coverage metric (lines, branches, functions, statements)',
+    );
+  }
+
+  for (const metric of providedMetrics) {
+    const entry = metrics[metric];
+    if (!entry || typeof entry !== 'object') {
+      throw new Error(`metrics.${metric} must be an object`);
+    }
+
+    const total = Number(entry.total ?? 0);
+    const covered = Number(entry.covered ?? 0);
+
+    if (!Number.isFinite(total) || total < 0) {
+      throw new Error(`metrics.${metric}.total must be a non-negative number`);
+    }
+
+    if (!Number.isFinite(covered) || covered < 0) {
+      throw new Error(`metrics.${metric}.covered must be a non-negative number`);
+    }
+  }
+}
+
 function readJsonIfExists(filePath) {
   try {
     const raw = fs.readFileSync(filePath, 'utf8');
@@ -115,26 +172,28 @@ function ensureDir(dir) {
  * Handles istanbul `::` prefix convention for project-scoped metrics.
  */
 function accumulateCoverageMetrics(accumulator, metrics) {
-  if (!accumulator || !metrics) return accumulator;
+  const normalizedAccumulator = normalizeAccumulatorShape(accumulator, 'accumulator');
+  validateCoverageMetricsInput(metrics);
 
-  return {
-    lines: {
-      total: (accumulator.lines?.total || 0) + (metrics.lines?.total || 0),
-      covered: (accumulator.lines?.covered || 0) + (metrics.lines?.covered || 0),
-    },
-    branches: {
-      total: (accumulator.branches?.total || 0) + (metrics.branches?.total || 0),
-      covered: (accumulator.branches?.covered || 0) + (metrics.branches?.covered || 0),
-    },
-    functions: {
-      total: (accumulator.functions?.total || 0) + (metrics.functions?.total || 0),
-      covered: (accumulator.functions?.covered || 0) + (metrics.functions?.covered || 0),
-    },
-    statements: {
-      total: (accumulator.statements?.total || 0) + (metrics.statements?.total || 0),
-      covered: (accumulator.statements?.covered || 0) + (metrics.statements?.covered || 0),
-    },
-  };
+  const result = COVERAGE_METRICS.reduce((acc, metric) => {
+    acc[metric] = { ...normalizedAccumulator[metric] };
+    return acc;
+  }, {});
+
+  for (const metric of COVERAGE_METRICS) {
+    if (!Object.prototype.hasOwnProperty.call(metrics, metric)) continue;
+
+    const entry = metrics[metric];
+    const total = Number(entry.total ?? 0);
+    const covered = Number(entry.covered ?? 0);
+
+    result[metric] = {
+      total: normalizedAccumulator[metric].total + total,
+      covered: normalizedAccumulator[metric].covered + covered,
+    };
+  }
+
+  return result;
 }
 
 /**
@@ -206,13 +265,23 @@ function computeProjectCoverage(summary, prefixes = []) {
     if (!shouldConsider) continue;
 
     if (isMetricGroup(metric)) {
-      accumulated = accumulateCoverageMetrics(accumulated, metric);
+      try {
+        accumulated = accumulateCoverageMetrics(accumulated, metric);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to accumulate coverage for ${key}: ${message}`);
+      }
       continue;
     }
 
     const metricKey = extractMetricKey(String(key));
     if (metricKey) {
-      accumulated = accumulateCoverageMetrics(accumulated, { [metricKey]: metric });
+      try {
+        accumulated = accumulateCoverageMetrics(accumulated, { [metricKey]: metric });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to accumulate coverage for ${key}: ${message}`);
+      }
     }
   }
 
@@ -300,8 +369,16 @@ function evaluateCoverage(coverageSummary) {
 
   const projectMetrics = {};
   for (const project of PROJECT_COVERAGE_TARGETS) {
-    const coverage = computeProjectCoverage(coverageSummary, project.prefixes);
-    projectMetrics[project.id] = coverage;
+    let coverage;
+    try {
+      coverage = computeProjectCoverage(coverageSummary, project.prefixes);
+      projectMetrics[project.id] = coverage;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      projectMetrics[project.id] = null;
+      failureReasons.push(`${project.displayName} coverage data invalid (${message})`);
+      continue;
+    }
 
     if (!hasCoverageTotals(coverage)) {
       failureReasons.push(`${project.displayName} coverage data missing`);
