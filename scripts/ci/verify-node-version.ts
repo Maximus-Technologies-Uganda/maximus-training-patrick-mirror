@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
 /**
  * Verify Node.js version matches LTS requirements.
  * Enforces Node 20.x across CI/CD and development environments.
@@ -137,7 +140,18 @@ async function main(): Promise<void> {
 }
 
 // Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const entryPoint = process.argv[1];
+
+if (entryPoint) {
+  const resolvedEntryPointUrl = pathToFileURL(path.resolve(entryPoint)).href;
+
+  if (import.meta.url === resolvedEntryPointUrl) {
+    main().catch((error) => {
+      console.error('Unexpected error:', error);
+      process.exit(1);
+    });
+  }
+} else {
   main().catch((error) => {
     console.error('Unexpected error:', error);
     process.exit(1);
