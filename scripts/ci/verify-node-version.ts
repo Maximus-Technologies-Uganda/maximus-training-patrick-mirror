@@ -28,13 +28,16 @@ interface VerificationResult {
   message: string;
 }
 
+const VALID_VERSION_PATTERN = /^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?$/;
+const VALID_RANGE_PATTERN = /^(v?\d+(?:\.\d+)?(?:\.\d+)?|>=v?\d+(?:\.\d+)?(?:\.\d+)?)$/;
+
 /**
  * Parse a Node.js version string into components.
  * Handles formats: "v20", "v20.11", "v20.11.0", "20.11.0"
  */
 export function parseNodeVersion(input: string): NodeVersionParts {
   const raw = input.trim();
-  const match = /^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?/.exec(raw);
+  const match = VALID_VERSION_PATTERN.exec(raw);
 
   if (!match) {
     throw new Error(`Invalid Node.js version format: ${raw}`);
@@ -57,10 +60,21 @@ export function verifyNodeVersion(
   expectedRange: string = '20.x',
 ): VerificationResult {
   const normalizedRange = expectedRange.trim();
+  const sanitizedRange = normalizedRange.startsWith('v')
+    ? normalizedRange.slice(1)
+    : normalizedRange;
+
+  if (sanitizedRange.includes('.x')) {
+    if (!/^\d+\.x$/.test(sanitizedRange)) {
+      throw new Error(`Invalid version range format: ${normalizedRange}`);
+    }
+  } else if (!VALID_RANGE_PATTERN.test(normalizedRange)) {
+    throw new Error(`Invalid version range format: ${normalizedRange}`);
+  }
 
   // Handle "20.x" or "20" patterns
-  if (normalizedRange.includes('.x') || normalizedRange === '20') {
-    const expectedMajor = Number.parseInt(normalizedRange, 10);
+  if (sanitizedRange.includes('.x') || /^\d+$/.test(sanitizedRange)) {
+    const expectedMajor = Number.parseInt(sanitizedRange, 10);
     const passed = actual.major === expectedMajor;
 
     return {
@@ -151,9 +165,4 @@ if (entryPoint) {
       process.exit(1);
     });
   }
-} else {
-  main().catch((error) => {
-    console.error('Unexpected error:', error);
-    process.exit(1);
-  });
 }

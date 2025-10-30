@@ -66,6 +66,32 @@ describe('Coverage Helpers', () => {
       expect(result.lines.total).toBe(100);
       expect(result.lines.covered).toBe(80);
     });
+
+    it('should throw when metrics object is missing', () => {
+      const accumulator = {
+        lines: { total: 0, covered: 0 },
+        branches: { total: 0, covered: 0 },
+        functions: { total: 0, covered: 0 },
+        statements: { total: 0, covered: 0 },
+      };
+
+      expect(() => accumulateCoverageMetrics(accumulator, null)).toThrow(
+        'metrics must be a non-null object',
+      );
+    });
+
+    it('should throw when metrics omit coverage fields', () => {
+      const accumulator = {
+        lines: { total: 0, covered: 0 },
+        branches: { total: 0, covered: 0 },
+        functions: { total: 0, covered: 0 },
+        statements: { total: 0, covered: 0 },
+      };
+
+      expect(() => accumulateCoverageMetrics(accumulator, {})).toThrow(
+        'metrics must include at least one coverage metric',
+      );
+    });
   });
 
   describe('computeProjectCoverage', () => {
@@ -242,6 +268,18 @@ describe('Coverage Helpers', () => {
 
       expect(result.passed).toBe(false);
       expect(result.reason).toContain('frontend-next coverage data missing');
+    });
+
+    it('fails when project coverage metrics are malformed', () => {
+      const summary = createSummary({
+        'api::branches': { total: 'invalid', covered: 10 },
+      });
+
+      const result = evaluateCoverage(summary);
+
+      expect(result.passed).toBe(false);
+      expect(result.reason).toContain('API coverage data invalid');
+      expect(result.reason).toContain('metrics.branches.total must be a non-negative number');
     });
   });
 });

@@ -21,6 +21,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
 
 interface ChecklistItem {
   index: number;
@@ -230,7 +231,11 @@ function main(): void {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedPath = process.argv[1]
+  ? pathToFileURL(path.resolve(process.argv[1])).href
+  : null;
+
+if (invokedPath && import.meta.url === invokedPath) {
   main();
 }
 

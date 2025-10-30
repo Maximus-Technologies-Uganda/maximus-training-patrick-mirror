@@ -62,6 +62,10 @@ test.describe("SameSite Cookie Security", () => {
     expect(sessionCookie?.value).not.toBe("");
     expect(sessionCookie?.expires ?? 0).toBeGreaterThan(Math.floor(Date.now() / 1000));
 
+    const ttlSeconds =
+      (sessionCookie?.expires ?? 0) - Math.floor(Date.now() / 1000);
+    expect(ttlSeconds).toBeGreaterThan(3600);
+
     const expectSecure = usingHttps(info.project.use.baseURL);
     expect(sessionCookie?.secure ?? false).toBe(expectSecure);
 
