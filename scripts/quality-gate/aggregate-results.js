@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Quality Gate Aggregator (T030)
@@ -29,20 +29,30 @@ const path = require("path");
  */
 
 const REPO_ROOT = process.cwd();
-const COVERAGE_FILE = path.join(REPO_ROOT, "coverage", "coverage-summary.json");
-const TEST_SUMMARY_FILE = path.join(REPO_ROOT, "test-results", "summary.json");
-const TYPECHECK_FILE = path.join(REPO_ROOT, "typecheck", "results.json");
-const A11Y_FILE = path.join(REPO_ROOT, "a11y", "report.json");
-const CONTRACT_FILE = path.join(REPO_ROOT, "contract", "report.json");
-const SECURITY_FILE = path.join(REPO_ROOT, "security", "audit-summary.json");
-const GOVERNANCE_FILE = path.join(REPO_ROOT, "governance", "report.json");
-const GATE_OUT_DIR = path.join(REPO_ROOT, "gate");
-const GATE_SUMMARY = path.join(GATE_OUT_DIR, "summary.json");
+const COVERAGE_FILE = path.join(REPO_ROOT, 'coverage', 'coverage-summary.json');
+const TEST_SUMMARY_FILE = path.join(REPO_ROOT, 'test-results', 'summary.json');
+const TYPECHECK_FILE = path.join(REPO_ROOT, 'typecheck', 'results.json');
+const A11Y_FILE = path.join(REPO_ROOT, 'a11y', 'report.json');
+const CONTRACT_FILE = path.join(REPO_ROOT, 'contract', 'report.json');
+const SECURITY_FILE = path.join(REPO_ROOT, 'security', 'audit-summary.json');
+const GOVERNANCE_FILE = path.join(REPO_ROOT, 'governance', 'report.json');
+const GATE_OUT_DIR = path.join(REPO_ROOT, 'gate');
+const GATE_SUMMARY = path.join(GATE_OUT_DIR, 'summary.json');
 
 const COVERAGE_THRESHOLDS = {
   statements: 60,
   branches: 50,
   functions: 55,
+};
+
+// Per-project coverage thresholds (T029/DEV-703)
+const API_COVERAGE_THRESHOLDS = {
+  lines: 80,
+  branches: 70,
+};
+
+const FRONTEND_COVERAGE_THRESHOLDS = {
+  lines: 70,
 };
 
 const DIM_TO_PATH = {
@@ -56,18 +66,18 @@ const DIM_TO_PATH = {
 };
 
 const DEFAULT_REQUIRED_DIMENSIONS = [
-  "coverage",
-  "tests",
-  "typecheck",
-  "a11y",
-  "contract",
-  "security",
-  "governance",
+  'coverage',
+  'tests',
+  'typecheck',
+  'a11y',
+  'contract',
+  'security',
+  'governance',
 ];
 
 function readJsonIfExists(filePath) {
   try {
-    const raw = fs.readFileSync(filePath, "utf8");
+    const raw = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(raw);
   } catch {
     return null;
@@ -76,6 +86,100 @@ function readJsonIfExists(filePath) {
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+/**
+ * Accumulate coverage metrics from multiple sources (immutably).
+ * Handles istanbul `::` prefix convention for project-scoped metrics.
+ */
+function accumulateCoverageMetrics(accumulator, metrics) {
+  if (!accumulator || !metrics) return accumulator;
+
+  return {
+    lines: {
+      total: (accumulator.lines?.total || 0) + (metrics.lines?.total || 0),
+      covered: (accumulator.lines?.covered || 0) + (metrics.lines?.covered || 0),
+    },
+    branches: {
+      total: (accumulator.branches?.total || 0) + (metrics.branches?.total || 0),
+      covered: (accumulator.branches?.covered || 0) + (metrics.branches?.covered || 0),
+    },
+    functions: {
+      total: (accumulator.functions?.total || 0) + (metrics.functions?.total || 0),
+      covered: (accumulator.functions?.covered || 0) + (metrics.functions?.covered || 0),
+    },
+    statements: {
+      total: (accumulator.statements?.total || 0) + (metrics.statements?.total || 0),
+      covered: (accumulator.statements?.covered || 0) + (metrics.statements?.covered || 0),
+    },
+  };
+}
+
+/**
+ * Compute project-specific coverage from a summary object.
+ * Prefixes (e.g., ["api", "frontend-next"]) filter to keys like "api::lines".
+ */
+function computeProjectCoverage(summary, prefixes = []) {
+  let accumulated = {
+    lines: { total: 0, covered: 0 },
+    branches: { total: 0, covered: 0 },
+    functions: { total: 0, covered: 0 },
+    statements: { total: 0, covered: 0 },
+  };
+
+  for (const key of Object.keys(summary)) {
+    // Match "api::lines", "api::branches", etc.
+    const matched = prefixes.some((prefix) => key.startsWith(`${prefix}::`));
+    if (matched || prefixes.length === 0) {
+      const metric = summary[key];
+      if (metric && typeof metric === 'object') {
+        accumulated = accumulateCoverageMetrics(accumulated, {
+          [key.split('::')[1] || key]: metric,
+        });
+      }
+    }
+  }
+
+  return finalizeCoveragePercentages(accumulated);
+}
+
+/**
+ * Finalize coverage percentages from accumulated metrics.
+ * Converts totals/covered to percentages with 2 decimal places.
+ */
+function finalizeCoveragePercentages(accumulator) {
+  const result = {};
+  for (const metric of ['lines', 'branches', 'functions', 'statements']) {
+    const data = accumulator[metric];
+    const total = data?.total || 0;
+    const covered = data?.covered || 0;
+    const pct = total === 0 ? 0 : Number(((covered / total) * 100).toFixed(2));
+    result[metric] = { total, covered, pct };
+  }
+  return result;
+}
+
+/**
+ * Evaluate Spectral linting results (T080/DEV-705).
+ * Enforces 0 errors in OpenAPI specification.
+ */
+function evaluateSpectral(spectralReport) {
+  if (!spectralReport) {
+    return { passed: true, reason: 'No Spectral report found (treat as pass)', metrics: null };
+  }
+
+  const errors = Array.isArray(spectralReport.result)
+    ? spectralReport.result.filter((r) => String(r.severity || '').toLowerCase() === 'error')
+    : [];
+
+  const passed = errors.length === 0;
+  return {
+    passed,
+    reason: passed
+      ? 'OpenAPI spec validated (0 Spectral errors)'
+      : `${errors.length} Spectral error(s) in OpenAPI spec`,
+    metrics: { errors: errors.length },
+  };
 }
 
 function evaluateCoverage(coverageSummary) {
@@ -103,7 +207,7 @@ function evaluateCoverage(coverageSummary) {
   return {
     passed,
     reason: passed
-      ? "Coverage thresholds met"
+      ? 'Coverage thresholds met'
       : `Coverage below thresholds (stmt ${statements}% / br ${branches}% / fn ${functions}%)`,
     metrics: { statements, branches, functions, lines },
   };
@@ -111,72 +215,77 @@ function evaluateCoverage(coverageSummary) {
 
 function evaluateTests(testSummary) {
   if (!testSummary) {
-    return { passed: true, reason: "No test summary found (treat as pass)", metrics: null };
+    return { passed: true, reason: 'No test summary found (treat as pass)', metrics: null };
   }
   const failed = Number(testSummary.failed || 0);
   const passedCount = Number(testSummary.passed || 0);
   const total = Number(testSummary.total || passedCount + failed);
   return {
     passed: failed === 0,
-    reason: failed === 0 ? "All required tests passed" : `${failed} test suite(s) failed`,
+    reason: failed === 0 ? 'All required tests passed' : `${failed} test suite(s) failed`,
     metrics: { total, passed: passedCount, failed },
   };
 }
 
 function evaluateTypecheck(typecheck) {
   if (!typecheck) {
-    return { passed: true, reason: "No type-check results found (treat as pass)", metrics: null };
+    return { passed: true, reason: 'No type-check results found (treat as pass)', metrics: null };
   }
   const errors = Number(typecheck.errors || 0);
   return {
     passed: errors === 0,
-    reason: errors === 0 ? "Type-check passed" : `${errors} type error(s)` ,
+    reason: errors === 0 ? 'Type-check passed' : `${errors} type error(s)`,
     metrics: { errors },
   };
 }
 
 function evaluateA11y(report) {
   if (!report) {
-    return { passed: true, reason: "No a11y report found (treat as pass)", metrics: null };
+    return { passed: true, reason: 'No a11y report found (treat as pass)', metrics: null };
   }
   // Expect structure: { violations: [{ impact: 'critical'|'serious'|... }, ...] }
   const violations = Array.isArray(report.violations) ? report.violations : [];
   const criticalOrSerious = violations.filter((v) => {
-    const impact = (v && v.impact ? String(v.impact) : "").toLowerCase();
-    return impact === "critical" || impact === "serious";
+    const impact = (v && v.impact ? String(v.impact) : '').toLowerCase();
+    return impact === 'critical' || impact === 'serious';
   });
   const passed = criticalOrSerious.length === 0;
   return {
     passed,
-    reason: passed ? "No critical/serious a11y violations" : `${criticalOrSerious.length} critical/serious a11y violation(s)` ,
+    reason: passed
+      ? 'No critical/serious a11y violations'
+      : `${criticalOrSerious.length} critical/serious a11y violation(s)`,
     metrics: { totalViolations: violations.length, criticalOrSerious: criticalOrSerious.length },
   };
 }
 
 function evaluateContract(contract) {
   if (!contract) {
-    return { passed: true, reason: "No contract report found (treat as pass)", metrics: null };
+    return { passed: true, reason: 'No contract report found (treat as pass)', metrics: null };
   }
   // Expect structure: { breakingMismatches: number }
   const breaking = Number(contract.breakingMismatches || 0);
   return {
     passed: breaking === 0,
-    reason: breaking === 0 ? "No breaking contract mismatches" : `${breaking} breaking contract mismatch(es)`,
+    reason:
+      breaking === 0
+        ? 'No breaking contract mismatches'
+        : `${breaking} breaking contract mismatch(es)`,
     metrics: { breaking },
   };
 }
 
 function evaluateSecurity(security) {
   if (!security) {
-    return { passed: true, reason: "No security summary found (treat as pass)", metrics: null };
+    return { passed: true, reason: 'No security summary found (treat as pass)', metrics: null };
   }
   // Expect structure: { critical: number, high: number, medium: number, low: number, tool?: string, failed?: boolean }
-  const tool = String(security.tool || "").toLowerCase();
+  const tool = String(security.tool || '').toLowerCase();
   const failedFlag = Boolean(security.failed);
-  if (tool === "fallback" || failedFlag) {
+  if (tool === 'fallback' || failedFlag) {
     return {
       passed: false,
-      reason: "Security audit unavailable (fallback or failed)",
+      reason: 'Security audit unavailable (fallback or failed)',
       metrics: {
         critical: Number(security.critical || 0),
         high: Number(security.high || 0),
@@ -193,21 +302,28 @@ function evaluateSecurity(security) {
   const passed = critical === 0 && high === 0;
   return {
     passed,
-    reason: passed ? "No high/critical vulnerabilities" : `Security findings: critical=${critical}, high=${high}`,
-    metrics: { critical, high, medium: Number(security.medium || 0), low: Number(security.low || 0) },
+    reason: passed
+      ? 'No high/critical vulnerabilities'
+      : `Security findings: critical=${critical}, high=${high}`,
+    metrics: {
+      critical,
+      high,
+      medium: Number(security.medium || 0),
+      low: Number(security.low || 0),
+    },
   };
 }
 
 function evaluateGovernance(governance) {
   if (!governance) {
-    return { passed: true, reason: "No governance report found (treat as pass)", metrics: null };
+    return { passed: true, reason: 'No governance report found (treat as pass)', metrics: null };
   }
   // Expect structure: { passed: boolean, reasons?: string[] }
   const passed = Boolean(governance.passed !== false);
   const reasons = Array.isArray(governance.reasons) ? governance.reasons : [];
   return {
     passed,
-    reason: passed ? "Governance checks passed" : `Governance failed: ${reasons.join("; ")}`,
+    reason: passed ? 'Governance checks passed' : `Governance failed: ${reasons.join('; ')}`,
     metrics: { reasons },
   };
 }
@@ -224,10 +340,10 @@ function parseArgs(argv) {
   const cfg = { required: DEFAULT_REQUIRED_DIMENSIONS.slice() };
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--require" && i + 1 < argv.length) {
-      const list = String(argv[i + 1] || "");
+    if (arg === '--require' && i + 1 < argv.length) {
+      const list = String(argv[i + 1] || '');
       cfg.required = list
-        .split(",")
+        .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
       i++;
@@ -247,9 +363,8 @@ function isActiveException(ex) {
 }
 
 function findApprovedExceptions(governance, dimension) {
-  const list = governance && Array.isArray(governance.approvedExceptions)
-    ? governance.approvedExceptions
-    : [];
+  const list =
+    governance && Array.isArray(governance.approvedExceptions) ? governance.approvedExceptions : [];
   return list.filter((ex) => String(ex.dimension) === dimension && isActiveException(ex));
 }
 
@@ -271,42 +386,49 @@ function applyExceptions(dimensionKey, result, governance) {
   }
 
   if (result.reason && /Missing required artifact/.test(result.reason)) {
-    const waiver = approved.find((ex) => ex.scope === "missing-artifact");
+    const waiver = approved.find((ex) => ex.scope === 'missing-artifact');
     if (waiver) {
       return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
     }
   }
 
-  if (dimensionKey === "security" && result.passed === false) {
-    const lowerReason = String(result.reason || "").toLowerCase();
+  if (dimensionKey === 'security' && result.passed === false) {
+    const lowerReason = String(result.reason || '').toLowerCase();
     const secEx = approved.find((ex) => ex.waiveAllCurrentFindings === true);
-    const allowLevels = approved.flatMap((ex) => Array.isArray(ex.allowLevels) ? ex.allowLevels : []);
+    const allowLevels = approved.flatMap((ex) =>
+      Array.isArray(ex.allowLevels) ? ex.allowLevels : [],
+    );
     const allowFallback = approved.find((ex) => ex.allowFallback === true);
     // Waive high/critical findings
-    if (secEx || allowLevels.includes("high") || allowLevels.includes("critical")) {
+    if (secEx || allowLevels.includes('high') || allowLevels.includes('critical')) {
       return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
     }
     // Waive audit fallback/unavailable when explicitly approved
-    if (allowFallback && (lowerReason.includes("fallback") || lowerReason.includes("unavailable"))) {
+    if (
+      allowFallback &&
+      (lowerReason.includes('fallback') || lowerReason.includes('unavailable'))
+    ) {
       return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
     }
   }
 
-  if (dimensionKey === "a11y" && result.passed === false) {
-    const allowImpacts = approved.flatMap((ex) => Array.isArray(ex.allowImpacts) ? ex.allowImpacts : []);
-    if (allowImpacts.includes("critical") || allowImpacts.includes("serious")) {
+  if (dimensionKey === 'a11y' && result.passed === false) {
+    const allowImpacts = approved.flatMap((ex) =>
+      Array.isArray(ex.allowImpacts) ? ex.allowImpacts : [],
+    );
+    if (allowImpacts.includes('critical') || allowImpacts.includes('serious')) {
       return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
     }
   }
 
-  if (dimensionKey === "contract" && result.passed === false) {
+  if (dimensionKey === 'contract' && result.passed === false) {
     const allowBreaking = approved.find((ex) => ex.allowBreaking === true);
     if (allowBreaking) {
       return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
     }
   }
 
-  if (dimensionKey === "coverage" && result.passed === false) {
+  if (dimensionKey === 'coverage' && result.passed === false) {
     const allowCoverage = approved.find((ex) => ex.allowCoverageBelowThreshold === true);
     if (allowCoverage) {
       return { ...result, passed: true, reason: `${result.reason} (waived by exception)` };
@@ -359,51 +481,75 @@ function main() {
 
   ensureDir(GATE_OUT_DIR);
   const summary = {
-    decision: decision.passed ? "PASS" : "FAIL",
+    decision: decision.passed ? 'PASS' : 'FAIL',
     failures: decision.failures,
-    thresholds: { coverage: COVERAGE_THRESHOLDS, a11y: "no critical/serious", contract: "no breaking mismatches", security: "no high/critical" },
+    thresholds: {
+      coverage: COVERAGE_THRESHOLDS,
+      a11y: 'no critical/serious',
+      contract: 'no breaking mismatches',
+      security: 'no high/critical',
+    },
     requiredDimensions: required,
     results,
     generatedAt: new Date().toISOString(),
   };
-  fs.writeFileSync(GATE_SUMMARY, JSON.stringify(summary, null, 2) + "\n", "utf8");
+  fs.writeFileSync(GATE_SUMMARY, JSON.stringify(summary, null, 2) + '\n', 'utf8');
 
   // Emit Coverage Totals block to stdout for CI summary (Spec label must be exact)
   if (results.coverage && results.coverage.metrics) {
     const c = results.coverage.metrics;
     console.log(
-      "\nCoverage Totals\n" +
-      `Statements: ${Number(c.statements ?? 0).toFixed(1)}%\n` +
-      `Branches: ${Number(c.branches ?? 0).toFixed(1)}%\n` +
-      `Functions: ${Number(c.functions ?? 0).toFixed(1)}%\n` +
-      `Lines: ${Number(c.lines ?? 0).toFixed(1)}%`
+      '\nCoverage Totals\n' +
+        `Statements: ${Number(c.statements ?? 0).toFixed(1)}%\n` +
+        `Branches: ${Number(c.branches ?? 0).toFixed(1)}%\n` +
+        `Functions: ${Number(c.functions ?? 0).toFixed(1)}%\n` +
+        `Lines: ${Number(c.lines ?? 0).toFixed(1)}%`,
     );
   }
 
   // Emit concise single-line gate summary for CI parsers
   try {
-    const flatFailures = decision.failures && decision.failures.length
-      ? decision.failures.join(", ")
-      : "none";
-    console.log(`Gate Decision: ${decision.passed ? "PASS" : "FAIL"}; Failures: ${flatFailures}`);
-  } catch { /* noop */ }
+    const flatFailures =
+      decision.failures && decision.failures.length ? decision.failures.join(', ') : 'none';
+    console.log(`Gate Decision: ${decision.passed ? 'PASS' : 'FAIL'}; Failures: ${flatFailures}`);
+  } catch {
+    /* noop */
+  }
 
   if (!decision.passed) {
-    console.error("Quality Gate: FAIL");
+    console.error('Quality Gate: FAIL');
     for (const key of decision.failures) {
-      console.error(` - ${key}: ${results[key]?.reason || "failed"}`);
+      console.error(` - ${key}: ${results[key]?.reason || 'failed'}`);
     }
     process.exitCode = 1;
   } else {
-    console.log("Quality Gate: PASS");
+    console.log('Quality Gate: PASS');
   }
 }
+
+// Module exports for testing and reuse
+module.exports = {
+  accumulateCoverageMetrics,
+  computeProjectCoverage,
+  finalizeCoveragePercentages,
+  evaluateSpectral,
+  evaluateCoverage,
+  evaluateTests,
+  evaluateTypecheck,
+  evaluateA11y,
+  evaluateContract,
+  evaluateSecurity,
+  evaluateGovernance,
+  aggregateCoverageResults: (coverage) => evaluateCoverage(coverage),
+  evaluateGate: (results) => decideGate(results),
+  API_COVERAGE_THRESHOLDS,
+  FRONTEND_COVERAGE_THRESHOLDS,
+  COVERAGE_THRESHOLDS,
+};
 
 try {
   main();
 } catch (err) {
-  console.error("Quality Gate aggregator failed:", err && err.stack ? err.stack : err);
+  console.error('Quality Gate aggregator failed:', err && err.stack ? err.stack : err);
   process.exit(1);
 }
-
-
