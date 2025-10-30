@@ -14,7 +14,6 @@ export interface SamplingConfig {
 }
 
 const DEFAULT_ENVIRONMENT = process.env.NODE_ENV ?? "development";
-const RAW_INFO_SAMPLE_RATE = process.env.LOG_SAMPLE_RATE_INFO;
 
 function normalizeSampleRate(raw: unknown, fallback: number): number {
   const value =
@@ -29,21 +28,7 @@ function normalizeSampleRate(raw: unknown, fallback: number): number {
   return value;
 }
 
-function assertSamplingEnvConstraints(env: string, rawSampleRate: unknown): void {
-  if (env === "production") {
-    return;
-  }
-  const value = typeof rawSampleRate === "string" ? rawSampleRate.trim() : "";
-  if (value.length > 0) {
-    throw new Error(
-      "LOG_SAMPLE_RATE_INFO is only supported when NODE_ENV=production. Remove the variable in non-production environments.",
-    );
-  }
-}
-
-assertSamplingEnvConstraints(DEFAULT_ENVIRONMENT, RAW_INFO_SAMPLE_RATE);
-
-const DEFAULT_INFO_SAMPLE_RATE = normalizeSampleRate(RAW_INFO_SAMPLE_RATE, 1);
+const DEFAULT_INFO_SAMPLE_RATE = normalizeSampleRate(process.env.LOG_SAMPLE_RATE_INFO, 1);
 
 export const defaultSamplingConfig: SamplingConfig = {
   infoSampleRate: DEFAULT_INFO_SAMPLE_RATE,
