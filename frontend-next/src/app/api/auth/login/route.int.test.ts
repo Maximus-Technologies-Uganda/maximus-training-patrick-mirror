@@ -22,7 +22,9 @@ type FakeNextRequest = {
 };
 
 function makeRequest(body: object, extraHeaders: Record<string, string> = {}): FakeNextRequest {
-  const headers = new Map<string, string>(Object.entries({ "Content-Type": "application/json", ...extraHeaders }));
+  const headers = new Map<string, string>(
+    Object.entries({ "Content-Type": "application/json", ...extraHeaders })
+  );
   return {
     headers,
     text: async () => JSON.stringify(body),
@@ -30,18 +32,22 @@ function makeRequest(body: object, extraHeaders: Record<string, string> = {}): F
 }
 
 describe("POST /api/auth/login route handler (fallback)", () => {
-  it("returns 204 and sets cookie on valid local creds", async () => {
+  it("returns 204 and sets cookie with 1-hour TTL on valid local creds", async () => {
     vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("upstream down"));
-    const res = await POST(makeRequest({ username: "admin", password: "password" }) as unknown as NextRequest);
+    const res = await POST(
+      makeRequest({ username: "admin", password: "password" }) as unknown as NextRequest
+    );
     expect(res.status).toBe(204);
-    expect(res.headers.get("set-cookie")).toBeTruthy();
+    const setCookie = res.headers.get("set-cookie");
+    expect(setCookie).toBeTruthy();
+    expect(setCookie).toContain("Max-Age=3600");
   });
 
   it("sets Secure on cookie when request is HTTPS", async () => {
     vi.spyOn(global, "fetch").mockRejectedValueOnce(new Error("upstream down"));
     const req = makeRequest(
       { username: "admin", password: "password" },
-      { "x-forwarded-proto": "https" },
+      { "x-forwarded-proto": "https" }
     );
     const res = await POST(req as unknown as NextRequest);
     const setCookie = res.headers.get("set-cookie") || "";
