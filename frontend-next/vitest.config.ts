@@ -3,13 +3,13 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   esbuild: {
     jsx: "automatic",
-    jsxInject: 'import React from "react"'
+    jsxInject: 'import React from "react"',
   },
   optimizeDeps: {
-    exclude: ["firebase/app", "firebase/auth"]
+    exclude: ["firebase/app", "firebase/auth"],
   },
   ssr: {
-    external: ["firebase/app", "firebase/auth"]
+    external: ["firebase/app", "firebase/auth"],
   },
   test: {
     include: [
@@ -26,7 +26,7 @@ export default defineConfig({
     environmentMatchGlobs: [
       ["tests/openapi.validation.test.ts", "node"],
       ["src/app/api/**", "node"],
-      ["src/app/**/__tests__/**", "node"]
+      ["src/app/**/__tests__/**", "node"],
     ],
     exclude: [
       "node_modules/**",
@@ -38,21 +38,14 @@ export default defineConfig({
       "tests/core-flows.spec.ts",
       "tests/observability.spec.ts",
       "tests/a11y.keyboard.spec.ts",
+      "tests/cookie.samesite.spec.ts",
     ],
     coverage: {
       provider: "v8",
       reporter: ["json-summary", "lcov", "html"],
       reportsDirectory: "./coverage",
-      include: [
-        "src/app/**/*.{ts,tsx}",
-        "src/server/**/*.{ts,tsx}",
-        "src/lib/**/*.{ts,tsx}"
-      ],
-      exclude: [
-        "src/tests/**",
-        "tests/**",
-        "**/*.d.ts"
-      ]
+      include: ["src/app/**/*.{ts,tsx}", "src/server/**/*.{ts,tsx}", "src/lib/**/*.{ts,tsx}"],
+      exclude: ["src/tests/**", "tests/**", "**/*.d.ts"],
     },
   },
 });
