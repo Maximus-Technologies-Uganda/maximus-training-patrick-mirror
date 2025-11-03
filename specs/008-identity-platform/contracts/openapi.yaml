@@ -64,17 +64,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ValidationErrorEnvelope'
-          examples:
-            validationError:
-              value:
-                code: VALIDATION_ERROR
-                message: Request validation failed
-                details:
-                  - path: body.title
-                    issue: required
-                  - path: body.content
-                    issue: too_short
-                requestId: req-12345
+          example:
+            code: VALIDATION_ERROR
+            message: Request validation failed
+            details:
+              - path: body.title
+                issue: required
+              - path: body.content
+                issue: too_short
+            requestId: req-12345
     Err429:
       description: Too Many Requests (rate limit exceeded)
       headers:
@@ -89,6 +87,10 @@ components:
           example:
             code: RATE_LIMIT_EXCEEDED
             message: Too many requests, please retry after delay
+            details:
+              - scope: ip
+                limit: 10 requests per minute
+                retryAfterSeconds: 60
             requestId: req-12345
     Err413:
       description: Payload Too Large (body exceeds 1MB limit)
