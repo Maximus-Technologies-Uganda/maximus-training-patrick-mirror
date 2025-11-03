@@ -126,7 +126,7 @@ export function createSessionAuthenticationMiddleware(): RequestHandler {
 
         // Rotate if token is older than 10 minutes (600 seconds)
         if (now - iat > 600) {
-          const newToken = signJwt({ userId: decoded.userId }, secret, 24 * 60 * 60);
+          const newToken = signJwt({ ...decoded }, secret, 24 * 60 * 60);
 
           const isProduction = process.env.NODE_ENV === 'production';
           res.cookie('session', newToken, {
