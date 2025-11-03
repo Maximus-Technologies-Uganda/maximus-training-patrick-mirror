@@ -1,10 +1,10 @@
-import request from "supertest";
-import { createApp } from "#tsApp";
-import { loadConfigFromEnv } from "../src/config";
-import { createRepository } from "../src/repositories/posts-repository";
-import { createObservabilityLogger } from "../src/logging/observability";
+import request from 'supertest';
+import { createApp } from '#tsApp';
+import { loadConfigFromEnv } from '../src/config';
+import { createRepository } from '../src/repositories/posts-repository';
+import { createObservabilityLogger } from '../src/logging/observability';
 
-describe("logging redaction end-to-end", () => {
+describe('logging redaction end-to-end', () => {
   const originalLog = console.log;
   let logs: string[];
 
@@ -17,41 +17,42 @@ describe("logging redaction end-to-end", () => {
 
   beforeEach(() => {
     logs = [];
-    // eslint-disable-next-line no-console
+     
     console.log = (message?: unknown) => {
-      if (typeof message === "string") logs.push(message);
+      if (typeof message === 'string') logs.push(message);
       else logs.push(String(message));
     };
   });
 
   afterEach(() => {
-    // eslint-disable-next-line no-console
+     
     console.log = originalLog;
   });
 
-  it("does not leak emails, bearer tokens, or passwords to stdout", async () => {
+  it('does not leak emails, bearer tokens, or passwords to stdout', async () => {
     const app = await makeApp();
-    const requestId = "pii-redaction-e2e";
+    const requestId = 'pii-redaction-e2e';
 
     const res = await request(app)
-      .post("/auth/login")
-      .set("X-Request-Id", requestId)
-      .set("Authorization", "Bearer secret-token-value")
-      .send({ username: "alice", password: "correct-password", email: "alice@example.com" });
+      .post('/auth/login')
+      .set('X-Request-Id', requestId)
+      .set('Accept', 'application/json')
+      .set('Authorization', 'Bearer secret-token-value')
+      .send({ username: 'alice', password: 'correct-password', email: 'alice@example.com' });
 
     expect(res.status).toBe(204);
 
-    const aggregated = logs.join("\n");
-    expect(aggregated).not.toContain("correct-password");
-    expect(aggregated).not.toContain("secret-token-value");
-    expect(aggregated).not.toContain("alice@example.com");
+    const aggregated = logs.join('\n');
+    expect(aggregated).not.toContain('correct-password');
+    expect(aggregated).not.toContain('secret-token-value');
+    expect(aggregated).not.toContain('alice@example.com');
   });
 
-  it("scrubs JWT payloads from structured log entries", () => {
+  it('scrubs JWT payloads from structured log entries', () => {
     const jwtSample =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
-      "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
-      "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
+      'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.' +
+      'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
     const captured: string[] = [];
     const logger = createObservabilityLogger({
       writer: (line) => {
@@ -59,12 +60,12 @@ describe("logging redaction end-to-end", () => {
       },
     });
 
-    logger.info("jwt sample", {
+    logger.info('jwt sample', {
       metadata: { token: jwtSample, authorization: `Bearer ${jwtSample}` },
     });
 
-    const serialized = captured.join("\n");
+    const serialized = captured.join('\n');
     expect(serialized).not.toContain(jwtSample);
-    expect(serialized).toContain("[REDACTED]");
+    expect(serialized).toContain('[REDACTED]');
   });
 });

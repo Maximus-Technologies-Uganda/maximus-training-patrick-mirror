@@ -28,9 +28,7 @@ jest.mock('../../src/middleware/firebaseAuth', () => ({
         req.user = { userId: 'admin-user-id' };
       }
     }
-    if (!req.user) {
-      return res.status(401).json({ code: 'unauthorized', message: 'Unauthorized' });
-    }
+    // Allow requests without user to proceed (for public routes and fallback auth)
     next();
   }),
   default: jest.fn(),

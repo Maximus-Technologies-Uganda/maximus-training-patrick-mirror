@@ -26,7 +26,10 @@ describe('GET /health', () => {
       checkDatabase: async () => ({ status: 'ok' }),
     });
 
-    const res = await request(app).get('/health');
+    const res = await request(app)
+      .get('/health')
+      .set('X-Request-Id', 'test-request')
+      .set('traceparent', '00-test-trace-id-0-01');
 
     expect(res.status).toBe(200);
     expect(res.body.service).toBe('api-test');

@@ -358,6 +358,16 @@ export function createHealthRouter(
     if (statusCode === 503) {
       res.setHeader('Retry-After', String(retryAfterSeconds));
     }
+
+    // Echo upstream tracing context when provided
+    if (typeof rawTraceparentHeader === 'string' && rawTraceparentHeader.trim().length > 0) {
+      res.setHeader('Traceparent', rawTraceparentHeader.trim());
+    }
+    const rawTraceStateHeader = req.headers['tracestate'];
+    if (typeof rawTraceStateHeader === 'string' && rawTraceStateHeader.trim().length > 0) {
+      res.setHeader('Tracestate', rawTraceStateHeader.trim());
+    }
+
     res.status(statusCode).json(payload);
   });
 
