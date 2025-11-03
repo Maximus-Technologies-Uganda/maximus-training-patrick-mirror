@@ -7,7 +7,9 @@ export type DependencyCheckResult = {
   detail?: string;
 };
 
-export type DependencyChecker = () => Promise<DependencyCheckResult> | DependencyCheckResult;
+export type DependencyCheckValue = DependencyCheckResult | DependencyStatus | string;
+
+export type DependencyChecker = () => Promise<DependencyCheckValue> | DependencyCheckValue;
 
 export interface HealthOptions {
   serviceName?: string;
@@ -43,119 +45,310 @@ function resolveCommitSha(explicit?: string): string {
   return value?.trim() ?? 'local';
 }
 
-async function evaluateDependencies(options: HealthRouterOptions): Promise<{
+const DEFAULT_DEPENDENCY_TIMEOUT_MS = 5000;
+
+function normalizeDependencyStatus(value: unknown): DependencyStatus {
+  if (typeof value !== 'string') {
+    return 'down';
+  }
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return 'down';
+  }
+  if (normalized === 'ok' || normalized === 'healthy' || normalized === 'up' || normalized === 'pass') {
+    return 'ok';
+  }
+  if (
+    normalized === 'degraded' ||
+    normalized === 'warn' ||
+    normalized === 'warning' ||
+    normalized === 'partial'
+  ) {
+    return 'degraded';
+  }
+  return 'down';
+}
+
+function normalizeDependencyDetail(detail: unknown): string | undefined {
+  if (detail === undefined || detail === null) {
+    return undefined;
+  }
+  if (typeof detail === 'string') {
+    return detail;
+  }
+  if (detail instanceof Error && detail.message) {
+    return detail.message;
+  }
+  try {
+    return JSON.stringify(detail);
+  } catch {
+    return String(detail);
+  }
+}
+
+function coerceCheckResult(name: string, raw: DependencyCheckValue): DependencyCheckResult {
+  if (typeof raw === 'string') {
+    return { status: normalizeDependencyStatus(raw) };
+  }
+  if (raw && typeof raw === 'object') {
+    const candidate = raw as { status?: unknown; detail?: unknown };
+    if (candidate.status !== undefined) {
+      const status = normalizeDependencyStatus(candidate.status);
+      const detail = normalizeDependencyDetail(candidate.detail);
+      return detail ? { status, detail } : { status };
+    }
+  }
+  const detail = name ? `${name} returned an invalid result` : 'invalid dependency result';
+  return { status: 'down', detail };
+}
+
+function buildTimeoutMap(timeouts?: Record<string, number>): Map<string, number> {
+  const map = new Map<string, number>();
+  if (!timeouts) {
+    return map;
+  }
+  for (const [rawKey, rawValue] of Object.entries(timeouts)) {
+    if (!Number.isFinite(rawValue)) {
+      continue;
+    }
+    const key = rawKey.trim().toLowerCase();
+    if (!key) {
+      continue;
+    }
+    const value = Math.max(0, Math.trunc(rawValue));
+    map.set(key, value);
+    if (key === 'database') {
+      map.set('db', value);
+    } else if (key === 'db') {
+      map.set('database', value);
+    }
+  }
+  return map;
+}
+
+function resolveTimeoutMs(name: string, map: Map<string, number>): number {
+  if (!name) {
+    return DEFAULT_DEPENDENCY_TIMEOUT_MS;
+  }
+  const key = name.trim().toLowerCase();
+  const explicit = map.get(key);
+  if (typeof explicit === 'number') {
+    return explicit;
+  }
+  return DEFAULT_DEPENDENCY_TIMEOUT_MS;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    return promise;
+  }
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('timeout'));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+async function invokeChecker(
+  name: string,
+  checker: DependencyChecker,
+  timeoutMap: Map<string, number>,
+): Promise<DependencyCheckResult> {
+  try {
+    const timeoutMs = resolveTimeoutMs(name, timeoutMap);
+    const result = await withTimeout(Promise.resolve(checker()), timeoutMs);
+    return coerceCheckResult(name, result);
+  } catch (error) {
+    const detail =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : 'unknown error';
+    return { status: 'down', detail };
+  }
+}
+
+interface DependencyEvaluation {
   statuses: Record<string, DependencyStatus>;
   details: Record<string, string>;
-  healthy: boolean;
-}> {
-  const checks: Record<string, DependencyChecker> = {
-    firebase:
-      options.checkFirebase ??
-      (async () => {
-        // Check if Firebase project ID is available in production
-        if (process.env.NODE_ENV === 'production') {
-          const projectId =
-            process.env.FIREBASE_ADMIN_PROJECT_ID ||
-            process.env.FIREBASE_AUTH_PROJECT_ID ||
-            process.env.FIREBASE_PROJECT_ID ||
-            process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-            process.env.GCP_PROJECT_ID;
-          if (!projectId) {
-            return { status: 'down', detail: 'project id missing' };
-          }
-        }
-        return { status: 'ok' };
-      }),
-  };
+  hasDown: boolean;
+  hasDegraded: boolean;
+}
 
-  // Add database check with the key that matches the test expectations
-  if (options.checkDatabase) {
-    checks.db = options.checkDatabase; // Use 'db' key for test compatibility
-  } else {
+function createDefaultFirebaseChecker(): DependencyChecker {
+  return async () => {
+    if (process.env.NODE_ENV === 'production') {
+      const projectId =
+        process.env.FIREBASE_ADMIN_PROJECT_ID ||
+        process.env.FIREBASE_AUTH_PROJECT_ID ||
+        process.env.FIREBASE_PROJECT_ID ||
+        process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+        process.env.GCP_PROJECT_ID;
+      if (!projectId) {
+        return { status: 'down', detail: 'project id missing' };
+      }
+    }
+    return { status: 'ok' };
+  };
+}
+
+function resolveDependencyConfiguration(
+  options?: HealthOptions,
+  routerOptions?: HealthRouterOptions,
+): {
+  checks: Record<string, DependencyChecker>;
+  timeoutMap: Map<string, number>;
+  useLegacyStatus: boolean;
+} {
+  const legacyChecks = options?.dependencyChecks ?? {};
+  const hasLegacyChecks = Object.keys(legacyChecks).length > 0;
+
+  const checks: Record<string, DependencyChecker> = {};
+
+  for (const [name, checker] of Object.entries(legacyChecks)) {
+    if (typeof checker === 'function') {
+      checks[name] = checker;
+    }
+  }
+
+  const firebaseChecker =
+    routerOptions?.checkFirebase ??
+    (typeof legacyChecks.firebase === 'function' ? legacyChecks.firebase : undefined) ??
+    checks.firebase ??
+    createDefaultFirebaseChecker();
+
+  checks.firebase = firebaseChecker;
+
+  const legacyDatabaseChecker =
+    (typeof legacyChecks.db === 'function' ? legacyChecks.db : undefined) ??
+    (typeof (legacyChecks as Record<string, DependencyChecker | undefined>).database === 'function'
+      ? (legacyChecks as Record<string, DependencyChecker>).database
+      : undefined);
+
+  const databaseChecker = routerOptions?.checkDatabase ?? legacyDatabaseChecker;
+  if (databaseChecker) {
+    checks.db = databaseChecker;
+  } else if (!checks.db) {
     checks.db = async () => ({ status: 'ok' });
   }
 
-  const timeouts = options.dependencyTimeouts ?? {};
-  const entries = await Promise.all(
-    Object.entries(checks).map(async ([name, check]) => {
-      try {
-        const timeout = timeouts[name] ?? 5000; // Default 5 second timeout
-        const result = await Promise.race([
-          check(),
-          new Promise<DependencyCheckResult>((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), timeout),
-          ),
-        ]);
-        return [name, result] as const;
-      } catch (error) {
-        const detail = error instanceof Error ? error.message : 'unknown error';
-        return [name, { status: 'down' as const, detail }] as const;
-      }
-    }),
-  );
+  const timeoutMap = buildTimeoutMap(routerOptions?.dependencyTimeouts);
 
+  return {
+    checks,
+    timeoutMap,
+    useLegacyStatus: routerOptions === undefined && hasLegacyChecks,
+  };
+}
+
+async function evaluateDependencies(
+  checks: Record<string, DependencyChecker>,
+  timeoutMap: Map<string, number>,
+): Promise<DependencyEvaluation> {
   const statuses: Record<string, DependencyStatus> = {};
   const details: Record<string, string> = {};
-  let healthy = true;
+  let hasDown = false;
+  let hasDegraded = false;
 
-  for (const [name, result] of entries) {
+  for (const [name, checker] of Object.entries(checks)) {
+    const result = await invokeChecker(name, checker, timeoutMap);
     statuses[name] = result.status;
     if (result.detail) {
       details[name] = result.detail;
     }
-    if (result.status === 'down') healthy = false;
+    if (result.status === 'down') {
+      hasDown = true;
+    } else if (result.status === 'degraded') {
+      hasDegraded = true;
+    }
   }
 
-  return { statuses, details, healthy };
+  return { statuses, details, hasDown, hasDegraded };
 }
 
 export function createHealthRouter(
   options?: HealthOptions,
   routerOptions?: HealthRouterOptions,
 ): Router {
-  // Merge old and new options for backward compatibility
-  const mergedOptions: HealthRouterOptions = {
+  const mergedOptions: {
+    serviceName: string;
+    commitSha?: string;
+    now?: () => Date;
+    uptimeSeconds?: () => number;
+    retryAfterSeconds?: number;
+  } = {
     serviceName: options?.serviceName ?? routerOptions?.serviceName ?? 'api',
     commitSha: options?.commitSha ?? routerOptions?.commitSha,
-    checkFirebase: routerOptions?.checkFirebase ?? options?.dependencyChecks?.firebase,
-    checkDatabase: routerOptions?.checkDatabase ?? options?.dependencyChecks?.db,
-    dependencyTimeouts:
-      routerOptions?.dependencyTimeouts ?? (options?.dependencyChecks ? {} : undefined),
     now: options?.now ?? routerOptions?.now,
     uptimeSeconds: options?.uptimeSeconds ?? routerOptions?.uptimeSeconds,
     retryAfterSeconds: options?.retryAfterSeconds ?? routerOptions?.retryAfterSeconds,
   };
 
+  const { checks, timeoutMap, useLegacyStatus } = resolveDependencyConfiguration(
+    options,
+    routerOptions,
+  );
+
   const router = Router();
 
   router.get('/health', async (req: Request, res: Response) => {
-    const { statuses, details, healthy } = await evaluateDependencies(mergedOptions);
+    const { statuses, details, hasDown, hasDegraded } = await evaluateDependencies(
+      checks,
+      timeoutMap,
+    );
     const now = mergedOptions.now ? mergedOptions.now() : new Date();
     const uptimeProvider = mergedOptions.uptimeSeconds ?? (() => process.uptime());
     const uptimeSeconds = uptimeProvider();
     const retryAfterSeconds = Math.max(1, Math.round(mergedOptions.retryAfterSeconds ?? 60));
+    const aggregateStatus = (() => {
+      if (useLegacyStatus) {
+        return hasDown || hasDegraded ? ('error' as const) : ('ok' as const);
+      }
+      if (hasDown || hasDegraded) {
+        return 'degraded' as const;
+      }
+      return 'ok' as const;
+    })();
+    const statusCode = aggregateStatus === 'ok' ? 200 : 503;
+    const dependencies: Record<string, unknown> = { ...statuses };
+    if (!useLegacyStatus && Object.keys(details).length > 0) {
+      dependencies.details = details;
+    }
+    const requestId = (req as unknown as { requestId?: string }).requestId;
+    const traceId = (req as unknown as { traceId?: string }).traceId;
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       service: mergedOptions.serviceName,
-      status: healthy ? 'ok' : 'degraded',
+      status: aggregateStatus,
       commit: resolveCommitSha(mergedOptions.commitSha),
       time: now.toISOString(),
       uptime_s: Math.max(0, Math.round(uptimeSeconds)),
-      requestId: req.requestId,
-      traceId: req.traceId,
-      dependencies: {
-        ...statuses,
-        ...(Object.keys(details).length > 0 && { details }),
-      },
+      dependencies,
     };
+    if (requestId) {
+      payload.requestId = requestId;
+    }
+    if (traceId) {
+      payload.traceId = traceId;
+    }
 
     res.setHeader('Cache-Control', 'no-store');
-    res.status(healthy ? 200 : 503);
-    if (!healthy) {
-      res.set('Retry-After', String(retryAfterSeconds));
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    if (statusCode === 503) {
+      res.setHeader('Retry-After', String(retryAfterSeconds));
     }
-    res.type('application/json; charset=utf-8');
-    res.json(payload);
+    res.status(statusCode).json(payload);
   });
 
   return router;

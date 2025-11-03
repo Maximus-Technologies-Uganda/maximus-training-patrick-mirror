@@ -7,6 +7,7 @@ const SENSITIVE_KEY_PATTERNS = [
   /authorization/i,
   /cookie/i,
   /body/i,
+  /payload/i,
   /email/i,
 ];
 const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
@@ -20,11 +21,7 @@ function shouldRedactKey(path: readonly string[]): boolean {
 
 function sanitizePrimitive(value: unknown, path: readonly string[]): unknown {
   if (typeof value !== 'string') {
-    return shouldRedactKey(path) ? REDACTED : value;
-  }
-
-  if (shouldRedactKey(path)) {
-    return REDACTED;
+    return value;
   }
 
   let sanitized = value.replace(EMAIL_PATTERN, REDACTED);
@@ -52,6 +49,9 @@ function sanitizeObject(
 
 export function sanitize(value: unknown, path: readonly string[] = []): unknown {
   if (value == null) return value;
+  if (shouldRedactKey(path)) {
+    return REDACTED;
+  }
   if (Array.isArray(value)) {
     return sanitizeArray(value, path);
   }

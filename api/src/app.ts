@@ -87,10 +87,12 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   const writeLimiter = createAppRateLimiter({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
+    skipHealthEndpoints: true,
   });
   const authLimiter = createAppRateLimiter({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
+    skipHealthEndpoints: true,
   });
   app.use(express.json({ limit: config.jsonLimit }));
 
@@ -137,6 +139,7 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   const readLimiter = createAppRateLimiter({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
+    skipHealthEndpoints: true,
   });
   const postsRouter = createPostsRoutes(postsController, {
     rateLimiterRead: readLimiter,
