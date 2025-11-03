@@ -145,7 +145,7 @@ jobs:
       github.event.review.state == 'approved' &&
       github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Set PR status to "Ready for Merge"
+      - name: Set PR status to "In review"
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
@@ -190,16 +190,16 @@ jobs:
             const result = await github.graphql(query);
             const project = result.organization.projectV2;
 
-            // Find status field and Ready for Merge option
+            // Find status field and In review option
             const statusField = project.fields.nodes.find(f => f.name === 'Status');
             if (!statusField) {
               console.log('Status field not found in project');
               return;
             }
 
-            const readyOption = statusField.options.find(o => o.name === 'Ready for Merge');
-            if (!readyOption) {
-              console.log('Ready for Merge option not found');
+            const inReviewOption = statusField.options.find(o => o.name === 'In review');
+            if (!inReviewOption) {
+              console.log('In review option not found');
               return;
             }
 
@@ -213,14 +213,14 @@ jobs:
               return;
             }
 
-            // Update status to Ready for Merge
+            // Update status to In review
             const updateQuery = `
               mutation {
                 updateProjectV2ItemFieldValue(input: {
                   projectId: "${project.id}"
                   itemId: "${prItem.id}"
                   fieldId: "${statusField.id}"
-                  value: {singleSelectOptionId: "${readyOption.id}"}
+                  value: {singleSelectOptionId: "${inReviewOption.id}"}
                 }) {
                   projectV2Item {
                     id
@@ -230,7 +230,7 @@ jobs:
             `;
 
             const updateResult = await github.graphql(updateQuery);
-            console.log(`Updated PR #${prNumber} status to "Ready for Merge"`);
+            console.log(`Updated PR #${prNumber} status to "In review"`);
 
   update-status-pr-merged:
     name: Update status (PR Merged)
@@ -337,7 +337,7 @@ jobs:
       github.event_name == 'issues' &&
       github.event.action == 'opened'
     steps:
-      - name: Set issue status to "Backlog"
+      - name: Set issue status to "Todo"
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
@@ -382,16 +382,16 @@ jobs:
             const result = await github.graphql(query);
             const project = result.organization.projectV2;
 
-            // Find status field and Backlog option
+            // Find status field and Todo option
             const statusField = project.fields.nodes.find(f => f.name === 'Status');
             if (!statusField) {
               console.log('Status field not found in project');
               return;
             }
 
-            const backlogOption = statusField.options.find(o => o.name === 'Backlog');
-            if (!backlogOption) {
-              console.log('Backlog option not found');
+            const todoOption = statusField.options.find(o => o.name === 'Todo');
+            if (!todoOption) {
+              console.log('Todo option not found');
               return;
             }
 
@@ -405,14 +405,14 @@ jobs:
               return;
             }
 
-            // Update status to Backlog
+            // Update status to Todo
             const updateQuery = `
               mutation {
                 updateProjectV2ItemFieldValue(input: {
                   projectId: "${project.id}"
                   itemId: "${issueItem.id}"
                   fieldId: "${statusField.id}"
-                  value: {singleSelectOptionId: "${backlogOption.id}"}
+                  value: {singleSelectOptionId: "${todoOption.id}"}
                 }) {
                   projectV2Item {
                     id
@@ -422,7 +422,7 @@ jobs:
             `;
 
             const updateResult = await github.graphql(updateQuery);
-            console.log(`Updated issue #${issueNumber} status to "Backlog"`);
+            console.log(`Updated issue #${issueNumber} status to "Todo"`);
 
   update-status-issue-closed:
     name: Update status (Issue Closed)
