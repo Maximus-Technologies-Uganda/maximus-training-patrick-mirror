@@ -58,7 +58,7 @@ function readRateLimitDefaults(
 function collectRateLimit(req: Request, res: Response): LogFields['rateLimit'] | undefined {
   const defaults = readRateLimitDefaults(req);
   const limit = parseHeaderNumber(res.getHeader('ratelimit-limit')) ?? defaults?.limit;
-  const remaining = parseHeaderNumber(res.getHeader('ratelimit-remaining')) ?? defaults?.limit;
+  const remaining = parseHeaderNumber(res.getHeader('ratelimit-remaining'));
   const reset = parseHeaderNumber(res.getHeader('ratelimit-reset')) ?? defaults?.windowSeconds;
   const retryAfter = parseHeaderNumber(res.getHeader('retry-after')) ?? defaults?.windowSeconds;
   const snapshot: LogFields['rateLimit'] = { limit, remaining, reset, retryAfter };
