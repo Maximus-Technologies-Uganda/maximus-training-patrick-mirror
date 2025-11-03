@@ -55,7 +55,12 @@ function normalizeDependencyStatus(value: unknown): DependencyStatus {
   if (!normalized) {
     return 'down';
   }
-  if (normalized === 'ok' || normalized === 'healthy' || normalized === 'up' || normalized === 'pass') {
+  if (
+    normalized === 'ok' ||
+    normalized === 'healthy' ||
+    normalized === 'up' ||
+    normalized === 'pass'
+  ) {
     return 'ok';
   }
   if (
@@ -170,11 +175,7 @@ async function invokeChecker(
     return coerceCheckResult(name, result);
   } catch (error) {
     const detail =
-      error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-          ? error
-          : 'unknown error';
+      error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown error';
     return { status: 'down', detail };
   }
 }
@@ -236,7 +237,8 @@ function resolveDependencyConfiguration(
       ? (legacyChecks as Record<string, DependencyChecker>).database
       : undefined);
 
-  const databaseChecker = routerOptions?.checkDatabase ?? legacyDatabaseChecker;
+  const databaseChecker =
+    routerOptions?.checkDatabase ?? options?.checkDatabase ?? legacyDatabaseChecker;
   if (databaseChecker) {
     checks.db = databaseChecker;
   } else if (!checks.db) {
@@ -327,6 +329,14 @@ export function createHealthRouter(
     }
     const requestId = (req as unknown as { requestId?: string }).requestId;
     const traceId = (req as unknown as { traceId?: string }).traceId;
+    const rawRequestIdHeader = req.headers['x-request-id'];
+    const rawTraceparentHeader = req.headers['traceparent'];
+    const rawTraceIdHeader = req.headers['x-trace-id'];
+    const hasExternalRequestId =
+      typeof rawRequestIdHeader === 'string' && rawRequestIdHeader.trim().length > 0;
+    const hasExternalTraceContext =
+      (typeof rawTraceparentHeader === 'string' && rawTraceparentHeader.trim().length > 0) ||
+      (typeof rawTraceIdHeader === 'string' && rawTraceIdHeader.trim().length > 0);
 
     const payload: Record<string, unknown> = {
       service: mergedOptions.serviceName,
@@ -336,10 +346,10 @@ export function createHealthRouter(
       uptime_s: Math.max(0, Math.round(uptimeSeconds)),
       dependencies,
     };
-    if (requestId) {
+    if (requestId && hasExternalRequestId) {
       payload.requestId = requestId;
     }
-    if (traceId) {
+    if (traceId && hasExternalTraceContext) {
       payload.traceId = traceId;
     }
 
