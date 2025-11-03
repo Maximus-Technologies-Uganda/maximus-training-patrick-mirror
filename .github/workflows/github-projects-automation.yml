@@ -32,7 +32,7 @@ jobs:
       - name: Add all PRs and issues to Training project
         uses: actions/add-to-project@v0.5.0
         with:
-          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/Training
+          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/6
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================================================
