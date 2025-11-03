@@ -1,113 +1,118 @@
 // Use CommonJS-compatible require to avoid TS type resolution issues in some setups
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const express = require("express");
-import { createHmac } from "node:crypto";
-import { getSessionSecret } from "../../config";
-import { defaultLogger } from "../../logging/observability";
+ 
+const express = require('express');
+import { createHmac } from 'node:crypto';
+import { getSessionSecret } from '../../config';
+import { defaultLogger } from '../../logging/observability';
 
 const router = express.Router();
 
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = process.env.NODE_ENV === 'production';
 
 function base64url(input: Buffer | string) {
   return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
 }
 
 function base64urlToBuffer(input: string): Buffer {
-  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+  const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
   const paddingLength = (4 - (normalized.length % 4)) % 4;
-  const padded = normalized + "=".repeat(paddingLength);
-  return Buffer.from(padded, "base64");
+  const padded = normalized + '='.repeat(paddingLength);
+  return Buffer.from(padded, 'base64');
 }
 
 function signJwt(payload: object, secret: string, expiresInSec: number): string {
-  const header = { alg: "HS256", typ: "JWT" };
+  const header = { alg: 'HS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
   const body = { iat: now, exp: now + expiresInSec, ...payload } as Record<string, unknown>;
   const encHeader = base64url(JSON.stringify(header));
   const encPayload = base64url(JSON.stringify(body));
   const data = `${encHeader}.${encPayload}`;
-  const signature = createHmac("sha256", secret).update(data).digest();
+  const signature = createHmac('sha256', secret).update(data).digest();
   return `${data}.${base64url(signature)}`;
 }
 
-router.post("/login", (req, res) => {
+router.post('/login', (req, res) => {
   const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
   const isValid =
-    (username === "admin" && password === "password") ||
-    (username === "alice" && password === "correct-password");
+    (username === 'admin' && password === 'password') ||
+    (username === 'alice' && password === 'correct-password');
   if (!isValid) {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
-      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    defaultLogger.warn("invalid credentials", { requestId });
+      ((req.get('X-Request-Id') || req.headers['x-request-id']) as string | undefined);
+    defaultLogger.warn('invalid credentials', { requestId });
     return res.status(401).send();
   }
 
   const secret = getSessionSecret();
-  const userId = username === "admin" ? "admin-1" : "user-alice-1";
+  const userId = username === 'admin' ? 'admin-1' : 'user-alice-1';
   const token = signJwt({ userId }, secret, 24 * 60 * 60);
 
-  res.cookie("session", token, {
+  res.cookie('session', token, {
     httpOnly: true,
     secure: isProduction,
     // Use a conservative same-site policy to reduce CSRF risk. If cross-site
     // API access is required in the future, add CSRF protection (e.g. Origin
     // checks and a double-submit token) before changing this value.
-    sameSite: "lax",
+    sameSite: 'strict',
     maxAge: 24 * 60 * 60 * 1000,
   });
   const requestId =
     (req as unknown as { requestId?: string }).requestId ||
-    ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-  defaultLogger.info("user authenticated", { requestId, userId });
+    ((req.get('X-Request-Id') || req.headers['x-request-id']) as string | undefined);
+  defaultLogger.info('user authenticated', { requestId, userId });
   return res.status(204).send();
 });
 
-router.post("/logout", (req, res) => {
+router.post('/logout', (req, res) => {
   // Idempotent: always clear the session cookie and return 204
-  res.cookie("session", "", {
+  res.cookie('session', '', {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "lax",
+    sameSite: 'strict',
     maxAge: 0,
   });
   const requestId =
     (req as unknown as { requestId?: string }).requestId ||
-    ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
+    ((req.get('X-Request-Id') || req.headers['x-request-id']) as string | undefined);
   try {
     const secret = getSessionSecret();
     const cookieSource = req as unknown as { cookies?: { session?: string } };
-    const raw = cookieSource.cookies?.session || (req.headers.cookie?.match(/(?:^|;)\s*session=([^;]+)/)?.[1] ?? "");
+    const raw =
+      cookieSource.cookies?.session ||
+      (req.headers.cookie?.match(/(?:^|;)\s*session=([^;]+)/)?.[1] ?? '');
     if (raw) {
       // verify signature minimally to extract userId when valid
-      const [h, p, sig] = raw.split(".");
+      const [h, p, sig] = raw.split('.');
       if (h && p && sig) {
         const data = `${h}.${p}`;
-        const expect = createHmac("sha256", secret).update(data).digest("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+        const expect = createHmac('sha256', secret)
+          .update(data)
+          .digest('base64')
+          .replace(/=/g, '')
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_');
         if (sig === expect) {
-          const payload = JSON.parse(base64urlToBuffer(p).toString("utf8"));
-          const userId = typeof payload.userId === "string" ? payload.userId : undefined;
-          defaultLogger.info("user logged out", { requestId, ...(userId ? { userId } : {}) });
+          const payload = JSON.parse(base64urlToBuffer(p).toString('utf8'));
+          const userId = typeof payload.userId === 'string' ? payload.userId : undefined;
+          defaultLogger.info('user logged out', { requestId, ...(userId ? { userId } : {}) });
         } else {
-          defaultLogger.info("user logged out", { requestId });
+          defaultLogger.info('user logged out', { requestId });
         }
       } else {
-        defaultLogger.info("user logged out", { requestId });
+        defaultLogger.info('user logged out', { requestId });
       }
     } else {
-      defaultLogger.info("user logged out", { requestId });
+      defaultLogger.info('user logged out', { requestId });
     }
   } catch {
-    defaultLogger.info("user logged out", { requestId });
+    defaultLogger.info('user logged out', { requestId });
   }
   return res.status(204).send();
 });
 
 export default router;
-
-

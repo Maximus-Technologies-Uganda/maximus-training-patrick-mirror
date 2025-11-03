@@ -9,8 +9,9 @@ import {
 describe('GET /health', () => {
   function buildApp(options: HealthRouterOptions = {}) {
     const app = express();
-    app.use((_, res, next) => {
-      (res.locals as { requestId?: string }).requestId = 'test-request';
+    app.use((req, _, next) => {
+      (req as any).requestId = 'test-request';
+      (req as any).traceId = 'test-trace-id';
       next();
     });
     app.use(createHealthRouter(undefined, options));

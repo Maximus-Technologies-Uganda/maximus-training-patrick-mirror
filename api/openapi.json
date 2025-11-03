@@ -177,11 +177,7 @@
     "schemas": {
       "ErrorEnvelope": {
         "type": "object",
-        "required": [
-          "code",
-          "message",
-          "requestId"
-        ],
+        "required": ["code", "message", "requestId"],
         "properties": {
           "code": {
             "type": "string",
@@ -223,12 +219,7 @@
       },
       "ValidationErrorEnvelope": {
         "type": "object",
-        "required": [
-          "code",
-          "message",
-          "requestId",
-          "details"
-        ],
+        "required": ["code", "message", "requestId", "details"],
         "properties": {
           "code": {
             "type": "string"
@@ -257,18 +248,11 @@
       },
       "HealthDependencyStatus": {
         "type": "string",
-        "enum": [
-          "ok",
-          "degraded",
-          "down"
-        ]
+        "enum": ["ok", "degraded", "down"]
       },
       "HealthDependencies": {
         "type": "object",
-        "required": [
-          "firebase",
-          "db"
-        ],
+        "required": ["firebase", "db"],
         "additionalProperties": {
           "type": "string"
         },
@@ -289,14 +273,7 @@
       },
       "HealthResponse": {
         "type": "object",
-        "required": [
-          "service",
-          "status",
-          "commit",
-          "time",
-          "uptime_s",
-          "dependencies"
-        ],
+        "required": ["service", "status", "commit", "time", "uptime_s", "dependencies"],
         "additionalProperties": false,
         "properties": {
           "service": {
@@ -304,11 +281,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "ok",
-              "degraded",
-              "error"
-            ]
+            "enum": ["ok", "degraded", "error"]
           },
           "commit": {
             "type": "string",
@@ -334,9 +307,7 @@
     "/posts": {
       "get": {
         "operationId": "listPosts",
-        "tags": [
-          "Posts"
-        ],
+        "tags": ["Posts"],
         "summary": "List posts (public)",
         "description": "Retrieve all posts. No authentication required.",
         "responses": {
@@ -348,13 +319,7 @@
                   "type": "array",
                   "items": {
                     "type": "object",
-                    "required": [
-                      "id",
-                      "title",
-                      "content",
-                      "authorId",
-                      "createdAt"
-                    ],
+                    "required": ["id", "title", "content", "authorId", "createdAt"],
                     "properties": {
                       "id": {
                         "type": "string"
@@ -382,9 +347,7 @@
       },
       "post": {
         "operationId": "createPost",
-        "tags": [
-          "Posts"
-        ],
+        "tags": ["Posts"],
         "summary": "Create a post",
         "description": "Create a new post. Requires valid authentication.",
         "security": [
@@ -398,10 +361,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "title",
-                  "content"
-                ],
+                "required": ["title", "content"],
                 "properties": {
                   "title": {
                     "type": "string",
@@ -425,13 +385,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "id",
-                    "title",
-                    "content",
-                    "authorId",
-                    "createdAt"
-                  ],
+                  "required": ["id", "title", "content", "authorId", "createdAt"],
                   "properties": {
                     "id": {
                       "type": "string"
@@ -478,9 +432,7 @@
     "/posts/{id}": {
       "get": {
         "operationId": "getPost",
-        "tags": [
-          "Posts"
-        ],
+        "tags": ["Posts"],
         "summary": "Get post (public)",
         "description": "Retrieve a specific post by ID. No authentication required.",
         "parameters": [
@@ -501,13 +453,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "id",
-                    "title",
-                    "content",
-                    "authorId",
-                    "createdAt"
-                  ],
+                  "required": ["id", "title", "content", "authorId", "createdAt"],
                   "properties": {
                     "id": {
                       "type": "string"
@@ -537,9 +483,7 @@
       },
       "put": {
         "operationId": "updatePost",
-        "tags": [
-          "Posts"
-        ],
+        "tags": ["Posts"],
         "summary": "Update a post",
         "description": "Update an existing post. Only the author or admin can update.",
         "security": [
@@ -564,10 +508,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "title",
-                  "content"
-                ],
+                "required": ["title", "content"],
                 "properties": {
                   "title": {
                     "type": "string",
@@ -591,13 +532,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "id",
-                    "title",
-                    "content",
-                    "authorId",
-                    "createdAt"
-                  ],
+                  "required": ["id", "title", "content", "authorId", "createdAt"],
                   "properties": {
                     "id": {
                       "type": "string"
@@ -645,9 +580,7 @@
       },
       "delete": {
         "operationId": "deletePost",
-        "tags": [
-          "Posts"
-        ],
+        "tags": ["Posts"],
         "summary": "Delete a post",
         "description": "Delete an existing post. Only the author or admin can delete.",
         "security": [
@@ -694,9 +627,7 @@
     "/health": {
       "get": {
         "operationId": "getHealth",
-        "tags": [
-          "Health"
-        ],
+        "tags": ["Health"],
         "summary": "Service health probe",
         "description": "Check the health and status of the API service and its dependencies. Returns service status, commit SHA, and dependency status.",
         "responses": {
@@ -713,6 +644,8 @@
                   "commit": "abc1234",
                   "time": "2025-10-29T12:00:00.000Z",
                   "uptime_s": 42,
+                  "requestId": "req-12345",
+                  "traceId": "trace-67890",
                   "dependencies": {
                     "firebase": "ok",
                     "db": "ok"

@@ -1,28 +1,29 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
 // import morgan from "morgan";
-import { requestId as requestIdMiddleware } from "./middleware/requestId";
-import { requestLogger } from "./middleware/logger";
-import authRouter from "./core/auth/auth.routes";
-import { errorHandler } from "./middleware/errorHandler";
-import { createPostsRoutes } from "./core/posts/posts.routes";
-import { createPostsController } from "./core/posts/posts.controller";
-import { PostsService } from "./services/PostsService";
-import type { IPostsRepository } from "./repositories/posts.repository";
-import type { AppConfig } from "./config";
-import { requireJsonContentType, requireJsonAccept } from "./middleware/contentType";
-import { stripIdentityFields } from "./middleware/stripIdentity";
-import { corsHeaders, corsPreflight } from "./middleware/cors";
-import { securityHeaders } from "./middleware/securityHeaders";
-import { assertCorsProdInvariants } from "./config/cors";
-import { verifyFirebaseIdToken } from "./middleware/firebaseAuth";
-import { readOnlyGuard } from "./middleware/readOnly";
-import { jsonBodyLimitHandler } from "./middleware/bodyLimit";
+import { requestId as requestIdMiddleware } from './middleware/requestId';
+import { requestLogger } from './middleware/logger';
+import authRouter from './core/auth/auth.routes';
+import { errorHandler } from './middleware/errorHandler';
+import { createPostsRoutes } from './core/posts/posts.routes';
+import { createPostsController } from './core/posts/posts.controller';
+import { PostsService } from './services/PostsService';
+import type { IPostsRepository } from './repositories/posts.repository';
+import type { AppConfig } from './config';
+import { requireJsonContentType, requireJsonAccept } from './middleware/contentType';
+import { stripIdentityFields } from './middleware/stripIdentity';
+import { corsHeaders, corsPreflight } from './middleware/cors';
+import { securityHeaders } from './middleware/securityHeaders';
+import { assertCorsProdInvariants } from './config/cors';
+import { verifyFirebaseIdToken } from './middleware/firebaseAuth';
+import { readOnlyGuard } from './middleware/readOnly';
+import { jsonBodyLimitHandler } from './middleware/bodyLimit';
 
-import { createRateLimiter as createAppRateLimiter } from "./middleware/rateLimit";
-import path from "path";
-import { createHealthRouter } from "./routes/health";
+import { createRateLimiter as createAppRateLimiter } from './middleware/rateLimit';
+import path from 'path';
+import { createHealthRouter } from './routes/health';
+import { createSessionAuthenticationMiddleware } from './middleware/authenticate';
 
 /**
  * Handle CORS preflight OPTIONS requests
@@ -31,7 +32,7 @@ import { createHealthRouter } from "./routes/health";
 function handleCorsPreflightRequest(config: AppConfig) {
   const preflightHandler = corsPreflight(config);
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.method === "OPTIONS") {
+    if (req.method === 'OPTIONS') {
       return preflightHandler(req, res, next);
     }
     next();
@@ -47,15 +48,17 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   // cross-instance bucket collisions during tests/CI where multiple app instances
   // may be created in the same Node process.
   try {
-    (app.locals as unknown as { rateLimitSalt?: string }).rateLimitSalt = `${Date.now().toString(36)}-${Math.random()
-      .toString(36)
-      .slice(2)}`;
+    (app.locals as unknown as { rateLimitSalt?: string }).rateLimitSalt =
+      `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
   } catch {
     // ignore if locals not writable
   }
 
   // Generate request identifiers before any middleware can short-circuit the pipeline
   app.use(requestIdMiddleware);
+
+  // Session authentication with rotation
+  app.use(createSessionAuthenticationMiddleware());
 
   // Core Middleware (order matters)
   app.use(helmet());
@@ -70,15 +73,15 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   app.use(corsHeaders(config));
 
   // Fallback CORS for compatibility
-  const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:3000")
-    .split(",")
+  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+    .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
   app.use(
     cors({
       origin: allowedOrigins,
       credentials: true,
-    })
+    }),
   );
 
   const writeLimiter = createAppRateLimiter({
@@ -106,30 +109,48 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   app.use(requestLogger);
 
   // Root - simple status JSON
-  app.get("/", (_req, res) => {
-    res.status(200).json({ status: "ok" });
+  app.get('/', (_req, res) => {
+    res.status(200).json({ status: 'ok' });
   });
 
-  app.use(createHealthRouter({ serviceName: "api" }));
+  app.use(
+    createHealthRouter({
+      serviceName: 'api',
+      checkDatabase: async () => {
+        try {
+          await repository.count();
+          return { status: 'ok' };
+        } catch (error) {
+          return {
+            status: 'down',
+            detail: error instanceof Error ? error.message : 'database check failed',
+          };
+        }
+      },
+    }),
+  );
 
   // Feature Routes
-  app.use("/auth", authLimiter, authRouter);
+  app.use('/auth', authLimiter, authRouter);
   const postsService = new PostsService(repository);
   const postsController = createPostsController(postsService);
   const readLimiter = createAppRateLimiter({
     windowMs: config.rateLimitWindowMs,
     max: config.rateLimitMax,
   });
-  const postsRouter = createPostsRoutes(postsController, { rateLimiterRead: readLimiter, rateLimiterWrite: writeLimiter });
+  const postsRouter = createPostsRoutes(postsController, {
+    rateLimiterRead: readLimiter,
+    rateLimiterWrite: writeLimiter,
+  });
   // For write operations on /posts, prefer Firebase bearer if provided; otherwise fallback to cookie session
   // Apply the rate limiter after authentication so per-user keys are honoured when available.
-  app.use("/posts", verifyFirebaseIdToken, postsRouter);
+  app.use('/posts', verifyFirebaseIdToken, postsRouter);
 
   // In development, expose OpenAPI JSON for tests
-  app.get("/openapi.json", (_req, res) => {
-    const specPath = path.join(__dirname, "..", "openapi.json");
-    res.set("Cache-Control", "no-store");
-    res.type("application/json");
+  app.get('/openapi.json', (_req, res) => {
+    const specPath = path.join(__dirname, '..', 'openapi.json');
+    res.set('Cache-Control', 'no-store');
+    res.type('application/json');
     res.sendFile(specPath);
   });
 
@@ -140,11 +161,10 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
 }
 
 // Backwards-compatible default export for environments that import an app instance
-import { loadConfigFromEnv } from "./config";
-import { InMemoryPostsRepository } from "./repositories/posts.repository";
+import { loadConfigFromEnv } from './config';
+import { InMemoryPostsRepository } from './repositories/posts.repository';
 const defaultConfig = loadConfigFromEnv();
 const defaultRepository = new InMemoryPostsRepository() as unknown as IPostsRepository;
 const app = createApp(defaultConfig, defaultRepository);
 export { app };
 export default app;
-
