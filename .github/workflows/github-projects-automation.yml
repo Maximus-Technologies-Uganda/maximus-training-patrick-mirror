@@ -32,7 +32,7 @@ jobs:
       - name: Add all PRs and issues to Training project
         uses: actions/add-to-project@v0.5.0
         with:
-          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/1
+          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/6
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================================================
@@ -50,7 +50,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
           status_value: 'In Progress'
 
@@ -66,7 +66,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
           status_value: 'Ready for Merge'
 
@@ -82,7 +82,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
           status_value: 'Done'
 
@@ -101,7 +101,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.issue.node_id }}
           status_value: 'Backlog'
 
@@ -117,7 +117,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.issue.node_id }}
           status_value: 'Done'
 
