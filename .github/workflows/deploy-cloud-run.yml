@@ -90,7 +90,7 @@ jobs:
         run: |
           set -euo pipefail
           SA="${{ env.SERVICE_ACCOUNT }}"
-          SA_EMAIL="${SA##*@}"
+          SA_EMAIL="${SA}"
           PROJECT="${{ env.PROJECT_ID }}"
 
           BUILD_OUTPUT=$(gcloud builds submit \

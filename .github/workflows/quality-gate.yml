@@ -1003,7 +1003,7 @@ jobs:
         run: spectral lint specs/007-spec/week-7.5-finishers/contracts/openapi.yaml --ruleset specs/007-spec/week-7.5-finishers/contracts/.spectral.yaml --fail-severity=error
       - name: Lint Week-8 (identity platform) OpenAPI with Spectral
         if: ${{ steps.detect_contract_specs.outputs.has_week8 == 'true' }}
-        run: spectral lint specs/008-identity-platform/contracts/openapi.yaml --ruleset .spectral.yaml --fail-severity=error
+        run: spectral lint specs/008-identity-platform/contracts/openapi.yaml --ruleset ../../../.spectral.yaml --fail-severity=error
       - name: Lint live API contract if present
         if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: |
