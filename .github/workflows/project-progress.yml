@@ -1,0 +1,156 @@
+name: Project Progress Tracking
+
+on:
+  schedule:
+    # Run daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      update_type:
+        description: 'Type of update'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - summary
+
+jobs:
+  track-progress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Parse task progress
+        id: parse-tasks
+        run: |
+          # Parse all task files and generate progress report
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+
+          const specsDir = 'specs';
+          const results = {
+            total: 0,
+            completed: 0,
+            inProgress: 0,
+            phases: {}
+          };
+
+          function parseFile(filePath) {
+            if (!fs.existsSync(filePath)) return;
+            const content = fs.readFileSync(filePath, 'utf8');
+            const lines = content.split('\n');
+            let currentPhase = '';
+
+            for (const line of lines) {
+              const phaseMatch = line.match(/^## Phase \d+ — (.+)$/);
+              if (phaseMatch) {
+                currentPhase = phaseMatch[1].toLowerCase().replace(/[^a-z0-9]/g, '-');
+                if (!results.phases[currentPhase]) {
+                  results.phases[currentPhase] = { total: 0, completed: 0, inProgress: 0 };
+                }
+                continue;
+              }
+
+              const taskMatch = line.match(/^- \[([ Xx])\] (.+)$/);
+              if (taskMatch && currentPhase) {
+                const [, status] = taskMatch;
+                results.total++;
+                results.phases[currentPhase].total++;
+
+                if (status === 'X' || status === 'x') {
+                  results.completed++;
+                  results.phases[currentPhase].completed++;
+                } else if (line.includes('[P]') || line.includes('in progress')) {
+                  results.inProgress++;
+                  results.phases[currentPhase].inProgress++;
+                }
+              }
+            }
+          }
+
+          // Parse main task files
+          parseFile('specs/008-identity-platform/tasks.md');
+          parseFile('specs/007-spec/week-7.5-finishers/tasks.md');
+
+          // Output results
+          console.log('::set-output name=total::' + results.total);
+          console.log('::set-output name=completed::' + results.completed);
+          console.log('::set-output name=in-progress::' + results.inProgress);
+          console.log('::set-output name=progress-json::' + JSON.stringify(results));
+          "
+
+      - name: Generate progress summary
+        run: |
+          TOTAL="${{ steps.parse-tasks.outputs.total }}"
+          COMPLETED="${{ steps.parse-tasks.outputs.completed }}"
+          IN_PROGRESS="${{ steps.parse-tasks.outputs.in-progress }}"
+          PROGRESS_JSON="${{ steps.parse-tasks.outputs.progress-json }}"
+
+          # Calculate percentage
+          if [ "$TOTAL" -gt 0 ]; then
+            PERCENTAGE=$(( COMPLETED * 100 / TOTAL ))
+          else
+            PERCENTAGE=0
+          fi
+
+          # Generate summary
+          SUMMARY="## 📊 Training Project Progress
+
+          **Overall Progress:** $COMPLETED/$TOTAL tasks completed ($PERCENTAGE%)
+
+          ### Phase Breakdown
+          "
+
+          # Parse phases from JSON
+          echo "$PROGRESS_JSON" | jq -r '.phases | to_entries[] | "- **\(.key):** \(.value.completed)/\(.value.total) completed"' >> summary.md
+
+          # Create job summary
+          {
+            echo "## 🚀 Training Repository Progress"
+            echo ""
+            echo "| Metric | Count | Percentage |"
+            echo "|--------|-------|------------|"
+            echo "| **Total Tasks** | $TOTAL | 100% |"
+            echo "| **Completed** | $COMPLETED | $(($TOTAL > 0 ? $COMPLETED * 100 / $TOTAL : 0))% |"
+            echo "| **In Progress** | $IN_PROGRESS | $(($TOTAL > 0 ? $IN_PROGRESS * 100 / $TOTAL : 0))% |"
+            echo "| **Remaining** | $(($TOTAL - $COMPLETED - $IN_PROGRESS)) | $(($TOTAL > 0 ? ($TOTAL - $COMPLETED - $IN_PROGRESS) * 100 / $TOTAL : 0))% |"
+            echo ""
+            echo "### 📈 Progress Chart"
+            echo "\`\`\`"
+            echo "Completed: $(printf '█%.0s' $(seq 1 $(($PERCENTAGE / 5))))$(printf '░%.0s' $(seq 1 $((20 - $PERCENTAGE / 5)))) $PERCENTAGE%"
+            echo "\`\`\`"
+            echo ""
+            echo "### 🎯 Current Focus: Week 8 - Identity Platform"
+            echo "- **Setup Phase:** ✅ Complete"
+            echo "- **Foundational:** 🔄 In Progress"
+            echo "- **US1 (Anonymous Reader):** ⏳ Pending"
+            echo "- **US2 (Owner Management):** 🔄 Partial"
+            echo "- **US3 (Admin Moderation):** ⏳ Pending"
+            echo ""
+            echo "*Progress updated automatically daily*"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update project README
+        if: github.event.schedule
+        run: |
+          # Could update a progress badge or section in README
+          echo "Progress tracking completed. Manual README updates can be done here."
+
+      - name: Notify on milestones
+        if: github.event.schedule
+        run: |
+          COMPLETED="${{ steps.parse-tasks.outputs.completed }}"
+          TOTAL="${{ steps.parse-tasks.outputs.total }}"
+
+          if [ "$TOTAL" -gt 0 ] && [ $(($COMPLETED * 100 / $TOTAL)) -ge 25 ] && [ $(($COMPLETED * 100 / $TOTAL)) -lt 30 ]; then
+            echo "🎉 25% milestone reached!"
+            # Could send notification or create milestone issue
+          fi
