@@ -152,26 +152,50 @@ ${task.status === 'completed' ? '**Status:** ✅ Completed' : '**Status:** 🔄 
   }
 }
 
+function findAllTaskFiles(baseDir) {
+  const taskFiles = [];
+
+  function walkDir(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        // Check if this directory has tasks.md
+        const tasksPath = path.join(fullPath, 'tasks.md');
+        if (fs.existsSync(tasksPath)) {
+          taskFiles.push(tasksPath);
+        }
+
+        // Recursively walk subdirectories
+        walkDir(fullPath);
+      }
+    }
+  }
+
+  walkDir(baseDir);
+  return taskFiles;
+}
+
 function main() {
   console.log('Parsing task files...');
 
   const allTasks = [];
 
-  // Find all tasks.md files
-  const taskFiles = [
-    'specs/009-frontend-foundations/tasks.md',
-    'specs/008-identity-platform/tasks.md',
-    'specs/007-spec/week-7.5-finishers/tasks.md',
-    // Add other task files as needed
-  ];
+  // Auto-discover all tasks.md files in specs directory
+  const taskFiles = findAllTaskFiles(specsDir);
 
-  for (const file of taskFiles) {
-    const filePath = path.join(__dirname, '..', file);
-    if (fs.existsSync(filePath)) {
-      console.log(`Processing ${file}...`);
-      const tasks = parseTasksFromFile(filePath);
-      allTasks.push(...tasks);
-    }
+  if (taskFiles.length === 0) {
+    console.warn('No tasks.md files found in specs directory');
+    return;
+  }
+
+  for (const filePath of taskFiles) {
+    const relativePath = path.relative(path.join(__dirname, '..'), filePath);
+    console.log(`Processing ${relativePath}...`);
+    const tasks = parseTasksFromFile(filePath);
+    allTasks.push(...tasks);
   }
 
   console.log(`Found ${allTasks.length} tasks`);
