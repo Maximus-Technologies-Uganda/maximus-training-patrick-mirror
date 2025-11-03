@@ -50,7 +50,7 @@ function run(argv = process.argv) {
     let quotes = [];
     try {
       if (!fs.existsSync(quotesPath)) {
-        argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
+        return argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
       }
       const raw = fs.readFileSync(quotesPath, 'utf8').trim();
       const loaded = raw ? JSON.parse(raw) : [];
@@ -58,25 +58,25 @@ function run(argv = process.argv) {
         ? loaded.filter(q => q && typeof q.text === 'string' && q.text.trim() && typeof q.author === 'string' && q.author.trim())
         : [];
       if (quotes.length === 0) {
-        argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
+        return argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
       }
     } catch (e) {
-      argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
+      return argsHelper.exitWithError('Error: No quotes available. Ensure quotes.json exists beside index.js.');
     }
 
     let pool = quotes;
     if (args.by) {
       pool = filterQuotesByAuthor(quotes, args.by);
       if (pool.length === 0) {
-        argsHelper.exitWithError(`Error: No quotes found for author "${args.by}".`);
+        return argsHelper.exitWithError(`Error: No quotes found for author "${args.by}".`);
       }
     }
 
     const choice = selectRandom(pool);
     console.log(`${choice.text} - ${choice.author}`);
-    argsHelper.exitWithSuccess();
+    return argsHelper.exitWithSuccess();
   } catch (err) {
-    argsHelper.exitWithError(`Unexpected error: ${err && err.message ? err.message : String(err)}`);
+    return argsHelper.exitWithError(`Unexpected error: ${err && err.message ? err.message : String(err)}`);
   }
 }
 

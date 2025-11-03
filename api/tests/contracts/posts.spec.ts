@@ -14,7 +14,7 @@ interface RequestWithUser extends Request {
   user?: RequestUser;
 }
 
-// Mock the firebaseAuth middleware to control req.user.userId
+// Mock the Firebase auth middleware to control req.user.userId
 jest.mock('../../src/middleware/firebaseAuth', () => ({
   verifyFirebaseIdToken: jest.fn((req: RequestWithUser, res, next) => {
     const authz = req.get('Authorization');
@@ -28,8 +28,25 @@ jest.mock('../../src/middleware/firebaseAuth', () => ({
         req.user = { userId: 'admin-user-id' };
       }
     }
+    // Allow requests without user to proceed (for public routes and fallback auth)
     next();
   }),
+  default: jest.fn(),
+}));
+
+// Mock identity validation middleware (no-op for tests)
+jest.mock('../../src/middleware/identityValidation', () => ({
+  validateIdentityHeaders: jest.fn((req, res, next) => next()),
+}));
+
+// Mock CSRF middleware (no-op for tests)
+jest.mock('../../src/middleware/csrf', () => ({
+  requireCsrf: jest.fn((req, res, next) => next()),
+}));
+
+// Mock admin revocation middleware (no-op for tests)
+jest.mock('../../src/middleware/auth', () => ({
+  enforceAdminRevocation: jest.fn((req, res, next) => next()),
 }));
 
 describe('Posts API Contract Tests', () => {

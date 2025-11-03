@@ -1,22 +1,23 @@
-import type { RequestHandler } from "express";
-import { randomUUID, randomBytes } from "node:crypto";
+import type { RequestHandler } from 'express';
+import { randomUUID, randomBytes } from 'node:crypto';
 
-const TRACEPARENT_REGEX = /^(?<version>[0-9a-f]{2})-(?<traceId>[0-9a-f]{32})-(?<spanId>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$/i;
-const TRACE_FLAGS = "01";
+const TRACEPARENT_REGEX =
+  /^(?<version>[0-9a-f]{2})-(?<traceId>[0-9a-f]{32})-(?<spanId>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$/i;
+const TRACE_FLAGS = '01';
 
 function generateTraceId(): string {
-  let traceId = "";
+  let traceId = '';
   do {
-    traceId = randomBytes(16).toString("hex");
-  } while (traceId === "00000000000000000000000000000000");
+    traceId = randomBytes(16).toString('hex');
+  } while (traceId === '00000000000000000000000000000000');
   return traceId;
 }
 
 function generateSpanId(): string {
-  let spanId = "";
+  let spanId = '';
   do {
-    spanId = randomBytes(8).toString("hex");
-  } while (spanId === "0000000000000000");
+    spanId = randomBytes(8).toString('hex');
+  } while (spanId === '0000000000000000');
   return spanId;
 }
 
@@ -38,7 +39,7 @@ function parseTraceparent(value: string | undefined): {
     return generateTraceIdentifiers();
   }
   const { traceId, spanId, version, flags } = match.groups as Record<string, string>;
-  if (traceId === "00000000000000000000000000000000" || spanId === "0000000000000000") {
+  if (traceId === '00000000000000000000000000000000' || spanId === '0000000000000000') {
     return generateTraceIdentifiers();
   }
   const newSpanId = generateSpanId();
@@ -59,7 +60,7 @@ function normalizeTracestate(value: string | undefined): string | undefined {
 }
 
 // Augment Express Request to include observability metadata.
-declare module "express-serve-static-core" {
+declare module 'express-serve-static-core' {
   interface Request {
     requestId?: string;
     traceId?: string;
@@ -73,32 +74,49 @@ declare module "express-serve-static-core" {
   }
 }
 
-declare module "http" {
+declare module 'http' {
   interface IncomingMessage {
     requestId?: string;
   }
 }
 
 export const requestId: RequestHandler = (req, res, next) => {
-  const incomingId = (req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined;
-  const requestIdValue = typeof incomingId === "string" && incomingId.trim().length > 0 ? incomingId.trim() : randomUUID();
+  const incomingId = (req.get('X-Request-Id') || req.headers['x-request-id']) as string | undefined;
+  const requestIdValue =
+    typeof incomingId === 'string' && incomingId.trim().length > 0
+      ? incomingId.trim()
+      : randomUUID();
   req.requestId = requestIdValue;
-  res.setHeader("X-Request-Id", requestIdValue);
+  res.setHeader('X-Request-Id', requestIdValue);
 
-  const parsedTraceparent = parseTraceparent(
-    req.get("traceparent") ?? (req.headers["traceparent"] as string | undefined),
-  );
-  req.traceId = parsedTraceparent.traceId;
-  req.traceparent = parsedTraceparent.header;
-  if (parsedTraceparent.parentSpanId) {
-    req.parentSpanId = parsedTraceparent.parentSpanId;
+  // Check for explicit x-trace-id header first (for custom trace propagation)
+  const explicitTraceId =
+    req.get('x-trace-id') ?? (req.headers['x-trace-id'] as string | undefined);
+  if (typeof explicitTraceId === 'string' && explicitTraceId.trim().length > 0) {
+    req.traceId = explicitTraceId.trim();
+    // Generate traceparent header for this traceId
+    const spanId = generateSpanId();
+    req.traceparent = `00-${req.traceId}-${spanId}-${TRACE_FLAGS}`;
+    res.setHeader('Traceparent', req.traceparent);
+  } else {
+    // Otherwise parse W3C traceparent
+    const parsedTraceparent = parseTraceparent(
+      req.get('traceparent') ?? (req.headers['traceparent'] as string | undefined),
+    );
+    req.traceId = parsedTraceparent.traceId;
+    req.traceparent = parsedTraceparent.header;
+    if (parsedTraceparent.parentSpanId) {
+      req.parentSpanId = parsedTraceparent.parentSpanId;
+    }
+    res.setHeader('Traceparent', parsedTraceparent.header);
   }
-  res.setHeader("Traceparent", parsedTraceparent.header);
 
-  const incomingTracestate = normalizeTracestate(req.get("tracestate") ?? (req.headers["tracestate"] as string | undefined));
+  const incomingTracestate = normalizeTracestate(
+    req.get('tracestate') ?? (req.headers['tracestate'] as string | undefined),
+  );
   if (incomingTracestate) {
     req.tracestate = incomingTracestate;
-    res.setHeader("Tracestate", incomingTracestate);
+    res.setHeader('Tracestate', incomingTracestate);
   }
 
   next();

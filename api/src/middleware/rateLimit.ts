@@ -5,6 +5,11 @@ import { setCacheControlNoStore } from '../lib/errors';
 export interface RateLimitConfig {
   windowMs: number;
   max: number;
+  /**
+   * When true, health endpoints (/health, /health/*) are exempt from rate limiting.
+   * Default is false to ensure tests exercising /health routes observe limiter behaviour.
+   */
+  skipHealthEndpoints?: boolean;
 }
 
 /**
@@ -152,14 +157,20 @@ export function createRateLimiter(config: RateLimitConfig) {
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) => deriveKey(req),
-    // Skip rate limiting for OPTIONS requests (CORS preflight) - T038
-    // and always exempt health probes so infrastructure monitoring remains reliable.
+    // Skip rate limiting for OPTIONS requests (CORS preflight) - T038.
+    // Health endpoints are only skipped when explicitly requested via config to
+    // keep legacy middleware behaviour predictable in tests.
     skip: (req: Request) => {
       if (req.method === 'OPTIONS') {
         return true;
       }
-      const path = req.originalUrl || req.url || req.path;
-      return typeof path === 'string' && path.startsWith('/health');
+      if (config.skipHealthEndpoints) {
+        const healthPath = req.originalUrl || req.url || req.path;
+        if (typeof healthPath === 'string' && healthPath.startsWith('/health')) {
+          return true;
+        }
+      }
+      return false;
     },
     handler: (req: Request, res: Response) => {
       const retryAfterSeconds = Math.max(1, Math.ceil(config.windowMs / 1000));

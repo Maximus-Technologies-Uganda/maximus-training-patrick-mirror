@@ -1,10 +1,10 @@
 [
   {
     "id": 1,
-    "text": "One",
+    "text": "Low priority task",
     "due": null,
-    "priority": "medium",
-    "createdAt": "2025-10-29T10:04:16.293Z",
+    "priority": "low",
+    "createdAt": "2025-11-03T15:41:23.793Z",
     "completed": false
   }
 ]
