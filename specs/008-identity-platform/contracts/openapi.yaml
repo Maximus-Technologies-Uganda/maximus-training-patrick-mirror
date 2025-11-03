@@ -2,8 +2,25 @@ openapi: 3.1.0
 info:
   title: Identity Platform & Posts API
   version: 0.0.0
+  description: |
+    Secure API for managing posts with identity-based access control.
+    Supports public reading, authenticated creation/modification, and admin moderation.
+  contact:
+    name: API Support
+    email: api-support@example.com
+    url: https://github.com/Maximus-Technologies-Uganda/training
 servers:
   - url: http://localhost:3000
+    description: Local development
+  - url: https://api-staging.example.com
+    description: Staging environment
+  - url: https://api-prod.example.com
+    description: Production environment
+tags:
+  - name: Posts
+    description: Post management endpoints (public read, authenticated write/delete)
+  - name: Health
+    description: Service health and diagnostic endpoints
 components:
   securitySchemes:
     BearerAuth:
@@ -12,25 +29,54 @@ components:
       bearerFormat: JWT
   responses:
     Err401:
-      description: Unauthorized
+      description: Unauthorized (invalid or expired token)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: UNAUTHORIZED
+            message: Invalid or expired authentication token
+            requestId: req-12345
     Err403:
-      description: Forbidden
+      description: Forbidden (valid identity but insufficient permissions)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: FORBIDDEN
+            message: You do not have permission to access this resource
+            requestId: req-12345
+    Err404:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: NOT_FOUND
+            message: Resource not found
+            requestId: req-12345
     Err422:
-      description: Unprocessable Entity
+      description: Unprocessable Entity (validation error)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ValidationErrorEnvelope'
+          examples:
+            validationError:
+              value:
+                code: VALIDATION_ERROR
+                message: Request validation failed
+                details:
+                  - path: body.title
+                    issue: required
+                  - path: body.content
+                    issue: too_short
+                requestId: req-12345
     Err429:
-      description: Too Many Requests
+      description: Too Many Requests (rate limit exceeded)
       headers:
         Retry-After:
           schema:
@@ -40,60 +86,147 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: RATE_LIMIT_EXCEEDED
+            message: Too many requests, please retry after delay
+            requestId: req-12345
     Err413:
-      description: Payload Too Large
+      description: Payload Too Large (body exceeds 1MB limit)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: PAYLOAD_TOO_LARGE
+            message: Request payload exceeds 1MB limit
+            requestId: req-12345
     Err503:
       description: Service Unavailable (read-only mode or dependency failure)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+          example:
+            code: SERVICE_UNAVAILABLE
+            message: Service temporarily unavailable
+            requestId: req-12345
   schemas:
     ErrorEnvelope:
       type: object
-      required: [code, message]
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error message
+        requestId:
+          type: string
+          description: Request tracking ID for debugging
+        details:
+          oneOf:
+            - type: object
+              additionalProperties: true
+              description: Optional error-specific details (object)
+            - type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  issue:
+                    type: string
+              description: Validation error details (array)
+    ValidationErrorEnvelope:
+      type: object
+      required: [code, message, requestId, details]
       properties:
         code:
           type: string
         message:
           type: string
+        requestId:
+          type: string
         details:
-          type: object
-          additionalProperties: true
-    ValidationErrorEnvelope:
-      allOf:
-        - $ref: '#/components/schemas/ErrorEnvelope'
-        - type: object
-          properties:
-            details:
-              type: array
-              items:
-                type: object
-                properties:
-                  path: { type: string }
-                  issue: { type: string }
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              issue: { type: string }
 paths:
   /posts:
     get:
       operationId: listPosts
       tags: [Posts]
       summary: List posts (public)
+      description: Retrieve all posts. No authentication required.
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, title, content, authorId, createdAt]
+                  properties:
+                    id:
+                      type: string
+                    title:
+                      type: string
+                    content:
+                      type: string
+                    authorId:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time
     post:
       operationId: createPost
       tags: [Posts]
       summary: Create a post
+      description: Create a new post. Requires valid authentication.
       security:
         - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, title, content, authorId, createdAt]
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+                  content:
+                    type: string
+                  authorId:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
         '422': { $ref: '#/components/responses/Err422' }
@@ -105,19 +238,40 @@ paths:
       operationId: getPost
       tags: [Posts]
       summary: Get post (public)
+      description: Retrieve a specific post by ID. No authentication required.
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
+          description: Post ID
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, title, content, authorId, createdAt]
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+                  content:
+                    type: string
+                  authorId:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+        '404': { $ref: '#/components/responses/Err404' }
     put:
       operationId: updatePost
       tags: [Posts]
       summary: Update a post
+      description: Update an existing post. Only the author or admin can update.
       security:
         - BearerAuth: []
       parameters:
@@ -126,11 +280,46 @@ paths:
           required: true
           schema:
             type: string
+          description: Post ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, title, content, authorId, createdAt]
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+                  content:
+                    type: string
+                  authorId:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
+        '404': { $ref: '#/components/responses/Err404' }
         '422': { $ref: '#/components/responses/Err422' }
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
@@ -139,6 +328,7 @@ paths:
       operationId: deletePost
       tags: [Posts]
       summary: Delete a post
+      description: Delete an existing post. Only the author or admin can delete.
       security:
         - BearerAuth: []
       parameters:
@@ -147,11 +337,13 @@ paths:
           required: true
           schema:
             type: string
+          description: Post ID
       responses:
         '204':
           description: No Content
         '401': { $ref: '#/components/responses/Err401' }
         '403': { $ref: '#/components/responses/Err403' }
+        '404': { $ref: '#/components/responses/Err404' }
         '429': { $ref: '#/components/responses/Err429' }
         '413': { $ref: '#/components/responses/Err413' }
         '503': { $ref: '#/components/responses/Err503' }
@@ -160,6 +352,7 @@ paths:
       operationId: getHealth
       tags: [Health]
       summary: Service health probe
+      description: Check the health and status of the API service and its dependencies. Returns service status, commit SHA, and dependency status.
       responses:
         '200':
           description: OK
@@ -227,7 +420,8 @@ paths:
                 minimum: 1
           content:
             application/json:
-              schema: { $ref: '#/paths/~1health/get/responses/200/content/application~1json/schema' }
+              schema:
+                { $ref: '#/paths/~1health/get/responses/200/content/application~1json/schema' }
               examples:
                 dependencyDown:
                   value:
