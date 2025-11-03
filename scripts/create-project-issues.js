@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * Script to create GitHub issues from the task lists in specs/*/tasks.md files
+ * Script to create GitHub issues from the task lists in specs directory
+ * Reads all tasks.md files and creates GitHub issues for each task
  * Run with: node scripts/create-project-issues.js
  */
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const os = require('os');
+const { spawnSync } = require('child_process');
 
 const specsDir = path.join(__dirname, '..', 'specs');
 
@@ -15,13 +17,17 @@ const specsDir = path.join(__dirname, '..', 'specs');
 const STATUS_MAP = {
   '[X]': 'completed',
   '[x]': 'completed',
-  '[ ]': 'open'
+  '[ ]': 'open',
 };
 
 // Phase mapping from task prefixes
 const PHASE_MAP = {
-  'T001': 'setup', 'T002': 'setup', 'T003': 'setup',
-  'T004': 'foundational', 'T005': 'foundational', 'T006': 'foundational',
+  T001: 'setup',
+  T002: 'setup',
+  T003: 'setup',
+  T004: 'foundational',
+  T005: 'foundational',
+  T006: 'foundational',
   // Add more mappings as needed...
 };
 
@@ -33,27 +39,54 @@ function parseTasksFromFile(filePath) {
   let currentPhase = '';
 
   for (const line of lines) {
-    // Check for phase headers
-    const phaseMatch = line.match(/^## Phase \d+ — (.+)$/);
+    // Check for phase headers (handles both "—" and "-" as separators)
+    const phaseMatch = line.match(/^## Phase \d+[:\s—\-]+(.+)$/);
     if (phaseMatch) {
-      currentPhase = phaseMatch[1].toLowerCase().replace(/[^a-z0-9]/g, '-');
+      currentPhase = phaseMatch[1]
+        .replace(/&/g, 'and') // Replace & with 'and'
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-') // Replace any non-alphanumeric with dash
+        .replace(/^-+|-+$/g, ''); // Trim dashes from start/end
       continue;
     }
 
-    // Check for tasks
-    const taskMatch = line.match(/^- \[([ Xx])\] (.+?) — (.+)$/);
+    // Check for tasks - match both formats:
+    // Format 1: - [ ] T001 Task description
+    // Format 2: - [ ] Task description — Location
+    const taskMatch = line.match(/^- \[([ Xx])\] (.+)$/);
     if (taskMatch) {
-      const [, status, description, location] = taskMatch;
-      const taskId = description.match(/(T\d+)/)?.[1];
+      const [, status, fullDescription] = taskMatch;
+      const taskIdMatch =
+        fullDescription.match(/^(T\d+)\s+(.+)$/) || fullDescription.match(/^(.+?)\s*—\s*(.+)$/);
 
-      tasks.push({
-        id: taskId,
-        description: description.trim(),
-        location: location.trim(),
-        status: STATUS_MAP[status] || 'open',
-        phase: currentPhase,
-        file: path.basename(filePath, '.md')
-      });
+      if (taskIdMatch) {
+        const [, idOrDesc, descOrLocation] = taskIdMatch;
+        let taskId, description, location;
+
+        // Determine if this is format 1 (T001 Task) or format 2 (Task — Location)
+        if (idOrDesc.match(/^T\d+$/)) {
+          // Format 1: T001 Task description
+          taskId = idOrDesc;
+          description = descOrLocation;
+          location = currentPhase || 'unknown';
+        } else {
+          // Format 2: Description — Location
+          taskId = fullDescription.match(/(T\d+)/)?.[1] || '';
+          description = fullDescription;
+          location = descOrLocation;
+        }
+
+        if (taskId) {
+          tasks.push({
+            id: taskId,
+            description: description.trim(),
+            location: location.trim(),
+            status: STATUS_MAP[`[${status}]`] || 'open',
+            phase: currentPhase,
+            file: path.basename(filePath, '.md'),
+          });
+        }
+      }
     }
   }
 
@@ -73,20 +106,49 @@ ${task.status === 'completed' ? '**Status:** ✅ Completed' : '**Status:** 🔄 
 
 *This issue was automatically created from the task list. Please update the task status in the source file when completed.*`;
 
-  const labels = [
-    `phase/${task.phase}`,
-    task.status === 'completed' ? 'status/completed' : 'status/open'
-  ];
+  // Build labels - use status only (phase labels may not exist yet)
+  const labels = [task.status === 'completed' ? 'status/completed' : 'status/open'];
 
-  // Use GitHub CLI to create the issue
-  const command = `gh issue create --title "${title.replace(/"/g, '\\"')}" --body "${body.replace(/"/g, '\\"')}" --label "${labels.join(',')}"`;
+  // Write body to temporary file to avoid shell escaping issues
+  const tempFile = path.join(
+    os.tmpdir(),
+    `issue-body-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.txt`,
+  );
 
   try {
+    fs.writeFileSync(tempFile, body, 'utf8');
+
+    // Build command arguments array for spawnSync (no shell escaping needed)
+    const args = ['issue', 'create', '--title', title, '--body-file', tempFile];
+    if (labels.length > 0) {
+      args.push('--label', labels.join(','));
+    }
+
     console.log(`Creating issue: ${title}`);
-    const result = execSync(command, { encoding: 'utf8' });
-    console.log(`Created: ${result.trim()}`);
+
+    // Use spawnSync to avoid shell escaping issues completely
+    const result = spawnSync('gh', args, { encoding: 'utf8' });
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    if (result.status !== 0) {
+      throw new Error(`gh issue create failed with status ${result.status}: ${result.stderr}`);
+    }
+
+    console.log(`Created: ${result.stdout.trim()}`);
   } catch (error) {
     console.error(`Failed to create issue for ${task.id}: ${error.message}`);
+  } finally {
+    // Clean up temporary file
+    try {
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile);
+      }
+    } catch (e) {
+      // Ignore cleanup errors
+    }
   }
 }
 
@@ -97,6 +159,7 @@ function main() {
 
   // Find all tasks.md files
   const taskFiles = [
+    'specs/009-frontend-foundations/tasks.md',
     'specs/008-identity-platform/tasks.md',
     'specs/007-spec/week-7.5-finishers/tasks.md',
     // Add other task files as needed
@@ -114,11 +177,11 @@ function main() {
   console.log(`Found ${allTasks.length} tasks`);
 
   // Filter to only open tasks (optional)
-  const openTasks = allTasks.filter(task => task.status === 'open');
+  const openTasks = allTasks.filter((task) => task.status === 'open');
 
   console.log(`Creating ${openTasks.length} open issues...`);
 
-  for (const task of openTasks.slice(0, 10)) { // Limit to first 10 for testing
+  for (const task of openTasks) {
     createIssue(task);
   }
 
