@@ -15,6 +15,7 @@ module.exports = [
       '**/out/**',
       '**/.turbo/**',
       'assets/**',
+      'scripts/create-project-issues.js',
     ],
   },
 
@@ -34,6 +35,15 @@ module.exports = [
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
       'no-empty': ['error', { allowEmptyCatch: true }],
+    },
+  },
+
+  // Scripts directory uses CommonJS
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
     },
   },
 
