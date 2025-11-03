@@ -93,7 +93,42 @@ function parseTasksFromFile(filePath) {
   return tasks;
 }
 
+function issueExists(taskId) {
+  // Check if an issue already exists for this task ID
+  const result = spawnSync(
+    'gh',
+    ['issue', 'list', '--search', `"${taskId}:"`, '--state', 'all', '--json', 'title,number'],
+    { encoding: 'utf8' },
+  );
+
+  if (result.error) {
+    console.warn(`Could not check if issue exists for ${taskId}: ${result.error.message}`);
+    return false;
+  }
+
+  if (result.status !== 0) {
+    console.warn(`Error checking issues: ${result.stderr}`);
+    return false;
+  }
+
+  try {
+    const issues = JSON.parse(result.stdout);
+    // Check if any issue title starts with this task ID
+    const exists = issues.some((issue) => issue.title.startsWith(`${taskId}:`));
+    return exists;
+  } catch (e) {
+    console.warn(`Could not parse issue list for ${taskId}`);
+    return false;
+  }
+}
+
 function createIssue(task) {
+  // Skip if issue already exists (prevents duplicates on re-runs)
+  if (issueExists(task.id)) {
+    console.log(`⏭️  Skipping ${task.id}: issue already exists`);
+    return;
+  }
+
   const title = `${task.id}: ${task.description}`;
   const body = `**Task:** ${task.description}
 **Location:** ${task.location}
