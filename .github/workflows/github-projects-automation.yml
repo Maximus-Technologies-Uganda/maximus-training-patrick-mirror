@@ -57,7 +57,87 @@ jobs:
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
-            console.log('PR opened/ready_for_review - auto-add via actions/add-to-project covers this');
+            const prNumber = context.payload.pull_request.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100, query: "is:open") {
+                      nodes {
+                        id
+                        content {
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and In Progress option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const inProgressOption = statusField.options.find(o => o.name === 'In Progress');
+            if (!inProgressOption) {
+              console.log('In Progress option not found');
+              return;
+            }
+
+            // Find the PR item
+            const prItem = project.items.nodes.find(item =>
+              item.content?.number === prNumber
+            );
+
+            if (!prItem) {
+              console.log(`PR #${prNumber} not found in project`);
+              return;
+            }
+
+            // Update status to In Progress
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${prItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${inProgressOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated PR #${prNumber} status to "In Progress"`);
 
   update-status-pr-approved:
     name: Update status (PR Approved)
@@ -73,7 +153,87 @@ jobs:
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
-            console.log('PR approved - status update handled by project automation');
+            const prNumber = context.payload.pull_request.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100, query: "is:open") {
+                      nodes {
+                        id
+                        content {
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and Ready for Merge option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const readyOption = statusField.options.find(o => o.name === 'Ready for Merge');
+            if (!readyOption) {
+              console.log('Ready for Merge option not found');
+              return;
+            }
+
+            // Find the PR item
+            const prItem = project.items.nodes.find(item =>
+              item.content?.number === prNumber
+            );
+
+            if (!prItem) {
+              console.log(`PR #${prNumber} not found in project`);
+              return;
+            }
+
+            // Update status to Ready for Merge
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${prItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${readyOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated PR #${prNumber} status to "Ready for Merge"`);
 
   update-status-pr-merged:
     name: Update status (PR Merged)
@@ -89,7 +249,87 @@ jobs:
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
-            console.log('PR merged - status update handled by project automation');
+            const prNumber = context.payload.pull_request.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and Done option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const doneOption = statusField.options.find(o => o.name === 'Done');
+            if (!doneOption) {
+              console.log('Done option not found');
+              return;
+            }
+
+            // Find the PR item (search all items, not just open)
+            const prItem = project.items.nodes.find(item =>
+              item.content?.number === prNumber
+            );
+
+            if (!prItem) {
+              console.log(`PR #${prNumber} not found in project`);
+              return;
+            }
+
+            // Update status to Done
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${prItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${doneOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated PR #${prNumber} status to "Done"`);
 
   # ============================================================================
   # STATUS AUTOMATION - ISSUE EVENTS (GitHub Script with GraphQL)
@@ -106,7 +346,87 @@ jobs:
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
-            console.log('Issue opened - auto-add via actions/add-to-project covers this');
+            const issueNumber = context.payload.issue.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100, query: "is:open") {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and Backlog option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const backlogOption = statusField.options.find(o => o.name === 'Backlog');
+            if (!backlogOption) {
+              console.log('Backlog option not found');
+              return;
+            }
+
+            // Find the issue item
+            const issueItem = project.items.nodes.find(item =>
+              item.content?.number === issueNumber
+            );
+
+            if (!issueItem) {
+              console.log(`Issue #${issueNumber} not found in project`);
+              return;
+            }
+
+            // Update status to Backlog
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${issueItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${backlogOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated issue #${issueNumber} status to "Backlog"`);
 
   update-status-issue-closed:
     name: Update status (Issue Closed)
@@ -120,7 +440,87 @@ jobs:
         with:
           github-token: ${{ secrets.PROJECT_TOKEN }}
           script: |
-            console.log('Issue closed - status update handled by project automation');
+            const issueNumber = context.payload.issue.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and Done option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const doneOption = statusField.options.find(o => o.name === 'Done');
+            if (!doneOption) {
+              console.log('Done option not found');
+              return;
+            }
+
+            // Find the issue item (search all items, not just open)
+            const issueItem = project.items.nodes.find(item =>
+              item.content?.number === issueNumber
+            );
+
+            if (!issueItem) {
+              console.log(`Issue #${issueNumber} not found in project`);
+              return;
+            }
+
+            // Update status to Done
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${issueItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${doneOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated issue #${issueNumber} status to "Done"`);
 
   # ============================================================================
   # LABEL ORGANIZATION - AUTO-CATEGORIZE BY TYPE
