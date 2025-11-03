@@ -9,8 +9,9 @@ import {
 describe('GET /health', () => {
   function buildApp(options: HealthRouterOptions = {}) {
     const app = express();
-    app.use((_, res, next) => {
-      (res.locals as { requestId?: string }).requestId = 'test-request';
+    app.use((req, _, next) => {
+      (req as any).requestId = 'test-request';
+      (req as any).traceId = 'test-trace-id';
       next();
     });
     app.use(createHealthRouter(undefined, options));
@@ -25,7 +26,10 @@ describe('GET /health', () => {
       checkDatabase: async () => ({ status: 'ok' }),
     });
 
-    const res = await request(app).get('/health');
+    const res = await request(app)
+      .get('/health')
+      .set('X-Request-Id', 'test-request')
+      .set('traceparent', '00-test-trace-id-0-01');
 
     expect(res.status).toBe(200);
     expect(res.body.service).toBe('api-test');

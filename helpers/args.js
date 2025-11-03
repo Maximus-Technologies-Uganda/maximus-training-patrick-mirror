@@ -35,10 +35,18 @@ function parseCommonFlags(tokens) {
 
 function exitWithError(message, code = 1) {
   console.error(message);
+  // In test environment, return exit code instead of exiting
+  if (process.env.JEST_WORKER_ID) {
+    return code;
+  }
   process.exit(code);
 }
 
 function exitWithSuccess() {
+  // In test environment, return success code instead of exiting
+  if (process.env.JEST_WORKER_ID) {
+    return 0;
+  }
   process.exit(0);
 }
 

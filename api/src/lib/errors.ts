@@ -97,23 +97,30 @@ export function createErrorEnvelope(
     }
   }
 
-  // Extract trace ID from request traceparent header if not provided
+  // Extract trace ID from request traceparent header or req.traceId if not provided
   let effectiveTraceId = traceId;
   if (!effectiveTraceId && request) {
-    const reqAny = request as unknown as {
-      get?: (name: string) => string | undefined;
-      headers?: Record<string, unknown>;
-    };
-    const getReq = typeof reqAny?.get === 'function' ? reqAny.get.bind(request) : null;
-    const headerValFromObject =
-      typeof reqAny?.headers === 'object' && reqAny.headers
-        ? (reqAny.headers['traceparent'] as string | undefined)
-        : undefined;
-    const traceparent = (getReq ? getReq('traceparent') : undefined) || headerValFromObject;
-    if (typeof traceparent === 'string') {
-      const parts = traceparent.split('-');
-      if (parts.length >= 4 && parts[1] && /^[0-9a-f]{32}$/i.test(parts[1])) {
-        effectiveTraceId = parts[1];
+    // First check if req.traceId is already set by middleware
+    const reqWithTraceId = request as unknown as { traceId?: string };
+    if (reqWithTraceId.traceId) {
+      effectiveTraceId = reqWithTraceId.traceId;
+    } else {
+      // Fall back to extracting from traceparent header
+      const reqAny = request as unknown as {
+        get?: (name: string) => string | undefined;
+        headers?: Record<string, unknown>;
+      };
+      const getReq = typeof reqAny?.get === 'function' ? reqAny.get.bind(request) : null;
+      const headerValFromObject =
+        typeof reqAny?.headers === 'object' && reqAny.headers
+          ? (reqAny.headers['traceparent'] as string | undefined)
+          : undefined;
+      const traceparent = (getReq ? getReq('traceparent') : undefined) || headerValFromObject;
+      if (typeof traceparent === 'string') {
+        const parts = traceparent.split('-');
+        if (parts.length >= 4 && parts[1] && /^[0-9a-f]{32}$/i.test(parts[1])) {
+          effectiveTraceId = parts[1];
+        }
       }
     }
   }

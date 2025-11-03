@@ -1,17 +1,17 @@
-import supertest from "supertest";
+import supertest from 'supertest';
 import * as jwtUtil from './jwt.util.js';
 const { validToken } = jwtUtil;
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 const cookie = (u: string) => `session=${validToken(u)}`;
-import * as appModule from "#tsApp";
+import * as appModule from '#tsApp';
 // jest-openapi now initialised globally via tests/jest.setup.js
 
-import type { Express } from "express";
-import type { AppConfig } from "../src/config";
-import type { IPostsRepository } from "../src/repositories/posts.repository";
-import { createApp as createAppFactory } from "../src/app";
-import { loadConfigFromEnv } from "../src/config";
-import { createRepository } from "../src/repositories/posts-repository";
+import type { Express } from 'express';
+import type { AppConfig } from '../src/config';
+import type { IPostsRepository } from '../src/repositories/posts.repository';
+import { createApp as createAppFactory } from '../src/app';
+import { loadConfigFromEnv } from '../src/config';
+import { createRepository } from '../src/repositories/posts-repository';
 
 async function resolveApp(): Promise<Express> {
   const mod = appModule as unknown as {
@@ -19,8 +19,8 @@ async function resolveApp(): Promise<Express> {
     app?: Express;
     createApp?: (config: AppConfig, repository: IPostsRepository) => Express;
   };
-  if (mod.default && typeof mod.default.use === "function") return mod.default;
-  if (mod.app && typeof mod.app.use === "function") return mod.app;
+  if (mod.default && typeof mod.default.use === 'function') return mod.default;
+  if (mod.app && typeof mod.app.use === 'function') return mod.app;
   if (typeof mod.createApp === 'function') {
     const base = loadConfigFromEnv();
     const config: AppConfig = { ...base, rateLimitMax: 1000 };
@@ -70,7 +70,10 @@ describe('Posts API Integration Tests', () => {
   describe('GET /health', () => {
     it('should respond with 200 and health metadata', async () => {
       const api = await resolveApp();
-      const res = await supertest(api).get('/health');
+      const res = await supertest(api)
+        .get('/health')
+        .set('X-Request-Id', 'integration-test-request')
+        .set('traceparent', '00-test-trace-id-000000000000-01');
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
         status: 'ok',
@@ -103,12 +106,15 @@ describe('Posts API Integration Tests', () => {
     it('should handle the full CRUD lifecycle of a post', async () => {
       const api = await resolveApp();
       // CREATE
-      const createPayload = { title: 'Integration Title', content: 'This is the integration test content.' };
+      const createPayload = {
+        title: 'Integration Title',
+        content: 'This is the integration test content.',
+      };
       const createRes = await supertest(api)
         .post('/posts')
         .set('Cookie', cookie('user-A'))
-          .set('X-User-Id', 'user-A')
-          .set('X-User-Role', 'owner')
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .send(createPayload);
@@ -127,8 +133,8 @@ describe('Posts API Integration Tests', () => {
       const patchRes = await supertest(api)
         .patch(`/posts/${id}`)
         .set('Cookie', cookie('user-A'))
-          .set('X-User-Id', 'user-A')
-          .set('X-User-Role', 'owner')
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .send(patchPayload);
@@ -144,8 +150,8 @@ describe('Posts API Integration Tests', () => {
       const deleteRes = await supertest(api)
         .delete(`/posts/${id}`)
         .set('Cookie', cookie('user-A'))
-          .set('X-User-Id', 'user-A')
-          .set('X-User-Role', 'owner')
+        .set('X-User-Id', 'user-A')
+        .set('X-User-Role', 'owner')
         .set('Accept', 'application/json');
       expect(deleteRes.status).toBe(204);
 
@@ -176,7 +182,7 @@ describe('Posts API Integration Tests', () => {
     it('should return a 429 Too Many Requests error after exceeding the limit', async () => {
       // Build an app instance with the default limiter threshold (100)
       // using the JS factory to avoid TS module resolution issues in tests.
-       
+
       const base = loadConfigFromEnv();
       const config: AppConfig = { ...base, rateLimitMax: 100, rateLimitWindowMs: 15 * 60 * 1000 };
       const repository = (await createRepository()) as IPostsRepository;
@@ -184,7 +190,6 @@ describe('Posts API Integration Tests', () => {
 
       // Fire requests sequentially to avoid race conditions in some CI environments
       for (let i = 0; i < 101; i++) {
-
         await supertest(api).get('/posts');
       }
       const res = await supertest(api).get('/posts');

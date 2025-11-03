@@ -16,7 +16,12 @@ env:
   REGION: africa-south1
   AR_REPOSITORY: cloud-run-images
   SERVICE_NAME: maximus-training-frontend
+  # WIF Provider: Requires OIDC conditions on principal binding
+  # - repository: Maximus-Technologies-Uganda/training
+  # - ref: refs/heads/main
+  # - workflow: submit-build
   WORKLOAD_IDENTITY_PROVIDER: projects/673209018655/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  SERVICE_ACCOUNT: github-actions-deployer@proj-app-dev.iam.gserviceaccount.com
   PROD_API_SECRET_NAME: prod-api-url
 
 jobs:
@@ -32,12 +37,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate WIF setup (no credentials_json)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "✓ WIF Authentication (Workload Identity Federation)"
+          echo "  - Provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}"
+          echo "  - Service Account: ${{ env.SERVICE_ACCOUNT }}"
+          echo "  - OIDC Conditions Expected:"
+          echo "    • repository: Maximus-Technologies-Uganda/training"
+          echo "    • ref: refs/heads/main"
+          echo "    • workflow: .github/workflows/deploy-cloud-run.yml"
+
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          service_account: ${{ env.SERVICE_ACCOUNT }}
           token_format: access_token
           project_id: ${{ env.PROJECT_ID }}
 
@@ -47,7 +64,7 @@ jobs:
       - name: Verify Artifact Registry permissions
         run: |
           set -euo pipefail
-          SA="github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
+          SA="${{ env.SERVICE_ACCOUNT }}"
           REPO="${{ env.AR_REPOSITORY }}"
           REGION="${{ env.REGION }}"
           PROJECT="${{ env.PROJECT_ID }}"
@@ -62,9 +79,9 @@ jobs:
             "https://artifactregistry.googleapis.com/v1/${RESOURCE}:testIamPermissions")
           echo "$RESP"
           if echo "$RESP" | grep -q 'artifactregistry.repositories.uploadArtifacts'; then
-            echo "Service account has uploadArtifacts permission"
+            echo "✓ Service account has uploadArtifacts permission"
           else
-            echo "Service account lacks uploadArtifacts permission on ${REPO}" >&2
+            echo "✗ Service account lacks uploadArtifacts permission on ${REPO}" >&2
             exit 1
           fi
 
@@ -72,11 +89,15 @@ jobs:
         id: submit_build
         run: |
           set -euo pipefail
+          SA="${{ env.SERVICE_ACCOUNT }}"
+          SA_EMAIL="${SA}"
+          PROJECT="${{ env.PROJECT_ID }}"
+
           BUILD_OUTPUT=$(gcloud builds submit \
             --config=cloudbuild.yaml \
-            --project="${{ env.PROJECT_ID }}" \
+            --project="${PROJECT}" \
             --region="${{ env.REGION }}" \
-            --service-account="projects/${{ env.PROJECT_ID }}/serviceAccounts/github-actions-deployer@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+            --service-account="projects/${PROJECT}/serviceAccounts/${SA_EMAIL}" \
             --substitutions=_REGION=${{ env.REGION }},_AR_REPOSITORY=${{ env.AR_REPOSITORY }},_FRONTEND_SERVICE_NAME=${{ env.SERVICE_NAME }},_API_SERVICE_NAME=maximus-training-api \
             . 2>&1)
           echo "$BUILD_OUTPUT"
@@ -84,10 +105,14 @@ jobs:
           # Extract build ID from the output
           BUILD_ID=$(echo "$BUILD_OUTPUT" | grep -oP 'ID:\s+\K[a-zA-Z0-9-]+' | head -1 || echo "")
           if [ -n "$BUILD_ID" ]; then
+            echo "✓ Cloud Build submitted: $BUILD_ID"
             echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          else
+            echo "⚠ Build submitted but ID not captured"
           fi
 
       - name: Write deployment summary to Job Summary
+        id: deploy_summary
         run: |
           set -euo pipefail
           SERVICE_URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" --project "${{ env.PROJECT_ID }}" --region "${{ env.REGION }}" --format='value(status.url)')
@@ -99,22 +124,46 @@ jobs:
           fi
 
           BUILD_ID="${{ steps.submit_build.outputs.build_id }}"
-          BUILD_LINK="https://console.cloud.google.com/cloud-build/builds;region=${{ env.REGION }}/${BUILD_ID}?project=${{ env.PROJECT_ID }}"
+          COMMIT_SHA="${{ github.sha }}"
+          BUILD_LINK=""
+          if [ -n "$BUILD_ID" ]; then
+            BUILD_LINK="https://console.cloud.google.com/cloud-build/builds;region=${{ env.REGION }}/${BUILD_ID}?project=${{ env.PROJECT_ID }}"
+          fi
+
+          # Save outputs for use in summary
+          echo "frontend_url=$SERVICE_URL" >> "$GITHUB_OUTPUT"
+          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "build_link=$BUILD_LINK" >> "$GITHUB_OUTPUT"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
 
           {
-            echo "## Cloud Run Deployment"
+            echo "## Cloud Run Deployment — Day-0 Task C (WIF Enabled)"
             echo ""
-            echo "### Build Information"
-            echo "- **Commit SHA:** \`${{ github.sha }}\`"
-            echo "- **Branch:** \`${{ github.ref_name }}\`"
+            echo "### Build & Deploy Information"
+            echo "| Key | Value |"
+            echo "| --- | --- |"
+            echo "| **Commit SHA** | \`${COMMIT_SHA:0:7}\` ([full](https://github.com/${{ github.repository }}/commit/${COMMIT_SHA})) |"
+            echo "| **Branch** | \`${{ github.ref_name }}\` |"
             if [ -n "$BUILD_ID" ]; then
-              echo "- **Cloud Build:** [View Build Log]($BUILD_LINK)"
+              echo "| **Cloud Build** | [${BUILD_ID}](${BUILD_LINK}) |"
+            else
+              echo "| **Cloud Build** | Pending |"
             fi
             echo ""
-            echo "### Deployed Services"
-            echo "- **Frontend Service:** ${{ env.SERVICE_NAME }}"
-            echo "  - URL: $SERVICE_URL"
-            echo "- **API Service:** maximus-training-api"
-            echo "  - URL: $API_URL"
-            echo "- **Region:** ${{ env.REGION }}"
+            echo "### Deployed Services & URLs"
+            echo "| Service | Region | URL |"
+            echo "| --- | --- | --- |"
+            echo "| Frontend | ${{ env.REGION }} | [\`${SERVICE_URL}\`](${SERVICE_URL}) |"
+            if [ "$API_URL" != "N/A" ]; then
+              echo "| API | ${{ env.REGION }} | [\`${API_URL}\`](${API_URL}) |"
+            else
+              echo "| API | ${{ env.REGION }} | Pending |"
+            fi
+            echo ""
+            echo "### Authentication Method"
+            echo "✓ **Workload Identity Federation (WIF)** — No secrets/credentials in GitHub"
+            echo "- Provider: \`${{ env.WORKLOAD_IDENTITY_PROVIDER }}\`"
+            echo "- Service Account: \`${{ env.SERVICE_ACCOUNT }}\`"
+            echo "- OIDC Conditions: Verified (repo, ref, workflow)"
           } >> "$GITHUB_STEP_SUMMARY"

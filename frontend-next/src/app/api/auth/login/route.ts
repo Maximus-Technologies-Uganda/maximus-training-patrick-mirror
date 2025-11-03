@@ -69,7 +69,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Some upstreams emit multiple cookies (e.g., session + CSRF). Forward them all.
     const getSetCookieValues = (h: Headers): string[] => {
       try {
-        const anyHeaders = h as unknown as { getSetCookie?: () => string[]; raw?: () => Record<string, string[]> };
+        const anyHeaders = h as unknown as {
+          getSetCookie?: () => string[];
+          raw?: () => Record<string, string[]>;
+        };
         if (typeof anyHeaders.getSetCookie === "function") {
           const arr = anyHeaders.getSetCookie();
           if (Array.isArray(arr) && arr.length) return arr;
@@ -85,7 +88,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
     const setCookieValues = getSetCookieValues(upstreamResponse.headers);
     if (setCookieValues.length > 0) {
-      const res = new NextResponse(null, { status: upstreamResponse.status, headers: responseHeaders });
+      const res = new NextResponse(null, {
+        status: upstreamResponse.status,
+        headers: responseHeaders,
+      });
       for (const cookie of setCookieValues) res.headers.append("set-cookie", cookie);
       return res;
     }
@@ -107,24 +113,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         const userId = username === "admin" ? "admin-1" : "user-alice-1";
         // Minimal unsigned JWT-like token for local decode-only logic (T062)
-        const enc = (s: string) => Buffer.from(s).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+        const enc = (s: string) =>
+          Buffer.from(s)
+            .toString("base64")
+            .replace(/=+$/g, "")
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_");
         const header = enc(JSON.stringify({ alg: "HS256", typ: "JWT" }));
         const role = username === "admin" ? "admin" : "owner";
         const now = Math.floor(Date.now() / 1000);
-        const exp = now + 15 * 60; // 15 minutes expiry to match cookie Max-Age
-        const payload = enc(JSON.stringify({
-          userId,
-          role,
-          iat: now,
-          exp,
-        }));
+        const exp = now + 60 * 60; // 1 hour expiry to match cookie Max-Age
+        const payload = enc(
+          JSON.stringify({
+            userId,
+            role,
+            iat: now,
+            exp,
+          })
+        );
         const token = `${header}.${payload}.dev`;
         const secureAttr = isHttps(request) ? "; Secure" : "";
         const res = new NextResponse(null, { status: 204, headers });
         // Session cookie (HttpOnly) with rotation (T062)
         res.headers.append(
           "set-cookie",
-          `session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
+          `session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${60 * 60}${secureAttr}`
         );
         // CSRF cookie (non-HttpOnly) for double-submit header with timestamp (T063)
         // Format: timestamp-uuid for TTL validation
@@ -133,7 +146,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const csrfToken = `${csrfTs}-${csrfId}`;
         res.headers.append(
           "set-cookie",
-          `csrf=${csrfToken}; Path=/; SameSite=Strict; Max-Age=${15 * 60}${secureAttr}`,
+          `csrf=${csrfToken}; Path=/; SameSite=Strict; Max-Age=${60 * 60}${secureAttr}`
         );
         return res;
       } catch {
@@ -142,9 +155,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     // Structured error for logs/telemetry
     const context = ensureRequestContext(request.headers);
-    const errInfo = error instanceof Error
-      ? { name: error.name, message: error.message, stack: error.stack }
-      : String(error);
+    const errInfo =
+      error instanceof Error
+        ? { name: error.name, message: error.message, stack: error.stack }
+        : String(error);
     console.error(
       JSON.stringify({
         level: "error",
@@ -153,13 +167,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         requestId: context.requestId,
         traceparent: context.traceparent,
         error: errInfo,
-      }),
+      })
     );
     return NextResponse.json(
       { error: { code: "UPSTREAM_LOGIN_FAILED", message: "Failed to authenticate" } },
-      { status: 500, headers: responseHeadersFromContext(context) },
+      { status: 500, headers: responseHeadersFromContext(context) }
     );
   }
 }
-
-
