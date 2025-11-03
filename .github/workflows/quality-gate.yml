@@ -191,7 +191,7 @@ jobs:
         with:
           name: a11y-frontend-next
           path: |
-            docs/ReviewPacket/a11y/html/**
+            a11y-frontend-next/**
           if-no-files-found: warn
           retention-days: 21
 
