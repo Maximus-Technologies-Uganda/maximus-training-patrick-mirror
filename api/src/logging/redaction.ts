@@ -10,7 +10,7 @@ const SENSITIVE_KEY_PATTERNS = [
   /payload/i,
   /email/i,
 ];
-const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const EMAIL_PATTERN = /[\w\u0080-\uFFFF._%+-]+@[\w\u0080-\uFFFF.-]+\.[A-Z]{2,}/gi;
 const BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi;
 const BASIC_PATTERN = /\bBasic\s+[A-Za-z0-9._~+/=-]+/gi;
 const JWT_PATTERN = /eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/g;
