@@ -34,11 +34,10 @@ describe('requestLogger retention enforcement', () => {
     res.getHeader = jest.fn();
 
     const writes: string[] = [];
-    const originalWrite = process.stdout.write;
-    process.stdout.write = jest.fn((chunk: string) => {
-      writes.push(chunk);
-      return true;
-    }) as unknown as typeof process.stdout.write;
+    const originalLog = console.log;
+    console.log = jest.fn((...args: unknown[]) => {
+      writes.push(args.join(' '));
+    });
 
     try {
       let nextCalled = false;
@@ -54,7 +53,7 @@ describe('requestLogger retention enforcement', () => {
       expect(payload.retentionDays).toBe(APPLICATION_LOG_RETENTION_DAYS);
       expect(payload.service).toBe('api');
     } finally {
-      process.stdout.write = originalWrite;
+      console.log = originalLog;
     }
   });
 });

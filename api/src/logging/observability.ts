@@ -1,5 +1,6 @@
 import { shouldLog, type LogLevel, type SamplingConfig } from "./sampling";
 import { sanitize, scrubSerializedPayload } from "./redaction";
+import { withApplicationLogRetention } from "./retention";
 
 export interface LogFields {
   requestId?: string;
@@ -29,12 +30,17 @@ export interface LoggerOptions {
   writer?: (line: string) => void;
 }
 
-interface StructuredEvent extends Record<string, unknown> {
+interface BaseStructuredEvent extends Record<string, unknown> {
   ts: string;
   level: LogLevel;
   message: string;
   component: string;
 }
+
+type StructuredEvent = BaseStructuredEvent & {
+  service: string;
+  retentionDays: number;
+};
 
 function serializeError(error: unknown): Record<string, unknown> | undefined {
   if (!error) return undefined;
@@ -59,10 +65,10 @@ function mergeEvent(
   message: string,
   fields: LogFields | undefined,
   options: LoggerOptions,
-): StructuredEvent {
+): BaseStructuredEvent {
   const now = (options.clock ?? (() => new Date()))();
   const component = fields?.component ?? options.component ?? "api";
-  const event: StructuredEvent = {
+  const event: BaseStructuredEvent = {
     ts: now.toISOString(),
     level,
     message,
@@ -157,7 +163,12 @@ export function createObservabilityLogger(options: LoggerOptions = {}): Observab
     if (!shouldLog(level, { config: options.sampling })) {
       return;
     }
-    const event = mergeEvent(level, message, fields, options);
+    const baseEvent = mergeEvent(level, message, fields, options);
+    const withRetention = withApplicationLogRetention(baseEvent);
+    const event: StructuredEvent = {
+      ...withRetention,
+      service: baseEvent.component,
+    };
     output(event, writer);
   }
 

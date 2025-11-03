@@ -1,14 +1,15 @@
-import type { RequestHandler } from "express";
-import { createHmac } from "node:crypto";
-import { getSessionSecret } from "../../config";
-import { defaultLogger } from "../../logging/observability";
+import type { RequestHandler } from 'express';
+import { createHmac } from 'node:crypto';
+import { getSessionSecret } from '../../config';
+import { defaultLogger } from '../../logging/observability';
+import { ERROR_CODES, sendErrorResponse } from '../../lib/errors';
 
 function parseCookies(header: string | undefined): Record<string, string> {
   const result: Record<string, string> = {};
   if (!header) return result;
-  const parts = header.split(";");
+  const parts = header.split(';');
   for (const part of parts) {
-    const idx = part.indexOf("=");
+    const idx = part.indexOf('=');
     if (idx === -1) continue;
     const key = part.slice(0, idx).trim();
     const val = part.slice(idx + 1).trim();
@@ -18,33 +19,29 @@ function parseCookies(header: string | undefined): Record<string, string> {
 }
 
 function base64urlToBase64(input: string): string {
-  const s = input.replace(/-/g, "+").replace(/_/g, "/");
+  const s = input.replace(/-/g, '+').replace(/_/g, '/');
   const pad = s.length % 4 === 0 ? 0 : 4 - (s.length % 4);
-  return s + "=".repeat(pad);
+  return s + '='.repeat(pad);
 }
 
 function base64urlEncode(buffer: Buffer): string {
-  return buffer
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+  return buffer.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
 function verifyJwt(token: string, secret: string): null | Record<string, unknown> {
-  const parts = token.split(".");
+  const parts = token.split('.');
   if (parts.length !== 3) return null;
   const [h, p, sig] = parts;
   const data = `${h}.${p}`;
-  const expected = base64urlEncode(createHmac("sha256", secret).update(data).digest());
+  const expected = base64urlEncode(createHmac('sha256', secret).update(data).digest());
   if (sig !== expected) return null;
   try {
-    const headerJson = Buffer.from(base64urlToBase64(h), "base64").toString("utf8");
-    const payloadJson = Buffer.from(base64urlToBase64(p), "base64").toString("utf8");
+    const headerJson = Buffer.from(base64urlToBase64(h), 'base64').toString('utf8');
+    const payloadJson = Buffer.from(base64urlToBase64(p), 'base64').toString('utf8');
     const header = JSON.parse(headerJson) as { alg?: string };
-    if (header.alg !== "HS256") return null;
+    if (header.alg !== 'HS256') return null;
     const payload = JSON.parse(payloadJson) as Record<string, unknown>;
-    const exp = typeof payload.exp === "number" ? payload.exp : NaN;
+    const exp = typeof payload.exp === 'number' ? payload.exp : NaN;
     if (!Number.isFinite(exp)) return null;
     const now = Math.floor(Date.now() / 1000);
     if (now >= exp) return null;
@@ -59,27 +56,52 @@ function verifyJwt(token: string, secret: string): null | Record<string, unknown
 
 export const requireAuth: RequestHandler = (req, res, next) => {
   const cookies = parseCookies(req.headers.cookie);
-  const token = cookies["session"];
+  const token = cookies['session'];
   const secret = getSessionSecret();
   const payload: Record<string, unknown> | null = token ? verifyJwt(token, secret) : null;
-  if (!payload || typeof (payload as Record<string, unknown>).userId !== "string") {
+  const currentUser = (
+    req as unknown as { user?: { userId?: string; role?: string; authTime?: number } }
+  ).user;
+  if (!payload || typeof (payload as Record<string, unknown>).userId !== 'string') {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
-      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    defaultLogger.warn("auth failed", { requestId });
-    return res.status(401).json({ code: "unauthorized", message: "Unauthorized" });
+      ((req.get('X-Request-Id') || req.headers['x-request-id']) as string | undefined);
+    const traceId = (req as unknown as { traceId?: string }).traceId;
+    if (currentUser?.userId) {
+      defaultLogger.info('auth ok', { requestId, userId: currentUser.userId, traceId });
+      return next();
+    }
+    defaultLogger.warn('auth failed', { requestId, traceId });
+    sendErrorResponse(res, ERROR_CODES.UNAUTHORIZED, 'Invalid or expired authentication token', {
+      request: req,
+      traceId,
+    });
+    return;
   }
-  (req as unknown as { user?: { userId: string } }).user = { userId: (payload as { userId: string }).userId };
+  const payloadRecord = payload as Record<string, unknown>;
+  const userId = payloadRecord.userId as string;
+  const roleFromToken = typeof payloadRecord.role === 'string' ? payloadRecord.role : undefined;
+  const normalizedRole = roleFromToken || currentUser?.role || 'owner';
+  const authTimeFromToken =
+    typeof payloadRecord.authTime === 'number'
+      ? (payloadRecord.authTime as number)
+      : currentUser?.authTime;
+
+  (req as unknown as { user?: { userId: string; role?: string; authTime?: number } }).user = {
+    ...currentUser,
+    userId,
+    role: normalizedRole,
+    ...(typeof authTimeFromToken === 'number' ? { authTime: authTimeFromToken } : {}),
+  };
+
   {
     const requestId =
       (req as unknown as { requestId?: string }).requestId ||
-      ((req.get("X-Request-Id") || req.headers["x-request-id"]) as string | undefined);
-    const userId = (payload as { userId: string }).userId;
-    defaultLogger.info("auth ok", { requestId, userId });
+      ((req.get('X-Request-Id') || req.headers['x-request-id']) as string | undefined);
+    const traceId = (req as unknown as { traceId?: string }).traceId;
+    defaultLogger.info('auth ok', { requestId, userId, traceId });
   }
   next();
 };
 
 export default requireAuth;
-
-

@@ -1,4 +1,4 @@
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { extractTraceId } from '../lib/tracing';
 import { sanitizeLogEntry } from './redaction';
 import { withAuditLogRetention, AUDIT_LOG_RETENTION_DAYS } from './retention';
@@ -96,6 +96,17 @@ export function auditPost(
 ): void {
   try {
     const event = sanitizeLogEntry(createAuditEvent(req, verb, targetId, status, options));
+    const responder = (req as unknown as { res?: Response }).res;
+    if (responder && typeof responder.once === 'function') {
+      responder.once('finish', () => {
+        try {
+          console.log(JSON.stringify(event));
+        } catch {
+          // Swallow logging errors to maintain best-effort semantics
+        }
+      });
+      return;
+    }
     console.log(JSON.stringify(event));
   } catch {
     // Best-effort only; never throw from audit

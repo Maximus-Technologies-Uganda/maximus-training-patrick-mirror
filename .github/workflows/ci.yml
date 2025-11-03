@@ -39,7 +39,7 @@ jobs:
           mkdir -p specs/008-identity-platform/contracts
           npx @stoplight/spectral-cli@6.11.0 lint \
             specs/008-identity-platform/contracts/openapi.yaml \
-            -f json > specs/008-identity-platform/contracts/spectral-report.json || true
+            -f json --quiet > specs/008-identity-platform/contracts/spectral-report.json || true
 
       - name: Check Spectral Errors
         run: |
