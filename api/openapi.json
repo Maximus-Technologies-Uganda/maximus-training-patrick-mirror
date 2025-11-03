@@ -254,6 +254,79 @@
             }
           }
         }
+      },
+      "HealthDependencyStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "degraded",
+          "down"
+        ]
+      },
+      "HealthDependencies": {
+        "type": "object",
+        "required": [
+          "firebase",
+          "db"
+        ],
+        "additionalProperties": {
+          "type": "string"
+        },
+        "properties": {
+          "firebase": {
+            "$ref": "#/components/schemas/HealthDependencyStatus"
+          },
+          "db": {
+            "$ref": "#/components/schemas/HealthDependencyStatus"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "service",
+          "status",
+          "commit",
+          "time",
+          "uptime_s",
+          "dependencies"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "error"
+            ]
+          },
+          "commit": {
+            "type": "string",
+            "description": "Git commit SHA deployed"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uptime_s": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0
+          },
+          "dependencies": {
+            "$ref": "#/components/schemas/HealthDependencies"
+          }
+        }
       }
     }
   },
@@ -632,95 +705,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "service",
-                    "status",
-                    "commit",
-                    "time",
-                    "uptime_s",
-                    "dependencies"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "service": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "ok",
-                        "error"
-                      ]
-                    },
-                    "commit": {
-                      "type": "string",
-                      "description": "Git commit SHA deployed"
-                    },
-                    "time": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "uptime_s": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "dependencies": {
-                      "type": "object",
-                      "required": [
-                        "firebase",
-                        "db"
-                      ],
-                      "additionalProperties": {
-                        "type": "string"
-                      },
-                      "properties": {
-                        "firebase": {
-                          "type": "string",
-                          "enum": [
-                            "ok",
-                            "degraded",
-                            "down"
-                          ]
-                        },
-                        "db": {
-                          "type": "string",
-                          "enum": [
-                            "ok",
-                            "degraded",
-                            "down"
-                          ]
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/HealthResponse"
                 },
-                "examples": {
-                  "default": {
-                    "value": {
-                      "service": "api",
-                      "status": "ok",
-                      "commit": "abc1234",
-                      "time": "2025-10-29T12:00:00.000Z",
-                      "uptime_s": 42,
-                      "dependencies": {
-                        "firebase": "ok",
-                        "db": "ok"
-                      }
-                    }
-                  },
-                  "dependencyDown": {
-                    "value": {
-                      "service": "api",
-                      "status": "error",
-                      "commit": "abc1234",
-                      "time": "2025-10-29T12:00:00.000Z",
-                      "uptime_s": 42,
-                      "dependencies": {
-                        "firebase": "down",
-                        "db": "ok"
-                      }
-                    }
+                "example": {
+                  "service": "api",
+                  "status": "ok",
+                  "commit": "abc1234",
+                  "time": "2025-10-29T12:00:00.000Z",
+                  "uptime_s": 42,
+                  "dependencies": {
+                    "firebase": "ok",
+                    "db": "ok"
                   }
                 }
               }
@@ -740,20 +735,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/paths/~1health/get/responses/200/content/application~1json/schema"
+                  "$ref": "#/components/schemas/HealthResponse"
                 },
-                "examples": {
-                  "dependencyDown": {
-                    "value": {
-                      "service": "api",
-                      "status": "error",
-                      "commit": "abc1234",
-                      "time": "2025-10-29T12:00:00.000Z",
-                      "uptime_s": 42,
-                      "dependencies": {
-                        "firebase": "down",
-                        "db": "ok"
-                      }
+                "example": {
+                  "service": "api",
+                  "status": "degraded",
+                  "commit": "abc1234",
+                  "time": "2025-10-29T12:00:00.000Z",
+                  "uptime_s": 42,
+                  "dependencies": {
+                    "firebase": "ok",
+                    "db": "down",
+                    "details": {
+                      "db": "db error"
                     }
                   }
                 }
