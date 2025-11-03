@@ -163,13 +163,15 @@ components:
     HealthDependencies:
       type: object
       required: [firebase, db]
-      additionalProperties:
-        type: string
+      additionalProperties: true
       properties:
         firebase:
           $ref: '#/components/schemas/HealthDependencyStatus'
         db:
           $ref: '#/components/schemas/HealthDependencyStatus'
+        details:
+          type: object
+          additionalProperties: true
     HealthResponse:
       type: object
       required: [service, status, commit, time, uptime_s, dependencies]
@@ -179,7 +181,7 @@ components:
           type: string
         status:
           type: string
-          enum: [ok, error]
+          enum: [ok, degraded, error]
         commit:
           type: string
           description: Git commit SHA deployed
