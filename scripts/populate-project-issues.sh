@@ -39,7 +39,7 @@ while IFS= read -r line; do
     fi
 
     # Parse task lines: - [ ] T001 description — location
-    if [[ $line =~ ^- \[([ Xx])\]\ (T[0-9]+):\ (.+)\ —\ (.+)$ ]]; then
+    if [[ $line =~ ^- \[([ Xx])\]\ (T[0-9]+):?\ (.+)\ —\ (.+)$ ]]; then
         status="${BASH_REMATCH[1]}"
         task_id="${BASH_REMATCH[2]}"
         description="${BASH_REMATCH[3]}"
