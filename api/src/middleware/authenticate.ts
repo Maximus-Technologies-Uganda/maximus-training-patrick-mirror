@@ -100,7 +100,7 @@ const resolveHeaderValue = (request: Request, headerName: string): string | null
  * Creates middleware that populates `req.user` from JWT session cookies.
  * Handles session rotation for tokens older than 10 minutes.
  */
-function createSessionAuthenticationMiddleware(): RequestHandler {
+const createSessionAuthenticationMiddleware = (): RequestHandler => {
   return (req: Request, res: Response, next: NextFunction) => {
     const cookies = parseCookies(req.headers.cookie);
     const sessionToken = cookies['session'];
@@ -148,7 +148,7 @@ function createSessionAuthenticationMiddleware(): RequestHandler {
 
     next();
   };
-}
+};
 
 /**
  * Creates middleware that populates `req.user` from an incoming header value.
@@ -177,4 +177,3 @@ export const createHeaderAuthenticationMiddleware = (
 };
 
 export { createSessionAuthenticationMiddleware };
-export { createSessionAuthenticationMiddleware as default };

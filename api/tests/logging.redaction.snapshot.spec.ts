@@ -41,28 +41,44 @@ describe('logging redaction snapshot', () => {
     const sanitized = sanitizeLogEntry(payload);
 
     expect(sanitized).toMatchInlineSnapshot(`
-      {
-        "events": [
-          "Emitting to [redacted]",
-          {
-            "description": "Queued message",
-            "payload": "[redacted]",
-          },
-        ],
-        "level": "info",
-        "request": {
-          "body": "[redacted]",
-          "headers": {
-            "authorization": "[redacted]",
-            "cookie": "[redacted]",
-          },
-        },
-        "response": {
-          "body": "[redacted]",
-        },
-        "service": "api",
-        "ts": "2025-02-15T10:00:00.000Z",
-      }
-    `);
+             {
+               "events": [
+                 "Emitting to [REDACTED]",
+                 {
+                   "description": "Queued message",
+                   "payload": {
+                     "nested": [
+                       {
+                         "token": "[REDACTED]",
+                       },
+                     ],
+                     "setCookie": "[REDACTED]",
+                   },
+                 },
+               ],
+               "level": "info",
+               "request": {
+                 "body": {
+                   "email": "[REDACTED]",
+                   "token": "[REDACTED]",
+                 },
+                 "headers": {
+                   "authorization": "[REDACTED]",
+                   "cookie": "[REDACTED]",
+                 },
+               },
+               "response": {
+                 "body": {
+                   "message": "[REDACTED]",
+                   "sensitive": {
+                     "apiKey": "[REDACTED]",
+                     "email": "[REDACTED]",
+                   },
+                 },
+               },
+               "service": "api",
+               "ts": "2025-02-15T10:00:00.000Z",
+             }
+           `);
   });
 });

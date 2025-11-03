@@ -14,9 +14,9 @@ interface RequestWithUser extends Request {
   user?: RequestUser;
 }
 
-// Mock the session auth middleware to control req.user.userId
-jest.mock('../../src/core/auth/auth.middleware', () => ({
-  requireAuth: jest.fn((req: RequestWithUser, res, next) => {
+// Mock the Firebase auth middleware to control req.user.userId
+jest.mock('../src/middleware/firebaseAuth', () => ({
+  verifyFirebaseIdToken: jest.fn((req: RequestWithUser, res, next) => {
     const authz = req.get('Authorization');
     if (authz && authz.startsWith('Bearer ')) {
       const token = authz.slice('Bearer '.length);

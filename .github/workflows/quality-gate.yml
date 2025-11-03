@@ -1043,27 +1043,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Resolve Target URL
+      - name: Skip Latency Snapshot
         shell: bash
-        env:
-          VAR_PROD_API_URL: ${{ vars.PROD_API_URL || '' }}
-          SEC_PROD_API_URL: ${{ secrets.PROD_API_URL || '' }}
         run: |
-          set -euo pipefail
-          VAR_URL="${VAR_PROD_API_URL}"
-          SEC_URL="${SEC_PROD_API_URL}"
-          if [ -n "$VAR_URL" ]; then
-            echo "TARGET_API_URL=$VAR_URL" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          if [ -n "$SEC_URL" ]; then
-            echo "TARGET_API_URL=$SEC_URL" >> "$GITHUB_ENV"
-            exit 0
-          fi
           {
             echo "### Latency Snapshot (/auth/login)"
             echo
-            echo "_No TARGET_API_URL configured (vars or secrets). Skipping latency snapshot._"
+            echo "_Latency snapshot disabled in CI environment._"
           } >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
