@@ -163,7 +163,8 @@ components:
     HealthDependencies:
       type: object
       required: [firebase, db]
-      additionalProperties: true
+      additionalProperties:
+        type: string
       properties:
         firebase:
           $ref: '#/components/schemas/HealthDependencyStatus'
@@ -171,7 +172,8 @@ components:
           $ref: '#/components/schemas/HealthDependencyStatus'
         details:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: string
     HealthResponse:
       type: object
       required: [service, status, commit, time, uptime_s, dependencies]
