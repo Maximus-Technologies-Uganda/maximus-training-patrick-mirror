@@ -49,7 +49,7 @@ jobs:
       - name: Set PR status to "In Progress"
         uses: leonsteinhaeuser/project-beta-automations@v2.2.0
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_token: ${{ secrets.PROJECT_TOKEN }}
           user: Maximus-Technologies-Uganda
           project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
@@ -65,7 +65,7 @@ jobs:
       - name: Set PR status to "Ready for Merge"
         uses: leonsteinhaeuser/project-beta-automations@v2.2.0
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_token: ${{ secrets.PROJECT_TOKEN }}
           user: Maximus-Technologies-Uganda
           project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
@@ -81,7 +81,7 @@ jobs:
       - name: Set PR status to "Done"
         uses: leonsteinhaeuser/project-beta-automations@v2.2.0
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_token: ${{ secrets.PROJECT_TOKEN }}
           user: Maximus-Technologies-Uganda
           project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
@@ -100,7 +100,7 @@ jobs:
       - name: Set issue status to "Backlog"
         uses: leonsteinhaeuser/project-beta-automations@v2.2.0
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_token: ${{ secrets.PROJECT_TOKEN }}
           user: Maximus-Technologies-Uganda
           project_id: 6
           resource_node_id: ${{ github.event.issue.node_id }}
@@ -116,7 +116,7 @@ jobs:
       - name: Set issue status to "Done"
         uses: leonsteinhaeuser/project-beta-automations@v2.2.0
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          gh_token: ${{ secrets.PROJECT_TOKEN }}
           user: Maximus-Technologies-Uganda
           project_id: 6
           resource_node_id: ${{ github.event.issue.node_id }}
