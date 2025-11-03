@@ -8,6 +8,8 @@ on:
     types: [submitted, dismissed]
   pull_request_target:
     types: [opened, ready_for_review]
+  projects_v2_item:
+    types: [edited]
   workflow_dispatch:
     inputs:
       fix_existing_issues:
@@ -640,6 +642,156 @@ jobs:
             });
 
             console.log(`Assigned to milestone: ${{ steps.milestone.outputs.milestone_title }}`);
+
+  # ============================================================================
+  # REVERSE SYNC - Update GitHub labels when item moved on project board
+  # ============================================================================
+  sync-board-to-github:
+    name: Sync project status to GitHub labels
+    runs-on: ubuntu-latest
+    if: github.event_name == 'projects_v2_item' && github.event.action == 'edited'
+    steps:
+      - name: Update issue/PR labels based on project status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { projects_v2_item } = context.payload;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            if (!projects_v2_item || !projects_v2_item.content_node_id) {
+              console.log('No item content found');
+              return;
+            }
+
+            // Query to get the issue/PR and current status
+            const query = `
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on Issue {
+                    number
+                    repository {
+                      owner {
+                        login
+                      }
+                      name
+                    }
+                  }
+                  ... on PullRequest {
+                    number
+                    repository {
+                      owner {
+                        login
+                      }
+                      name
+                    }
+                  }
+                }
+              }
+            `;
+
+            const nodeResult = await github.graphql(query, { id: projects_v2_item.content_node_id });
+            const node = nodeResult.node;
+
+            if (!node || !node.number) {
+              console.log('Could not find issue/PR');
+              return;
+            }
+
+            // Query project to get the status field value
+            const projectQuery = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    items(first: 1, after: null) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                          }
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                        fieldValueByName(name: "Status") {
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const projectResult = await github.graphql(projectQuery);
+            const items = projectResult.organization.projectV2.items.nodes;
+            const item = items.find(i => i.content?.number === node.number);
+
+            if (!item || !item.fieldValueByName) {
+              console.log(`Item #${node.number} not found in project or has no status`);
+              return;
+            }
+
+            const status = item.fieldValueByName.name;
+            console.log(`Issue #${node.number} status changed to: ${status}`);
+
+            // Map status to labels
+            const statusToLabel = {
+              'Todo': 'status/todo',
+              'In Progress': 'status/in-progress',
+              'In review': 'status/in-review',
+              'Done': 'status/done'
+            };
+
+            const labelToAdd = statusToLabel[status];
+            if (!labelToAdd) {
+              console.log(`Unknown status: ${status}`);
+              return;
+            }
+
+            // Remove old status labels and add new one
+            const allStatusLabels = Object.values(statusToLabel);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[0]
+            }).catch(() => null);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[1]
+            }).catch(() => null);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[2]
+            }).catch(() => null);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[3]
+            }).catch(() => null);
+
+            // Add the new status label
+            await github.rest.issues.addLabels({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              labels: [labelToAdd]
+            });
+
+            console.log(`✅ Updated #${node.number} with label: ${labelToAdd}`);
 
   # ============================================================================
   # FIX EXISTING ISSUES - Move T001-T047 from "In Progress" to "Todo"
