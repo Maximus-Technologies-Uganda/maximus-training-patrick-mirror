@@ -86,10 +86,11 @@ echo ""
 # Secret scanning
 echo "→ Scanning for secrets and credentials..."
 if command -v gitleaks &> /dev/null; then
-  if gitleaks detect --verbose --exit-code 0 > /dev/null 2>&1; then
+  if gitleaks detect --verbose 2>&1 | tail -n 20; then
     echo "✓ Secret scan passed"
   else
-    echo "⚠️  Secrets found (review manually)"
+    echo "❌ Secret scan failed (potential leaks detected)"
+    exit 1
   fi
 else
   echo "⚠️  gitleaks not installed (install with: npm install -g gitleaks)"
