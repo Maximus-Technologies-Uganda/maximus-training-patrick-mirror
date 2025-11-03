@@ -1,0 +1,31 @@
+name: Create Issues from Tasks
+
+on:
+  push:
+    paths:
+      - 'specs/**/tasks.md'
+    branches:
+      - main
+      - feat/**
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  create-issues:
+    name: Create GitHub issues from tasks.md
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create issues from tasks
+        run: node scripts/create-project-issues.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

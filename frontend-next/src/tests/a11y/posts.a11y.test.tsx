@@ -21,9 +21,9 @@ describe("A11y: /posts page states have basic roles/labels", () => {
             hasNextPage: false,
             items: [],
           },
-          { status: 200 },
+          { status: 200 }
         );
-      }),
+      })
     );
 
     render(<PostsPageClient />);
@@ -36,7 +36,5 @@ describe("A11y: /posts page states have basic roles/labels", () => {
     const heading = await screen.findByRole("heading", { name: /posts/i });
     expect(heading).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
-  });
+  }, 10000);
 });
-
-

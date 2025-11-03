@@ -1,5 +1,4 @@
 name: GitHub Projects Automation
-
 on:
   issues:
     types: [opened, reopened, closed]
@@ -9,6 +8,14 @@ on:
     types: [submitted, dismissed]
   pull_request_target:
     types: [opened, ready_for_review]
+  projects_v2_item:
+    types: [edited]
+  workflow_dispatch:
+    inputs:
+      fix_existing_issues:
+        description: 'Fix existing T001-T047 issues to Todo status'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
@@ -29,6 +36,10 @@ jobs:
   auto-add-to-projects:
     name: Auto-add to Training project
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issues' ||
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Add all PRs and issues to Training project
         uses: actions/add-to-project@v0.5.0
@@ -37,58 +48,295 @@ jobs:
           github-token: ${{ secrets.PROJECT_TOKEN }}
 
   # ============================================================================
-  # STATUS AUTOMATION - PR EVENTS
+  # STATUS AUTOMATION - PR EVENTS (GitHub Script with GraphQL)
   # ============================================================================
   update-status-pr-opened:
     name: Update status (PR Opened)
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' &&
-      (github.event.action == 'opened' || github.event.action == 'ready_for_review')
+      (github.event.action == 'opened' || github.event.action == 'ready_for_review') &&
+      github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Set PR status to "In Progress"
-        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        uses: actions/github-script@v7
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          user: Maximus-Technologies-Uganda
-          project_id: 6
-          resource_node_id: ${{ github.event.pull_request.node_id }}
-          status_value: 'In Progress'
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100, query: "is:open") {
+                      nodes {
+                        id
+                        content {
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and In Progress option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const inProgressOption = statusField.options.find(o => o.name === 'In Progress');
+            if (!inProgressOption) {
+              console.log('In Progress option not found');
+              return;
+            }
+
+            // Find the PR item
+            const prItem = project.items.nodes.find(item =>
+              item.content?.number === prNumber
+            );
+
+            if (!prItem) {
+              console.log(`PR #${prNumber} not found in project`);
+              return;
+            }
+
+            // Update status to In Progress
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${prItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${inProgressOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated PR #${prNumber} status to "In Progress"`);
 
   update-status-pr-approved:
     name: Update status (PR Approved)
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request_review' &&
-      github.event.review.state == 'approved'
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Set PR status to "Ready for Merge"
-        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+      - name: Set PR status to "In review"
+        uses: actions/github-script@v7
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          user: Maximus-Technologies-Uganda
-          project_id: 6
-          resource_node_id: ${{ github.event.pull_request.node_id }}
-          status_value: 'Ready for Merge'
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100, query: "is:open") {
+                      nodes {
+                        id
+                        content {
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and In review option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const inReviewOption = statusField.options.find(o => o.name === 'In review');
+            if (!inReviewOption) {
+              console.log('In review option not found');
+              return;
+            }
+
+            // Find the PR item
+            const prItem = project.items.nodes.find(item =>
+              item.content?.number === prNumber
+            );
+
+            if (!prItem) {
+              console.log(`PR #${prNumber} not found in project`);
+              return;
+            }
+
+            // Update status to In review
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${prItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${inReviewOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated PR #${prNumber} status to "In review"`);
 
   update-status-pr-merged:
     name: Update status (PR Merged)
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'pull_request' &&
-      github.event.pull_request.merged == true
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Set PR status to "Done"
-        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        uses: actions/github-script@v7
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          user: Maximus-Technologies-Uganda
-          project_id: 6
-          resource_node_id: ${{ github.event.pull_request.node_id }}
-          status_value: 'Done'
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and Done option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const doneOption = statusField.options.find(o => o.name === 'Done');
+            if (!doneOption) {
+              console.log('Done option not found');
+              return;
+            }
+
+            // Find the PR item (search all items, not just open)
+            const prItem = project.items.nodes.find(item =>
+              item.content?.number === prNumber
+            );
+
+            if (!prItem) {
+              console.log(`PR #${prNumber} not found in project`);
+              return;
+            }
+
+            // Update status to Done
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${prItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${doneOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated PR #${prNumber} status to "Done"`);
 
   # ============================================================================
-  # STATUS AUTOMATION - ISSUE EVENTS
+  # STATUS AUTOMATION - ISSUE EVENTS (GitHub Script with GraphQL)
   # ============================================================================
   update-status-issue-opened:
     name: Update status (Issue Opened)
@@ -97,14 +345,92 @@ jobs:
       github.event_name == 'issues' &&
       github.event.action == 'opened'
     steps:
-      - name: Set issue status to "Backlog"
-        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+      - name: Set issue status to "Todo"
+        uses: actions/github-script@v7
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          user: Maximus-Technologies-Uganda
-          project_id: 6
-          resource_node_id: ${{ github.event.issue.node_id }}
-          status_value: 'Backlog'
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100, query: "is:open") {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and Todo option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const todoOption = statusField.options.find(o => o.name === 'Todo');
+            if (!todoOption) {
+              console.log('Todo option not found');
+              return;
+            }
+
+            // Find the issue item
+            const issueItem = project.items.nodes.find(item =>
+              item.content?.number === issueNumber
+            );
+
+            if (!issueItem) {
+              console.log(`Issue #${issueNumber} not found in project`);
+              return;
+            }
+
+            // Update status to Todo
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${issueItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${todoOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated issue #${issueNumber} status to "Todo"`);
 
   update-status-issue-closed:
     name: Update status (Issue Closed)
@@ -114,13 +440,91 @@ jobs:
       github.event.action == 'closed'
     steps:
       - name: Set issue status to "Done"
-        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        uses: actions/github-script@v7
         with:
-          gh_token: ${{ secrets.GITHUB_TOKEN }}
-          user: Maximus-Technologies-Uganda
-          project_id: 6
-          resource_node_id: ${{ github.event.issue.node_id }}
-          status_value: 'Done'
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and find item
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find status field and Done option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found in project');
+              return;
+            }
+
+            const doneOption = statusField.options.find(o => o.name === 'Done');
+            if (!doneOption) {
+              console.log('Done option not found');
+              return;
+            }
+
+            // Find the issue item (search all items, not just open)
+            const issueItem = project.items.nodes.find(item =>
+              item.content?.number === issueNumber
+            );
+
+            if (!issueItem) {
+              console.log(`Issue #${issueNumber} not found in project`);
+              return;
+            }
+
+            // Update status to Done
+            const updateQuery = `
+              mutation {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: "${project.id}"
+                  itemId: "${issueItem.id}"
+                  fieldId: "${statusField.id}"
+                  value: {singleSelectOptionId: "${doneOption.id}"}
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            `;
+
+            const updateResult = await github.graphql(updateQuery);
+            console.log(`Updated issue #${issueNumber} status to "Done"`);
 
   # ============================================================================
   # LABEL ORGANIZATION - AUTO-CATEGORIZE BY TYPE
@@ -130,7 +534,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.event_name == 'issues' && github.event.action == 'opened') ||
-      (github.event_name == 'pull_request' && github.event.action == 'opened')
+      (github.event_name == 'pull_request' && github.event.action == 'opened' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Determine type and add label
         uses: actions/github-script@v7
@@ -197,7 +601,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.event_name == 'issues' && github.event.action == 'opened') ||
-      (github.event_name == 'pull_request' && github.event.action == 'opened')
+      (github.event_name == 'pull_request' && github.event.action == 'opened' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Get current milestone
         id: milestone
@@ -238,3 +642,273 @@ jobs:
             });
 
             console.log(`Assigned to milestone: ${{ steps.milestone.outputs.milestone_title }}`);
+
+  # ============================================================================
+  # REVERSE SYNC - Update GitHub labels when item moved on project board
+  # ============================================================================
+  sync-board-to-github:
+    name: Sync project status to GitHub labels
+    runs-on: ubuntu-latest
+    if: github.event_name == 'projects_v2_item' && github.event.action == 'edited'
+    steps:
+      - name: Update issue/PR labels based on project status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { projects_v2_item } = context.payload;
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            if (!projects_v2_item || !projects_v2_item.content_node_id) {
+              console.log('No item content found');
+              return;
+            }
+
+            // Query to get the issue/PR and current status
+            const query = `
+              query($id: ID!) {
+                node(id: $id) {
+                  ... on Issue {
+                    number
+                    repository {
+                      owner {
+                        login
+                      }
+                      name
+                    }
+                  }
+                  ... on PullRequest {
+                    number
+                    repository {
+                      owner {
+                        login
+                      }
+                      name
+                    }
+                  }
+                }
+              }
+            `;
+
+            const nodeResult = await github.graphql(query, { id: projects_v2_item.content_node_id });
+            const node = nodeResult.node;
+
+            if (!node || !node.number) {
+              console.log('Could not find issue/PR');
+              return;
+            }
+
+            // Query project to get the status field value
+            const projectQuery = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    items(first: 1, after: null) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                          }
+                          ... on PullRequest {
+                            number
+                          }
+                        }
+                        fieldValueByName(name: "Status") {
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const projectResult = await github.graphql(projectQuery);
+            const items = projectResult.organization.projectV2.items.nodes;
+            const item = items.find(i => i.content?.number === node.number);
+
+            if (!item || !item.fieldValueByName) {
+              console.log(`Item #${node.number} not found in project or has no status`);
+              return;
+            }
+
+            const status = item.fieldValueByName.name;
+            console.log(`Issue #${node.number} status changed to: ${status}`);
+
+            // Map status to labels
+            const statusToLabel = {
+              'Todo': 'status/todo',
+              'In Progress': 'status/in-progress',
+              'In review': 'status/in-review',
+              'Done': 'status/done'
+            };
+
+            const labelToAdd = statusToLabel[status];
+            if (!labelToAdd) {
+              console.log(`Unknown status: ${status}`);
+              return;
+            }
+
+            // Remove old status labels and add new one
+            const allStatusLabels = Object.values(statusToLabel);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[0]
+            }).catch(() => null);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[1]
+            }).catch(() => null);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[2]
+            }).catch(() => null);
+
+            await github.rest.issues.removeLabel({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              name: allStatusLabels[3]
+            }).catch(() => null);
+
+            // Add the new status label
+            await github.rest.issues.addLabels({
+              owner: node.repository.owner.login,
+              repo: node.repository.name,
+              issue_number: node.number,
+              labels: [labelToAdd]
+            });
+
+            console.log(`✅ Updated #${node.number} with label: ${labelToAdd}`);
+
+  # ============================================================================
+  # FIX EXISTING ISSUES - Move T001-T047 from "In Progress" to "Todo"
+  # ============================================================================
+  fix-existing-issues:
+    name: Fix existing task issues status
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Fix T001-T047 issues to Todo status
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and get all items
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            console.log('Querying project...');
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find Status field and Todo option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found');
+              return;
+            }
+
+            const todoOption = statusField.options.find(o => o.name === 'Todo');
+            if (!todoOption) {
+              console.log('Todo option not found');
+              return;
+            }
+
+            console.log(`Found Status field and Todo option`);
+            console.log(`Updating issues T001-T047...\n`);
+
+            let updated = 0;
+            let skipped = 0;
+
+            // Find and update all T00X issues
+            for (const item of project.items.nodes) {
+              if (!item.content) continue;
+
+              const title = item.content.title;
+              const match = title.match(/^(T\d+):/);
+
+              if (match) {
+                const taskId = match[1];
+                const taskNum = parseInt(taskId.substring(1));
+
+                if (taskNum >= 1 && taskNum <= 47) {
+                  process.stdout.write(`Updating ${taskId}... `);
+
+                  const updateQuery = `
+                    mutation {
+                      updateProjectV2ItemFieldValue(input: {
+                        projectId: "${project.id}"
+                        itemId: "${item.id}"
+                        fieldId: "${statusField.id}"
+                        value: {singleSelectOptionId: "${todoOption.id}"}
+                      }) {
+                        projectV2Item {
+                          id
+                        }
+                      }
+                    }
+                  `;
+
+                  try {
+                    await github.graphql(updateQuery);
+                    console.log('✅');
+                    updated++;
+                  } catch (error) {
+                    console.log('❌');
+                    skipped++;
+                  }
+                }
+              }
+            }
+
+            console.log(`\n✅ Updated ${updated} issues to "Todo"`);
+            if (skipped > 0) {
+              console.log(`⚠️  Skipped ${skipped} issues`);
+            }
+            console.log('Done!');

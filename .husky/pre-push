@@ -137,13 +137,19 @@ fi
 
 echo "✓ act tool found; running GitHub Actions simulation..."
 
-if ! act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts 2>&1 | tail -50; then
+ACT_LOG_FILE=$(mktemp 2>/dev/null || echo "/tmp/act-log.$$")
+
+if act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts >"$ACT_LOG_FILE" 2>&1; then
+  tail -n 50 "$ACT_LOG_FILE"
+  rm -f "$ACT_LOG_FILE"
+  echo "✓ GitHub Actions simulation passed!"
+else
+  tail -n 50 "$ACT_LOG_FILE"
+  rm -f "$ACT_LOG_FILE"
   echo ""
   echo "❌ TIER 4 FAILED: GitHub Actions simulation had errors"
   echo ""
   exit 1
-else
-  echo "✓ GitHub Actions simulation passed!"
 fi
 
 echo ""

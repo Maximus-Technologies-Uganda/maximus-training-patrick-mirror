@@ -1,5 +1,6 @@
 ## 2025-11-03
 
+- fix: ensure pre-push Tier 4 simulation fails when act encounters errors by preserving the original exit code.
 - fix: align middleware exports with new rate limiter, health router, and logging retention expectations.
 
 ## 2025-10-30
