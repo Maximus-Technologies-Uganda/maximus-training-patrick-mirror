@@ -8,6 +8,12 @@ on:
     types: [submitted, dismissed]
   pull_request_target:
     types: [opened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      fix_existing_issues:
+        description: 'Fix existing T001-T047 issues to Todo status'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
@@ -634,3 +640,123 @@ jobs:
             });
 
             console.log(`Assigned to milestone: ${{ steps.milestone.outputs.milestone_title }}`);
+
+  # ============================================================================
+  # FIX EXISTING ISSUES - Move T001-T047 from "In Progress" to "Todo"
+  # ============================================================================
+  fix-existing-issues:
+    name: Fix existing task issues status
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Fix T001-T047 issues to Todo status
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            const org = 'Maximus-Technologies-Uganda';
+            const projectNumber = 6;
+
+            // Query project and get all items
+            const query = `
+              query {
+                organization(login: "${org}") {
+                  projectV2(number: ${projectNumber}) {
+                    id
+                    fields(first: 10) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            console.log('Querying project...');
+            const result = await github.graphql(query);
+            const project = result.organization.projectV2;
+
+            // Find Status field and Todo option
+            const statusField = project.fields.nodes.find(f => f.name === 'Status');
+            if (!statusField) {
+              console.log('Status field not found');
+              return;
+            }
+
+            const todoOption = statusField.options.find(o => o.name === 'Todo');
+            if (!todoOption) {
+              console.log('Todo option not found');
+              return;
+            }
+
+            console.log(`Found Status field and Todo option`);
+            console.log(`Updating issues T001-T047...\n`);
+
+            let updated = 0;
+            let skipped = 0;
+
+            // Find and update all T00X issues
+            for (const item of project.items.nodes) {
+              if (!item.content) continue;
+
+              const title = item.content.title;
+              const match = title.match(/^(T\d+):/);
+
+              if (match) {
+                const taskId = match[1];
+                const taskNum = parseInt(taskId.substring(1));
+
+                if (taskNum >= 1 && taskNum <= 47) {
+                  process.stdout.write(`Updating ${taskId}... `);
+
+                  const updateQuery = `
+                    mutation {
+                      updateProjectV2ItemFieldValue(input: {
+                        projectId: "${project.id}"
+                        itemId: "${item.id}"
+                        fieldId: "${statusField.id}"
+                        value: {singleSelectOptionId: "${todoOption.id}"}
+                      }) {
+                        projectV2Item {
+                          id
+                        }
+                      }
+                    }
+                  `;
+
+                  try {
+                    await github.graphql(updateQuery);
+                    console.log('✅');
+                    updated++;
+                  } catch (error) {
+                    console.log('❌');
+                    skipped++;
+                  }
+                }
+              }
+            }
+
+            console.log(`\n✅ Updated ${updated} issues to "Todo"`);
+            if (skipped > 0) {
+              console.log(`⚠️  Skipped ${skipped} issues`);
+            }
+            console.log('Done!');
