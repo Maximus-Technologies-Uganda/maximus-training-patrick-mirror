@@ -29,6 +29,10 @@ jobs:
   auto-add-to-projects:
     name: Auto-add to Training project
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issues' ||
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - name: Add all PRs and issues to Training project
         uses: actions/add-to-project@v0.5.0

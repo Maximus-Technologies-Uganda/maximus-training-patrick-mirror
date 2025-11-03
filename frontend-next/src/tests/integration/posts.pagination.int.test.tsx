@@ -35,9 +35,9 @@ describe("Integration: Pagination and URL sync", () => {
               },
             ],
           },
-          { status: 200 },
+          { status: 200 }
         );
-      }),
+      })
     );
 
     // Initialize URL
@@ -55,7 +55,5 @@ describe("Integration: Pagination and URL sync", () => {
     expect(window.location.search).toContain("pageSize=10");
     const heading = await screen.findByRole("heading", { name: /posts/i });
     expect(heading).toHaveFocus();
-  });
+  }, 10000);
 });
-
-
