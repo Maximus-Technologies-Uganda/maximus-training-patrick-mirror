@@ -15,7 +15,7 @@ interface RequestWithUser extends Request {
 }
 
 // Mock the Firebase auth middleware to control req.user.userId
-jest.mock('../src/middleware/firebaseAuth', () => ({
+jest.mock('../../src/middleware/firebaseAuth', () => ({
   verifyFirebaseIdToken: jest.fn((req: RequestWithUser, res, next) => {
     const authz = req.get('Authorization');
     if (authz && authz.startsWith('Bearer ')) {
