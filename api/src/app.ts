@@ -50,6 +50,14 @@ export function createApp(config: AppConfig, repository: IPostsRepository) {
   try {
     (app.locals as unknown as { rateLimitSalt?: string }).rateLimitSalt =
       `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    (
+      app.locals as unknown as {
+        rateLimitDefaults?: { limit?: number; windowMs?: number };
+      }
+    ).rateLimitDefaults = {
+      limit: config.rateLimitMax,
+      windowMs: config.rateLimitWindowMs,
+    };
   } catch {
     // ignore if locals not writable
   }
