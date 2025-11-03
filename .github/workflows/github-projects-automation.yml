@@ -17,58 +17,22 @@ permissions:
 
 jobs:
   # ============================================================================
+  # CONFIGURATION: Update PROJECT_ID below with your Training project's numeric ID
+  # To find your project ID: Open your Training project on GitHub, the URL will be
+  # https://github.com/orgs/Maximus-Technologies-Uganda/projects/XXX where XXX is the ID
+  # ============================================================================
+
+  # ============================================================================
   # AUTO-ADD ITEMS TO GITHUB PROJECTS
   # ============================================================================
   auto-add-to-projects:
-    name: Auto-add to GitHub Projects
+    name: Auto-add to Training project
     runs-on: ubuntu-latest
     steps:
-      - name: Add to main project (all PRs and issues)
+      - name: Add all PRs and issues to Training project
         uses: actions/add-to-project@v0.5.0
         with:
-          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/1
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          labeled: |
-            type:feature,type:bug,type:docs,type:chore,type:refactor,type:test
-
-      - name: Add spec PRs to Featured project
-        if: |
-          github.event_name == 'pull_request' &&
-          contains(github.event.pull_request.title, '[SPEC]')
-        uses: actions/add-to-project@v0.5.0
-        with:
-          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/2
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-  # ============================================================================
-  # AUTO-CREATE ISSUES FOR OUT-OF-SCOPE ITEMS
-  # ============================================================================
-  auto-create-scope-issue:
-    name: Auto-create scope tracking issue
-    runs-on: ubuntu-latest
-    if: |
-      github.event_name == 'issues' &&
-      github.event.action == 'opened'
-    steps:
-      - name: Check if issue is out-of-scope
-        id: check-scope
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const issue = context.payload.issue;
-            const labels = issue.labels.map(l => l.name);
-            const outOfScope = labels.includes('out-of-scope') || issue.title.includes('[OUT-OF-SCOPE]');
-            const hasScope = labels.includes('in-scope') || issue.title.includes('[IN-SCOPE]');
-
-            core.setOutput('is_out_of_scope', outOfScope && !hasScope);
-            core.setOutput('issue_number', issue.number);
-            core.setOutput('issue_title', issue.title);
-
-      - name: Add to Backlog project if out-of-scope
-        if: steps.check-scope.outputs.is_out_of_scope == 'true'
-        uses: actions/add-to-project@v0.5.0
-        with:
-          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/3
+          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/Training
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================================================
@@ -86,7 +50,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
           status_value: 'In Progress'
 
@@ -102,7 +66,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
           status_value: 'Ready for Merge'
 
@@ -118,7 +82,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.pull_request.node_id }}
           status_value: 'Done'
 
@@ -137,7 +101,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.issue.node_id }}
           status_value: 'Backlog'
 
@@ -153,7 +117,7 @@ jobs:
         with:
           gh_token: ${{ secrets.GITHUB_TOKEN }}
           user: Maximus-Technologies-Uganda
-          project_id: 1
+          project_id: 6
           resource_node_id: ${{ github.event.issue.node_id }}
           status_value: 'Done'
 

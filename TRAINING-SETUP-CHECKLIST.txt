@@ -1,0 +1,186 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    TRAINING PROJECT SETUP - 3 MINUTE CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+WHAT YOU GET:
+✨ All PRs & issues auto-added to one Training project
+✨ Automatic status updates (Backlog → In Progress → Done)
+✨ Automatic labels by type and priority
+✨ Zero manual project management!
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 1: CREATE TRAINING PROJECT (1 MINUTE)
+═══════════════════════════════════════════════════════════════════════════════
+
+☐ Open: https://github.com/orgs/Maximus-Technologies-Uganda/projects
+
+☐ CREATE TRAINING PROJECT
+   ☐ Click: New project
+   ☐ Name: Training
+   ☐ Template: Table (IMPORTANT)
+   ☐ Click: Create project
+   ☐ Note the URL: https://github.com/orgs/Maximus-Technologies-Uganda/projects/XXX
+   ☐ Save the project ID (the number XXX)
+   ☐ ✅ DONE
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 2: UPDATE WORKFLOW CONFIGURATION (1 MINUTE)
+═══════════════════════════════════════════════════════════════════════════════
+
+☐ Edit: .github/workflows/github-projects-automation.yml
+
+☐ FIND & REPLACE
+   ☐ Find all lines with: project_id: 6
+   ☐ Replace 6 with YOUR project ID from Phase 1
+   ☐ If project name isn't "Training", update line 30:
+      project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/YOUR_NAME
+
+☐ COMMIT & PUSH
+   git add .github/workflows/github-projects-automation.yml
+   git commit -m "ci: update training project configuration"
+   git push
+
+   ☐ ✅ CONFIGURATION DONE
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 3: CONFIGURE AUTOMATION RULES (1 MINUTE)
+═══════════════════════════════════════════════════════════════════════════════
+
+☐ Open your Training project URL from Phase 1
+
+☐ Click: Workflows (left sidebar)
+
+☐ ADD 5 AUTOMATION RULES:
+
+   ☐ Rule 1: PR Opened
+      When: Pull request → opened
+      Then: Set status to → In Progress
+      Save
+
+   ☐ Rule 2: PR Ready for Review
+      When: Pull request → ready_for_review
+      Then: Set status to → In Review
+      Save
+
+   ☐ Rule 3: PR Merged
+      When: Pull request → closed
+      Then: Set status to → Done
+      Save
+
+   ☐ Rule 4: Issue Opened
+      When: Issue → opened
+      Then: Set status to → Backlog
+      Save
+
+   ☐ Rule 5: Issue Closed
+      When: Issue → closed
+      Then: Set status to → Done
+      Save
+
+   ☐ ✅ ALL RULES CONFIGURED
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4: QUICK TEST (30 SECONDS)
+═══════════════════════════════════════════════════════════════════════════════
+
+TEST 1: Create a test PR
+
+☐ Run in terminal:
+   git checkout -b test/automation
+   echo "test" > test.txt
+   git add test.txt
+   git commit -m "test: automation"
+   git push -u origin test/automation
+
+☐ Open PR on GitHub (base: main, compare: test/automation)
+
+☐ Check Training project (wait 1 minute):
+   ☐ PR appears in project
+   ☐ Status is "In Progress"
+   ☐ ✅ WORKING!
+
+---
+
+TEST 2: Create a test issue
+
+☐ Go to: https://github.com/Maximus-Technologies-Uganda/Training/issues
+☐ New Issue: "Test issue"
+☐ Submit
+
+☐ Check Training project (wait 1 minute):
+   ☐ Issue appears in project
+   ☐ Status is "Backlog"
+   ☐ ✅ WORKING!
+
+═══════════════════════════════════════════════════════════════════════════════
+CLEANUP (OPTIONAL)
+═══════════════════════════════════════════════════════════════════════════════
+
+☐ Delete test branch (optional):
+   git branch -D test/automation
+   git push origin --delete test/automation
+
+☐ ✅ SETUP COMPLETE!
+
+═══════════════════════════════════════════════════════════════════════════════
+VERIFY EVERYTHING IS WORKING
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Training project created
+✅ Workflow configuration updated
+✅ Automation rules configured
+✅ Test PR appears in project with "In Progress"
+✅ Test issue appears in project with "Backlog"
+✅ Status updates are automatic
+✅ Labels are auto-applied
+✅ No more manual project management!
+
+═══════════════════════════════════════════════════════════════════════════════
+WHAT'S NOW AUTOMATED
+═══════════════════════════════════════════════════════════════════════════════
+
+Every PR or issue you create will now:
+
+  ✨ Automatically be added to the Training project
+  ✨ Automatically be labeled by type (feat, fix, docs, etc.)
+  ✨ Automatically be labeled by priority (P0-P3)
+  ✨ Automatically have status updated (Backlog → In Progress → Done)
+  ✨ Automatically be assigned to current sprint/milestone
+
+═══════════════════════════════════════════════════════════════════════════════
+TIME ESTIMATE
+═══════════════════════════════════════════════════════════════════════════════
+
+Creating project:        1 minute
+Updating workflow:       1 minute
+Configuring rules:       1 minute
+Testing:                 30 seconds
+───────────────────────────────
+TOTAL:                   3 MINUTES (mostly in GitHub UI)
+
+═══════════════════════════════════════════════════════════════════════════════
+TITLE PATTERNS FOR YOUR TEAM
+═══════════════════════════════════════════════════════════════════════════════
+
+When creating PRs/issues, use these patterns for auto-labeling:
+
+Type Labels (use at start of title):
+  feat: new feature          → type:feature
+  fix: bug fix               → type:bug
+  docs: documentation        → type:docs
+  [SPEC] specification       → type:spec
+  chore: maintenance         → type:chore
+  refactor: code refactor    → type:refactor
+  test: test addition        → type:test
+
+Priority Labels (add to title):
+  (P0) or critical           → priority:critical
+  (P1) or high               → priority:high
+  (P2) or medium             → priority:medium
+  Otherwise                  → priority:low
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Questions? See TRAINING-PROJECT-SETUP.md for detailed instructions.
+
+═══════════════════════════════════════════════════════════════════════════════
