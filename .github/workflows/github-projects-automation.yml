@@ -1,0 +1,240 @@
+name: GitHub Projects Automation
+
+on:
+  issues:
+    types: [opened, reopened, closed]
+  pull_request:
+    types: [opened, ready_for_review, synchronize, closed]
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_target:
+    types: [opened, ready_for_review]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # ============================================================================
+  # CONFIGURATION: Update PROJECT_ID below with your Training project's numeric ID
+  # To find your project ID: Open your Training project on GitHub, the URL will be
+  # https://github.com/orgs/Maximus-Technologies-Uganda/projects/XXX where XXX is the ID
+  # ============================================================================
+
+  # ============================================================================
+  # AUTO-ADD ITEMS TO GITHUB PROJECTS
+  # ============================================================================
+  auto-add-to-projects:
+    name: Auto-add to Training project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add all PRs and issues to Training project
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/orgs/Maximus-Technologies-Uganda/projects/6
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+
+  # ============================================================================
+  # STATUS AUTOMATION - PR EVENTS
+  # ============================================================================
+  update-status-pr-opened:
+    name: Update status (PR Opened)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.event.action == 'opened' || github.event.action == 'ready_for_review')
+    steps:
+      - name: Set PR status to "In Progress"
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          user: Maximus-Technologies-Uganda
+          project_id: 6
+          resource_node_id: ${{ github.event.pull_request.node_id }}
+          status_value: 'In Progress'
+
+  update-status-pr-approved:
+    name: Update status (PR Approved)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'approved'
+    steps:
+      - name: Set PR status to "Ready for Merge"
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          user: Maximus-Technologies-Uganda
+          project_id: 6
+          resource_node_id: ${{ github.event.pull_request.node_id }}
+          status_value: 'Ready for Merge'
+
+  update-status-pr-merged:
+    name: Update status (PR Merged)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true
+    steps:
+      - name: Set PR status to "Done"
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          user: Maximus-Technologies-Uganda
+          project_id: 6
+          resource_node_id: ${{ github.event.pull_request.node_id }}
+          status_value: 'Done'
+
+  # ============================================================================
+  # STATUS AUTOMATION - ISSUE EVENTS
+  # ============================================================================
+  update-status-issue-opened:
+    name: Update status (Issue Opened)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issues' &&
+      github.event.action == 'opened'
+    steps:
+      - name: Set issue status to "Backlog"
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          user: Maximus-Technologies-Uganda
+          project_id: 6
+          resource_node_id: ${{ github.event.issue.node_id }}
+          status_value: 'Backlog'
+
+  update-status-issue-closed:
+    name: Update status (Issue Closed)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'issues' &&
+      github.event.action == 'closed'
+    steps:
+      - name: Set issue status to "Done"
+        uses: leonsteinhaeuser/project-beta-automations@v2.2.0
+        with:
+          gh_token: ${{ secrets.GITHUB_TOKEN }}
+          user: Maximus-Technologies-Uganda
+          project_id: 6
+          resource_node_id: ${{ github.event.issue.node_id }}
+          status_value: 'Done'
+
+  # ============================================================================
+  # LABEL ORGANIZATION - AUTO-CATEGORIZE BY TYPE
+  # ============================================================================
+  auto-label-by-type:
+    name: Auto-label by type
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && github.event.action == 'opened') ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened')
+    steps:
+      - name: Determine type and add label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.issue?.title || context.payload.pull_request?.title || '';
+            const body = context.payload.issue?.body || context.payload.pull_request?.body || '';
+            const isPR = context.payload.pull_request !== undefined;
+
+            let labels = [];
+
+            // Detect type from title/body
+            if (title.includes('[SPEC]') || title.includes('spec:')) {
+              labels.push('type:spec');
+            } else if (title.match(/^feat/i) || body.match(/^feat/i)) {
+              labels.push('type:feature');
+            } else if (title.match(/^fix/i) || body.match(/^fix/i)) {
+              labels.push('type:bug');
+            } else if (title.match(/^docs/i) || body.match(/^docs/i)) {
+              labels.push('type:docs');
+            } else if (title.match(/^chore/i) || body.match(/^chore/i)) {
+              labels.push('type:chore');
+            } else if (title.match(/^refactor/i) || body.match(/^refactor/i)) {
+              labels.push('type:refactor');
+            } else if (title.match(/^test/i) || body.match(/^test/i)) {
+              labels.push('type:test');
+            }
+
+            // Add priority if mentioned
+            if (title.match(/P0|critical|blocker/i) || body.match(/P0|critical|blocker/i)) {
+              labels.push('priority:critical');
+            } else if (title.match(/P1|high/i) || body.match(/P1|high/i)) {
+              labels.push('priority:high');
+            } else if (title.match(/P2|medium/i) || body.match(/P2|medium/i)) {
+              labels.push('priority:medium');
+            } else {
+              labels.push('priority:low');
+            }
+
+            // Add scope indicator
+            if (title.includes('[OUT-OF-SCOPE]') || body.includes('[OUT-OF-SCOPE]')) {
+              labels.push('out-of-scope');
+            } else if (body.match(/out.?of.?scope/i)) {
+              labels.push('out-of-scope');
+            }
+
+            if (labels.length > 0) {
+              const issue_number = context.payload.issue?.number || context.payload.pull_request?.number;
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+                labels: labels
+              });
+
+              console.log(`Added labels: ${labels.join(', ')}`);
+            }
+
+  # ============================================================================
+  # MILESTONE TRACKING - ASSIGN TO CURRENT SPRINT
+  # ============================================================================
+  auto-assign-milestone:
+    name: Auto-assign to current sprint
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && github.event.action == 'opened') ||
+      (github.event_name == 'pull_request' && github.event.action == 'opened')
+    steps:
+      - name: Get current milestone
+        id: milestone
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Fetch all milestones
+            const milestones = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              sort: 'due_date',
+              direction: 'asc'
+            });
+
+            if (milestones.data.length > 0) {
+              const current = milestones.data[0];
+              core.setOutput('milestone_number', current.number);
+              core.setOutput('milestone_title', current.title);
+              console.log(`Current milestone: ${current.title}`);
+            } else {
+              console.log('No open milestone found');
+            }
+
+      - name: Assign to milestone
+        if: steps.milestone.outputs.milestone_number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.payload.issue?.number || context.payload.pull_request?.number;
+            const milestone = parseInt('${{ steps.milestone.outputs.milestone_number }}');
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue_number,
+              milestone: milestone
+            });
+
+            console.log(`Assigned to milestone: ${{ steps.milestone.outputs.milestone_title }}`);

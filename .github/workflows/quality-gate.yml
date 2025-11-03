@@ -109,6 +109,8 @@ jobs:
   frontend-next-a11y:
     needs: install-root-deps
     runs-on: ubuntu-latest
+    outputs:
+      has_playwright_tests: ${{ steps.detect_frontend_next_playwright.outputs.has_tests }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -602,6 +604,8 @@ jobs:
   contract-artifact:
     needs: install-root-deps
     runs-on: ubuntu-latest
+    outputs:
+      has_contract: ${{ steps.detect_openapi_contract.outputs.has_contract }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -677,8 +681,11 @@ jobs:
         continue-on-error: true
 
       - name: Fail if required artifacts missing (a11y HTML index and contract)
-        if: always()
+        if: ${{ always() && (needs.frontend-next-a11y.outputs.has_playwright_tests == 'true' || needs.contract-artifact.outputs.has_contract == 'true') }}
         shell: bash
+        env:
+          REQUIRE_A11Y: ${{ needs.frontend-next-a11y.outputs.has_playwright_tests }}
+          REQUIRE_CONTRACT: ${{ needs.contract-artifact.outputs.has_contract }}
         run: |
           set -euo pipefail
           # Require a11y HTML index.html in artifact
@@ -693,10 +700,12 @@ jobs:
             if [ -n "$CANDIDATE" ]; then CONTRACT_EXISTS=1; fi
           fi
           missing=()
-          if [ ! -d "$A11Y_DIR" ] || [ "$A11Y_INDEX_COUNT" -eq 0 ]; then
-            missing+=("a11y HTML (index.html) in artifact 'a11y-frontend-next'")
+          if [ "${REQUIRE_A11Y}" = "true" ]; then
+            if [ ! -d "$A11Y_DIR" ] || [ "$A11Y_INDEX_COUNT" -eq 0 ]; then
+              missing+=("a11y HTML (index.html) in artifact 'a11y-frontend-next'")
+            fi
           fi
-          if [ "$CONTRACT_EXISTS" -ne 1 ]; then
+          if [ "${REQUIRE_CONTRACT}" = "true" ] && [ "$CONTRACT_EXISTS" -ne 1 ]; then
             missing+=("contract API (api/openapi.json) in artifact 'contract-api'")
           fi
           if [ ${#missing[@]} -gt 0 ]; then
