@@ -1,0 +1,230 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    GITHUB PROJECTS AUTOMATION - SETUP CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+⏱️  TOTAL TIME: 5 MINUTES (Mostly in GitHub UI)
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 1: CREATE 3 PROJECTS (2 MINUTES)
+═══════════════════════════════════════════════════════════════════════════════
+
+☐ Open: https://github.com/orgs/Maximus-Technologies-Uganda/projects
+
+☐ CREATE PROJECT 1: "Main Work"
+   ☐ Click: New project
+   ☐ Name: Main Work
+   ☐ Description: All PRs and issues tracked by priority and status
+   ☐ Template: Table (IMPORTANT)
+   ☐ Create
+   ☐ Note URL: Should show /projects/1
+   ☐ ✅ DONE
+
+☐ CREATE PROJECT 2: "📋 Spec & Planning"
+   ☐ Click: New project
+   ☐ Name: 📋 Spec & Planning
+   ☐ Description: [SPEC] PRs, planning documents, and design system work
+   ☐ Template: Table
+   ☐ Create
+   ☐ Note URL: Should show /projects/2
+   ☐ ✅ DONE
+
+☐ CREATE PROJECT 3: "📦 Future Work"
+   ☐ Click: New project
+   ☐ Name: 📦 Future Work (Out-of-Scope)
+   ☐ Description: Issues and features that don't fit current sprint
+   ☐ Template: Table
+   ☐ Create
+   ☐ Note URL: Should show /projects/3
+   ☐ ✅ DONE
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 2: CONFIGURE AUTOMATION RULES (2 MINUTES)
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT 1: https://github.com/orgs/Maximus-Technologies-Uganda/projects/1
+
+☐ Click: Workflows (left sidebar)
+☐ Rule 1 - PR Opened
+   ☐ Add automation
+   ☐ When: Pull request → opened
+   ☐ Then: Set status to → In Progress
+   ☐ Save
+☐ Rule 2 - PR Merged
+   ☐ Add automation
+   ☐ When: Pull request → merged
+   ☐ Then: Set status to → Done
+   ☐ Save
+☐ Rule 3 - Issue Opened
+   ☐ Add automation
+   ☐ When: Issue → opened
+   ☐ Then: Set status to → Backlog
+   ☐ Save
+☐ Rule 4 - Issue Closed
+   ☐ Add automation
+   ☐ When: Issue → closed
+   ☐ Then: Set status to → Done
+   ☐ Save
+☐ ✅ PROJECT 1 CONFIGURED
+
+---
+
+PROJECT 2: https://github.com/orgs/Maximus-Technologies-Uganda/projects/2
+
+☐ Click: Workflows
+☐ Auto-add [SPEC] PRs
+   ☐ Click: Auto-add to project
+   ☐ Filter: title:"[SPEC]"
+   ☐ Save
+☐ Rule 1 - PR Opened
+   ☐ Add automation
+   ☐ When: Pull request → opened
+   ☐ Then: Set status to → In Progress
+   ☐ Save
+☐ Rule 2 - PR Merged
+   ☐ Add automation
+   ☐ When: Pull request → merged
+   ☐ Then: Set status to → Done
+   ☐ Save
+☐ ✅ PROJECT 2 CONFIGURED
+
+---
+
+PROJECT 3: https://github.com/orgs/Maximus-Technologies-Uganda/projects/3
+
+☐ Click: Workflows
+☐ Auto-add Out-of-Scope
+   ☐ Click: Auto-add to project
+   ☐ Filter: label:"out-of-scope"
+   ☐ Save
+☐ Rule 1 - Issue Opened
+   ☐ Add automation
+   ☐ When: Issue → opened
+   ☐ Then: Set status to → Backlog
+   ☐ Save
+☐ Rule 2 - Issue Closed
+   ☐ Add automation
+   ☐ When: Issue → closed
+   ☐ Then: Set status to → Done
+   ☐ Save
+☐ ✅ PROJECT 3 CONFIGURED
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 3: TEST AUTOMATION (1 MINUTE)
+═══════════════════════════════════════════════════════════════════════════════
+
+TEST 1: Auto-Add to Main Work
+
+☐ Run in terminal:
+   git checkout -b test/automation-verify
+   echo "test" > test-automation.txt
+   git add test-automation.txt
+   git commit -m "feat: test automation"
+   git push -u origin test/automation-verify
+
+☐ Open PR on GitHub:
+   - Base: main | Compare: test/automation-verify
+   - Title: feat: test automation
+   - Create PR
+
+☐ Check Main Work project (wait 1 minute):
+   https://github.com/orgs/Maximus-Technologies-Uganda/projects/1
+   ☐ PR appears in project
+   ☐ Status auto-set to "In Progress"
+   ☐ ✅ WORKING
+
+---
+
+TEST 2: Auto-Add Out-of-Scope
+
+☐ Go to: https://github.com/Maximus-Technologies-Uganda/Training/issues
+☐ New Issue:
+   - Title: [OUT-OF-SCOPE] Dark mode support
+   - Description: Future feature for Week 10+
+   - Submit
+
+☐ Check Future Work project (wait 1 minute):
+   https://github.com/orgs/Maximus-Technologies-Uganda/projects/3
+   ☐ Issue appears in project
+   ☐ Status auto-set to "Backlog"
+   ☐ ✅ WORKING
+
+---
+
+TEST 3: Auto-Add [SPEC] PR
+
+☐ Run in terminal:
+   git checkout main
+   git pull origin main
+   git checkout -b test/spec-automation
+   echo "# Test Spec" > test-spec.md
+   git add test-spec.md
+   git commit -m "[SPEC] Test specification"
+   git push -u origin test/spec-automation
+
+☐ Open PR on GitHub:
+   - Base: main | Compare: test/spec-automation
+   - Title: [SPEC] Test specification
+   - Create PR
+
+☐ Check Spec & Planning project (wait 1 minute):
+   https://github.com/orgs/Maximus-Technologies-Uganda/projects/2
+   ☐ PR appears in project
+   ☐ Status auto-set to "In Progress"
+   ☐ ✅ WORKING
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4: CLEANUP & SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+☐ (Optional) Delete test branches:
+   git branch -D test/automation-verify
+   git branch -D test/spec-automation
+   git push origin --delete test/automation-verify
+   git push origin --delete test/spec-automation
+
+☐ ✅ SETUP COMPLETE!
+
+═══════════════════════════════════════════════════════════════════════════════
+VERIFY EVERYTHING IS WORKING
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ 3 GitHub Projects created
+✅ All automation rules configured
+✅ Test PR appears in Main Work with "In Progress"
+✅ Test issue appears in Future Work with "Backlog"
+✅ Test spec PR appears in Spec & Planning with "In Progress"
+✅ Status updates are automatic
+✅ No more manual project management!
+
+═══════════════════════════════════════════════════════════════════════════════
+WHAT'S NOW AUTOMATED
+═══════════════════════════════════════════════════════════════════════════════
+
+Every PR or issue you create will now:
+
+  ✨ Automatically be added to GitHub Projects
+  ✨ Automatically be labeled by type (feat, fix, docs, etc.)
+  ✨ Automatically be labeled by priority (P0-P3)
+  ✨ Automatically have status updated (In Progress → Done)
+  ✨ [SPEC] PRs go to Spec & Planning project
+  ✨ [OUT-OF-SCOPE] issues go to Future Work project
+  ✨ Everything else goes to Main Work project
+
+═══════════════════════════════════════════════════════════════════════════════
+TIME ESTIMATE
+═══════════════════════════════════════════════════════════════════════════════
+
+Creating projects:     2 minutes
+Configuring rules:     2 minutes
+Testing automation:    1 minute
+───────────────────────────────
+TOTAL:                 5 MINUTES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Questions? See:
+  → GITHUB-PROJECTS-SETUP-GUIDE.md (detailed step-by-step)
+  → GITHUB-PROJECTS-QUICK-SETUP.md (quick reference)
+  → docs/GITHUB-PROJECTS-AUTOMATION.md (full reference)
+
+═══════════════════════════════════════════════════════════════════════════════
