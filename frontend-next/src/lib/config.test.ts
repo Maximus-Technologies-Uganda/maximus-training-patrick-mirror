@@ -13,10 +13,8 @@ describe("getBaseUrl", () => {
   });
 
   it("falls back to default when invalid URL", () => {
-    (process.env as any).NEXT_PUBLIC_API_URL = "not a url";
+    process.env.NEXT_PUBLIC_API_URL = "not a url";
     const url = getBaseUrl();
     expect(url).toBe("http://localhost:3000");
   });
 });
-
-
