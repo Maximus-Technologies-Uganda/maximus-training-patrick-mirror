@@ -81,10 +81,11 @@ jobs:
           parseFile('specs/007-spec/week-7.5-finishers/tasks.md');
 
           // Output results
-          console.log('::set-output name=total::' + results.total);
-          console.log('::set-output name=completed::' + results.completed);
-          console.log('::set-output name=in-progress::' + results.inProgress);
-          console.log('::set-output name=progress-json::' + JSON.stringify(results));
+          const fs = require('fs');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `total=${results.total}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `completed=${results.completed}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `in-progress=${results.inProgress}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `progress-json=${JSON.stringify(results)}\n`);
           "
 
       - name: Generate progress summary
