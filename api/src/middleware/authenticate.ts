@@ -177,3 +177,4 @@ export const createHeaderAuthenticationMiddleware = (
 };
 
 export { createSessionAuthenticationMiddleware };
+export default createSessionAuthenticationMiddleware;
