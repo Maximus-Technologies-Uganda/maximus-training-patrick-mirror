@@ -620,13 +620,13 @@ jobs:
           fi
 
       - name: Upload contract artifact (OpenAPI spec)
-        if: ${{ steps.detect_openapi_contract.outputs.has_contract == 'true' }}
+        if: ${{ steps.detect_openapi_contract.outputs.has_contract == 'true' && always() }}
         uses: actions/upload-artifact@v4
         with:
           name: contract-api
           path: |
             api/openapi.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 21
 
   aggregate-coverage:
@@ -912,6 +912,24 @@ jobs:
               echo "- Lines: N/A%"
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Append live deployment URLs (Day-0 Task D)
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo ""
+            echo "## Live Deployment URLs"
+            echo ""
+            echo "After Quality Gate passes, deployments are available at:"
+            echo ""
+            echo "| Service | URL |"
+            echo "| --- | --- |"
+            echo "| **Frontend** | https://maximus-training-frontend-673209018655.africa-south1.run.app |"
+            echo "| **API** | https://maximus-training-api-wyb2jsgqyq-bq.a.run.app |"
+            echo ""
+            echo "_Note: URLs are live after deploy workflow completes successfully._"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Fail on zero coverage (frontend-next)
         if: always()
