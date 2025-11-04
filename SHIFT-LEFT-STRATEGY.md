@@ -47,12 +47,19 @@ Shift-Left (Proactive):
   bash scripts/test-locally.sh            # Full validation (Phase 1+2+3)
   ```
 
-**Tier 4: Pre-Push GitHub Actions Simulation (Automatic)**
+**Tier 4: Pre-Push GitHub Actions Simulation (Optional / Manual)**
 
-- Full workflow simulation via `act` tool
+- Full workflow simulation via `act` tool (no longer run automatically by the pre-push hook)
 - Exact CI environment replication
 - Time: 15-25 minutes
 - Requires: Docker + act tool
+
+Note: The repository's Husky pre-push hook was updated to skip mandatory Tier 4. This avoids blocking pushes on machines without Docker/act. To run Tier 4 locally when needed (recommended for final verification), use the repository npm script:
+
+```bash
+# Run the full GitHub Actions simulation locally (requires Docker Desktop + act)
+npm run act
+```
 
 ### GitHub Actions (Verification Only)
 
