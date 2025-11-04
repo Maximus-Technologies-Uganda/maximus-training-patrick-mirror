@@ -1,3 +1,7 @@
+## 2025-11-04
+
+- fix: resync package-lock.json to include `@types/testing-library__jest-dom` for frontend-next workspace.
+
 ## 2025-11-03
 
 - fix: ensure pre-push Tier 4 simulation fails when act encounters errors by preserving the original exit code.
