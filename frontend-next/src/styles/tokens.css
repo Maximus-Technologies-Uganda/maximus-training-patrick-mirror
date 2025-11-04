@@ -1,0 +1,74 @@
+/**
+ * Week 9 Design System Tokens
+ *
+ * This file defines the foundational design tokens used throughout the application.
+ * These tokens bridge design and code, ensuring visual consistency across all components.
+ *
+ * Token Categories:
+ * - Colors (4): Primary, surface, text, text-muted
+ * - Spacing (4): Space-1, space-2, space-3, space-4
+ * - Border Radius (3): Radius-sm, radius-md, radius-lg
+ *
+ * Usage:
+ * - In CSS: var(--color-primary)
+ * - In Tailwind: Extend theme with these variables
+ * - In components: Never hardcode values; always use tokens
+ */
+
+:root {
+  /* ============================================
+     Colors (4)
+     ============================================ */
+
+  /** Primary action color - buttons, links, focus rings */
+  --color-primary: #1f2937;
+
+  /** Surface/background color - cards, inputs, containers */
+  --color-surface: #ffffff;
+
+  /** Primary text color - body text, headings */
+  --color-text: #111827;
+
+  /** Muted text color - secondary text, descriptions, disabled states */
+  --color-text-muted: #6b7280;
+
+  /* ============================================
+     Spacing (4)
+     ============================================ */
+
+  /** Tight spacing - 4px - button padding, dense layouts */
+  --space-1: 0.25rem;
+
+  /** Compact spacing - 8px - input padding, tight margins */
+  --space-2: 0.5rem;
+
+  /** Comfortable spacing - 16px - card padding, section gaps */
+  --space-3: 1rem;
+
+  /** Loose spacing - 24px - page margins, large section gaps */
+  --space-4: 1.5rem;
+
+  /* ============================================
+     Border Radius (3)
+     ============================================ */
+
+  /** Subtle rounding - 2px - inputs, buttons, small components */
+  --radius-sm: 2px;
+
+  /** Standard rounding - 4px - cards, modal corners */
+  --radius-md: 4px;
+
+  /** Prominent rounding - 8px - modals, popovers, large components */
+  --radius-lg: 8px;
+}
+
+/* ============================================
+   Semantic Color Aliases (optional, for clarity)
+   ============================================ */
+
+:root {
+  --color-error: #dc2626;      /* Error states, validation */
+  --color-success: #16a34a;    /* Success states, confirmations */
+  --color-warning: #ea8900;    /* Warning states, alerts */
+  --color-info: #0284c7;       /* Informational states */
+}
