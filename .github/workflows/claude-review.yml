@@ -1,0 +1,153 @@
+name: '🧠 Claude Review'
+
+on:
+  workflow_call:
+    inputs:
+      additional_context:
+        type: 'string'
+        description: 'Any additional context from the request'
+        required: false
+
+concurrency:
+  group: '${{ github.workflow }}-review-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.issue.number }}'
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  review:
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 10
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    steps:
+      - name: 'Mint identity token'
+        id: 'mint_identity_token'
+        if: |-
+          ${{ vars.APP_ID }}
+        uses: 'actions/create-github-app-token@a8d616148505b5069dccd32f177bb87d7f39123b' # ratchet:actions/create-github-app-token@v2
+        with:
+          app-id: '${{ vars.APP_ID }}'
+          private-key: '${{ secrets.APP_PRIVATE_KEY }}'
+          permission-contents: 'read'
+          permission-pull-requests: 'write'
+
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8' # ratchet:actions/checkout@v5
+
+      - name: 'Get PR details'
+        id: 'pr_details'
+        env:
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          PR_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+        run: |-
+          # Get PR diff
+          gh pr diff "$PR_NUMBER" > /tmp/pr.diff
+
+          # Get PR metadata
+          gh pr view "$PR_NUMBER" --json title,body,files > /tmp/pr.json
+
+          echo "diff_file=/tmp/pr.diff" >> "$GITHUB_OUTPUT"
+          echo "metadata_file=/tmp/pr.json" >> "$GITHUB_OUTPUT"
+
+      - name: 'Run Claude PR review'
+        id: 'claude_review'
+        env:
+          ANTHROPIC_API_KEY: '${{ secrets.ANTHROPIC_API_KEY }}'
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          PR_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          REPOSITORY: '${{ github.repository }}'
+          ADDITIONAL_CONTEXT: '${{ inputs.additional_context }}'
+          DIFF_FILE: '${{ steps.pr_details.outputs.diff_file }}'
+          METADATA_FILE: '${{ steps.pr_details.outputs.metadata_file }}'
+        run: |-
+          # Install dependencies
+          pip install anthropic jq
+
+          # Run Claude review script
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          import subprocess
+          from anthropic import Anthropic
+
+          # Initialize Claude
+          client = Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
+
+          # Read PR data
+          with open(os.environ['DIFF_FILE'], 'r') as f:
+              pr_diff = f.read()
+
+          with open(os.environ['METADATA_FILE'], 'r') as f:
+              pr_metadata = json.load(f)
+
+          # Prepare review prompt
+          review_prompt = f"""You are an expert code reviewer. Review the following pull request and provide constructive feedback.
+
+          PR Title: {pr_metadata['title']}
+          PR Description: {pr_metadata.get('body', 'No description provided')}
+
+          Additional Context: {os.environ.get('ADDITIONAL_CONTEXT', '')}
+
+          Files Changed:
+          {json.dumps([f['path'] for f in pr_metadata.get('files', [])], indent=2)}
+
+          Diff:
+          ```diff
+          {pr_diff}
+          ```
+
+          Please provide a comprehensive code review covering:
+          1. Code quality and correctness
+          2. Security concerns
+          3. Performance issues
+          4. Best practices and maintainability
+          5. Testing coverage
+          6. Accessibility (for UI changes)
+
+          Format your response as a structured review with:
+          - A summary section
+          - Specific inline comments (reference file:line when applicable)
+          - Severity levels (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low)
+
+          Be constructive and provide actionable suggestions."""
+
+          # Call Claude API
+          response = client.messages.create(
+              model=os.environ.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514'),
+              max_tokens=8000,
+              temperature=0,
+              messages=[{
+                  "role": "user",
+                  "content": review_prompt
+              }]
+          )
+
+          # Extract review text
+          review_text = response.content[0].text
+
+          # Save review to file
+          with open('/tmp/claude_review.md', 'w') as f:
+              f.write(review_text)
+
+          print("Review generated successfully")
+          PYTHON_SCRIPT
+
+      - name: 'Post review comment'
+        env:
+          GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
+          PR_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+        run: |-
+          # Post the review as a comment
+          gh pr comment "$PR_NUMBER" --body-file /tmp/claude_review.md
+
+      - name: 'Upload review artifact'
+        if: always()
+        uses: 'actions/upload-artifact@v4'
+        with:
+          name: 'claude-review-${{ github.event.pull_request.number || github.event.issue.number }}'
+          path: '/tmp/claude_review.md'
+          retention-days: 30

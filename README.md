@@ -333,6 +333,47 @@ pnpm install
 pnpm -r test
 ```
 
+## AI-Powered Code Reviews
+
+This repository supports automated code reviews from two AI assistants:
+
+### Claude Reviews (Anthropic)
+
+Trigger Claude code reviews on any pull request:
+
+```
+@claude review
+```
+
+With specific focus:
+```
+@claude review focus on security and performance
+```
+
+**Features:**
+- Deep code quality analysis
+- Security vulnerability detection
+- Performance optimization suggestions
+- Accessibility compliance checks
+- Severity-based feedback (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low)
+
+**Setup:** See [docs/CLAUDE-REVIEW-SETUP.md](docs/CLAUDE-REVIEW-SETUP.md)
+
+### Gemini Reviews (Google)
+
+Trigger Gemini code reviews:
+
+```
+@gemini-cli /review
+```
+
+**Features:**
+- Integrated via MCP tools
+- Direct inline suggestions
+- Comprehensive integration analysis
+
+Both AI reviewers are complementary - use them together for thorough code quality assurance!
+
 ### Spec Kit (Specify) integration
 
 Slash commands are available via your AI assistant (Cursor/Copilot) using the prompts in `.github/prompts`.
