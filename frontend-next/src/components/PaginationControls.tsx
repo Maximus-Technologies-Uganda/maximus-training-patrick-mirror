@@ -1,4 +1,5 @@
 import React from "react";
+import { Button } from "./Button";
 
 export interface PaginationControlsProps {
   currentPage: number;
@@ -14,30 +15,53 @@ export interface PaginationControlsProps {
  *
  * Navigation controls for paginated lists.
  * Supports previous/next buttons with proper disabled states.
+ * Uses design system tokens for consistent styling.
  */
 export const PaginationControls: React.FC<PaginationControlsProps> = ({
   currentPage,
   totalPages,
   onPrevious,
   onNext,
-  className,
+  className = "",
 }) => {
-  // TODO: Implement with Button components
-  // Disable previous button on page 1
-  // Disable next button on last page
   const isFirstPage = currentPage <= 1;
   const isLastPage = currentPage >= totalPages;
 
+  const containerStyles = [
+    "flex",
+    "items-center",
+    "justify-between",
+    "gap-4",
+    "px-4",
+    "py-3",
+  ].join(" ");
+
+  const combinedClassName = [containerStyles, className].filter(Boolean).join(" ");
+
   return (
-    <div className={className}>
-      <button onClick={onPrevious} disabled={isFirstPage}>
+    <nav aria-label="Pagination" className={combinedClassName}>
+      <Button
+        onClick={onPrevious}
+        disabled={isFirstPage}
+        variant="secondary"
+        size="sm"
+        aria-label="Go to previous page"
+      >
         Previous
-      </button>
-      <span>Page {currentPage} of {totalPages}</span>
-      <button onClick={onNext} disabled={isLastPage}>
+      </Button>
+      <span className="text-sm text-text-muted" aria-current="page">
+        Page {currentPage} of {totalPages}
+      </span>
+      <Button
+        onClick={onNext}
+        disabled={isLastPage}
+        variant="secondary"
+        size="sm"
+        aria-label="Go to next page"
+      >
         Next
-      </button>
-    </div>
+      </Button>
+    </nav>
   );
 };
 
