@@ -1,5 +1,6 @@
 ## 2025-11-05
 
+- fix: remove unsupported `projects_v2_item` trigger from GitHub Projects automation workflow to restore GitHub validation.
 - fix: import ReactElement in design system Header stub to satisfy strict type checking.
 - fix: replace `Math.random` id generation in `Input` with deterministic `useId` and improved aria wiring.
 - feat: add stubbed `Header` component referenced by the root layout to restore compile-time completeness.

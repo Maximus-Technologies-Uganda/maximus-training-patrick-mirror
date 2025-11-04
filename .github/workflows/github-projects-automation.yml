@@ -8,8 +8,6 @@ on:
     types: [submitted, dismissed]
   pull_request_target:
     types: [opened, ready_for_review]
-  projects_v2_item:
-    types: [edited]
   workflow_dispatch:
     inputs:
       fix_existing_issues:
