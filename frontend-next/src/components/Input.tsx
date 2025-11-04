@@ -1,4 +1,5 @@
 import React, { useId } from "react";
+import { cn } from "../lib/utils";
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -13,6 +14,23 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
  * A text input component with optional label, error state, and description.
  * Supports accessibility features via aria-describedby and aria-invalid.
  * Uses design system tokens for consistent styling.
+ *
+ * ## Security
+ *
+ * **Input Sanitization:** This component accepts plain-text strings only for
+ * label, error, and description props. All text is rendered via React's default
+ * text rendering which automatically escapes HTML/script content, preventing XSS.
+ *
+ * **Constraint:** Do NOT pass HTML or JSX to label/error/description props.
+ * Use plain strings only. React will escape any HTML entities automatically.
+ *
+ * @example
+ * // ✅ Good - Plain text
+ * <Input label="Username" error="Username is required" />
+ *
+ * @example
+ * // ❌ Bad - HTML (will be escaped and displayed as literal text)
+ * <Input label="<strong>Username</strong>" />
  */
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
@@ -38,8 +56,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       .join(" ")
       .trim();
 
-    // Input base styles using design tokens
-    const inputBaseStyles = [
+    const inputClassName = cn(
+      // Base styles using design tokens
       "block",
       "w-full",
       "px-3",
@@ -56,14 +74,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       "focus:ring-offset-0",
       "disabled:opacity-50",
       "disabled:cursor-not-allowed",
-    ].join(" ");
-
-    // Error state styles
-    const errorStyles = error
-      ? "border-error focus:ring-error"
-      : "border-gray-300 hover:border-gray-400";
-
-    const inputClassName = [inputBaseStyles, errorStyles].join(" ");
+      // Error state styles
+      error
+        ? "border-error focus:ring-error"
+        : "border-gray-300 hover:border-gray-400"
+    );
 
     return (
       <div className={className}>

@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "./Button";
+import { cn } from "../lib/utils";
 
 export interface PaginationControlsProps {
   currentPage: number;
@@ -16,30 +17,36 @@ export interface PaginationControlsProps {
  * Navigation controls for paginated lists.
  * Supports previous/next buttons with proper disabled states.
  * Uses design system tokens for consistent styling.
+ *
+ * ## Accessibility
+ * - Wrapped in semantic `<nav>` with aria-label
+ * - Buttons have descriptive aria-labels
+ * - Current page marked with aria-current="page"
+ * - Disabled states prevent invalid navigation
  */
 export const PaginationControls: React.FC<PaginationControlsProps> = ({
   currentPage,
   totalPages,
   onPrevious,
   onNext,
-  className = "",
+  className,
 }) => {
   const isFirstPage = currentPage <= 1;
   const isLastPage = currentPage >= totalPages;
 
-  const containerStyles = [
-    "flex",
-    "items-center",
-    "justify-between",
-    "gap-4",
-    "px-4",
-    "py-3",
-  ].join(" ");
-
-  const combinedClassName = [containerStyles, className].filter(Boolean).join(" ");
-
   return (
-    <nav aria-label="Pagination" className={combinedClassName}>
+    <nav
+      aria-label="Pagination"
+      className={cn(
+        "flex",
+        "items-center",
+        "justify-between",
+        "gap-4",
+        "px-4",
+        "py-3",
+        className
+      )}
+    >
       <Button
         onClick={onPrevious}
         disabled={isFirstPage}

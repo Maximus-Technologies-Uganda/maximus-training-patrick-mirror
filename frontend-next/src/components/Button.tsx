@@ -1,12 +1,62 @@
 import React from 'react';
+import { cn } from '../lib/utils';
+
+// Type-safe variant and size definitions
+const BUTTON_VARIANTS = {
+  primary: [
+    'bg-primary',
+    'text-surface',
+    'hover:bg-gray-800',
+    'focus:ring-primary',
+    'border-transparent',
+  ].join(' '),
+  secondary: [
+    'bg-surface',
+    'text-primary',
+    'border',
+    'border-gray-300',
+    'hover:bg-gray-50',
+    'focus:ring-primary',
+  ].join(' '),
+  ghost: [
+    'bg-transparent',
+    'text-primary',
+    'hover:bg-gray-100',
+    'focus:ring-primary',
+    'border-transparent',
+  ].join(' '),
+} as const;
+
+const BUTTON_SIZES = {
+  sm: 'px-3 py-1.5 text-sm rounded-sm',
+  md: 'px-4 py-2 text-base rounded-md',
+  lg: 'px-6 py-3 text-lg rounded-lg',
+} as const;
+
+const BUTTON_BASE_STYLES = [
+  'inline-flex',
+  'items-center',
+  'justify-center',
+  'font-medium',
+  'transition-colors',
+  'focus:outline-none',
+  'focus:ring-2',
+  'focus:ring-offset-2',
+  'disabled:opacity-50',
+  'disabled:cursor-not-allowed',
+].join(' ');
+
+// Type-safe variants and sizes
+export type ButtonVariant = keyof typeof BUTTON_VARIANTS;
+export type ButtonSize = keyof typeof BUTTON_SIZES;
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Button style variant */
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: ButtonVariant;
   /** Show loading spinner and disable button */
   loading?: boolean;
   /** Button size */
-  size?: 'sm' | 'md' | 'lg';
+  size?: ButtonSize;
   /** Optional CSS class */
   className?: string;
 }
@@ -23,60 +73,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
  * <Button loading>Loading...</Button>
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', loading = false, size = 'md', className = '', disabled, children, ...props }, ref) => {
-    // Base styles: common to all variants
-    const baseStyles = [
-      'inline-flex',
-      'items-center',
-      'justify-center',
-      'font-medium',
-      'transition-colors',
-      'focus:outline-none',
-      'focus:ring-2',
-      'focus:ring-offset-2',
-      'disabled:opacity-50',
-      'disabled:cursor-not-allowed',
-    ].join(' ');
-
-    // Variant styles using design tokens
-    const variantStyles: Record<string, string> = {
-      primary: [
-        'bg-primary',
-        'text-surface',
-        'hover:bg-gray-800',
-        'focus:ring-primary',
-        'border-transparent',
-      ].join(' '),
-      secondary: [
-        'bg-surface',
-        'text-primary',
-        'border',
-        'border-gray-300',
-        'hover:bg-gray-50',
-        'focus:ring-primary',
-      ].join(' '),
-      ghost: [
-        'bg-transparent',
-        'text-primary',
-        'hover:bg-gray-100',
-        'focus:ring-primary',
-        'border-transparent',
-      ].join(' '),
-    };
-
-    // Size styles using design tokens
-    const sizeStyles: Record<string, string> = {
-      sm: 'px-3 py-1.5 text-sm rounded-sm',
-      md: 'px-4 py-2 text-base rounded-md',
-      lg: 'px-6 py-3 text-lg rounded-lg',
-    };
-
-    const combinedClassName = [
-      baseStyles,
-      variantStyles[variant],
-      sizeStyles[size],
-      className,
-    ].filter(Boolean).join(' ');
+  ({ variant = 'primary', loading = false, size = 'md', className, disabled, children, ...props }, ref) => {
+    const combinedClassName = cn(
+      BUTTON_BASE_STYLES,
+      BUTTON_VARIANTS[variant],
+      BUTTON_SIZES[size],
+      className
+    );
 
     return (
       <button
