@@ -28,6 +28,7 @@
     "test:dev": "node scripts/run-tests.js --scope dev-week-1",
     "test:local-ci": "bash scripts/test-locally.sh",
     "test:act": "act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts",
+    "act": "act -W .github/workflows/quality-gate.yml --artifact-server-path=./tmp/act-artifacts",
     "pages:docs": "node scripts/publish-docs.js",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "coverage:normalize": "node scripts/normalize-coverage.js",

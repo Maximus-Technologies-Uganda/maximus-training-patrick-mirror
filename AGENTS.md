@@ -7,9 +7,11 @@ This file provides **project-specific guidance for code agents** (Codex Cloud/We
 
 ---
 
-## Mandatory 4-Tier Local Validation (CRITICAL)
+## Local Validation Guidance
 
-**ALL code changes MUST pass all 4 tiers before push. This is NOT optional.**
+The repository previously enforced a mandatory 4-tier pre-push validation. The Husky pre-push hook has been updated to run Tiers 1–3 automatically and no longer runs the Tier 4 GitHub Actions simulation automatically.
+
+Why this change? On some developer machines Docker/act are not available or are constrained (e.g., Windows without Docker Desktop), which blocked many valid pushes. The removal preserves fast, mandatory local checks (T1–T3) while making Tier 4 an explicit, opt-in step.
 
 ### Quick Start
 
@@ -17,12 +19,14 @@ This file provides **project-specific guidance for code agents** (Codex Cloud/We
 # Tier 1 (Auto): lint-staged runs on commit
 git add . && git commit -m "feat: your change"
 
-# Tier 2-4 (Auto): All run on push
+# Tier 2-3 (Auto): run on push
 git push
 
-# If Tier 3/4 fail locally, run manually to debug:
-bash scripts/test-locally.sh        # Tier 3
-act -W .github/workflows/quality-gate.yml  # Tier 4
+# Optional Tier 4 (manual): run GitHub Actions simulation locally (requires Docker + act)
+# Recommended: use the provided npm script from the repo root:
+npm run act
+# or equivalently:
+npm run test:act
 ```
 
 ### The 4 Tiers
