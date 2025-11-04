@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PostList Schema",
+  "description": "Paginated list of posts with pagination metadata",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "author": { "type": "string" },
+          "content": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "permissions": {
+            "type": "object",
+            "properties": {
+              "canEdit": { "type": "boolean" },
+              "canDelete": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "page": { "type": "integer", "minimum": 1, "description": "Current page number" },
+    "pageSize": { "type": "integer", "minimum": 1, "maximum": 100, "description": "Number of items per page" },
+    "hasNextPage": { "type": "boolean", "description": "Whether there are more pages" },
+    "total": { "type": "integer", "minimum": 0, "description": "Total number of items (optional)" }
+  },
+  "required": ["items", "page", "pageSize", "hasNextPage"]
+}

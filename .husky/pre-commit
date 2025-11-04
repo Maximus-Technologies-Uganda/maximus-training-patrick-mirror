@@ -5,5 +5,4 @@ echo "🚫 Checking for large files and binaries..."
 sh .husky/pre-commit-binary-check
 
 echo "🔍 Running Prettier + ESLint on staged files (lint-staged)..."
-npx lint-staged
-
+pnpm exec lint-staged

@@ -1,20 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { validateFrontendEnvOnBoot } from "../config/env";
+import { loadFonts, type LoadedFonts } from "../lib/fonts";
 import "./globals.css";
+import "../styles/tokens.css";
 import Header from "../../components/Header";
 
 validateFrontendEnvOnBoot();
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const composeBodyClassName = (fonts: LoadedFonts): string =>
+  [fonts.sans.className, fonts.sans.variable, fonts.mono.className, fonts.mono.variable]
+    .filter(Boolean)
+    .join(" ");
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -23,12 +19,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  fontsOverride,
 }: Readonly<{
   children: React.ReactNode;
+  fontsOverride?: LoadedFonts;
 }>) {
+  const fonts = fontsOverride ?? loadFonts();
+  const bodyClassName = composeBodyClassName(fonts);
+
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={bodyClassName}>
+        {fonts.styles ? (
+          <style data-font-offline dangerouslySetInnerHTML={{ __html: fonts.styles }} />
+        ) : null}
         <Header />
         {children}
       </body>
