@@ -67,13 +67,18 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
  * A versatile button component supporting multiple variants and states.
  * Uses design system tokens for consistent styling across the application.
  *
+ * **Form Behavior:**
+ * - Defaults to `type="button"` to prevent accidental form submission
+ * - Override with `type="submit"` when you need to submit a form
+ *
  * @example
  * <Button variant="primary">Click me</Button>
  * <Button variant="secondary" disabled>Disabled</Button>
  * <Button loading>Loading...</Button>
+ * <Button type="submit">Submit Form</Button>
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', loading = false, size = 'md', className, disabled, children, ...props }, ref) => {
+  ({ variant = 'primary', loading = false, size = 'md', className, disabled, type = 'button', children, ...props }, ref) => {
     const combinedClassName = cn(
       BUTTON_BASE_STYLES,
       BUTTON_VARIANTS[variant],
@@ -84,6 +89,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         disabled={disabled || loading}
         aria-busy={loading}
         className={combinedClassName}

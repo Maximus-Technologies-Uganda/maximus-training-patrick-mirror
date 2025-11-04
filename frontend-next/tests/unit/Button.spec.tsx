@@ -140,7 +140,12 @@ describe("Button", () => {
   });
 
   describe("HTML Attributes", () => {
-    it("supports type attribute", () => {
+    it("defaults to type='button' to prevent form submission", () => {
+      render(<Button>Click me</Button>);
+      expect(screen.getByRole("button")).toHaveAttribute("type", "button");
+    });
+
+    it("supports type attribute override", () => {
       render(<Button type="submit">Submit</Button>);
       expect(screen.getByRole("button")).toHaveAttribute("type", "submit");
     });
