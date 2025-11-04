@@ -333,6 +333,62 @@ pnpm install
 pnpm -r test
 ```
 
+## AI-Powered Code Reviews
+
+This repository supports AI-assisted code reviews through multiple methods:
+
+### 🤖 Manual Claude Code Reviews (Recommended - Free!)
+
+Use Claude Code interactively for comprehensive PR reviews:
+
+**How to use:**
+Simply ask in your Claude Code session:
+```
+"Review my Phase 2 PR"
+"Check this code for security issues"
+"Review the Button component for accessibility"
+```
+
+**Advantages:**
+- ✅ **Free** - No API key required
+- ✅ **Interactive** - Ask follow-up questions
+- ✅ **Context-aware** - Understands your codebase
+- ✅ **Same quality** - Uses Claude Sonnet 4.5
+
+---
+
+### 🔮 Gemini Reviews (Automated - Already Configured)
+
+Trigger Gemini code reviews on any PR:
+
+```
+@gemini-cli /review
+```
+
+**Features:**
+- Integrated via MCP tools
+- Direct inline suggestions
+- Automatic on PR open (if enabled)
+- Uses your existing GCP setup
+
+---
+
+### 📚 More Options
+
+For additional free AI review tools and detailed comparison, see:
+**[docs/AI-REVIEW-ALTERNATIVES.md](docs/AI-REVIEW-ALTERNATIVES.md)**
+
+**Available alternatives:**
+- Manual Claude Code reviews (⭐ Recommended)
+- Gemini reviews (already set up)
+- CodeRabbit (free for open source)
+- Qodo (free tier: 20 PRs/month)
+- GitHub Copilot (if you have access)
+
+---
+
+**Note:** The automated Claude review workflow is disabled by default (requires `ANTHROPIC_API_KEY`). Use manual Claude Code reviews instead for the same quality without API costs!
+
 ### Spec Kit (Specify) integration
 
 Slash commands are available via your AI assistant (Cursor/Copilot) using the prompts in `.github/prompts`.

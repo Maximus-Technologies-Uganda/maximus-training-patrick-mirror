@@ -34,6 +34,7 @@ const TEST_SUMMARY_FILE = path.join(REPO_ROOT, 'test-results', 'summary.json');
 const TYPECHECK_FILE = path.join(REPO_ROOT, 'typecheck', 'results.json');
 const A11Y_FILE = path.join(REPO_ROOT, 'a11y', 'report.json');
 const CONTRACT_FILE = path.join(REPO_ROOT, 'contract', 'report.json');
+const SPECTRAL_FILE = path.join(REPO_ROOT, 'contract', 'spectral-report.json');
 const SECURITY_FILE = path.join(REPO_ROOT, 'security', 'audit-summary.json');
 const GOVERNANCE_FILE = path.join(REPO_ROOT, 'governance', 'report.json');
 const GATE_OUT_DIR = path.join(REPO_ROOT, 'gate');
@@ -83,6 +84,7 @@ const DIM_TO_PATH = {
   typecheck: TYPECHECK_FILE,
   a11y: A11Y_FILE,
   contract: CONTRACT_FILE,
+  spectral: SPECTRAL_FILE,
   security: SECURITY_FILE,
   governance: GOVERNANCE_FILE,
 };
@@ -93,6 +95,7 @@ const DEFAULT_REQUIRED_DIMENSIONS = [
   'typecheck',
   'a11y',
   'contract',
+  'spectral',
   'security',
   'governance',
 ];
@@ -641,6 +644,7 @@ function main() {
   const typecheck = readJsonIfExists(TYPECHECK_FILE);
   const a11y = readJsonIfExists(A11Y_FILE);
   const contract = readJsonIfExists(CONTRACT_FILE);
+  const spectral = readJsonIfExists(SPECTRAL_FILE);
   const security = readJsonIfExists(SECURITY_FILE);
   const governance = readJsonIfExists(GOVERNANCE_FILE);
 
@@ -651,12 +655,13 @@ function main() {
     typecheck: evaluateTypecheck(typecheck),
     a11y: evaluateA11y(a11y),
     contract: evaluateContract(contract),
+    spectral: evaluateSpectral(spectral),
     security: evaluateSecurity(security),
     governance: evaluateGovernance(governance),
   };
 
   // Enforce missing-artifact failure for required dimensions (except coverage already handled)
-  const artifacts = { coverage, tests, typecheck, a11y, contract, security, governance };
+  const artifacts = { coverage, tests, typecheck, a11y, contract, spectral, security, governance };
   for (const dim of required) {
     const art = artifacts[dim];
     if (art == null) {
@@ -687,6 +692,7 @@ function main() {
       },
       a11y: 'no critical/serious',
       contract: 'no breaking mismatches',
+      spectral: '0 Spectral errors',
       security: 'no high/critical',
     },
     requiredDimensions: required,
