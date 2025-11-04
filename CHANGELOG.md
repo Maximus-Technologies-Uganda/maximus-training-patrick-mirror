@@ -1,5 +1,6 @@
 ## 2025-11-05
 
+- fix: import ReactElement in design system Header stub to satisfy strict type checking.
 - fix: replace `Math.random` id generation in `Input` with deterministic `useId` and improved aria wiring.
 - feat: add stubbed `Header` component referenced by the root layout to restore compile-time completeness.
 

@@ -1,6 +1,7 @@
+import type { ReactElement } from "react";
 import Link from "next/link";
 
-export function Header(): JSX.Element {
+export function Header(): ReactElement {
   return (
     <header className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
