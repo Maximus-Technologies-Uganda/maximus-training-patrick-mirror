@@ -335,33 +335,31 @@ pnpm -r test
 
 ## AI-Powered Code Reviews
 
-This repository supports automated code reviews from two AI assistants:
+This repository supports AI-assisted code reviews through multiple methods:
 
-### Claude Reviews (Anthropic)
+### 🤖 Manual Claude Code Reviews (Recommended - Free!)
 
-Trigger Claude code reviews on any pull request:
+Use Claude Code interactively for comprehensive PR reviews:
 
+**How to use:**
+Simply ask in your Claude Code session:
 ```
-@claude review
+"Review my Phase 2 PR"
+"Check this code for security issues"
+"Review the Button component for accessibility"
 ```
 
-With specific focus:
-```
-@claude review focus on security and performance
-```
+**Advantages:**
+- ✅ **Free** - No API key required
+- ✅ **Interactive** - Ask follow-up questions
+- ✅ **Context-aware** - Understands your codebase
+- ✅ **Same quality** - Uses Claude Sonnet 4.5
 
-**Features:**
-- Deep code quality analysis
-- Security vulnerability detection
-- Performance optimization suggestions
-- Accessibility compliance checks
-- Severity-based feedback (🔴 Critical, 🟠 High, 🟡 Medium, 🟢 Low)
+---
 
-**Setup:** See [docs/CLAUDE-REVIEW-SETUP.md](docs/CLAUDE-REVIEW-SETUP.md)
+### 🔮 Gemini Reviews (Automated - Already Configured)
 
-### Gemini Reviews (Google)
-
-Trigger Gemini code reviews:
+Trigger Gemini code reviews on any PR:
 
 ```
 @gemini-cli /review
@@ -370,9 +368,26 @@ Trigger Gemini code reviews:
 **Features:**
 - Integrated via MCP tools
 - Direct inline suggestions
-- Comprehensive integration analysis
+- Automatic on PR open (if enabled)
+- Uses your existing GCP setup
 
-Both AI reviewers are complementary - use them together for thorough code quality assurance!
+---
+
+### 📚 More Options
+
+For additional free AI review tools and detailed comparison, see:
+**[docs/AI-REVIEW-ALTERNATIVES.md](docs/AI-REVIEW-ALTERNATIVES.md)**
+
+**Available alternatives:**
+- Manual Claude Code reviews (⭐ Recommended)
+- Gemini reviews (already set up)
+- CodeRabbit (free for open source)
+- Qodo (free tier: 20 PRs/month)
+- GitHub Copilot (if you have access)
+
+---
+
+**Note:** The automated Claude review workflow is disabled by default (requires `ANTHROPIC_API_KEY`). Use manual Claude Code reviews instead for the same quality without API costs!
 
 ### Spec Kit (Specify) integration
 

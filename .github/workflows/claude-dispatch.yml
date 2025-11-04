@@ -1,7 +1,13 @@
 name: '🤖 Claude Dispatch'
 
+# DISABLED: Requires ANTHROPIC_API_KEY secret
+# See docs/AI-REVIEW-ALTERNATIVES.md for free alternatives
+# To enable: Add ANTHROPIC_API_KEY secret and remove workflow_dispatch below
+
 on:
-  pull_request_review_comment:
+  workflow_dispatch:  # Manual trigger only until API key is added
+  # Uncomment below when ANTHROPIC_API_KEY is configured:
+  # pull_request_review_comment:
     types:
       - 'created'
   pull_request:

@@ -1,5 +1,9 @@
 name: '🧠 Claude Review'
 
+# DISABLED: Requires ANTHROPIC_API_KEY secret
+# See docs/AI-REVIEW-ALTERNATIVES.md for free alternatives
+# To enable: Add ANTHROPIC_API_KEY secret and remove this comment
+
 on:
   workflow_call:
     inputs:
