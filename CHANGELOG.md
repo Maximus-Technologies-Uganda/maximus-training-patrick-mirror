@@ -1,3 +1,8 @@
+## 2025-11-05
+
+- fix: replace `Math.random` id generation in `Input` with deterministic `useId` and improved aria wiring.
+- feat: add stubbed `Header` component referenced by the root layout to restore compile-time completeness.
+
 ## 2025-11-04
 
 - fix: resync package-lock.json to include `@types/testing-library__jest-dom` for frontend-next workspace.
