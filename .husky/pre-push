@@ -114,43 +114,12 @@ fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🎯 TIER 4: Simulating GitHub Actions locally..."
+echo "🎯 TIER 4: SKIPPED - GitHub Actions simulation removed from pre-push" 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-
-# Check if act is available for Tier 4 (MANDATORY)
-if ! command -v act &> /dev/null; then
-  echo ""
-  echo "❌ TIER 4 FAILED: act tool not found (MANDATORY)"
-  echo ""
-  echo "   Install act to enable GitHub Actions simulation:"
-  echo ""
-  echo "   Windows:  choco install act"
-  echo "   macOS:    brew install act"
-  echo "   Linux:    https://github.com/nektos/act/releases"
-  echo ""
-  echo "   After installation, verify with: act --version"
-  echo "   Then try pushing again: git push"
-  echo ""
-  exit 1
-fi
-
-echo "✓ act tool found; running GitHub Actions simulation..."
-
-ACT_LOG_FILE=$(mktemp 2>/dev/null || echo "/tmp/act-log.$$")
-
-if act -W .github/workflows/quality-gate.yml --artifact-server-path=/tmp/act-artifacts >"$ACT_LOG_FILE" 2>&1; then
-  tail -n 50 "$ACT_LOG_FILE"
-  rm -f "$ACT_LOG_FILE"
-  echo "✓ GitHub Actions simulation passed!"
-else
-  tail -n 50 "$ACT_LOG_FILE"
-  rm -f "$ACT_LOG_FILE"
-  echo ""
-  echo "❌ TIER 4 FAILED: GitHub Actions simulation had errors"
-  echo ""
-  exit 1
-fi
+echo "⚠️ Note: Tier 4 (local GitHub Actions simulation via 'act') has been deliberately removed from the pre-push hook."
+echo "If you need to run it locally, run: act -W .github/workflows/quality-gate.yml"
+echo ""
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════╗"

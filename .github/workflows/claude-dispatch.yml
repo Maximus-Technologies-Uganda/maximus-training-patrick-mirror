@@ -1,0 +1,85 @@
+name: '🤖 Claude Dispatch'
+
+# DISABLED: Requires ANTHROPIC_API_KEY secret
+# See docs/AI-REVIEW-ALTERNATIVES.md for free alternatives
+# To enable: Add ANTHROPIC_API_KEY secret and remove workflow_dispatch below
+
+on:
+  workflow_dispatch:  # Manual trigger only until API key is added
+  # Uncomment below when ANTHROPIC_API_KEY is configured:
+  # pull_request_review_comment:
+    types:
+      - 'created'
+  pull_request:
+    types:
+      - 'opened'
+      - 'synchronize'
+  issue_comment:
+    types:
+      - 'created'
+
+defaults:
+  run:
+    shell: 'bash'
+
+jobs:
+  dispatch:
+    # Only trigger on non-fork PRs or when explicitly mentioned
+    if: |-
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.head.repo.fork == false &&
+        vars.CLAUDE_AUTO_REVIEW == 'true'
+      ) || (
+        github.event.sender.type == 'User' &&
+        contains(github.event.comment.body, '@claude') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    outputs:
+      should_review: '${{ steps.check_command.outputs.should_review }}'
+      additional_context: '${{ steps.check_command.outputs.additional_context }}'
+    steps:
+      - name: 'Check for Claude command'
+        id: 'check_command'
+        env:
+          EVENT_TYPE: '${{ github.event_name }}'
+          COMMENT_BODY: '${{ github.event.comment.body }}'
+          AUTO_REVIEW: '${{ vars.CLAUDE_AUTO_REVIEW }}'
+        run: |-
+          if [[ "$EVENT_TYPE" == "pull_request" && "$AUTO_REVIEW" == "true" ]]; then
+            echo "should_review=true" >> "$GITHUB_OUTPUT"
+            echo "additional_context=" >> "$GITHUB_OUTPUT"
+          elif echo "$COMMENT_BODY" | grep -q '@claude.*review'; then
+            echo "should_review=true" >> "$GITHUB_OUTPUT"
+            # Extract any additional context after @claude review
+            context=$(echo "$COMMENT_BODY" | sed -n 's/.*@claude.*review\s*\(.*\)/\1/p')
+            echo "additional_context=$context" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_review=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 'Acknowledge request'
+        if: steps.check_command.outputs.should_review == 'true'
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          PR_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          ACTOR: '${{ github.actor }}'
+          RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+        run: |-
+          MESSAGE="🧠 Hi @${ACTOR}, Claude is reviewing this PR now! Track progress [here](${RUN_URL})."
+          gh pr comment "$PR_NUMBER" --body "$MESSAGE"
+
+  review:
+    needs: 'dispatch'
+    if: needs.dispatch.outputs.should_review == 'true'
+    uses: './.github/workflows/claude-review.yml'
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    with:
+      additional_context: '${{ needs.dispatch.outputs.additional_context }}'
+    secrets: 'inherit'
