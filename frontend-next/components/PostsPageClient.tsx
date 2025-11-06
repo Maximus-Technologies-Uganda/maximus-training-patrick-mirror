@@ -319,7 +319,12 @@ export default function PostsPageClient({
             Sort by
             <select
               value={sort}
-              onChange={(event) => onChangeSort(event.target.value as PostSort)}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (isValidSort(value)) {
+                  onChangeSort(value);
+                }
+              }}
               className="ml-2 rounded border border-text-muted/40 px-2 py-1 text-sm text-text"
               aria-label="Sort posts"
             >
