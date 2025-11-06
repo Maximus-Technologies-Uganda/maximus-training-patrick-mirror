@@ -1,5 +1,7 @@
 import React from "react";
 
+import { headers } from "next/headers";
+
 import PostsPageClient from "../../../components/PostsPageClient";
 import {
   DEFAULT_POST_SORT,
@@ -66,6 +68,11 @@ export default async function PostsPage({
       url.searchParams.set("pageSize", String(pageSize + 1));
       url.searchParams.set("sort", sort);
       const fetchHeaders: Record<string, string> = {};
+      const incomingHeaders = headers();
+      const cookieHeader = incomingHeaders.get("cookie");
+      if (cookieHeader) {
+        fetchHeaders.cookie = cookieHeader;
+      }
       const res = await fetch(url.toString(), {
         cache: "no-store",
         headers: fetchHeaders,

@@ -1,6 +1,11 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // Ensure a single React instance is used in Vitest to avoid dispatcher
+  // mismatches that break hooks such as useId/useState in the test runtime.
+  resolve: {
+    dedupe: ["react", "react-dom"],
+  },
   esbuild: {
     jsx: "automatic",
     jsxInject: 'import React from "react"',
