@@ -243,7 +243,8 @@ function PostsPageClientInner({
     syncUrl({ sort: nextSort, page: 1 });
   };
 
-  // Split live announcements into error and non-error
+  // Split live announcements into error and non-error so urgent failures are
+  // surfaced immediately without delaying polite status updates.
   const [errorAnnouncement, setErrorAnnouncement] = useState<string | null>(null);
   useEffect(() => {
     if (isLoading) {
@@ -338,6 +339,9 @@ function PostsPageClientInner({
 export default function PostsPageClient(props: PostsPageClientProps): React.ReactElement {
   const cacheRef = useRef<Cache<unknown> | null>(null);
 
+  // Scope a dedicated SWR cache to each PostsPageClient instance so multiple
+  // lists rendered on the same page do not mutate one another's pagination
+  // state. This mirrors the SSR fallback isolation described in the spec.
   const swrValue = useMemo(
     () => ({
       provider: (): Cache<unknown> => {

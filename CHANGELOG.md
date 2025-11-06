@@ -8,6 +8,7 @@
 - test(frontend-next): rework posts pagination integration to use SWR-backed tsx spec with explicit fetch stubbing.
 - fix(frontend-next): refine derived total page counts for cursor pagination fallbacks and document inference strategy.
 - test(frontend-next): wrap posts pagination integration interactions in React act to suppress async update warnings.
+- chore(frontend-next): document SWR cache isolation, aria-live assertive guidance, and local sort timestamp fallbacks.
 
 ## 2025-11-06
 

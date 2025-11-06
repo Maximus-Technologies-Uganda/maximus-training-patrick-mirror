@@ -94,14 +94,14 @@
 
 ## Phase 5: User Story 3 - State Management (Day 4)
 
-**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live regions (use `aria-live="polite"` for LoadingState and EmptyState components, and `aria-live="assertive"` for ErrorState component)
+**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live regions.
 
 ### State UI Integration
 
 - [ ] T031 [US3] Wire LoadingState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T032 [US3] Wire EmptyState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T033 [US3] Wire ErrorState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
-- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`
+- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`, ensuring non-error announcements remain `aria-live="polite"` and error announcements use `aria-live="assertive"`
 - [ ] T034a [US3] Implement and test retry mechanism for ErrorState in `frontend-next/src/components/PostsPageClient.tsx`
 ### State Testing
 

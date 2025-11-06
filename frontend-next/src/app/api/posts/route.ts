@@ -44,6 +44,8 @@ if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_P
 function toTimestamp(value: string | undefined): number {
   if (!value) return 0;
   const timestamp = Date.parse(value);
+  // A zero fallback keeps malformed or missing dates at the beginning/end of
+  // the sorted list without throwing or introducing NaN into comparisons.
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 

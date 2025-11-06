@@ -78,7 +78,13 @@ export function usePostsList(params?: {
   return { data, isLoading, error };
 }
 
-// Helper to refresh the first page after creating a new post
+/**
+ * Refresh the first page of posts using the active pagination cache key.
+ *
+ * The parameters must match the key generated inside `usePostsList`; otherwise
+ * the mutation will target the default sort/query and leave the visible list
+ * stale when a user is filtering.
+ */
 export async function mutatePostsPage1(
   pageSize: number = 10,
   sort: PostSort = DEFAULT_POST_SORT,
