@@ -1,59 +1,339 @@
-import React, { useEffect, useState } from "react";
-import { LoadingState } from "./LoadingState";
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SWRConfig, type Cache } from "swr";
+
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
+import { LoadingState } from "./LoadingState";
+import { PaginationControls } from "./PaginationControls";
+import { Card } from "./Card";
+import {
+  DEFAULT_POST_SORT,
+  POST_SORT_VALUES,
+  type Post,
+  type PostList,
+  type PostSort,
+} from "../lib/schemas";
+import { usePostsList } from "../lib/swr";
 
-type Post = { id: string; title: string; content: string };
+const SORT_OPTIONS = new Set<PostSort>(POST_SORT_VALUES);
 
-export default function PostsPageClient(): React.ReactElement {
-  const [data, setData] = useState<Post[] | null | undefined>(undefined);
-  const [error, setError] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+const SORT_LABELS: Record<PostSort, string> = {
+  "date-desc": "Newest first",
+  "date-asc": "Oldest first",
+  "title-asc": "Title (A-Z)",
+  "title-desc": "Title (Z-A)",
+};
+
+function isValidSort(value: string | null | undefined): value is PostSort {
+  if (!value) return false;
+  return SORT_OPTIONS.has(value as PostSort);
+}
+
+type PostsPageClientProps = {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  sort?: PostSort;
+  initialData?: Post[];
+  initialHasNextPage?: boolean;
+};
+
+function createSWRCache(): Cache<unknown> {
+  return new Map<string, unknown>() as Cache<unknown>;
+}
+
+function buildFallbackList(
+  initialData: Post[] | undefined,
+  page: number,
+  pageSize: number,
+  hasNextPage: boolean,
+  sort: PostSort
+): PostList | undefined {
+  if (!initialData) return undefined;
+  return {
+    items: initialData,
+    page,
+    pageSize,
+    hasNextPage,
+    sort,
+  };
+}
+
+/**
+ * Derives the total number of pages available from the latest list response.
+ *
+ * The backend prefers sending an explicit `total`, but when pagination is
+ * cursor-based we fall back to inferring the minimum possible page count using
+ * the current position. This keeps the UI responsive without over-promising
+ * pages that may not exist yet.
+ */
+function deriveTotalPages(list: PostList | undefined, page: number, pageSize: number): number {
+  if (!list) return Math.max(1, page);
+  if (typeof list.total === "number" && Number.isFinite(list.total)) {
+    return Math.max(1, Math.ceil(list.total / pageSize));
+  }
+  if (list.hasNextPage) {
+    return page + 1;
+  }
+  return Math.max(1, page);
+}
+
+function safeNumber(value: string | null, fallback: number): number {
+  if (!value) return fallback;
+  const next = Number(value);
+  if (Number.isFinite(next) && next > 0) return next;
+  return fallback;
+}
+
+function PostsPageClientInner({
+  page: initialPage = 1,
+  pageSize: initialPageSize = 10,
+  q: initialQuery = "",
+  sort: initialSort = DEFAULT_POST_SORT,
+  initialData,
+  initialHasNextPage = false,
+}: PostsPageClientProps): React.ReactElement {
+  const [page, setPage] = useState<number>(initialPage);
+  const [pageSize, setPageSize] = useState<number>(initialPageSize);
+  const [sort, setSort] = useState<PostSort>(initialSort);
+  const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
+  const [liveAnnouncement, setLiveAnnouncement] = useState<string>("");
+
+  const initialParamsRef = useRef({
+    page: initialPage,
+    pageSize: initialPageSize,
+    query: initialQuery,
+    sort: initialSort,
+  });
 
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
-    (async () => {
-      try {
-        const res = await fetch("/api/posts?page=1&pageSize=10");
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          const err: any = new Error("Fetch error");
-          err.info = body;
-          err.status = res.status;
-          throw err;
-        }
-        const json = await res.json();
-        let items: Post[] = [];
-        if (Array.isArray(json)) items = json as Post[];
-        else if (json && typeof json === "object" && Array.isArray((json as any).items)) items = (json as any).items as Post[];
-        if (mounted) setData(items);
-      } catch (e) {
-        if (mounted) setError(e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
+    initialParamsRef.current = {
+      page: initialPage,
+      pageSize: initialPageSize,
+      query: initialQuery,
+      sort: initialSort,
     };
+  }, [initialPage, initialPageSize, initialQuery, initialSort]);
+
+  const fallbackList = useMemo(
+    () =>
+      buildFallbackList(
+        initialData,
+        initialPage,
+        initialPageSize,
+        Boolean(initialHasNextPage),
+        initialSort
+      ),
+    [initialData, initialPage, initialPageSize, initialHasNextPage, initialSort]
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const {
+      page: defaultPage,
+      pageSize: defaultPageSize,
+      query: defaultQuery,
+      sort: defaultSort,
+    } = initialParamsRef.current;
+    const url = new URL(window.location.href);
+    const nextPage = safeNumber(url.searchParams.get("page"), defaultPage);
+    const nextPageSize = safeNumber(url.searchParams.get("pageSize"), defaultPageSize);
+    const nextQuery = url.searchParams.get("q") ?? defaultQuery;
+    const sortParam = url.searchParams.get("sort");
+
+    setPage(nextPage);
+    setPageSize(nextPageSize);
+    setSearchQuery(nextQuery);
+    if (isValidSort(sortParam)) {
+      setSort(sortParam);
+    } else {
+      setSort(defaultSort);
+    }
   }, []);
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error?.info?.message ?? "Error"} />;
-  if (!data || data.length === 0) return <EmptyState title="No posts yet" message="There are currently no posts." />;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onPopState = (): void => {
+      const url = new URL(window.location.href);
+      const nextPage = safeNumber(url.searchParams.get("page"), 1);
+      const nextPageSize = safeNumber(
+        url.searchParams.get("pageSize"),
+        initialParamsRef.current.pageSize
+      );
+      const nextQuery = url.searchParams.get("q") ?? "";
+      const nextSortParam = url.searchParams.get("sort");
+
+      setPage(nextPage);
+      setPageSize(nextPageSize);
+      setSearchQuery(nextQuery);
+      if (isValidSort(nextSortParam)) {
+        setSort(nextSortParam);
+      } else {
+        setSort(DEFAULT_POST_SORT);
+      }
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const { data, isLoading, error } = usePostsList({
+    page,
+    pageSize,
+    sort,
+    q: searchQuery,
+    fallbackData: fallbackList,
+  });
+
+  const resolvedList = data ?? fallbackList;
+  const posts = resolvedList?.items ?? [];
+  const hasNextPage = resolvedList?.hasNextPage ?? false;
+  const totalPages = deriveTotalPages(resolvedList, page, pageSize);
+
+  const syncUrl = useCallback(
+    (next: { page?: number; sort?: PostSort; q?: string; pageSize?: number }) => {
+      if (typeof window === "undefined") return;
+      const url = new URL(window.location.href);
+      const targetPage = next.page ?? page;
+      const targetPageSize = next.pageSize ?? pageSize;
+      const targetSort = next.sort ?? sort;
+      const targetQuery = next.q ?? searchQuery;
+
+      url.searchParams.set("page", String(targetPage));
+      url.searchParams.set("pageSize", String(targetPageSize));
+      url.searchParams.set("sort", targetSort);
+      if (targetQuery) {
+        url.searchParams.set("q", targetQuery);
+      } else {
+        url.searchParams.delete("q");
+      }
+
+      window.history.pushState({}, "", `${url.pathname}?${url.searchParams.toString()}`);
+    },
+    [page, pageSize, sort, searchQuery]
+  );
+
+  const handleNext = (): void => {
+    if (!hasNextPage) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    syncUrl({ page: nextPage });
+  };
+
+  const handlePrevious = (): void => {
+    if (page <= 1) return;
+    const nextPage = page - 1;
+    setPage(nextPage);
+    syncUrl({ page: nextPage });
+  };
+
+  const handleSortChange = (nextSort: PostSort): void => {
+    setSort(nextSort);
+    setPage(1);
+    syncUrl({ sort: nextSort, page: 1 });
+  };
+
+  useEffect(() => {
+    if (isLoading) {
+      setLiveAnnouncement("Loading posts…");
+      return;
+    }
+    if (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      setLiveAnnouncement(message ? `Error loading posts: ${message}` : "Error loading posts");
+      return;
+    }
+    if (posts.length === 0) {
+      setLiveAnnouncement("No posts available");
+      return;
+    }
+    const sortLabel = SORT_LABELS[sort];
+    const announcement = `Showing page ${page} of ${totalPages}, ${posts.length} posts, sorted by ${sortLabel}`;
+    setLiveAnnouncement(announcement);
+  }, [isLoading, error, posts.length, page, totalPages, sort]);
+
+  const errorMessage = error instanceof Error ? error.message : undefined;
 
   return (
-    <section aria-label="Posts list" className="mt-4">
-      <ul role="list" className="space-y-4">
-        {data.map((p) => (
-          <li key={p.id} className="rounded border border-gray-200 p-4 shadow-sm bg-white">
-            <h3 className="text-lg font-semibold text-gray-900">{p.title}</h3>
-            <p className="mt-2 text-gray-700">{p.content}</p>
-          </li>
-        ))}
-      </ul>
+    <section aria-label="Posts list" className="flex flex-col gap-6">
+      <div role="status" aria-live="polite" className="sr-only">
+        {liveAnnouncement}
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-text">Posts</h1>
+        <label className="text-sm text-text">
+          Sort by
+          <select
+            value={sort}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (isValidSort(value)) {
+                handleSortChange(value);
+              }
+            }}
+            aria-label="Sort posts"
+            className="ml-2 rounded border border-text-muted/40 px-2 py-1 text-sm text-text"
+          >
+            {POST_SORT_VALUES.map((option) => (
+              <option key={option} value={option}>
+                {SORT_LABELS[option]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {isLoading && posts.length === 0 ? (
+        <LoadingState message="Loading posts…" />
+      ) : error && posts.length === 0 ? (
+        <ErrorState title="Error loading posts" message={errorMessage} />
+      ) : posts.length === 0 ? (
+        <EmptyState title="No posts yet" message="There are currently no posts." />
+      ) : (
+        <ul role="list" className="space-y-4">
+          {posts.map((post) => (
+            <li key={post.id}>
+              <Card>
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-lg font-semibold text-text">{post.title}</h2>
+                  <p className="text-sm text-text-muted">{post.content}</p>
+                </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <PaginationControls
+        currentPage={page}
+        totalPages={totalPages}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
+      />
     </section>
+  );
+}
+
+export default function PostsPageClient(props: PostsPageClientProps): React.ReactElement {
+  const cacheRef = useRef<Cache<unknown> | null>(null);
+
+  const swrValue = useMemo(
+    () => ({
+      provider: (): Cache<unknown> => {
+        if (!cacheRef.current) {
+          cacheRef.current = createSWRCache();
+        }
+        return cacheRef.current;
+      },
+    }),
+    []
+  );
+
+  return (
+    <SWRConfig value={swrValue}>
+      <PostsPageClientInner {...props} />
+    </SWRConfig>
   );
 }

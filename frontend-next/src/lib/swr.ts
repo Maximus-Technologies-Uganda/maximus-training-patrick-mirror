@@ -6,8 +6,12 @@ import { DEFAULT_POST_SORT, PostListSchema, type PostList, type PostSort } from 
 
 // Removed unused fetchJson helper
 
+function normalizeQuery(value: string | undefined): string {
+  return value ? value.trim() : "";
+}
+
 // SWR key builder
-function postsListKey(page: number, pageSize: number, sort: PostSort): string {
+function postsListKey(page: number, pageSize: number, sort: PostSort, query: string): string {
   // Route Handler serves at /api/posts to avoid exposing service endpoints to the client
   const base = typeof window === "undefined" ? getBaseUrl() : "";
   const path = "/api/posts"; // client uses relative URL; server can still compute absolute
@@ -15,6 +19,9 @@ function postsListKey(page: number, pageSize: number, sort: PostSort): string {
   url.searchParams.set("page", String(page));
   url.searchParams.set("pageSize", String(pageSize));
   url.searchParams.set("sort", sort);
+  if (query) {
+    url.searchParams.set("q", query);
+  }
   // If base is empty (browser), return relative path; otherwise absolute for SSR
   return base ? url.toString() : `${path}?${url.searchParams.toString()}`;
 }
@@ -23,20 +30,22 @@ export function usePostsList(params?: {
   page?: number;
   pageSize?: number;
   sort?: PostSort;
+  q?: string;
   fallbackData?: PostList;
   revalidateOnMount?: boolean;
 }): { data: PostList | undefined; isLoading: boolean; error: unknown } {
   const page = params?.page ?? 1;
   const pageSize = params?.pageSize ?? 10;
   const sort = params?.sort ?? DEFAULT_POST_SORT;
-  const key = postsListKey(page, pageSize, sort);
+  const query = normalizeQuery(params?.q);
+  const key = postsListKey(page, pageSize, sort, query);
   const { data, isLoading, error } = useSWR<PostList>(
     key,
     async (url) => {
       const res = await fetch(url);
       if (res.status === 401) {
         // Treat unauthorized as an empty list for guests
-        return { page, pageSize, hasNextPage: false, items: [], sort } as PostList;
+        return { page, pageSize, hasNextPage: false, items: [], sort, total: 0 } as PostList;
       }
       if (!res.ok) {
         const message = `Request failed with ${res.status}`;
@@ -72,7 +81,8 @@ export function usePostsList(params?: {
 // Helper to refresh the first page after creating a new post
 export async function mutatePostsPage1(
   pageSize: number = 10,
-  sort: PostSort = DEFAULT_POST_SORT
+  sort: PostSort = DEFAULT_POST_SORT,
+  q: string = ""
 ): Promise<void> {
-  await mutate(postsListKey(1, pageSize, sort));
+  await mutate(postsListKey(1, pageSize, sort, normalizeQuery(q)));
 }

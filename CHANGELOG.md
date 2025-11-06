@@ -1,6 +1,11 @@
 ## 2025-11-07
 
 - fix(frontend-next): dedupe React modules in Vitest to restore hook dispatching during component and integration tests.
+- feat(frontend-next): add aria-live pagination announcements and isolate SWR cache per posts page instance.
+- test(frontend-next): cover shared pagination URLs across unit, integration, and Playwright suites.
+- test(frontend-next): rework posts pagination integration to use SWR-backed tsx spec with explicit fetch stubbing.
+- fix(frontend-next): refine derived total page counts for cursor pagination fallbacks and document inference strategy.
+- test(frontend-next): wrap posts pagination integration interactions in React act to suppress async update warnings.
 
 ## 2025-11-06
 
