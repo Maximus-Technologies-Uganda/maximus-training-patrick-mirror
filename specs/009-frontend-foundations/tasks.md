@@ -59,7 +59,7 @@
 
 ### SSR Page Setup
 
-- [ ] T019 [US1] Enhance `/posts` page to support sort parameter (`sort=date|title`, `order=asc|desc`) in `frontend-next/src/app/posts/page.tsx`
+- [ ] T019 [US1] Enhance `/posts` page to support combined sort parameter (`sort=date-desc|date-asc|title-asc|title-desc`) in `frontend-next/src/app/posts/page.tsx`
 - [ ] T020 [US1] Update Zod schemas in `frontend-next/src/lib/schemas.ts` (PostListSchema, ErrorEnvelopeSchema), and assess if backward compatibility or migration is required for existing data
 - [ ] T021 [US1] Enhance PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx` using token colors and spacing from `frontend-next/src/styles/tokens.css` for consistent design system alignment
 
