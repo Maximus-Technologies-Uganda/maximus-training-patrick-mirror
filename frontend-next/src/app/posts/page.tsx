@@ -68,7 +68,7 @@ export default async function PostsPage({
       url.searchParams.set("pageSize", String(pageSize + 1));
       url.searchParams.set("sort", sort);
       const fetchHeaders: Record<string, string> = {};
-      const incomingHeaders = headers();
+      const incomingHeaders = await headers();
       const cookieHeader = incomingHeaders.get("cookie");
       if (cookieHeader) {
         fetchHeaders.cookie = cookieHeader;
