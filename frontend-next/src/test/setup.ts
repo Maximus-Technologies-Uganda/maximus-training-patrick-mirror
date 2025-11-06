@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
@@ -9,7 +10,7 @@ import path from "path";
 // during Vitest runs. Overriding Module.require here ensures a single React
 // instance is used across the test runtime.
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Module = require("module");
   const origRequire = Module.prototype.require;
   const monorepoRoot = path.resolve(__dirname, "..", "..", "..");
@@ -23,15 +24,18 @@ try {
   let rootReactJsxDevRuntimePath: string | null = null;
   let rootReactCjsPath: string | null = null;
   let rootReactDomCjsPath: string | null = null;
+  let rootReactDomClientPath: string | null = null;
   // Paths to our local shims inside the frontend-next package
   const localReactShim = path.resolve(__dirname, "react-shim.cjs");
   const localJsxRuntimeShim = path.resolve(__dirname, "react-jsx-runtime-shim.cjs");
   const localTestingLibraryShim = path.resolve(__dirname, "testing-library-shim.cjs");
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     rootReactPath = require.resolve("react", { paths: [monorepoRoot] });
     try {
-      rootReactCjsPath = require.resolve("react/cjs/react.development.js", { paths: [monorepoRoot] });
+      rootReactCjsPath = require.resolve("react/cjs/react.development.js", {
+        paths: [monorepoRoot],
+      });
     } catch (_e) {
       // ignore
     }
@@ -39,25 +43,37 @@ try {
     // ignore
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     rootReactDomPath = require.resolve("react-dom", { paths: [monorepoRoot] });
     try {
-      rootReactDomCjsPath = require.resolve("react-dom/cjs/react-dom-client.development.js", { paths: [monorepoRoot] });
+      rootReactDomCjsPath = require.resolve("react-dom/cjs/react-dom-client.development.js", {
+        paths: [monorepoRoot],
+      });
     } catch (_e) {
       // ignore
+    }
+    try {
+      rootReactDomClientPath = require.resolve("react-dom/client", { paths: [monorepoRoot] });
+    } catch (_e) {
+      // ignore
+    }
+    if (!rootReactDomClientPath && rootReactDomCjsPath) {
+      rootReactDomClientPath = rootReactDomCjsPath;
     }
   } catch (_err) {
     // ignore
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     rootReactJsxRuntimePath = require.resolve("react/jsx-runtime", { paths: [monorepoRoot] });
   } catch (_err) {
     // ignore
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    rootReactJsxDevRuntimePath = require.resolve("react/jsx-dev-runtime", { paths: [monorepoRoot] });
+     
+    rootReactJsxDevRuntimePath = require.resolve("react/jsx-dev-runtime", {
+      paths: [monorepoRoot],
+    });
   } catch (_err) {
     // ignore
   }
@@ -65,7 +81,7 @@ try {
   // If react was resolved from a project-local directory, prefer jsx-runtime
   // files from the same package directory to avoid mixing versions.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
     if (rootReactPath) {
       const reactPkgDir = path.dirname(rootReactPath);
@@ -86,7 +102,7 @@ try {
   // use it as the target for any require('react') or require('react/jsx-runtime')
   // calls so that CJS require paths also receive a normalized module shape.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-require-imports
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
     if (fs.existsSync(localReactShim)) {
       // Use local shim for all react requires
@@ -101,9 +117,9 @@ try {
   }
 
   // Diagnostic: log resolved jsx runtime paths
-   
+
   console.log(`[test-setup] candidate jsx-runtime -> ${rootReactJsxRuntimePath}`);
-   
+
   console.log(`[test-setup] candidate jsx-dev-runtime -> ${rootReactJsxDevRuntimePath}`);
 
   if (rootReactPath || rootReactDomPath) {
@@ -112,11 +128,11 @@ try {
     // consumers import React via different interop shapes; normalizing here
     // prevents "default.forwardRef is not a function" and similar runtime
     // errors.
-     
+
     // Cache normalized modules by resolved path to preserve identity
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const __normalizeCache: Record<string, any> = {};
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     function normalizeReact(mod: any, resolvedPath?: string) {
       try {
         if (!mod || typeof mod !== "object") return mod;
@@ -135,7 +151,7 @@ try {
           try {
             // Prefer to set default to the same module object so identity
             // remains the same for any code checking equality.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             (mod as any).default = mod;
           } catch (_e) {
             // If the exports object is non-writable, fall back to returning
@@ -148,10 +164,12 @@ try {
         const fnNames = ["forwardRef", "createContext", "createElement", "useState", "useId"];
         for (const n of fnNames) {
           try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (!(n in mod) && mod.default && n in mod.default) (mod as any)[n] = (mod as any).default[n];
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (mod.default && !(n in mod.default) && n in mod) (mod as any).default[n] = (mod as any)[n];
+             
+            if (!(n in mod) && mod.default && n in mod.default)
+              (mod as any)[n] = (mod as any).default[n];
+             
+            if (mod.default && !(n in mod.default) && n in mod)
+              (mod as any).default[n] = (mod as any)[n];
           } catch (_e) {
             // ignore property assignment failures
           }
@@ -168,7 +186,7 @@ try {
     // require to avoid intercepting requires performed while loading the
     // shims or the real React runtime (prevents circular resolution).
     let __overrideSkip = false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     Module.prototype.require = function (this: any, request: string) {
       if (__overrideSkip) {
         return origRequire.call(this, request);
@@ -178,7 +196,7 @@ try {
         // and internal requires inside packages). If the resolved path points
         // into a nested @testing-library/react node_modules/react or
         // node_modules/react-dom folder, redirect to the hoisted copies.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-explicit-any
+         
         const resolveFilename = Module._resolveFilename as (id: string, parent: any) => string;
         let resolved: string | null = null;
         try {
@@ -195,9 +213,14 @@ try {
           // re-exports the hoisted dist entry. This prevents that package
           // from loading its own nested react/react-dom copies.
           try {
-            if (normalized.includes("/node_modules/@testing-library/react/") && localTestingLibraryShim && resolved !== localTestingLibraryShim) {
-               
-              console.log(`[test-setup] redirecting nested @testing-library/react ${resolved} -> ${localTestingLibraryShim}`);
+            if (
+              normalized.includes("/node_modules/@testing-library/react/") &&
+              localTestingLibraryShim &&
+              resolved !== localTestingLibraryShim
+            ) {
+              console.log(
+                `[test-setup] redirecting nested @testing-library/react ${resolved} -> ${localTestingLibraryShim}`
+              );
               try {
                 __overrideSkip = true;
                 return origRequire.call(this, localTestingLibraryShim);
@@ -211,9 +234,14 @@ try {
           // First, handle jsx-runtime files specifically so they are not
           // accidentally caught by the generic nested react check below.
           try {
-            if (rootReactJsxRuntimePath && normalized.includes("/node_modules/react/jsx-runtime") && resolved !== rootReactJsxRuntimePath) {
-               
-              console.log(`[test-setup] redirecting nested react/jsx-runtime ${resolved} -> ${rootReactJsxRuntimePath}`);
+            if (
+              rootReactJsxRuntimePath &&
+              normalized.includes("/node_modules/react/jsx-runtime") &&
+              resolved !== rootReactJsxRuntimePath
+            ) {
+              console.log(
+                `[test-setup] redirecting nested react/jsx-runtime ${resolved} -> ${rootReactJsxRuntimePath}`
+              );
               // Return the runtime as-is (do not apply React normalization).
               try {
                 __overrideSkip = true;
@@ -222,9 +250,14 @@ try {
                 __overrideSkip = false;
               }
             }
-            if (rootReactJsxDevRuntimePath && normalized.includes("/node_modules/react/jsx-dev-runtime") && resolved !== rootReactJsxDevRuntimePath) {
-               
-              console.log(`[test-setup] redirecting nested react/jsx-dev-runtime ${resolved} -> ${rootReactJsxDevRuntimePath}`);
+            if (
+              rootReactJsxDevRuntimePath &&
+              normalized.includes("/node_modules/react/jsx-dev-runtime") &&
+              resolved !== rootReactJsxDevRuntimePath
+            ) {
+              console.log(
+                `[test-setup] redirecting nested react/jsx-dev-runtime ${resolved} -> ${rootReactJsxDevRuntimePath}`
+              );
               try {
                 __overrideSkip = true;
                 return origRequire.call(this, rootReactJsxDevRuntimePath);
@@ -238,13 +271,25 @@ try {
             // This catches nested copies under frontend-next/node_modules or
             // other packages that may vendor their own node_modules folder.
             if (rootReactPath) {
-              const isNestedReact = (normalized.includes("/node_modules/react/") || normalized.includes("/node_modules/@testing-library/react/node_modules/react/")) && resolved !== rootReactPath;
-              const isNestedReactCjs = rootReactCjsPath && normalized.includes("/node_modules/react/cjs/") && resolved !== rootReactCjsPath;
-              const isTestingLibNestedReact = normalized.includes("@testing-library/react/node_modules/react");
+              const isNestedReact =
+                (normalized.includes("/node_modules/react/") ||
+                  normalized.includes(
+                    "/node_modules/@testing-library/react/node_modules/react/"
+                  )) &&
+                resolved !== rootReactPath;
+              const isNestedReactCjs =
+                rootReactCjsPath &&
+                normalized.includes("/node_modules/react/cjs/") &&
+                resolved !== rootReactCjsPath;
+              const isTestingLibNestedReact = normalized.includes(
+                "@testing-library/react/node_modules/react"
+              );
               if (isNestedReactCjs && rootReactCjsPath) {
                 // Prefer redirecting cjs/react.development paths to the cjs file in the hoisted copy
-                 
-                console.log(`[test-setup] redirecting nested react (cjs) ${resolved} -> ${rootReactCjsPath}`);
+
+                console.log(
+                  `[test-setup] redirecting nested react (cjs) ${resolved} -> ${rootReactCjsPath}`
+                );
                 try {
                   __overrideSkip = true;
                   return normalizeReact(origRequire.call(this, rootReactCjsPath), rootReactCjsPath);
@@ -253,8 +298,9 @@ try {
                 }
               }
               if (isNestedReact || isTestingLibNestedReact) {
-                 
-                console.log(`[test-setup] redirecting nested react ${resolved} -> ${rootReactPath}`);
+                console.log(
+                  `[test-setup] redirecting nested react ${resolved} -> ${rootReactPath}`
+                );
                 try {
                   __overrideSkip = true;
                   return normalizeReact(origRequire.call(this, rootReactPath), rootReactPath);
@@ -263,17 +309,53 @@ try {
                 }
               }
             }
-            if (rootReactDomPath) {
-              const isNestedReactDom = (normalized.includes("/node_modules/react-dom/") || normalized.includes("/node_modules/@testing-library/react/node_modules/react-dom/")) && resolved !== rootReactDomPath;
-              const isNestedReactDomCjs = rootReactDomCjsPath && normalized.includes("/node_modules/react-dom/cjs/") && resolved !== rootReactDomCjsPath;
-              const isTestingLibNestedReactDom = normalized.includes("@testing-library/react/node_modules/react-dom");
+            if (rootReactDomPath || rootReactDomClientPath || rootReactDomCjsPath) {
+              const isNestedReactDom =
+                (normalized.includes("/node_modules/react-dom/") ||
+                  normalized.includes(
+                    "/node_modules/@testing-library/react/node_modules/react-dom/"
+                  )) &&
+                resolved !== rootReactDomPath;
+              const isNestedReactDomCjs =
+                rootReactDomCjsPath &&
+                normalized.includes("/node_modules/react-dom/cjs/") &&
+                resolved !== rootReactDomCjsPath;
+              const isTestingLibNestedReactDom = normalized.includes(
+                "@testing-library/react/node_modules/react-dom"
+              );
+              const isNestedReactDomClient =
+                normalized.includes("/node_modules/react-dom/client") ||
+                normalized.includes("@testing-library/react/node_modules/react-dom/client");
+              if (isNestedReactDomClient) {
+                const clientRedirectTarget =
+                  rootReactDomClientPath ?? rootReactDomCjsPath ?? rootReactDomPath;
+                if (clientRedirectTarget && resolved !== clientRedirectTarget) {
+                  console.log(
+                    `[test-setup] redirecting nested react-dom/client ${resolved} -> ${clientRedirectTarget}`
+                  );
+                  try {
+                    __overrideSkip = true;
+                    return normalizeReact(
+                      origRequire.call(this, clientRedirectTarget),
+                      clientRedirectTarget
+                    );
+                  } finally {
+                    __overrideSkip = false;
+                  }
+                }
+              }
               if (isNestedReactDomCjs && rootReactDomCjsPath) {
                 // Redirect nested CJS react-dom client files to the hoisted cjs file
-                 
-                console.log(`[test-setup] redirecting nested react-dom (cjs) ${resolved} -> ${rootReactDomCjsPath}`);
+
+                console.log(
+                  `[test-setup] redirecting nested react-dom (cjs) ${resolved} -> ${rootReactDomCjsPath}`
+                );
                 try {
                   __overrideSkip = true;
-                  return normalizeReact(origRequire.call(this, rootReactDomCjsPath), rootReactDomCjsPath);
+                  return normalizeReact(
+                    origRequire.call(this, rootReactDomCjsPath),
+                    rootReactDomCjsPath
+                  );
                 } finally {
                   __overrideSkip = false;
                 }
@@ -284,17 +366,23 @@ try {
               // specific cases and force them to use the hoisted react-dom entry so
               // the renderer shares internals with the hoisted React.
               try {
-                if (normalized.includes("@testing-library/react/node_modules/react-dom/") && rootReactDomPath) {
-                  console.log(`[test-setup] redirecting nested @testing-library react-dom ${resolved} -> ${rootReactDomPath}`);
+                if (
+                  normalized.includes("@testing-library/react/node_modules/react-dom/") &&
+                  rootReactDomPath
+                ) {
+                  console.log(
+                    `[test-setup] redirecting nested @testing-library react-dom ${resolved} -> ${rootReactDomPath}`
+                  );
                   __overrideSkip = true;
                   return normalizeReact(origRequire.call(this, rootReactDomPath), rootReactDomPath);
                 }
               } catch (_e) {
                 // ignore
               }
-              if (isNestedReactDom || isTestingLibNestedReactDom) {
-                 
-                console.log(`[test-setup] redirecting nested react-dom ${resolved} -> ${rootReactDomPath}`);
+              if ((isNestedReactDom || isTestingLibNestedReactDom) && rootReactDomPath) {
+                console.log(
+                  `[test-setup] redirecting nested react-dom ${resolved} -> ${rootReactDomPath}`
+                );
                 try {
                   __overrideSkip = true;
                   return normalizeReact(origRequire.call(this, rootReactDomPath), rootReactDomPath);
@@ -333,7 +421,7 @@ try {
             __overrideSkip = false;
           }
         }
-        if ((request === "react-dom" || request === "react-dom/client") && rootReactDomPath) {
+        if (request === "react-dom" && rootReactDomPath) {
           try {
             __overrideSkip = true;
             return normalizeReact(origRequire.call(this, rootReactDomPath));
@@ -341,22 +429,38 @@ try {
             __overrideSkip = false;
           }
         }
+        if (request === "react-dom/client") {
+          const clientRedirectTarget =
+            rootReactDomClientPath ?? rootReactDomCjsPath ?? rootReactDomPath;
+          if (clientRedirectTarget) {
+            try {
+              __overrideSkip = true;
+              return normalizeReact(origRequire.call(this, clientRedirectTarget));
+            } finally {
+              __overrideSkip = false;
+            }
+          }
+        }
       } catch (_err) {
         // ignore and allow original require to run below
       }
       return origRequire.call(this, request);
     };
-     
+
     console.log(`[test-setup] forced react -> ${rootReactPath} (projectRoot=${projectRoot})`);
-     
-    console.log(`[test-setup] forced react-dom -> ${rootReactDomPath} (projectRoot=${projectRoot})`);
-     
+
+    console.log(
+      `[test-setup] forced react-dom -> ${rootReactDomPath} (projectRoot=${projectRoot})`
+    );
+
+    console.log(`[test-setup] forced react-dom/client -> ${rootReactDomClientPath}`);
+
     console.log(`[test-setup] forced react/jsx-runtime -> ${rootReactJsxRuntimePath}`);
-     
+
     console.log(`[test-setup] forced react/jsx-dev-runtime -> ${rootReactJsxDevRuntimePath}`);
   }
 } catch (_err) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const _msg = (_err as any) && (_err as any).message ? (_err as any).message : String(_err);
   console.warn("[test-setup] could not override Module.require:", _msg);
 }
@@ -366,27 +470,27 @@ try {
 // debug intermittent "Invalid hook call" and "document is not defined" errors.
 try {
   // Use CommonJS require.resolve for deterministic paths inside Vitest runtime
-  // eslint-disable-next-line @typescript-eslint/no-var-requires,@typescript-eslint/no-explicit-any
+   
   const r = require as any;
   const reactPath = r.resolve("react");
   const reactDomPath = r.resolve("react-dom");
-  // eslint-disable-next-line no-console
+   
   console.log(`[test-setup] resolved react -> ${reactPath}`);
-  // eslint-disable-next-line no-console
+   
   console.log(`[test-setup] resolved react-dom -> ${reactDomPath}`);
 } catch (_err) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const _msg = (_err as any) && (_err as any).message ? (_err as any).message : String(_err);
-  // eslint-disable-next-line no-console
+   
   console.warn("[test-setup] could not resolve react/react-dom:", _msg);
 }
 
 // Check jsdom presence
 if (typeof document === "undefined") {
-   
-  console.error("[test-setup] WARNING: document is undefined — jsdom may not be active for Vitest tests");
+  console.error(
+    "[test-setup] WARNING: document is undefined — jsdom may not be active for Vitest tests"
+  );
 } else {
-   
   console.log("[test-setup] document is available (jsdom OK)");
 }
 
