@@ -235,31 +235,42 @@ function PostsPageClientInner({
     syncUrl({ sort: nextSort, page: 1 });
   };
 
+  // Split live announcements into error and non-error
+  const [errorAnnouncement, setErrorAnnouncement] = useState<string | null>(null);
   useEffect(() => {
     if (isLoading) {
       setLiveAnnouncement("Loading posts…");
+      setErrorAnnouncement(null);
       return;
     }
     if (error) {
       const message = error instanceof Error ? error.message : undefined;
-      setLiveAnnouncement(message ? `Error loading posts: ${message}` : "Error loading posts");
+      setErrorAnnouncement(message ? `Error loading posts: ${message}` : "Error loading posts");
+      setLiveAnnouncement("");
       return;
     }
     if (posts.length === 0) {
       setLiveAnnouncement("No posts available");
+      setErrorAnnouncement(null);
       return;
     }
     const sortLabel = SORT_LABELS[sort];
     const announcement = `Showing page ${page} of ${totalPages}, ${posts.length} posts, sorted by ${sortLabel}`;
     setLiveAnnouncement(announcement);
+    setErrorAnnouncement(null);
   }, [isLoading, error, posts.length, page, totalPages, sort]);
 
   const errorMessage = error instanceof Error ? error.message : undefined;
 
   return (
     <section aria-label="Posts list" className="flex flex-col gap-6">
+      {/* Polite live region for non-error announcements */}
       <div role="status" aria-live="polite" className="sr-only">
-        {liveAnnouncement}
+        {errorAnnouncement ? "" : liveAnnouncement}
+      </div>
+      {/* Assertive live region for error announcements */}
+      <div role="status" aria-live="assertive" className="sr-only">
+        {errorAnnouncement}
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-text">Posts</h1>
