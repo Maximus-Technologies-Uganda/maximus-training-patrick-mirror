@@ -1,7 +1,12 @@
 import React from "react";
 
 import PostsPageClient from "../../../components/PostsPageClient";
-import type { Post as SsrPost } from "../../lib/schemas";
+import {
+  DEFAULT_POST_SORT,
+  POST_SORT_VALUES,
+  type Post as SsrPost,
+  type PostSort,
+} from "../../lib/schemas";
 
 export const dynamic = "force-dynamic";
 
@@ -20,16 +25,31 @@ function getSsrAppOrigin(): string {
   return "http://localhost:3000";
 }
 
-type PageSearchParams = { page?: string; pageSize?: string; q?: string };
+const SORT_OPTIONS_SET = new Set<PostSort>(POST_SORT_VALUES);
+
+type PageSearchParams = { page?: string; pageSize?: string; q?: string; sort?: string };
+
+function parseSort(value: string | undefined): PostSort {
+  if (value && SORT_OPTIONS_SET.has(value as PostSort)) {
+    return value as PostSort;
+  }
+  return DEFAULT_POST_SORT;
+}
 export default async function PostsPage({
   searchParams,
 }: {
   searchParams?: Promise<PageSearchParams>;
 }): Promise<React.ReactElement> {
   const incomingQuery = (searchParams ? await searchParams : {}) as PageSearchParams;
-  const page = Number(incomingQuery.page ?? "1");
-  const pageSize = Number(incomingQuery.pageSize ?? "10");
+  const requestedPage = Number(incomingQuery.page ?? "1");
+  const requestedPageSize = Number(incomingQuery.pageSize ?? "10");
   const q = incomingQuery.q ?? "";
+  const sort = parseSort(incomingQuery.sort);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const pageSize =
+    Number.isFinite(requestedPageSize) && requestedPageSize > 0
+      ? Math.min(requestedPageSize, 100)
+      : 10;
 
   // Auth is now handled client-side with session-based authentication
 
@@ -44,6 +64,7 @@ export default async function PostsPage({
       url.searchParams.set("page", String(page));
       // Request one extra to determine if there's a next page without another round trip
       url.searchParams.set("pageSize", String(pageSize + 1));
+      url.searchParams.set("sort", sort);
       const fetchHeaders: Record<string, string> = {};
       const res = await fetch(url.toString(), {
         cache: "no-store",
@@ -59,8 +80,8 @@ export default async function PostsPage({
               typeof (p as { content?: unknown }).content === "string"
                 ? (p as { content: string }).content
                 : typeof (p as { body?: unknown }).body === "string"
-                ? (p as { body: string }).body
-                : "",
+                  ? (p as { body: string }).body
+                  : "",
           })) as unknown as SsrPost[];
           initialHasNextPage = arr.length > pageSize;
           posts = arr.slice(0, pageSize);
@@ -73,8 +94,8 @@ export default async function PostsPage({
                 typeof (p as { content?: unknown }).content === "string"
                   ? (p as { content: string }).content
                   : typeof (p as { body?: unknown }).body === "string"
-                  ? (p as { body: string }).body
-                  : "",
+                    ? (p as { body: string }).body
+                    : "",
             })) as unknown as SsrPost[];
             posts = normalized.slice(0, pageSize);
             initialHasNextPage =
@@ -91,9 +112,9 @@ export default async function PostsPage({
       page={page}
       pageSize={pageSize}
       q={q}
+      sort={sort}
       initialData={posts}
       initialHasNextPage={initialHasNextPage}
     />
   );
 }
-

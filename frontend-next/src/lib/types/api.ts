@@ -4,7 +4,13 @@
 
 import type { z } from "zod";
 
-import { PostSchema, PostListSchema, PostCreateSchema } from "../schemas";
+import {
+  PostSchema,
+  PostListSchema,
+  PostCreateSchema,
+  type PostSort,
+  type ErrorEnvelope as ErrorEnvelopeType,
+} from "../schemas";
 
 // Core entity and collection types (derived from Zod schemas to avoid drift)
 export type Post = z.infer<typeof PostSchema>;
@@ -15,16 +21,14 @@ export type PostCreate = z.infer<typeof PostCreateSchema>;
 export interface ListQueryParams {
   page: number;
   pageSize: number;
+  sort: PostSort;
 }
 
 // Error envelope returned by server handlers for non-2xx responses
 export interface ApiError {
-  code: number;
+  code: string;
   message: string;
+  details?: unknown;
 }
 
-export interface ErrorEnvelope {
-  error: ApiError;
-}
-
-
+export type ErrorEnvelope = ErrorEnvelopeType;

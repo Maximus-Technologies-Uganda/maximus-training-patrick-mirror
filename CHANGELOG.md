@@ -1,3 +1,12 @@
+## 2025-11-06
+
+- feat(frontend): add SSR sort parameter support with validated URL query parsing.
+- feat(frontend): apply design token colors (text-text, text-muted, bg-surface, error).
+- feat(frontend): add user-facing sort dropdown (Newest/Oldest/Title A-Z/Z-A).
+- test(frontend): add comprehensive SSR integration tests with HTML snapshots.
+- test(frontend): add Playwright performance budget enforcement (<2s FCP).
+- refactor(frontend): centralize PostSort type in schemas.ts with Zod validation.
+
 ## 2025-11-05
 
 - fix: declare esbuild as a devDependency so verify-node-version tests can compile the TypeScript CLI.

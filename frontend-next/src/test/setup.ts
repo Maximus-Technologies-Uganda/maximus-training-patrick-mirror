@@ -3,6 +3,7 @@ import { cleanup } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 
 import { server } from "./test-server";
+import { DEFAULT_POST_SORT } from "../lib/schemas";
 
 // Mock Next.js navigation hooks for all tests
 vi.mock("next/navigation", () => ({
@@ -30,7 +31,7 @@ vi.mock("../lib/auth/use-session", () => ({
 
 // Mock SWR hooks - but allow tests to override
 const usePostsListMock = vi.fn(() => ({
-  data: { items: [], hasNextPage: false },
+  data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
   isLoading: false,
   error: null,
 }));
@@ -49,4 +50,3 @@ afterEach(() => {
   server.resetHandlers();
 });
 afterAll(() => server.close());
-

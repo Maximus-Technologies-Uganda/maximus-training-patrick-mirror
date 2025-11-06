@@ -305,6 +305,9 @@ importers:
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
+      tailwindcss:
+        specifier: ^4.1.16
+        version: 4.1.16
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -10020,6 +10023,12 @@ packages:
         integrity: sha512-P+Vu1qXfzediirmHOC3xKGAYeZtPcV9g76X+xg2FD4tYgR71ewMA35Y3sCz3zhiN/dwefRpJX0yBcgwi1fXNQA==,
       }
 
+  tailwindcss@4.1.16:
+    resolution:
+      {
+        integrity: sha512-pONL5awpaQX4LN5eiv7moSiSPd/DLDzKVRJz8Q9PgzmAdd1R4307GQS2ZpfiN7ZmekdQrfhZZiSE5jkLR4WNaA==,
+      }
+
   tar-fs@2.1.4:
     resolution:
       {
@@ -13828,7 +13837,7 @@ snapshots:
       std-env: 3.10.0
       test-exclude: 7.0.1
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@24.8.1)(@vitest/ui@3.2.4)(jsdom@26.1.0)(msw@2.11.6(@types/node@24.8.1)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1)
+      vitest: 3.2.4(@types/node@20.19.23)(@vitest/ui@3.2.4)(jsdom@27.0.1(postcss@8.5.6))(msw@2.11.6(@types/node@20.19.23)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -13887,7 +13896,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/node@24.8.1)(@vitest/ui@3.2.4)(jsdom@26.1.0)(msw@2.11.6(@types/node@24.8.1)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1)
+      vitest: 3.2.4(@types/node@20.19.23)(@vitest/ui@3.2.4)(jsdom@27.0.1(postcss@8.5.6))(msw@2.11.6(@types/node@20.19.23)(typescript@5.9.3))(tsx@4.20.6)(yaml@2.8.1)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -18055,6 +18064,8 @@ snapshots:
       '@pkgr/core': 0.2.9
 
   tailwind-merge@2.6.0: {}
+
+  tailwindcss@4.1.16: {}
 
   tar-fs@2.1.4:
     dependencies:

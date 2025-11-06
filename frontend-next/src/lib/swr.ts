@@ -2,18 +2,19 @@ import useSWR, { mutate } from "swr";
 // zod imported elsewhere; no direct use here
 
 import { getBaseUrl } from "./config";
-import { PostListSchema, type PostList } from "./schemas";
+import { DEFAULT_POST_SORT, PostListSchema, type PostList, type PostSort } from "./schemas";
 
 // Removed unused fetchJson helper
 
 // SWR key builder
-function postsListKey(page: number, pageSize: number): string {
+function postsListKey(page: number, pageSize: number, sort: PostSort): string {
   // Route Handler serves at /api/posts to avoid exposing service endpoints to the client
   const base = typeof window === "undefined" ? getBaseUrl() : "";
   const path = "/api/posts"; // client uses relative URL; server can still compute absolute
   const url = new URL(path, base || "http://localhost");
   url.searchParams.set("page", String(page));
   url.searchParams.set("pageSize", String(pageSize));
+  url.searchParams.set("sort", sort);
   // If base is empty (browser), return relative path; otherwise absolute for SSR
   return base ? url.toString() : `${path}?${url.searchParams.toString()}`;
 }
@@ -21,12 +22,14 @@ function postsListKey(page: number, pageSize: number): string {
 export function usePostsList(params?: {
   page?: number;
   pageSize?: number;
+  sort?: PostSort;
   fallbackData?: PostList;
   revalidateOnMount?: boolean;
 }): { data: PostList | undefined; isLoading: boolean; error: unknown } {
   const page = params?.page ?? 1;
   const pageSize = params?.pageSize ?? 10;
-  const key = postsListKey(page, pageSize);
+  const sort = params?.sort ?? DEFAULT_POST_SORT;
+  const key = postsListKey(page, pageSize, sort);
   const { data, isLoading, error } = useSWR<PostList>(
     key,
     async (url) => {
@@ -46,6 +49,7 @@ export function usePostsList(params?: {
             pageSize,
             hasNextPage: json.length >= pageSize,
             items: json,
+            sort,
           }
         : json;
       const parsed = PostListSchema.safeParse(normalizedJson);
@@ -60,14 +64,15 @@ export function usePostsList(params?: {
       revalidateIfStale: false,
       dedupingInterval: 0,
       shouldRetryOnError: false,
-    },
+    }
   );
   return { data, isLoading, error };
 }
 
 // Helper to refresh the first page after creating a new post
-export async function mutatePostsPage1(pageSize: number = 10): Promise<void> {
-  await mutate(postsListKey(1, pageSize));
+export async function mutatePostsPage1(
+  pageSize: number = 10,
+  sort: PostSort = DEFAULT_POST_SORT
+): Promise<void> {
+  await mutate(postsListKey(1, pageSize, sort));
 }
-
-

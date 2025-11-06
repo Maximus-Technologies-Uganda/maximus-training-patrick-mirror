@@ -25,14 +25,21 @@ export const PostSchema = z.object({
   permissions: PostPermissionsSchema.optional(),
 });
 
+export const PostSortSchema = z.enum(["date-desc", "date-asc", "title-desc", "title-asc"]);
+
+export type PostSort = z.infer<typeof PostSortSchema>;
+
+export const POST_SORT_VALUES = PostSortSchema.options;
+
+export const DEFAULT_POST_SORT: PostSort = "date-desc";
+
 export const PostListSchema = z.object({
-  page: z.number(),
-  pageSize: z.number(),
-  hasNextPage: z.boolean(),
   items: z.array(PostSchema),
-  totalItems: z.number().optional(),
-  totalPages: z.number().optional(),
-  currentPage: z.number().optional(),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1).max(100),
+  hasNextPage: z.boolean(),
+  total: z.number().int().optional(),
+  sort: PostSortSchema.optional(),
 });
 
 export const PostCreateSchema = z.object({
@@ -42,9 +49,16 @@ export const PostCreateSchema = z.object({
   published: z.boolean().optional(),
 });
 
+export const ErrorEnvelopeSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    details: z.unknown().optional(),
+  }),
+});
+
 // Inferred TS types
 export type Post = z.infer<typeof PostSchema>;
 export type PostList = z.infer<typeof PostListSchema>;
 export type PostCreate = z.infer<typeof PostCreateSchema>;
-
-
+export type ErrorEnvelope = z.infer<typeof ErrorEnvelopeSchema>;
