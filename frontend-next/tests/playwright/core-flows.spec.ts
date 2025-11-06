@@ -2,11 +2,24 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Posts initial load", () => {
   test("renders server HTML within 2s performance budget", async ({ page }) => {
-    const start = Date.now();
-    await page.goto("/posts", { waitUntil: "domcontentloaded" });
-    const elapsed = Date.now() - start;
+    // Capture Server-Timing header to measure SSR time (excluding network latency)
+    let serverTimingHeader: string | null = null;
+    page.on("response", (response) => {
+      if (response.url().includes("/posts")) {
+        serverTimingHeader = response.headers()["server-timing"] || null;
+      }
+    });
 
-    expect(elapsed).toBeLessThan(2000);
+    await page.goto("/posts", { waitUntil: "domcontentloaded" });
+
+    // Parse SSR duration from Server-Timing header
+    expect(serverTimingHeader).toBeTruthy();
+    const ssrMatch = serverTimingHeader?.match(/ssr;dur=(\d+(?:\.\d+)?)/);
+    expect(ssrMatch).toBeTruthy();
+    const ssrDuration = parseFloat(ssrMatch![1]);
+
+    // Assert SSR server render time < 2000ms (excluding network latency)
+    expect(ssrDuration).toBeLessThan(2000);
 
     await expect(page.getByRole("heading", { level: 1, name: "Posts" })).toBeVisible();
 

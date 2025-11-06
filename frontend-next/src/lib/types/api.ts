@@ -25,6 +25,9 @@ export interface ListQueryParams {
 }
 
 // Error envelope returned by server handlers for non-2xx responses
+// NOTE: The `code` field type was changed from `number` to `string` to align with the backend API contract.
+// This is a breaking change. Ensure all error handling code has been updated accordingly.
+// See migration notes in task T020 for details.
 export interface ApiError {
   code: string;
   message: string;
