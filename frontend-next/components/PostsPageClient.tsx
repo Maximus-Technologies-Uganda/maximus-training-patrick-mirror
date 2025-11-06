@@ -370,7 +370,12 @@ export default function PostsPageClient({
         </div>
 
         <div className="mt-4">
-          <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
+          <NewPostForm
+            pageSize={pageSize}
+            sort={sort}
+            query={searchQuery}
+            onSuccess={onCreateSuccess}
+          />
         </div>
 
         <section className="mt-4" aria-label="Posts list">
