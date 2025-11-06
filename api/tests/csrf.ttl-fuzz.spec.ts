@@ -7,7 +7,7 @@ import { createRepository } from '../src/repositories/posts-repository';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
-const TEST_SESSION_SECRET = process.env.SESSION_SECRET || "test-secret";
+const TEST_SESSION_SECRET = process.env.SESSION_SECRET || 'test-secret';
 process.env.SESSION_SECRET = TEST_SESSION_SECRET;
 
 type MakeAppOptions = {
@@ -25,37 +25,45 @@ async function makeApp(options: MakeAppOptions = {}) {
 
 function base64url(input: Buffer | string): string {
   return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+}
+
+function toDateObject(dateInput: string | Date): Date {
+  return dateInput instanceof Date ? dateInput : new Date(dateInput);
 }
 
 function makeSessionCookie(userId: string, role: string = 'owner'): string {
-  const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = base64url(
     JSON.stringify({
       userId,
       role,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60
-    })
+      exp: Math.floor(Date.now() / 1000) + 60 * 60,
+    }),
   );
   const crypto = require('node:crypto');
   const signature = base64url(
-    crypto
-      .createHmac('sha256', TEST_SESSION_SECRET)
-      .update(`${header}.${payload}`)
-      .digest()
+    crypto.createHmac('sha256', TEST_SESSION_SECRET).update(`${header}.${payload}`).digest(),
   );
   return `session=${header}.${payload}.${signature}`;
 }
 
-function makeCsrfToken(timestampSeconds: number, uuidSuffix: string = 'testuuid1234567890'): string {
+function makeCsrfToken(
+  timestampSeconds: number,
+  uuidSuffix: string = 'testuuid1234567890',
+): string {
   return `${timestampSeconds}-${uuidSuffix}`;
 }
 
-function makeBoundCsrfToken(userId: string, timestampSeconds: number, secret: string = TEST_SESSION_SECRET): string {
+function makeBoundCsrfToken(
+  userId: string,
+  timestampSeconds: number,
+  secret: string = TEST_SESSION_SECRET,
+): string {
   const crypto = require('node:crypto');
   const sig = crypto
     .createHmac('sha256', secret)
@@ -67,7 +75,7 @@ function makeBoundCsrfToken(userId: string, timestampSeconds: number, secret: st
 
 function buildRepository(overrides: Partial<IPostsRepository>): IPostsRepository {
   const notImplemented = async () => {
-    throw new Error("Not implemented in test stub");
+    throw new Error('Not implemented in test stub');
   };
 
   return {
@@ -116,7 +124,7 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
   describe('CSRF token TTL boundaries', () => {
     it('accepts CSRF tokens exactly at 2-hour boundary', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const boundaryTimestamp = now - (2 * 60 * 60) + 1; // Near boundary to account for processing latency
+      const boundaryTimestamp = now - 2 * 60 * 60 + 1; // Near boundary to account for processing latency
 
       const repository = buildRepository({
         create: async (post) => {
@@ -128,8 +136,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
             content: 'This should work at exactly 2-hour boundary',
             tags: [],
             published: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           };
         },
       });
@@ -142,41 +150,45 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'CSRF TTL Boundary Test',
-          content: 'This should work at exactly 2-hour boundary'
+          content: 'This should work at exactly 2-hour boundary',
         });
 
       expect(res.status).toBe(201);
       expect(res.body.id).toEqual(expect.any(String));
 
-      saveTestOutput('csrf-exactly-2h-boundary-valid', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-exactly-2h-boundary-valid',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'CSRF TTL Boundary Test',
+            content: 'This should work at exactly 2-hour boundary',
+          },
         },
-        body: {
-          title: 'CSRF TTL Boundary Test',
-          content: 'This should work at exactly 2-hour boundary'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('rejects CSRF tokens 1 second past 2-hour boundary', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const expiredTimestamp = now - (2 * 60 * 60) - 1; // 2 hours + 1 second ago
+      const expiredTimestamp = now - 2 * 60 * 60 - 1; // 2 hours + 1 second ago
 
       const repository = buildRepository({
         create: async () => ({
@@ -186,8 +198,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'N/A',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       });
 
@@ -199,42 +211,46 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'CSRF TTL Expired Test',
-          content: 'This should be rejected because token is expired'
+          content: 'This should be rejected because token is expired',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Invalid or expired CSRF token');
 
-      saveTestOutput('csrf-2h-1s-expired-rejected', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-2h-1s-expired-rejected',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'CSRF TTL Expired Test',
+            content: 'This should be rejected because token is expired',
+          },
         },
-        body: {
-          title: 'CSRF TTL Expired Test',
-          content: 'This should be rejected because token is expired'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('accepts CSRF tokens 5 minutes in the future (clock skew tolerance)', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const futureTimestamp = now + (5 * 60); // 5 minutes in the future
+      const futureTimestamp = now + 5 * 60; // 5 minutes in the future
 
       const repository = buildRepository({
         create: async (post) => {
@@ -246,8 +262,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
             content: 'This should work with future token within skew tolerance',
             tags: [],
             published: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           };
         },
       });
@@ -260,41 +276,45 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'CSRF Future Token Test',
-          content: 'This should work with future token within skew tolerance'
+          content: 'This should work with future token within skew tolerance',
         });
 
       expect(res.status).toBe(201);
       expect(res.body.id).toEqual(expect.any(String));
 
-      saveTestOutput('csrf-5m-future-within-skew-valid', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-5m-future-within-skew-valid',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'CSRF Future Token Test',
+            content: 'This should work with future token within skew tolerance',
+          },
         },
-        body: {
-          title: 'CSRF Future Token Test',
-          content: 'This should work with future token within skew tolerance'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('rejects CSRF tokens 5 minutes + 1 second in the future', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const farFutureTimestamp = now + (5 * 60) + 2; // 5 minutes + 2 seconds in the future (with 1-second timing buffer)
+      const farFutureTimestamp = now + 5 * 60 + 2; // 5 minutes + 2 seconds in the future (with 1-second timing buffer)
 
       const repository = buildRepository({
         create: async () => ({
@@ -304,8 +324,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'N/A',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       });
 
@@ -317,37 +337,41 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'CSRF Far Future Test',
-          content: 'This should be rejected because token is too far in future'
+          content: 'This should be rejected because token is too far in future',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Invalid or expired CSRF token');
 
-      saveTestOutput('csrf-5m-1s-future-rejected', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-5m-1s-future-rejected',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'CSRF Far Future Test',
+            content: 'This should be rejected because token is too far in future',
+          },
         },
-        body: {
-          title: 'CSRF Far Future Test',
-          content: 'This should be rejected because token is too far in future'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('accepts fresh CSRF tokens (just created)', async () => {
@@ -363,8 +387,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
             content: 'This should work with a fresh token',
             tags: [],
             published: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           };
         },
       });
@@ -377,36 +401,40 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'CSRF Fresh Token Test',
-          content: 'This should work with a fresh token'
+          content: 'This should work with a fresh token',
         });
 
       expect(res.status).toBe(201);
       expect(res.body.id).toEqual(expect.any(String));
 
-      saveTestOutput('csrf-fresh-token-valid', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-fresh-token-valid',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'CSRF Fresh Token Test',
+            content: 'This should work with a fresh token',
+          },
         },
-        body: {
-          title: 'CSRF Fresh Token Test',
-          content: 'This should work with a fresh token'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('rejects malformed CSRF tokens (no dash)', async () => {
@@ -418,8 +446,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'N/A',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       });
 
@@ -431,37 +459,40 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=othertoken`
-        ].join('; '))
+        .set('Cookie', [makeSessionCookie('test-user-123', 'owner'), `csrf=othertoken`].join('; '))
         .set('X-CSRF-Token', malformedToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'Malformed CSRF Test',
-          content: 'This should be rejected because token is malformed'
+          content: 'This should be rejected because token is malformed',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Invalid or expired CSRF token');
 
-      saveTestOutput('csrf-malformed-token-rejected', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${malformedToken}`].join('; '),
-          'X-CSRF-Token': malformedToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-malformed-token-rejected',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${malformedToken}`].join(
+              '; ',
+            ),
+            'X-CSRF-Token': malformedToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Malformed CSRF Test',
+            content: 'This should be rejected because token is malformed',
+          },
         },
-        body: {
-          title: 'Malformed CSRF Test',
-          content: 'This should be rejected because token is malformed'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('rejects CSRF tokens with invalid timestamp', async () => {
@@ -473,8 +504,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'N/A',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       });
 
@@ -486,37 +517,44 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${invalidTimestampToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${invalidTimestampToken}`].join('; '),
+        )
         .set('X-CSRF-Token', invalidTimestampToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'Invalid Timestamp CSRF Test',
-          content: 'This should be rejected because timestamp is invalid'
+          content: 'This should be rejected because timestamp is invalid',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Invalid or expired CSRF token');
 
-      saveTestOutput('csrf-invalid-timestamp-rejected', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${invalidTimestampToken}`].join('; '),
-          'X-CSRF-Token': invalidTimestampToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-invalid-timestamp-rejected',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [
+              makeSessionCookie('test-user-123', 'owner'),
+              `csrf=${invalidTimestampToken}`,
+            ].join('; '),
+            'X-CSRF-Token': invalidTimestampToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Invalid Timestamp CSRF Test',
+            content: 'This should be rejected because timestamp is invalid',
+          },
         },
-        body: {
-          title: 'Invalid Timestamp CSRF Test',
-          content: 'This should be rejected because timestamp is invalid'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('rejects CSRF tokens with empty UUID part', async () => {
@@ -529,8 +567,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'N/A',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       });
 
@@ -542,42 +580,48 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${emptyUuidToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${emptyUuidToken}`].join('; '),
+        )
         .set('X-CSRF-Token', emptyUuidToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'Empty UUID CSRF Test',
-          content: 'This should be rejected because UUID part is empty'
+          content: 'This should be rejected because UUID part is empty',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Invalid or expired CSRF token');
 
-      saveTestOutput('csrf-empty-uuid-rejected', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${emptyUuidToken}`].join('; '),
-          'X-CSRF-Token': emptyUuidToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-empty-uuid-rejected',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${emptyUuidToken}`].join(
+              '; ',
+            ),
+            'X-CSRF-Token': emptyUuidToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Empty UUID CSRF Test',
+            content: 'This should be rejected because UUID part is empty',
+          },
         },
-        body: {
-          title: 'Empty UUID CSRF Test',
-          content: 'This should be rejected because UUID part is empty'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('validates CSRF for PUT requests with boundary conditions', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const boundaryTimestamp = now - (2 * 60 * 60); // Exactly 2 hours ago
+      const boundaryTimestamp = now - 2 * 60 * 60; // Exactly 2 hours ago
 
       const repository = buildRepository({
         getById: async (id) => ({
@@ -587,8 +631,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'Old content',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
         replace: async (id, post) => {
           expect(id).toBe('test-post-123');
@@ -605,40 +649,44 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'Updated with Boundary CSRF',
-          content: 'This should work with boundary CSRF token'
+          content: 'This should work with boundary CSRF token',
         });
 
       expect(res.status).toBe(200);
 
-      saveTestOutput('csrf-put-boundary-valid', {
-        method: 'PUT',
-        url: '/posts/test-post-123',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-put-boundary-valid',
+        {
+          method: 'PUT',
+          url: '/posts/test-post-123',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Updated with Boundary CSRF',
+            content: 'This should work with boundary CSRF token',
+          },
         },
-        body: {
-          title: 'Updated with Boundary CSRF',
-          content: 'This should work with boundary CSRF token'
-        },
-      }, res);
+        res,
+      );
     });
 
     it('validates CSRF for DELETE requests with boundary conditions', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const boundaryTimestamp = now - (2 * 60 * 60); // Exactly 2 hours ago
+      const boundaryTimestamp = now - 2 * 60 * 60; // Exactly 2 hours ago
 
       const repository = buildRepository({
         getById: async (id) => ({
@@ -648,8 +696,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'Old content',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
         delete: async (id) => {
           expect(id).toBe('test-post-123');
@@ -664,32 +712,36 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .delete('/posts/test-post-123')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner');
 
       expect(res.status).toBe(204);
 
-      saveTestOutput('csrf-delete-boundary-valid', {
-        method: 'DELETE',
-        url: '/posts/test-post-123',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-delete-boundary-valid',
+        {
+          method: 'DELETE',
+          url: '/posts/test-post-123',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
         },
-      }, res);
+        res,
+      );
     });
 
     it('rejects DELETE with expired CSRF token', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const expiredTimestamp = now - (2 * 60 * 60) - 1; // 2 hours + 1 second ago
+      const expiredTimestamp = now - 2 * 60 * 60 - 1; // 2 hours + 1 second ago
 
       const repository = buildRepository({
         delete: async () => false,
@@ -702,10 +754,10 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .delete('/posts/test-post-123')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner');
@@ -714,17 +766,21 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('Invalid or expired CSRF token');
 
-      saveTestOutput('csrf-delete-expired-rejected', {
-        method: 'DELETE',
-        url: '/posts/test-post-123',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
-          'X-CSRF-Token': csrfToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-delete-expired-rejected',
+        {
+          method: 'DELETE',
+          url: '/posts/test-post-123',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+            'X-CSRF-Token': csrfToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
         },
-      }, res);
+        res,
+      );
     });
   });
 
@@ -744,8 +800,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'N/A',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       });
 
@@ -756,44 +812,53 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('different-user-456', 'owner'), // Different session
-          `csrf=${csrfToken1}` // Token from different session
-        ].join('; '))
+        .set(
+          'Cookie',
+          [
+            makeSessionCookie('different-user-456', 'owner'), // Different session
+            `csrf=${csrfToken1}`, // Token from different session
+          ].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken1)
         .set('X-User-Id', 'different-user-456')
         .set('X-User-Role', 'owner')
         .send({
           title: 'Cross-Session CSRF Test',
-          content: 'This should be rejected because token is from different session'
+          content: 'This should be rejected because token is from different session',
         });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('FORBIDDEN');
       expect(res.body.message).toBe('CSRF token mismatch');
 
-      saveTestOutput('csrf-cross-session-rejected', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('different-user-456', 'owner'), `csrf=${csrfToken1}`].join('; '),
-          'X-CSRF-Token': csrfToken1,
-          'X-User-Id': 'different-user-456',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-cross-session-rejected',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('different-user-456', 'owner'), `csrf=${csrfToken1}`].join(
+              '; ',
+            ),
+            'X-CSRF-Token': csrfToken1,
+            'X-User-Id': 'different-user-456',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Cross-Session CSRF Test',
+            content: 'This should be rejected because token is from different session',
+          },
         },
-        body: {
-          title: 'Cross-Session CSRF Test',
-          content: 'This should be rejected because token is from different session'
-        },
-      }, res);
+        res,
+      );
     });
   });
 
   describe('Error response format', () => {
     it('includes requestId in all CSRF error responses', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const expiredTimestamp = now - (2 * 60 * 60) - 1; // Expired token
+      const expiredTimestamp = now - 2 * 60 * 60 - 1; // Expired token
 
       const csrfToken = makeCsrfToken(expiredTimestamp);
       const res = await request(app)
@@ -801,17 +866,17 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .set('X-Request-Id', 'csrf-test-request-123')
         .send({
           title: 'CSRF Error Response Test',
-          content: 'This should be rejected with proper requestId'
+          content: 'This should be rejected with proper requestId',
         });
 
       expect(res.status).toBe(403);
@@ -822,7 +887,7 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
 
     it('sets Cache-Control: no-store on CSRF error responses', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const expiredTimestamp = now - (2 * 60 * 60) - 1; // Expired token
+      const expiredTimestamp = now - 2 * 60 * 60 - 1; // Expired token
 
       const csrfToken = makeCsrfToken(expiredTimestamp);
       const res = await request(app)
@@ -830,16 +895,16 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${csrfToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${csrfToken}`].join('; '),
+        )
         .set('X-CSRF-Token', csrfToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'CSRF Cache Control Test',
-          content: 'This should be rejected with no-store header'
+          content: 'This should be rejected with no-store header',
         });
 
       expect(res.status).toBe(403);
@@ -857,8 +922,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
           content: 'N/A',
           tags: [],
           published: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       });
 
@@ -870,16 +935,16 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${malformedToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${malformedToken}`].join('; '),
+        )
         .set('X-CSRF-Token', malformedToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'Too Many Dashes Test',
-          content: 'This should be rejected because token has too many dashes'
+          content: 'This should be rejected because token has too many dashes',
         });
 
       expect(res.status).toBe(403);
@@ -898,8 +963,8 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
             content: 'This should work with legacy token format',
             tags: [],
             published: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           };
         },
       });
@@ -912,37 +977,40 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
         .set('Content-Type', 'application/json')
         .set('Accept', 'application/json')
         .set('Origin', 'http://localhost:3001')
-        .set('Cookie', [
-          makeSessionCookie('test-user-123', 'owner'),
-          `csrf=${legacyToken}`
-        ].join('; '))
+        .set(
+          'Cookie',
+          [makeSessionCookie('test-user-123', 'owner'), `csrf=${legacyToken}`].join('; '),
+        )
         .set('X-CSRF-Token', legacyToken)
         .set('X-User-Id', 'test-user-123')
         .set('X-User-Role', 'owner')
         .send({
           title: 'Legacy CSRF Test',
-          content: 'This should work with legacy token format'
+          content: 'This should work with legacy token format',
         });
 
       expect(res.status).toBe(201);
       expect(res.body.id).toEqual(expect.any(String));
 
-      saveTestOutput('csrf-legacy-token-valid', {
-        method: 'POST',
-        url: '/posts',
-        headers: {
-          Origin: 'http://localhost:3001',
-          Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${legacyToken}`].join('; '),
-          'X-CSRF-Token': legacyToken,
-          'X-User-Id': 'test-user-123',
-          'X-User-Role': 'owner'
+      saveTestOutput(
+        'csrf-legacy-token-valid',
+        {
+          method: 'POST',
+          url: '/posts',
+          headers: {
+            Origin: 'http://localhost:3001',
+            Cookie: [makeSessionCookie('test-user-123', 'owner'), `csrf=${legacyToken}`].join('; '),
+            'X-CSRF-Token': legacyToken,
+            'X-User-Id': 'test-user-123',
+            'X-User-Role': 'owner',
+          },
+          body: {
+            title: 'Legacy CSRF Test',
+            content: 'This should work with legacy token format',
+          },
         },
-        body: {
-          title: 'Legacy CSRF Test',
-          content: 'This should work with legacy token format'
-        },
-      }, res);
+        res,
+      );
     });
   });
 });
-
