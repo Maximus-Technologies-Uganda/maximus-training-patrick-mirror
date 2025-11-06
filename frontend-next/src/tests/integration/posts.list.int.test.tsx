@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { SWRConfig } from "swr";
 import { http, HttpResponse } from "msw";
 import React from "react";
 import { describe, it, vi } from "vitest";
@@ -36,7 +37,14 @@ describe("Integration: Posts list states", () => {
       }),
     );
 
-    render(<PostsPageClient />);
+  console.debug('[diag][posts.list] globalThis.fetch before render ->', globalThis.fetch);
+  console.debug('[diag][posts.list] typeof fetch ->', typeof globalThis.fetch);
+
+  render(
+    <SWRConfig value={{ provider: () => new Map() }}>
+      <PostsPageClient />
+    </SWRConfig>,
+  );
 
     // Expect loading first (to be implemented)
     // expect(screen.getByRole("status")).toHaveTextContent(/loading/i);
@@ -56,7 +64,14 @@ describe("Integration: Posts list states", () => {
       }),
     );
 
-    render(<PostsPageClient />);
+  console.debug('[diag][posts.list] globalThis.fetch before render ->', globalThis.fetch);
+  console.debug('[diag][posts.list] typeof fetch ->', typeof globalThis.fetch);
+
+  render(
+    <SWRConfig value={{ provider: () => new Map() }}>
+      <PostsPageClient />
+    </SWRConfig>,
+  );
     // This will fail until empty state is implemented
     await screen.findByText(/no posts yet/i);
   });
@@ -71,7 +86,14 @@ describe("Integration: Posts list states", () => {
       }),
     );
 
-    render(<PostsPageClient />);
+  console.debug('[diag][posts.list] globalThis.fetch before render ->', globalThis.fetch);
+  console.debug('[diag][posts.list] typeof fetch ->', typeof globalThis.fetch);
+
+  render(
+    <SWRConfig value={{ provider: () => new Map() }}>
+      <PostsPageClient />
+    </SWRConfig>,
+  );
     // This will fail until error state is implemented
     await screen.findByText(/error/i);
   });

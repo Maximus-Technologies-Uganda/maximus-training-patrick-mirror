@@ -42,7 +42,9 @@ export default async function PostsPage({
 }: {
   searchParams?: Promise<PageSearchParams>;
 }): Promise<React.ReactElement> {
+  console.debug('[diag][page] PostsPage invoked - searchParams (promise?) ->', !!searchParams);
   const incomingQuery = (searchParams ? await searchParams : {}) as PageSearchParams;
+  console.debug('[diag][page] incomingQuery ->', incomingQuery);
   const requestedPage = Number(incomingQuery.page ?? "1");
   const requestedPageSize = Number(incomingQuery.pageSize ?? "10");
   const q = incomingQuery.q ?? "";
@@ -52,6 +54,7 @@ export default async function PostsPage({
     Number.isFinite(requestedPageSize) && requestedPageSize > 0
       ? Math.min(requestedPageSize, 100)
       : 10;
+  console.debug('[diag][page] computed page,pageSize ->', page, pageSize);
 
   // Auth is now handled client-side with session-based authentication
 
@@ -68,10 +71,38 @@ export default async function PostsPage({
       url.searchParams.set("pageSize", String(pageSize + 1));
       url.searchParams.set("sort", sort);
       const fetchHeaders: Record<string, string> = {};
-      const incomingHeaders = await headers();
-      const cookieHeader = incomingHeaders.get("cookie");
+      console.debug('[diag][page] calling next/headers()');
+      let incomingHeaders;
+      try {
+        incomingHeaders = await headers();
+        console.debug('[diag][page] headers() result ->', incomingHeaders && typeof incomingHeaders.get === 'function' ? '<Headers-like>' : incomingHeaders);
+      } catch (e) {
+        // headers() can throw when running outside a Next request scope (tests).
+        // Don't rethrow here — proceed without incoming headers so SSR can still
+        // attempt to fetch (tests can stub global fetch). This mirrors production
+        // behavior where cookies may be absent.
+        console.debug('[diag][page] headers() threw ->', e);
+        incomingHeaders = undefined;
+      }
+      const cookieHeader = incomingHeaders && typeof incomingHeaders.get === 'function' ? incomingHeaders.get("cookie") : undefined;
       if (cookieHeader) {
         fetchHeaders.cookie = cookieHeader;
+      }
+      console.debug('[diag][page] globalThis.fetch at call ->', globalThis.fetch);
+      try {
+        // Compare the free 'fetch' binding to globalThis.fetch
+        // to detect if the module is using a different fetch implementation.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        console.debug('[diag][page] fetch === globalThis.fetch ->', (fetch as any) === (globalThis as any).fetch);
+      } catch (e) {
+        console.debug('[diag][page] fetch compare threw', e);
+      }
+      console.debug('[diag][page] typeof fetch at call ->', typeof globalThis.fetch);
+      console.debug('[diag][page] globalThis.fetch at call ->', globalThis.fetch);
+      try {
+        console.debug('[diag][page] fetch.toString ->', String((globalThis.fetch as any).toString?.()));
+      } catch (e) {
+        console.debug('[diag][page] fetch.toString threw', e);
       }
       const res = await fetch(url.toString(), {
         cache: "no-store",

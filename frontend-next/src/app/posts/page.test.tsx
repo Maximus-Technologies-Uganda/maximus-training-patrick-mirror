@@ -29,7 +29,10 @@ describe("SSR PostsPage (server component)", () => {
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     };
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    console.debug('[diag][page.test] globalThis.fetch before stub ->', globalThis.fetch);
+    console.debug('[diag][page.test] typeof fetch ->', typeof globalThis.fetch);
+
+    const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({
@@ -40,6 +43,7 @@ describe("SSR PostsPage (server component)", () => {
         sort: DEFAULT_POST_SORT,
       }),
     } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
 
     // Mock SWR to return the test post data
     const { usePostsList } = await import("../../lib/swr");
@@ -58,7 +62,7 @@ describe("SSR PostsPage (server component)", () => {
     const el = await PostsPage({ searchParams: Promise.resolve({}) });
     render(el);
     expect(await screen.findByText("My Test Post")).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
+    expect(fetchFn).toHaveBeenCalledWith(
       `https://example.test/api/posts?page=1&pageSize=11&sort=${DEFAULT_POST_SORT}`,
       expect.objectContaining({ headers: {}, cache: "no-store" })
     );

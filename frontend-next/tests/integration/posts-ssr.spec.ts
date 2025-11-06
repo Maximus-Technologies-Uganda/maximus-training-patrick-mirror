@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import PostsPage from "../../src/app/posts/page";
+// PostsPage imports must be lazy inside tests so we can spy on global fetch
+// before the module captures the runtime fetch implementation.
 import { DEFAULT_POST_SORT, type Post } from "../../src/lib/schemas";
 
 function buildPost(id: number, overrides: Partial<Post> = {}): Post {
@@ -34,7 +35,10 @@ describe("Posts SSR Integration", () => {
       buildPost(1, { title: "Alpha Post" }),
       buildPost(2, { title: "Beta Post" }),
     ];
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    console.debug('[diag][posts-ssr] globalThis.fetch before spy ->', globalThis.fetch);
+    console.debug('[diag][posts-ssr] typeof fetch ->', typeof globalThis.fetch);
+
+    const fetchStub = vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       createJsonResponse({
         items: serverPosts,
         page: 1,
@@ -42,10 +46,12 @@ describe("Posts SSR Integration", () => {
         hasNextPage: false,
         sort: "title-asc",
       })
-    );
+    ));
 
-    // Test without withServerEnv to avoid React module issues in Vitest
-    const element = await PostsPage({ searchParams: Promise.resolve({ sort: "title-asc" }) });
+  // Import PostsPage after spying on fetch so the module doesn't capture
+  // a different fetch implementation at import-time.
+  const PostsPage = (await import("../../src/app/posts/page")).default;
+  const element = await PostsPage({ searchParams: Promise.resolve({ sort: "title-asc" }) });
     const clientProps = element.props as {
       initialData?: Post[];
       page?: number;
@@ -55,11 +61,11 @@ describe("Posts SSR Integration", () => {
     };
 
     // Verify SSR data fetching
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining("sort=title-asc"),
       expect.objectContaining({ cache: "no-store" })
     );
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining("pageSize=11"),
       expect.any(Object)
     );
@@ -72,15 +78,14 @@ describe("Posts SSR Integration", () => {
   });
 
   it("falls back to the default sort when the query parameter is invalid", async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        createJsonResponse({ items: [], page: 1, pageSize: 11, hasNextPage: false })
-      );
+    const fetchStub2 = vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      createJsonResponse({ items: [], page: 1, pageSize: 11, hasNextPage: false })
+    ));
 
-    await PostsPage({ searchParams: Promise.resolve({ sort: "not-a-real-sort" }) });
+    const PostsPage2 = (await import("../../src/app/posts/page")).default;
+    await PostsPage2({ searchParams: Promise.resolve({ sort: "not-a-real-sort" }) });
 
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(globalThis.fetch).toHaveBeenCalledWith(
       expect.stringContaining(`sort=${DEFAULT_POST_SORT}`),
       expect.any(Object)
     );
