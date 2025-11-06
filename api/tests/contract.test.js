@@ -22,7 +22,20 @@ beforeAll(() => {
   const specPath = path.join(__dirname, '..', 'openapi.json');
   // Validate OpenAPI document with Spectral before running contract assertions
   // This ensures the spec is syntactically valid and conforms to common rulesets
-  execSync(`npx @stoplight/spectral-cli@6.11.0 lint "${specPath}"`, { stdio: 'inherit' });
+  // Prefer the locally installed spectral binary to avoid npx network/override issues
+  const spectralBin = path.join(
+    __dirname,
+    '..',
+    'node_modules',
+    '.bin',
+    process.platform === 'win32' ? 'spectral.cmd' : 'spectral',
+  );
+  try {
+    execSync(`"${spectralBin}" lint "${specPath}"`, { stdio: 'inherit' });
+  } catch (_err) {
+    // Fallback to npx if local binary missing
+    execSync(`npx @stoplight/spectral-cli@6.11.0 lint "${specPath}"`, { stdio: 'inherit' });
+  }
 });
 
 describe('OpenAPI contract - /health', () => {
@@ -241,5 +254,3 @@ describe('OpenAPI contract - /posts/{id}', () => {
     expect(res.status).toBe(404);
   });
 });
-
-

@@ -32,8 +32,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Install dependencies (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+          pnpm install --frozen-lockfile --reporter=silent
       - name: Link check README
         run: node scripts/link-check.js README.md
       - name: Enforce PR template
@@ -1001,9 +1004,12 @@ jobs:
         if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         with:
           node-version: '20'
-      - name: Install dependencies
+      - name: Install dependencies (pnpm)
         if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
-        run: npm ci --no-audit --no-fund
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+          pnpm install --frozen-lockfile --reporter=silent
       - name: Install Spectral (OpenAPI linter)
         if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: npm i -g @stoplight/spectral-cli@6

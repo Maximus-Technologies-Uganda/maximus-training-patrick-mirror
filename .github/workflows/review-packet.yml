@@ -46,23 +46,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
       - name: Install root deps
-        shell: bash
-        run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          echo "Attempting npm ci at repo root"
-          if ! npm ci --ignore-scripts; then
-            echo "npm ci failed; falling back to npm install with workspaces"
-            npm install --workspaces --no-audit --no-fund --ignore-scripts
-          fi
-          npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
-          npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
+        uses: ./.github/actions/install-deps
+        with:
+          ignore-scripts: true
+          frozen-lockfile: false
 
   discover:
     name: Discover app folders
@@ -119,7 +107,7 @@ jobs:
           set -e
           APP="${{ matrix.app }}"
           if [ -d "$APP" ]; then
-            (cd "$APP" && npm ci) || (cd "$APP" && npm install) || true
+            pnpm install --dir "$APP" --ignore-scripts --frozen-lockfile=false || true
           fi
 
       - name: Jest coverage (best-effort)
@@ -128,8 +116,8 @@ jobs:
           set -e
           APP="${{ matrix.app }}"
           # Skip Jest for apps that use Vitest or other test runners
-          if [ "$APP" != "frontend-next" ] && [ -d "$APP" ]; then
-            (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
+            if [ "$APP" != "frontend-next" ] && [ -d "$APP" ]; then
+              pnpm --dir "$APP" exec jest --coverage --coverageReporters=lcov --coverageReporters=json-summary || echo "$APP: jest missing or tests failed; continuing"
             if [ -d "$APP/coverage" ]; then
               mkdir -p "stage/coverage-$APP"
               cp -R "$APP/coverage/." "stage/coverage-$APP/" || true
@@ -173,26 +161,15 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Install frontend deps
+        uses: ./.github/actions/install-deps
         with:
-          node-version: '20'
-
-      - name: Install monorepo deps (root)
-        working-directory: .
-        shell: bash
-        run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          if ! npm ci --ignore-scripts; then
-            npm install --workspaces --no-audit --no-fund --ignore-scripts
-          fi
-          npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
-          npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
+          scope: frontend
+          ignore-scripts: true
+          frozen-lockfile: false
 
       - name: Run tests with coverage (Vitest)
-        run: npm run test -- --coverage
+        run: pnpm run test -- --coverage
 
       - name: Upload frontend coverage and sources
         uses: actions/upload-artifact@v4
@@ -213,22 +190,20 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Install dependencies (frontend-next)
-        working-directory: frontend-next
-        run: npm ci
+        uses: ./.github/actions/install-deps
+        with:
+          scope: frontend-next
+          ignore-scripts: true
+          frozen-lockfile: false
 
       - name: Run tests with coverage (frontend-next)
         working-directory: frontend-next
-        run: npm run test:ci
+        run: pnpm run test:ci
 
       - name: Run contract tests (frontend-next)
         working-directory: frontend-next
-        run: npm run test:contract
+        run: pnpm run test:contract
 
       - name: Upload contract summary (frontend-next)
         if: always()
@@ -292,32 +267,21 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Install monorepo deps (root)
-        working-directory: .
-        shell: bash
-        run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          if ! npm ci; then
-            npm install --workspaces --no-audit --no-fund --ignore-scripts
-          fi
-          npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
-          npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
+        uses: ./.github/actions/install-deps
+        with:
+          scope: frontend-next
+          ignore-scripts: true
+          frozen-lockfile: false
 
       - name: Install Playwright (Chromium only)
-        run: npx --yes playwright install chromium
+        run: pnpm exec playwright install chromium
 
       - name: Run a11y Playwright tests
         run: |
           # Ensure Playwright HTML report lands in the Review Packet path with index.html
           export PLAYWRIGHT_HTML_REPORT=docs/ReviewPacket/a11y/html
-          npx playwright test --reporter=list,html
+          pnpm exec playwright test --reporter=list,html
         env:
           # Align Playwright baseURL with dev server port (see frontend-next/playwright.config.ts)
           E2E_PORT: '3001'
@@ -352,25 +316,16 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Install monorepo deps (root)
-        shell: bash
-        run: |
-          set -e
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          if ! npm ci --ignore-scripts; then
-            npm install --workspaces --no-audit --no-fund --ignore-scripts
-          fi
-          npm ci --workspace=frontend --include-workspace-root=false || npm install --workspaces --workspace=frontend --no-audit --no-fund
-          npm ci --workspace=frontend-next --include-workspace-root=false || npm install --workspaces --workspace=frontend-next --no-audit --no-fund
+        uses: ./.github/actions/install-deps
+        with:
+          scope: frontend-next
+          ignore-scripts: true
+          frozen-lockfile: false
 
       - name: Run frontend-next contract validation test
-        run: npm --workspaces --workspace=frontend-next run test:contract
+        working-directory: frontend-next
+        run: pnpm run test:contract
 
       - name: Upload contract report (for Review Packet)
         if: always()
@@ -394,12 +349,11 @@ jobs:
         with:
           node-version: '20'
 
-      # OpenAPI contract lint + artifact upload (Phase 4 evidence)
-      - name: Install Spectral (OpenAPI linter)
-        run: npm i -g @stoplight/spectral-cli
+      - uses: ./.github/actions/setup-pnpm
 
+      # OpenAPI contract lint + artifact upload (Phase 4 evidence)
       - name: Lint OpenAPI
-        run: spectral lint specs/spec-auth-ownership-observability/contracts/openapi-skeleton.yaml
+        run: pnpm dlx @stoplight/spectral-cli@latest lint specs/spec-auth-ownership-observability/contracts/openapi-skeleton.yaml
 
       - name: Upload OpenAPI contract
         uses: actions/upload-artifact@v4
@@ -413,7 +367,7 @@ jobs:
           {
             echo "# Automated Review Packet"
             echo "## Environment"
-            (node -v && npm -v) || echo "node/npm unavailable"
+            (node -v && pnpm -v) || echo "node/pnpm unavailable"
             printf '\n## Commit Summary (20 most recent)\n'
             git log -n 20 --pretty=format:'- %h %ad %an — %s' --date=short
             printf '\n## Repo Map (depth=2)\n'
@@ -537,9 +491,9 @@ jobs:
           while IFS= read -r APP; do
             echo "Running serial fallback for $APP"
             if [ -d "$APP" ]; then
-              (cd "$APP" && npm ci) || (cd "$APP" && npm install) || true
+              pnpm install --dir "$APP" --ignore-scripts --frozen-lockfile=false || true
               if [ -f "$APP/package.json" ]; then
-                (cd "$APP" && npx jest --coverage --coverageReporters=lcov --coverageReporters=json-summary) || echo "$APP: jest missing or tests failed; continuing"
+                pnpm --dir "$APP" exec jest --coverage --coverageReporters=lcov --coverageReporters=json-summary || echo "$APP: jest missing or tests failed; continuing"
               fi
               if [ -d "$APP/coverage" ]; then
                 mkdir -p "review-artifacts/coverage-$APP"

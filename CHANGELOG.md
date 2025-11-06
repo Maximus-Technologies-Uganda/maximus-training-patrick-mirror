@@ -1,3 +1,17 @@
+## 2025-11-07
+
+- fix(frontend-next): dedupe React modules in Vitest to restore hook dispatching during component and integration tests.
+
+## 2025-11-06
+
+- fix(frontend): forward session cookies during SSR posts fetch so authenticated users receive initial data.
+- feat(frontend): add SSR sort parameter support with validated URL query parsing.
+- feat(frontend): apply design token colors (text-text, text-muted, bg-surface, error).
+- feat(frontend): add user-facing sort dropdown (Newest/Oldest/Title A-Z/Z-A).
+- test(frontend): add comprehensive SSR integration tests.
+- test(frontend): add Playwright performance budget enforcement (<2s page load time).
+- refactor(frontend): centralize PostSort type in schemas.ts with Zod validation.
+
 ## 2025-11-05
 
 - fix: declare esbuild as a devDependency so verify-node-version tests can compile the TypeScript CLI.
