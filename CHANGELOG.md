@@ -4,7 +4,7 @@
 - feat(frontend): apply design token colors (text-text, text-muted, bg-surface, error).
 - feat(frontend): add user-facing sort dropdown (Newest/Oldest/Title A-Z/Z-A).
 - test(frontend): add comprehensive SSR integration tests with HTML snapshots.
-- test(frontend): add Playwright performance budget enforcement (<2s FCP).
+- test(frontend): add Playwright performance budget enforcement (<2s page load time).
 - refactor(frontend): centralize PostSort type in schemas.ts with Zod validation.
 
 ## 2025-11-05
