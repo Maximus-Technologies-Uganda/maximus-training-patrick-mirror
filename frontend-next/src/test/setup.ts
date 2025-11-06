@@ -24,6 +24,7 @@ try {
   let rootReactJsxDevRuntimePath: string | null = null;
   let rootReactCjsPath: string | null = null;
   let rootReactDomCjsPath: string | null = null;
+  let rootReactDomClientCjsPath: string | null = null;
   let rootReactDomClientPath: string | null = null;
   // Paths to our local shims inside the frontend-next package
   const localReactShim = path.resolve(__dirname, "react-shim.cjs");
@@ -46,19 +47,40 @@ try {
      
     rootReactDomPath = require.resolve("react-dom", { paths: [monorepoRoot] });
     try {
-      rootReactDomCjsPath = require.resolve("react-dom/cjs/react-dom-client.development.js", {
+      rootReactDomCjsPath = require.resolve("react-dom/cjs/react-dom.development.js", {
         paths: [monorepoRoot],
       });
     } catch (_e) {
-      // ignore
+      try {
+        rootReactDomCjsPath = require.resolve("react-dom/cjs/react-dom.production.min.js", {
+          paths: [monorepoRoot],
+        });
+      } catch (_inner) {
+        // ignore
+      }
     }
     try {
       rootReactDomClientPath = require.resolve("react-dom/client", { paths: [monorepoRoot] });
     } catch (_e) {
       // ignore
     }
-    if (!rootReactDomClientPath && rootReactDomCjsPath) {
-      rootReactDomClientPath = rootReactDomCjsPath;
+    try {
+      rootReactDomClientCjsPath = require.resolve(
+        "react-dom/cjs/react-dom-client.development.js",
+        { paths: [monorepoRoot] }
+      );
+    } catch (_e) {
+      try {
+        rootReactDomClientCjsPath = require.resolve(
+          "react-dom/cjs/react-dom-client.production.min.js",
+          { paths: [monorepoRoot] }
+        );
+      } catch (_inner) {
+        // ignore
+      }
+    }
+    if (!rootReactDomClientPath && rootReactDomClientCjsPath) {
+      rootReactDomClientPath = rootReactDomClientCjsPath;
     }
   } catch (_err) {
     // ignore
@@ -309,7 +331,12 @@ try {
                 }
               }
             }
-            if (rootReactDomPath || rootReactDomClientPath || rootReactDomCjsPath) {
+            if (
+              rootReactDomPath ||
+              rootReactDomClientPath ||
+              rootReactDomCjsPath ||
+              rootReactDomClientCjsPath
+            ) {
               const isNestedReactDom =
                 (normalized.includes("/node_modules/react-dom/") ||
                   normalized.includes(
@@ -318,7 +345,7 @@ try {
                 resolved !== rootReactDomPath;
               const isNestedReactDomCjs =
                 rootReactDomCjsPath &&
-                normalized.includes("/node_modules/react-dom/cjs/") &&
+                normalized.includes("/node_modules/react-dom/cjs/react-dom") &&
                 resolved !== rootReactDomCjsPath;
               const isTestingLibNestedReactDom = normalized.includes(
                 "@testing-library/react/node_modules/react-dom"
@@ -326,9 +353,13 @@ try {
               const isNestedReactDomClient =
                 normalized.includes("/node_modules/react-dom/client") ||
                 normalized.includes("@testing-library/react/node_modules/react-dom/client");
+              const isNestedReactDomClientCjs =
+                rootReactDomClientCjsPath &&
+                normalized.includes("/node_modules/react-dom/cjs/react-dom-client") &&
+                resolved !== rootReactDomClientCjsPath;
               if (isNestedReactDomClient) {
                 const clientRedirectTarget =
-                  rootReactDomClientPath ?? rootReactDomCjsPath ?? rootReactDomPath;
+                  rootReactDomClientPath ?? rootReactDomClientCjsPath ?? rootReactDomPath;
                 if (clientRedirectTarget && resolved !== clientRedirectTarget) {
                   console.log(
                     `[test-setup] redirecting nested react-dom/client ${resolved} -> ${clientRedirectTarget}`
@@ -344,8 +375,22 @@ try {
                   }
                 }
               }
+              if (isNestedReactDomClientCjs && rootReactDomClientCjsPath) {
+                console.log(
+                  `[test-setup] redirecting nested react-dom (client cjs) ${resolved} -> ${rootReactDomClientCjsPath}`
+                );
+                try {
+                  __overrideSkip = true;
+                  return normalizeReact(
+                    origRequire.call(this, rootReactDomClientCjsPath),
+                    rootReactDomClientCjsPath
+                  );
+                } finally {
+                  __overrideSkip = false;
+                }
+              }
               if (isNestedReactDomCjs && rootReactDomCjsPath) {
-                // Redirect nested CJS react-dom client files to the hoisted cjs file
+                // Redirect nested CJS react-dom files to the hoisted cjs entry
 
                 console.log(
                   `[test-setup] redirecting nested react-dom (cjs) ${resolved} -> ${rootReactDomCjsPath}`
@@ -431,7 +476,7 @@ try {
         }
         if (request === "react-dom/client") {
           const clientRedirectTarget =
-            rootReactDomClientPath ?? rootReactDomCjsPath ?? rootReactDomPath;
+            rootReactDomClientPath ?? rootReactDomClientCjsPath ?? rootReactDomPath;
           if (clientRedirectTarget) {
             try {
               __overrideSkip = true;
@@ -454,6 +499,10 @@ try {
     );
 
     console.log(`[test-setup] forced react-dom/client -> ${rootReactDomClientPath}`);
+
+    console.log(`[test-setup] forced react-dom (cjs) -> ${rootReactDomCjsPath}`);
+
+    console.log(`[test-setup] forced react-dom/client (cjs) -> ${rootReactDomClientCjsPath}`);
 
     console.log(`[test-setup] forced react/jsx-runtime -> ${rootReactJsxRuntimePath}`);
 
