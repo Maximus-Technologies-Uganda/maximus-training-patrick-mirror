@@ -36,7 +36,7 @@ export function usePostsList(params?: {
       const res = await fetch(url);
       if (res.status === 401) {
         // Treat unauthorized as an empty list for guests
-        return { page, pageSize, hasNextPage: false, items: [] } as PostList;
+        return { page, pageSize, hasNextPage: false, items: [], sort } as PostList;
       }
       if (!res.ok) {
         const message = `Request failed with ${res.status}`;
