@@ -7,6 +7,12 @@ import { describe, it, vi } from "vitest";
 import PostsPageClient from "../../../components/PostsPageClient";
 import { server } from "../../test/test-server";
 
+// SWR types in this environment can produce a JSX typing mismatch. Cast the
+// component to any locally to keep the test readable and avoid changing
+// global TS settings. Suppress the explicit-any rule for this line only.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SWRConfigAny = SWRConfig as unknown as any;
+
 // Route Handlers proxy at /api/posts; stub those endpoints directly for tests
 // Need to use real SWR for these integration tests (unmock it)
 vi.unmock("../../lib/swr");
@@ -32,19 +38,19 @@ describe("Integration: Posts list states", () => {
               },
             ],
           },
-          { status: 200 },
+          { status: 200 }
         );
-      }),
+      })
     );
 
-  console.debug('[diag][posts.list] globalThis.fetch before render ->', globalThis.fetch);
-  console.debug('[diag][posts.list] typeof fetch ->', typeof globalThis.fetch);
+    console.debug("[diag][posts.list] globalThis.fetch before render ->", globalThis.fetch);
+    console.debug("[diag][posts.list] typeof fetch ->", typeof globalThis.fetch);
 
-  render(
-    <SWRConfig value={{ provider: () => new Map() }}>
-      <PostsPageClient />
-    </SWRConfig>,
-  );
+    render(
+      <SWRConfigAny value={{ provider: () => new Map() }}>
+        <PostsPageClient />
+      </SWRConfigAny>
+    );
 
     // Expect loading first (to be implemented)
     // expect(screen.getByRole("status")).toHaveTextContent(/loading/i);
@@ -59,19 +65,19 @@ describe("Integration: Posts list states", () => {
       http.get("*/api/posts", () => {
         return HttpResponse.json(
           { page: 1, pageSize: 10, hasNextPage: false, items: [] },
-          { status: 200 },
+          { status: 200 }
         );
-      }),
+      })
     );
 
-  console.debug('[diag][posts.list] globalThis.fetch before render ->', globalThis.fetch);
-  console.debug('[diag][posts.list] typeof fetch ->', typeof globalThis.fetch);
+    console.debug("[diag][posts.list] globalThis.fetch before render ->", globalThis.fetch);
+    console.debug("[diag][posts.list] typeof fetch ->", typeof globalThis.fetch);
 
-  render(
-    <SWRConfig value={{ provider: () => new Map() }}>
-      <PostsPageClient />
-    </SWRConfig>,
-  );
+    render(
+      <SWRConfigAny value={{ provider: () => new Map() }}>
+        <PostsPageClient />
+      </SWRConfigAny>
+    );
     // This will fail until empty state is implemented
     await screen.findByText(/no posts yet/i);
   });
@@ -79,24 +85,19 @@ describe("Integration: Posts list states", () => {
   it("shows error state and retry on failure", async () => {
     server.use(
       http.get("*/api/posts", () => {
-        return HttpResponse.json(
-          { message: "Server error" },
-          { status: 500 },
-        );
-      }),
+        return HttpResponse.json({ message: "Server error" }, { status: 500 });
+      })
     );
 
-  console.debug('[diag][posts.list] globalThis.fetch before render ->', globalThis.fetch);
-  console.debug('[diag][posts.list] typeof fetch ->', typeof globalThis.fetch);
+    console.debug("[diag][posts.list] globalThis.fetch before render ->", globalThis.fetch);
+    console.debug("[diag][posts.list] typeof fetch ->", typeof globalThis.fetch);
 
-  render(
-    <SWRConfig value={{ provider: () => new Map() }}>
-      <PostsPageClient />
-    </SWRConfig>,
-  );
+    render(
+      <SWRConfigAny value={{ provider: () => new Map() }}>
+        <PostsPageClient />
+      </SWRConfigAny>
+    );
     // This will fail until error state is implemented
     await screen.findByText(/error/i);
   });
 });
-
-
