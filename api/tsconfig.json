@@ -14,12 +14,9 @@
     "baseUrl": ".",
     "paths": {
       "#tsApp": ["src/app.ts"]
-    }
+    },
+    "types": []
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "tests"]
 }
-
-
