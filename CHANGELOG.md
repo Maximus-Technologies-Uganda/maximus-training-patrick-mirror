@@ -1,5 +1,6 @@
 ## 2025-11-07
 
+- fix(frontend-next): invoke auth login API before persisting session to local storage for the new login page.
 - fix(frontend-next): mirror search query when server-rendering posts to avoid unfiltered initial content.
 - fix(frontend-next): refresh newly created posts using the active sort and search cache key.
 - fix(frontend-next): dedupe React modules in Vitest to restore hook dispatching during component and integration tests.
