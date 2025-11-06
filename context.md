@@ -38,19 +38,21 @@ Monorepo with:
 
 - Dev: `DATABASE_URL`, `SESSION_SECRET`, `GCP_PROJECT_ID`, `GCP_REGION`, `VERTEX_LOCATION`, `VERTEX_MODEL`
 - Prod: add `ASSISTANT_*` (flags, cors, forwarding secret)
-- **Query parameters:**
-  - `page` (default: 1, min: 1)
-  - `pageSize` (default: 10, min: 1, max: 100)
-  - `sort` (default: date-desc, enum: date-desc|date-asc|title-asc|title-desc)
-  - `q` (search query, optional)
 
-## 7) Build & deploy summary
+## 7) API Query Parameters
+
+- `page` (default: 1, min: 1)
+- `pageSize` (default: 10, min: 1, max: 100)
+- `sort` (default: date-desc, enum: date-desc|date-asc|title-asc|title-desc)
+- `q` (search query, optional)
+
+## 8) Build & deploy summary
 
 - CI named checks: lint, typecheck, unit, coverage, a11y, contract, build, deploy-preview.
 - Artifacts: coverage/a11y/contract/traces/SBOM (see `DEVELOPMENT_RULES.md`).
 - Deployment paths: `docs/PRODUCTION-DEPLOYMENT.md`.
 
-## 8) ADRs
+## 9) ADRs
 
 See `docs/adrs/` for cross-cutting decisions.
 
