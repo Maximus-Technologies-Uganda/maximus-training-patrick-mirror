@@ -2,7 +2,12 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
+import { createRequire } from "module";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const require = createRequire(import.meta.url);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Force module resolution for 'react' and 'react-dom' to the monorepo root
 // copies. Some dependencies (notably @testing-library/react) may resolve a
