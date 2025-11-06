@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { mutatePostsPage1 } from "../src/lib/swr";
 import { withCsrf } from "../src/lib/auth/csrf";
+import { DEFAULT_POST_SORT, type PostSort } from "../src/lib/schemas";
 
 const FormSchema = z.object({
   title: z.string().min(1),
@@ -13,9 +14,13 @@ const FormSchema = z.object({
 
 export default function NewPostForm({
   pageSize,
+  sort = DEFAULT_POST_SORT,
+  query = "",
   onSuccess,
 }: {
   pageSize: number;
+  sort?: PostSort;
+  query?: string;
   onSuccess?: () => void;
 }): React.ReactElement {
   const [title, setTitle] = useState("");
@@ -66,13 +71,13 @@ export default function NewPostForm({
         // which forwards it to the upstream API.
         credentials: "include",
         body: JSON.stringify({ title, content, published: true, tags: [] }),
-      }),
+      })
     );
     if (res.status === 201) {
       setTitle("");
       setContent("");
       setSuccess("Created successfully");
-      await mutatePostsPage1(pageSize);
+      await mutatePostsPage1(pageSize, sort, query);
       // Notify parent so it can reset pagination and URL
       onSuccess?.();
     } else {
@@ -134,7 +139,10 @@ export default function NewPostForm({
         </label>
       </div>
       <div className="mt-3 flex justify-end">
-        <button type="submit" className="rounded bg-blue-600 px-3 py-1 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
+        <button
+          type="submit"
+          className="rounded bg-blue-600 px-3 py-1 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600"
+        >
           Create
         </button>
       </div>

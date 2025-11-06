@@ -47,7 +47,8 @@ export default async function PostsPage({
   console.debug('[diag][page] incomingQuery ->', incomingQuery);
   const requestedPage = Number(incomingQuery.page ?? "1");
   const requestedPageSize = Number(incomingQuery.pageSize ?? "10");
-  const q = incomingQuery.q ?? "";
+  const incomingQ = typeof incomingQuery.q === "string" ? incomingQuery.q : undefined;
+  const q = incomingQ ?? "";
   const sort = parseSort(incomingQuery.sort);
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const pageSize =
@@ -70,6 +71,9 @@ export default async function PostsPage({
       // Request one extra to determine if there's a next page without another round trip
       url.searchParams.set("pageSize", String(pageSize + 1));
       url.searchParams.set("sort", sort);
+      if (incomingQ !== undefined) {
+        url.searchParams.set("q", incomingQ);
+      }
       const fetchHeaders: Record<string, string> = {};
       console.debug('[diag][page] calling next/headers()');
       let incomingHeaders;
@@ -93,16 +97,18 @@ export default async function PostsPage({
         // Compare the free 'fetch' binding to globalThis.fetch
         // to detect if the module is using a different fetch implementation.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         console.debug('[diag][page] fetch === globalThis.fetch ->', (fetch as any) === (globalThis as any).fetch);
-      } catch (e) {
-        console.debug('[diag][page] fetch compare threw', e);
+      } catch (_e) {
+        console.debug('[diag][page] fetch compare threw', _e);
       }
       console.debug('[diag][page] typeof fetch at call ->', typeof globalThis.fetch);
       console.debug('[diag][page] globalThis.fetch at call ->', globalThis.fetch);
       try {
-        console.debug('[diag][page] fetch.toString ->', String((globalThis.fetch as any).toString?.()));
-      } catch (e) {
-        console.debug('[diag][page] fetch.toString threw', e);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        console.debug('[diag][page] fetch.toString ->', String(((globalThis as any).fetch as { toString?: () => string }).toString?.()));
+      } catch (_e) {
+        console.debug('[diag][page] fetch.toString threw', _e);
       }
       const res = await fetch(url.toString(), {
         cache: "no-store",

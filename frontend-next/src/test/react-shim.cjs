@@ -82,7 +82,7 @@ for (const n of names) {
 
 // Minimal diagnostic to help triage remaining cases: print whether forwardRef/createContext are functions.
 try {
-  // eslint-disable-next-line no-console
+   
   console.log(`[react-shim] forwardRef=${typeof normalized.forwardRef}, createContext=${typeof normalized.createContext}`);
 } catch (e) {
   // ignore logging errors

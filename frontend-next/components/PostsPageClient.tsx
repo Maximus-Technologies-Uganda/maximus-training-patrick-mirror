@@ -9,7 +9,7 @@ import type { State } from "swr/_internal";
 import LiveRegion from "./LiveRegion";
 import NewPostForm from "./NewPostForm";
 import PageSizeSelect from "./PageSizeSelect";
-import PaginationControls from "./PaginationControls";
+import { PaginationControls } from "../src/components/PaginationControls";
 import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
 import { usePostsList } from "../src/lib/swr";
@@ -220,6 +220,7 @@ export default function PostsPageClient({
   const { data, isLoading, error } = usePostsList({
     page,
     pageSize,
+    q: searchQuery,
     sort,
     fallbackData: shouldUseFallback ? initialList : undefined,
   });
@@ -238,6 +239,21 @@ export default function PostsPageClient({
     () => (isLoading && effectiveItems.length === 0 ? "Loading posts…" : ""),
     [isLoading, effectiveItems.length]
   );
+
+  const hasNextPage = Boolean(
+    data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false)
+  );
+
+  const totalPages = useMemo(() => {
+    const total = data?.total;
+    if (typeof total === "number" && Number.isFinite(total)) {
+      return Math.max(1, Math.ceil(total / pageSize));
+    }
+    if (hasNextPage) {
+      return Math.max(1, page + 1);
+    }
+    return Math.max(1, page);
+  }, [data?.total, hasNextPage, page, pageSize]);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -305,6 +321,7 @@ export default function PostsPageClient({
   );
 
   return (
+    // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
     <SWRConfig value={swrValue}>
       <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
         <LiveRegion message={statusMessage} />
@@ -360,6 +377,7 @@ export default function PostsPageClient({
               Sign out
             </button>
           ) : (
+            // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
             <Link
               className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-sm font-medium text-surface transition hover:bg-primary/90"
               href="/login"
@@ -370,7 +388,12 @@ export default function PostsPageClient({
         </div>
 
         <div className="mt-4">
-          <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
+          <NewPostForm
+            pageSize={pageSize}
+            sort={sort}
+            query={searchQuery}
+            onSuccess={onCreateSuccess}
+          />
         </div>
 
         <section className="mt-4" aria-label="Posts list">
@@ -395,11 +418,18 @@ export default function PostsPageClient({
         </section>
 
         <PaginationControls
-          page={page}
-          hasNextPage={Boolean(
-            data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false)
-          )}
-          onChangePage={onChangePage}
+          currentPage={page}
+          totalPages={totalPages}
+          onPrevious={() => {
+            if (page > 1) {
+              onChangePage(page - 1);
+            }
+          }}
+          onNext={() => {
+            if (page < totalPages) {
+              onChangePage(page + 1);
+            }
+          }}
         />
       </main>
     </SWRConfig>

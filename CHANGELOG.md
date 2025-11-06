@@ -1,6 +1,15 @@
 ## 2025-11-07
 
+- fix(frontend-next): invoke auth login API before persisting session to local storage for the new login page.
+- fix(frontend-next): mirror search query when server-rendering posts to avoid unfiltered initial content.
+- fix(frontend-next): refresh newly created posts using the active sort and search cache key.
 - fix(frontend-next): dedupe React modules in Vitest to restore hook dispatching during component and integration tests.
+- feat(frontend-next): add aria-live pagination announcements and isolate SWR cache per posts page instance.
+- test(frontend-next): cover shared pagination URLs across unit, integration, and Playwright suites.
+- test(frontend-next): rework posts pagination integration to use SWR-backed tsx spec with explicit fetch stubbing.
+- fix(frontend-next): refine derived total page counts for cursor pagination fallbacks and document inference strategy.
+- test(frontend-next): wrap posts pagination integration interactions in React act to suppress async update warnings.
+- chore(frontend-next): document SWR cache isolation, aria-live assertive guidance, and local sort timestamp fallbacks.
 
 ## 2025-11-06
 

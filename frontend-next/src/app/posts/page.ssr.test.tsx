@@ -27,20 +27,15 @@ describe("SSR Posts page (server component)", () => {
     const el = await PostsPage({ searchParams: Promise.resolve({ page: "2", pageSize: "3", q: "hello" }) });
     expect(el).toBeTruthy();
     // Element props should be normalized as numbers/strings
-    // @ts-expect-error inspecting React element for test purposes
     expect(el.props.page).toBe(2);
-    // @ts-expect-error inspecting React element for test purposes
     expect(el.props.pageSize).toBe(3);
-    // @ts-expect-error inspecting React element for test purposes
     expect(el.props.q).toBe("hello");
-    // @ts-expect-error inspecting React element for test purposes
     expect(el.props.currentUserId).toBeUndefined();
   });
 
   it("does not pass currentUserId since authentication is now client-side", async () => {
     token = makeUnsignedJwt({ userId: "u123" });
     const el = await PostsPage({ searchParams: Promise.resolve({}) });
-    // @ts-expect-error inspecting React element for test purposes
     expect(el.props.currentUserId).toBeUndefined();
   });
 });

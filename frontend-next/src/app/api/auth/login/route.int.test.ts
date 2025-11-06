@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import type { NextRequest } from "next/server";
 vi.mock("next/server", () => {
   class NextResponse extends Response {
@@ -15,6 +15,10 @@ vi.mock("next/server", () => {
   return { NextResponse, NextRequest };
 });
 import { POST } from "./route";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 type FakeNextRequest = {
   headers: Map<string, string>;
@@ -52,5 +56,19 @@ describe("POST /api/auth/login route handler (fallback)", () => {
     const res = await POST(req as unknown as NextRequest);
     const setCookie = res.headers.get("set-cookie") || "";
     expect(setCookie).toMatch(/;\s*Secure/);
+  });
+
+  it("returns 204 and sets cookies when provided user identity payload", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockImplementation(() => {
+      throw new Error("upstream should not be called for local identity payload");
+    });
+    const res = await POST(
+      makeRequest({ userId: "user-123", name: "Casey Doe" }) as unknown as NextRequest
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(res.status).toBe(204);
+    const setCookie = res.headers.get("set-cookie") || "";
+    expect(setCookie).toContain("session=");
+    expect(setCookie).toContain("csrf=");
   });
 });

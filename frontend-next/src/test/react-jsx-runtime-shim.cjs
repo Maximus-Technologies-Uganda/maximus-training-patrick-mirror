@@ -38,7 +38,7 @@ for (const h of helpers) {
 // fall back to the regular `jsx` implementation so tests still run.
 if (runtime) {
   if (typeof runtime.jsxDEV !== 'function' && typeof runtime.jsx === 'function') {
-    // eslint-disable-next-line no-console
+     
     console.log('[react-jsx-runtime-shim] adding fallback jsxDEV -> jsx');
     runtime.jsxDEV = runtime.jsx;
   }

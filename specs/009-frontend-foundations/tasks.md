@@ -45,7 +45,7 @@
 - [ ] T014 [P] Create LoadingState component in `frontend-next/src/components/LoadingState.tsx`
 - [ ] T015 [P] Create EmptyState component in `frontend-next/src/components/EmptyState.tsx`
 - [ ] T016 [P] Create ErrorState component in `frontend-next/src/components/ErrorState.tsx`
-- [ ] T017 [P] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx`
+- [ ] T017 [P] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx` (used for both design system seed and pagination UI)
 
 ### Design System Validation
 
@@ -70,13 +70,13 @@
 
 ---
 
-## Phase 4: User Story 2 - Pagination & Sorting (Day 3)
-
-**Blockers**: Phase 3 complete | **Goal**: URL params update, posts reorder, pagination works
+## Phase 4: User Story 2 - Pagination & Sorting (Day 3)  
+**Related User Story**: [US2 - Pagination & Sorting](spec.md#user-story-2-pagination--sorting) | **Acceptance Criteria**: See [./spec.md#acceptance-criteria-us2]
+**Blockers**: Phase 3 complete | **Goal**: URL params update, posts reorder, pagination works (validated via E2E and integration tests)
 
 ### Pagination UI (Parallelizable)
 
-- [ ] T024 [P] [US2] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx`
+<!-- T024 merged with T017 to avoid duplication; see T017 above -->
 - [ ] T025 [P] [US2] Create unit tests for PaginationControls in `frontend-next/tests/unit/PaginationControls.spec.ts`
 
 ### Pagination Integration
@@ -94,20 +94,21 @@
 
 ## Phase 5: User Story 3 - State Management (Day 4)
 
-**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live
+**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live regions.
 
 ### State UI Integration
 
 - [ ] T031 [US3] Wire LoadingState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T032 [US3] Wire EmptyState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T033 [US3] Wire ErrorState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
-- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`
-
+- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`, ensuring non-error announcements remain `aria-live="polite"` and error announcements use `aria-live="assertive"`
+- [ ] T034a [US3] Implement and test retry mechanism for ErrorState in `frontend-next/src/components/PostsPageClient.tsx`
 ### State Testing
 
 - [ ] T035 [US3] Create unit tests for LoadingState/EmptyState/ErrorState in `frontend-next/tests/unit/`
 - [ ] T036 [US3] Create integration test for state transitions in `frontend-next/tests/integration/posts-states.spec.ts`
 - [ ] T037 [US3] Create Playwright E2E test for state UX in `frontend-next/tests/playwright/core-flows.spec.ts` (extend)
+- [ ] T037a [US3] Create unit and integration tests for retry functionality in ErrorState
 
 ---
 

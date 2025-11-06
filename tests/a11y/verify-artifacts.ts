@@ -83,7 +83,7 @@ async function main(): Promise<void> {
     await fs.copyFile(discoveredJson, jsonPath);
   }
 
-  // eslint-disable-next-line no-console -- CLI utility for CI diagnostics
+   
   console.log(
     JSON.stringify(
       {
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  // eslint-disable-next-line no-console -- CLI utility for CI diagnostics
+   
   console.error(error);
   process.exitCode = 1;
 });
