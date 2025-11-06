@@ -15,7 +15,15 @@ vi.mock("../../lib/swr", () => ({
 
 describe("PostsPageClient - T008: Auth-aware UI", () => {
   it("should show sign in message and button for anonymous users", () => {
-    render(<PostsPageClient page={1} pageSize={10} initialData={[]} initialHasNextPage={false} />);
+    render(
+      <PostsPageClient
+        page={1}
+        pageSize={10}
+        sort={DEFAULT_POST_SORT}
+        initialData={[]}
+        initialHasNextPage={false}
+      />
+    );
 
     // Verify guest browsing message is shown
     expect(screen.getByText(/browsing as a guest/i)).toBeInTheDocument();
@@ -30,7 +38,15 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
   });
 
   it("should render form for creating new post", () => {
-    render(<PostsPageClient page={1} pageSize={10} initialData={[]} initialHasNextPage={false} />);
+    render(
+      <PostsPageClient
+        page={1}
+        pageSize={10}
+        sort={DEFAULT_POST_SORT}
+        initialData={[]}
+        initialHasNextPage={false}
+      />
+    );
 
     // Form should be present with title and content inputs
     expect(screen.getByLabelText(/title/i)).toBeInTheDocument();
@@ -38,7 +54,15 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
   });
 
   it("should render sort dropdown with default label", () => {
-    render(<PostsPageClient page={1} pageSize={10} initialData={[]} initialHasNextPage={false} />);
+    render(
+      <PostsPageClient
+        page={1}
+        pageSize={10}
+        sort={DEFAULT_POST_SORT}
+        initialData={[]}
+        initialHasNextPage={false}
+      />
+    );
 
     expect(screen.getByLabelText(/sort posts/i)).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /newest first/i })).toBeInTheDocument();
@@ -46,7 +70,13 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
 
   it("should render posts list for both anonymous and authenticated users", () => {
     const { rerender } = render(
-      <PostsPageClient page={1} pageSize={10} initialData={[]} initialHasNextPage={false} />
+      <PostsPageClient
+        page={1}
+        pageSize={10}
+        sort={DEFAULT_POST_SORT}
+        initialData={[]}
+        initialHasNextPage={false}
+      />
     );
 
     // Posts list section should be visible
@@ -54,7 +84,13 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
 
     // Re-render should still show posts list
     rerender(
-      <PostsPageClient page={1} pageSize={10} initialData={[]} initialHasNextPage={false} />
+      <PostsPageClient
+        page={1}
+        pageSize={10}
+        sort={DEFAULT_POST_SORT}
+        initialData={[]}
+        initialHasNextPage={false}
+      />
     );
 
     // Posts list should still be visible after re-render
