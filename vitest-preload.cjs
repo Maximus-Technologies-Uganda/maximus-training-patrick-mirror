@@ -37,9 +37,9 @@ try {
     }
     return origRequire.call(this, request);
   };
-  // eslint-disable-next-line no-console
+   
   console.log('[vitest-preload] module require override installed');
 } catch (e) {
-  // eslint-disable-next-line no-console
+   
   console.warn('[vitest-preload] could not install override:', e && e.message ? e.message : e);
 }

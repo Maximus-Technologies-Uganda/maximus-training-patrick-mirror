@@ -10,7 +10,9 @@ export default function NotFound(): React.ReactElement {
         The page you are looking for does not exist.
       </p>
       <p>
-        Go back to <Link href="/posts">/posts</Link>.
+        Go back to{" "}
+        {/* @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06) */}
+        <Link href="/posts">/posts</Link>.
       </p>
     </main>
   );

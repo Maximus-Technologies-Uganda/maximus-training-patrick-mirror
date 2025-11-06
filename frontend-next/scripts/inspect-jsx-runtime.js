@@ -1,5 +1,4 @@
 const path = require('path');
-const fs = require('fs');
 function safeRequire(p) {
   try { return require(p); } catch (e) { return { error: e.message }; }
 }

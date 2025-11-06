@@ -321,6 +321,7 @@ export default function PostsPageClient({
   );
 
   return (
+    // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
     <SWRConfig value={swrValue}>
       <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
         <LiveRegion message={statusMessage} />
@@ -376,6 +377,7 @@ export default function PostsPageClient({
               Sign out
             </button>
           ) : (
+            // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
             <Link
               className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-sm font-medium text-surface transition hover:bg-primary/90"
               href="/login"

@@ -38,7 +38,7 @@ describe("Posts SSR Integration", () => {
     console.debug('[diag][posts-ssr] globalThis.fetch before spy ->', globalThis.fetch);
     console.debug('[diag][posts-ssr] typeof fetch ->', typeof globalThis.fetch);
 
-    const fetchStub = vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       createJsonResponse({
         items: serverPosts,
         page: 1,
@@ -78,7 +78,7 @@ describe("Posts SSR Integration", () => {
   });
 
   it("falls back to the default sort when the query parameter is invalid", async () => {
-    const fetchStub2 = vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       createJsonResponse({ items: [], page: 1, pageSize: 11, hasNextPage: false })
     ));
 

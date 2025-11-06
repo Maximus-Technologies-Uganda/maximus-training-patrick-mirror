@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import type { Request, Response, NextFunction } from 'express';
 import { validateIdentityHeaders } from '../../src/middleware/identityValidation';
-import * as errors from '../../src/lib/errors';
 
 interface RequestUser {
   userId?: string;

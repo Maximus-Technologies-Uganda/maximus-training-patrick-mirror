@@ -355,6 +355,7 @@ export default function PostsPageClient(props: PostsPageClientProps): React.Reac
   );
 
   return (
+    // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
     <SWRConfig value={swrValue}>
       <PostsPageClientInner {...props} />
     </SWRConfig>

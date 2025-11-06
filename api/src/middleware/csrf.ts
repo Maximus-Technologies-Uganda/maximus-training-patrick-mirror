@@ -30,6 +30,8 @@ export function validateCsrfToken(token: string): boolean {
   if (age > 2 * 60 * 60) return false; // 2 hours in seconds
 
   // Check clock skew tolerance: reject tokens from the future (>5 minutes)
+  // Note: we use > (not >=) to allow tokens at exactly 5 minutes future.
+  // The 5-minute window accounts for clock skew in distributed systems.
   if (timestamp > now + 5 * 60) return false; // 5 minutes in seconds
 
   // Verify UUID part is not empty

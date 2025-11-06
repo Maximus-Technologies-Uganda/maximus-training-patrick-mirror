@@ -7,7 +7,7 @@ const monorepoRoot = path.resolve(__dirname, '..', '..');
 function tryResolve(name, paths) {
   try {
     return require.resolve(name, { paths });
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
@@ -15,8 +15,8 @@ function tryResolve(name, paths) {
 function tryRequire(p) {
   try {
     return { ok: true, exports: require(p) };
-  } catch (e) {
-    return { ok: false, error: String(e) };
+  } catch (_e) {
+    return { ok: false, error: String(_e) };
   }
 }
 
@@ -82,7 +82,7 @@ id('rd1','tlibReactDom');
 if (loaded.r1 && loaded.r1.ok) {
   try {
     console.log('\nreact from r1 keys slice:', Object.keys(loaded.r1.exports).slice(0,30));
-  } catch(e){}
+  } catch(_e){}
 }
 
 console.log('\nDONE');

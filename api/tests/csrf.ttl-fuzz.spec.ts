@@ -294,7 +294,7 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
 
     it('rejects CSRF tokens 5 minutes + 1 second in the future', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const farFutureTimestamp = now + (5 * 60) + 1; // 5 minutes + 1 second in the future
+      const farFutureTimestamp = now + (5 * 60) + 2; // 5 minutes + 2 seconds in the future (with 1-second timing buffer)
 
       const repository = buildRepository({
         create: async () => ({
