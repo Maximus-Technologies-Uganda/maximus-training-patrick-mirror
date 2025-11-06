@@ -47,7 +47,8 @@ export default async function PostsPage({
   console.debug('[diag][page] incomingQuery ->', incomingQuery);
   const requestedPage = Number(incomingQuery.page ?? "1");
   const requestedPageSize = Number(incomingQuery.pageSize ?? "10");
-  const q = incomingQuery.q ?? "";
+  const incomingQ = typeof incomingQuery.q === "string" ? incomingQuery.q : undefined;
+  const q = incomingQ ?? "";
   const sort = parseSort(incomingQuery.sort);
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const pageSize =
@@ -70,6 +71,9 @@ export default async function PostsPage({
       // Request one extra to determine if there's a next page without another round trip
       url.searchParams.set("pageSize", String(pageSize + 1));
       url.searchParams.set("sort", sort);
+      if (incomingQ !== undefined) {
+        url.searchParams.set("q", incomingQ);
+      }
       const fetchHeaders: Record<string, string> = {};
       console.debug('[diag][page] calling next/headers()');
       let incomingHeaders;
