@@ -45,7 +45,7 @@
 - [ ] T014 [P] Create LoadingState component in `frontend-next/src/components/LoadingState.tsx`
 - [ ] T015 [P] Create EmptyState component in `frontend-next/src/components/EmptyState.tsx`
 - [ ] T016 [P] Create ErrorState component in `frontend-next/src/components/ErrorState.tsx`
-- [ ] T017 [P] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx`
+- [ ] T017 [P] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx` (used for both design system seed and pagination UI)
 
 ### Design System Validation
 
@@ -70,13 +70,13 @@
 
 ---
 
-## Phase 4: User Story 2 - Pagination & Sorting (Day 3)
-
-**Blockers**: Phase 3 complete | **Goal**: URL params update, posts reorder, pagination works
+## Phase 4: User Story 2 - Pagination & Sorting (Day 3)  
+**Related User Story**: [US2 - Pagination & Sorting](spec.md#user-story-2-pagination--sorting) | **Acceptance Criteria**: See [./spec.md#acceptance-criteria-us2]
+**Blockers**: Phase 3 complete | **Goal**: URL params update, posts reorder, pagination works (validated via E2E and integration tests)
 
 ### Pagination UI (Parallelizable)
 
-- [ ] T024 [P] [US2] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx`
+<!-- T024 merged with T017 to avoid duplication; see T017 above -->
 - [ ] T025 [P] [US2] Create unit tests for PaginationControls in `frontend-next/tests/unit/PaginationControls.spec.ts`
 
 ### Pagination Integration
