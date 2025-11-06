@@ -9,7 +9,7 @@ import type { State } from "swr/_internal";
 import LiveRegion from "./LiveRegion";
 import NewPostForm from "./NewPostForm";
 import PageSizeSelect from "./PageSizeSelect";
-import PaginationControls from "./PaginationControls";
+import { PaginationControls } from "../src/components/PaginationControls";
 import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
 import { usePostsList } from "../src/lib/swr";
@@ -240,6 +240,21 @@ export default function PostsPageClient({
     [isLoading, effectiveItems.length]
   );
 
+  const hasNextPage = Boolean(
+    data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false)
+  );
+
+  const totalPages = useMemo(() => {
+    const total = data?.total;
+    if (typeof total === "number" && Number.isFinite(total)) {
+      return Math.max(1, Math.ceil(total / pageSize));
+    }
+    if (hasNextPage) {
+      return Math.max(1, page + 1);
+    }
+    return Math.max(1, page);
+  }, [data?.total, hasNextPage, page, pageSize]);
+
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -401,11 +416,18 @@ export default function PostsPageClient({
         </section>
 
         <PaginationControls
-          page={page}
-          hasNextPage={Boolean(
-            data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false)
-          )}
-          onChangePage={onChangePage}
+          currentPage={page}
+          totalPages={totalPages}
+          onPrevious={() => {
+            if (page > 1) {
+              onChangePage(page - 1);
+            }
+          }}
+          onNext={() => {
+            if (page < totalPages) {
+              onChangePage(page + 1);
+            }
+          }}
         />
       </main>
     </SWRConfig>
