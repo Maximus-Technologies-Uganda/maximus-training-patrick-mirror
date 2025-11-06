@@ -6,7 +6,16 @@ WORKDIR /repo
 COPY package.json package-lock.json ./
 COPY frontend-next/package.json ./frontend-next/package.json
 ENV NODE_OPTIONS=--max-old-space-size=2048
-RUN npm ci --omit=optional --no-audit --no-fund --prefer-offline --progress=false
+# Install frontend dependencies within the frontend-next workspace specifically.
+# This avoids running `npm ci` at the monorepo root which can fail for workspace setups.
+RUN if [ -f frontend-next/package-lock.json ]; then \
+      npm ci --prefix frontend-next --omit=optional --no-audit --no-fund --prefer-offline --progress=false; \
+    else \
+      echo "No frontend-next/package-lock.json found; running npm install in frontend-next as a fallback"; \
+      npm install --prefix frontend-next --omit=optional --no-audit --no-fund --prefer-offline --progress=false; \
+    fi
+# Ensure /repo/node_modules exists so later stages can copy it (some build paths expect it).
+RUN mkdir -p /repo/node_modules
 
 # Stage 2: Builder
 FROM node:20-bookworm-slim AS builder
