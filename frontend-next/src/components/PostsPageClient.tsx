@@ -179,15 +179,23 @@ function PostsPageClientInner({
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
+  const shouldUseInitialFallback =
+    page === initialPage &&
+    pageSize === initialPageSize &&
+    searchQuery === initialQuery &&
+    sort === initialSort;
+
+  const initialFallbackData = shouldUseInitialFallback ? fallbackList : undefined;
+
   const { data, isLoading, error } = usePostsList({
     page,
     pageSize,
     sort,
     q: searchQuery,
-    fallbackData: fallbackList,
+    fallbackData: initialFallbackData,
   });
 
-  const resolvedList = data ?? fallbackList;
+  const resolvedList = data ?? initialFallbackData;
   const posts = resolvedList?.items ?? [];
   const hasNextPage = resolvedList?.hasNextPage ?? false;
   const totalPages = deriveTotalPages(resolvedList, page, pageSize);
