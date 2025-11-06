@@ -3,11 +3,12 @@
 // accidentally load embedded copies that ship inside the package's
 // node_modules folder.
 
+const path = require('path');
 // Try multiple paths to handle different pnpm hoisting scenarios
 const paths = [
   '@testing-library/react',
-  '../../../node_modules/@testing-library/react',
-  '../../../node_modules/@testing-library/react/dist/index.js',
+  path.resolve(__dirname, '..', '..', '..', 'node_modules', '@testing-library/react'),
+  path.resolve(__dirname, '..', '..', '..', 'node_modules', '@testing-library/react', 'dist', 'index.js'),
 ];
 
 let moduleExports = null;
