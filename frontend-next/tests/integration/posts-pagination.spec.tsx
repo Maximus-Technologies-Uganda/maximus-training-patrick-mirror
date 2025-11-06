@@ -189,9 +189,9 @@ describe("Posts Pagination Integration", () => {
       expect(screen.getByText(secondPage[0].title)).toBeInTheDocument();
     });
 
-    const statusRegion = screen.getByRole("status");
+    // Find the status region containing the page announcement (handles multiple status regions)
     await waitFor(() => {
-      expect(statusRegion.textContent).toMatch(/Showing page 2 of/);
+      expect(screen.getByText(/Showing page 2 of/)).toBeInTheDocument();
     });
 
     const nextButton = screen.getByRole("button", { name: /next/i });
