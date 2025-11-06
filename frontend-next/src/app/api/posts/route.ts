@@ -49,6 +49,18 @@ function toTimestamp(value: string | undefined): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+function filterLocalPosts(posts: Array<LocalPost>, query: string | null | undefined): Array<LocalPost> {
+  const trimmed = typeof query === "string" ? query.trim() : "";
+  if (!trimmed) return posts;
+  const needle = trimmed.toLowerCase();
+  return posts.filter((post) => {
+    const candidates: Array<string | undefined> = [post.title, post.content, ...(post.tags ?? [])];
+    return candidates.some((value) =>
+      typeof value === "string" ? value.toLowerCase().includes(needle) : false
+    );
+  });
+}
+
 function sortLocalPosts(posts: Array<LocalPost>, sort: PostSort): Array<LocalPost> {
   const copy = posts.slice();
   switch (sort) {
@@ -291,11 +303,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const page = Number(search.get("page") ?? "1") || 1;
       const pageSize = Number(search.get("pageSize") ?? "10") || 10;
       const sortParam = search.get("sort");
+      const query = search.get("q");
       const sortResult = PostSortSchema.safeParse(sortParam);
       const sort = sortResult.success ? sortResult.data : DEFAULT_POST_SORT;
+      const filteredPosts = filterLocalPosts(localPostsFallback, query);
+      const sortedPosts = sortLocalPosts(filteredPosts, sort);
       const start = (page - 1) * pageSize;
       const identity = await extractUserIdentity(request);
-      const sortedPosts = sortLocalPosts(localPostsFallback, sort);
       const items = sortedPosts.slice(start, start + pageSize).map((p) => {
         const isOwner = Boolean(p.ownerId && identity?.userId && p.ownerId === identity.userId);
         const isAdmin = identity?.role === "admin";
