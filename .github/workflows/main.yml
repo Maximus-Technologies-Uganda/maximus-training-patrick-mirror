@@ -2,9 +2,9 @@ name: CI/CD - Test then Deploy
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
   pull_request:
-    branches: ["main"]
+    branches: ['main']
   workflow_dispatch:
 
 permissions:
@@ -31,8 +31,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 'Install All Dependencies'
-        run: npm ci
+      - name: 'Install All Dependencies (pnpm)'
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+          pnpm install --frozen-lockfile
 
       - name: 'Run Lint Check'
         id: lint
@@ -96,8 +99,11 @@ jobs:
         id: build
         run: npm run build
 
-      - name: 'Ensure frontend-next dependencies'
-        run: npm ci --workspace="frontend-next"
+      - name: 'Ensure frontend-next dependencies (pnpm)'
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+          pnpm install --dir frontend-next --frozen-lockfile
 
       - name: Upload frontend-next coverage artifact
         if: always()
