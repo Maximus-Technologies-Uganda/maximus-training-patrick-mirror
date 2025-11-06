@@ -94,7 +94,7 @@
 
 ## Phase 5: User Story 3 - State Management (Day 4)
 
-**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live
+**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live regions (use `aria-live="polite"` for LoadingState and EmptyState components, and `aria-live="assertive"` for ErrorState component)
 
 ### State UI Integration
 
@@ -102,9 +102,14 @@
 - [ ] T032 [US3] Wire EmptyState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T033 [US3] Wire ErrorState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`
-
+- [ ] T034a [US3] Implement and test retry mechanism for ErrorState in `frontend-next/src/components/PostsPageClient.tsx`
+      - Use `aria-live="polite"` for loading and empty states, and `aria-live="assertive"` for error states.  
 ### State Testing
 
+- [ ] T035 [US3] Create unit tests for LoadingState/EmptyState/ErrorState in `frontend-next/tests/unit/`
+- [ ] T036 [US3] Create integration test for state transitions in `frontend-next/tests/integration/posts-states.spec.ts`
+- [ ] T037 [US3] Create Playwright E2E test for state UX in `frontend-next/tests/playwright/core-flows.spec.ts` (extend)
+- [ ] T037a [US3] Create unit and integration tests for retry functionality in ErrorState
 - [ ] T035 [US3] Create unit tests for LoadingState/EmptyState/ErrorState in `frontend-next/tests/unit/`
 - [ ] T036 [US3] Create integration test for state transitions in `frontend-next/tests/integration/posts-states.spec.ts`
 - [ ] T037 [US3] Create Playwright E2E test for state UX in `frontend-next/tests/playwright/core-flows.spec.ts` (extend)
