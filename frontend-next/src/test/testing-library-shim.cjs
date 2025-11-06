@@ -17,6 +17,9 @@ for (const modulePath of paths) {
     moduleExports = require(modulePath);
     break;
   } catch (err) {
+    console.error(
+      `[testing-library-shim] Failed to require "${modulePath}": ${err && err.message ? err.message : err}`
+    );
     // Continue to next path
   }
 }
