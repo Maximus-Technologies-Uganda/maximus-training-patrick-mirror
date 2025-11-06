@@ -220,6 +220,7 @@ export default function PostsPageClient({
   const { data, isLoading, error } = usePostsList({
     page,
     pageSize,
+    q: searchQuery,
     sort,
     fallbackData: shouldUseFallback ? initialList : undefined,
   });
