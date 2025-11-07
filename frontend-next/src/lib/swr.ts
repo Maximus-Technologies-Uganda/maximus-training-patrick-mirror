@@ -55,13 +55,11 @@ export function usePostsList(params?: {
     key,
     async (url) => {
       const res = await fetch(url);
-      if (res.status === 401) {
-        // Treat unauthorized as an empty list for guests
-        return { page, pageSize, hasNextPage: false, items: [], sort, total: 0 } as PostList;
-      }
       if (!res.ok) {
-        const message = `Request failed with ${res.status}`;
-        throw new Error(message);
+        const message = res.status === 401 ? "Unauthorized" : `Request failed with ${res.status}`;
+        const error = new Error(message) as Error & { status?: number };
+        error.status = res.status;
+        throw error;
       }
       const json = (await res.json()) as unknown;
       const normalizedJson: unknown = Array.isArray(json)
