@@ -1,5 +1,7 @@
 ## 2025-11-07
 
+- fix(frontend-next): externalize React dependencies when transpiling the testing-library shim fallback to avoid duplicate bundles.
+- fix(frontend-next): preserve react-dom legacy entry when deduplicating nested module requires in Vitest setup.
 - fix(frontend-next): invoke auth login API before persisting session to local storage for the new login page.
 - fix(frontend-next): mirror search query when server-rendering posts to avoid unfiltered initial content.
 - fix(frontend-next): refresh newly created posts using the active sort and search cache key.
