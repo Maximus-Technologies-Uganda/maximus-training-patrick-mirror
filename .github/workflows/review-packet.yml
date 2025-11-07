@@ -177,9 +177,9 @@ jobs:
           name: coverage-frontend
           if-no-files-found: error
           path: |
-            coverage/coverage-summary.json
-            coverage/lcov.info
-            coverage/lcov-report/**
+            frontend/coverage/coverage-summary.json
+            frontend/coverage/lcov.info
+            frontend/coverage/lcov-report/**
 
   packet-frontend-next:
     name: Frontend Next tests & coverage
