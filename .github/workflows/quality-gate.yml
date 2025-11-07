@@ -289,6 +289,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Read coverage summary
+        if: steps.validate_coverage_frontend_next.outputs.exists == 'true'
         id: coverage_frontend_next
         working-directory: frontend-next
         run: |
