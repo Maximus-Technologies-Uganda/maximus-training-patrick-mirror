@@ -588,6 +588,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Read coverage summary
+        if: steps.validate_coverage_api.outputs.exists == 'true'
         id: api_coverage
         working-directory: api
         run: |
