@@ -34,13 +34,17 @@ test.describe("Design System - Accessibility (WCAG 2.1 AA)", () => {
     const outFile = path.join(outDir, "design-system-report.json");
     fs.writeFileSync(
       outFile,
-      JSON.stringify({
-        url: "/design-system-demo",
-        timestamp: new Date().toISOString(),
-        violations: results.violations,
-        passes: results.passes.length,
-        incomplete: results.incomplete.length,
-      }, null, 2) + "\n",
+      JSON.stringify(
+        {
+          url: "/design-system-demo",
+          timestamp: new Date().toISOString(),
+          violations: results.violations,
+          passes: results.passes.length,
+          incomplete: results.incomplete.length,
+        },
+        null,
+        2
+      ) + "\n",
       "utf8"
     );
 
@@ -55,27 +59,29 @@ test.describe("Design System - Accessibility (WCAG 2.1 AA)", () => {
     await page.goto("/design-system-demo");
 
     // Find first Button
-    const button = page.locator('button').first();
+    const button = page.locator("button").first();
 
     // Focus the button
     await button.focus();
 
     // Verify focus styles are applied (ring-2 class)
-    const className = await button.getAttribute('class');
-    expect(className).toContain('focus:ring-2');
+    const className = await button.getAttribute("class");
+    expect(className).toContain("focus:ring-2");
   });
 
   test("Input component has proper label associations", async ({ page }) => {
     await page.goto("/design-system-demo");
 
     // Find all inputs
-    const inputs = page.locator('input[type="text"], input[type="email"], input[type="password"], input[type="tel"]');
+    const inputs = page.locator(
+      'input[type="text"], input[type="email"], input[type="password"], input[type="tel"]'
+    );
     const count = await inputs.count();
 
     // Verify each input has an associated label
     for (let i = 0; i < count; i++) {
       const input = inputs.nth(i);
-      const inputId = await input.getAttribute('id');
+      const inputId = await input.getAttribute("id");
 
       // Find label with for attribute matching input id
       const label = page.locator(`label[for="${inputId}"]`);
@@ -91,32 +97,39 @@ test.describe("Design System - Accessibility (WCAG 2.1 AA)", () => {
     await expect(errorInput).toBeVisible();
 
     // Verify it has aria-describedby pointing to error message
-    const describedBy = await errorInput.getAttribute('aria-describedby');
+    const describedBy = await errorInput.getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();
 
     // Verify error message exists and has role="alert"
     const errorMessage = page.locator(`#${describedBy}`);
-    await expect(errorMessage).toHaveAttribute('role', 'alert');
+    await expect(errorMessage).toHaveAttribute("role", "alert");
   });
 
   test("PaginationControls is keyboard accessible", async ({ page }) => {
     await page.goto("/design-system-demo");
 
-    // Find pagination nav
+    // Wait for page to load
+    await page.waitForLoadState("networkidle");
+
+    // Find pagination nav and wait for it to be visible
     const paginationNav = page.locator('nav[aria-label="Pagination"]');
     await expect(paginationNav).toBeVisible();
 
-    // Find Previous and Next buttons
-    const prevButton = page.getByRole('button', { name: /previous/i });
-    const nextButton = page.getByRole('button', { name: /next/i });
+    // Find Previous and Next buttons using aria-label
+    const prevButton = page.getByRole("button", { name: "Previous page" });
+    const nextButton = page.getByRole("button", { name: "Next page" });
+
+    // Verify buttons are visible
+    await expect(prevButton).toBeVisible();
+    await expect(nextButton).toBeVisible();
 
     // Tab to Next button and verify it's focusable
     await nextButton.focus();
     await expect(nextButton).toBeFocused();
 
     // Verify buttons have proper aria-labels
-    await expect(prevButton).toHaveAttribute('aria-label', 'Go to previous page');
-    await expect(nextButton).toHaveAttribute('aria-label', 'Go to next page');
+    await expect(prevButton).toHaveAttribute("aria-label", "Previous page");
+    await expect(nextButton).toHaveAttribute("aria-label", "Next page");
   });
 
   test("LoadingState announces to screen readers", async ({ page }) => {
@@ -127,17 +140,24 @@ test.describe("Design System - Accessibility (WCAG 2.1 AA)", () => {
     await expect(loadingState).toBeVisible();
 
     // Verify it contains loading message
-    await expect(loadingState).toContainText('Loading');
+    await expect(loadingState).toContainText("Loading");
   });
 
   test("ErrorState alerts are assertive", async ({ page }) => {
     await page.goto("/design-system-demo");
 
-    // Find ErrorState component
-    const errorState = page.locator('[role="alert"][aria-live="assertive"]');
+    // Wait for page to load
+    await page.waitForLoadState("networkidle");
+
+    // Find ErrorState component by role and aria-live (exclude route announcer)
+    // ErrorState is specifically the one with the flex flex-col class (not the route announcer)
+    const errorState = page.locator('[role="alert"][aria-live="assertive"].flex');
     await expect(errorState).toBeVisible();
 
-    // Verify it contains error message
-    await expect(errorState).toContainText('Error');
+    // Verify it contains error message (title and/or message)
+    // The component has both title "Connection Error" and message text
+    const errorContent = page.locator('[role="alert"][aria-live="assertive"].flex h2');
+    await expect(errorContent).toBeVisible();
+    await expect(errorContent).toContainText("Connection Error");
   });
 });
