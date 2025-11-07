@@ -166,4 +166,90 @@ test.describe("Posts initial load", () => {
     const liveRegion = page.getByRole("status");
     await expect(liveRegion).toContainText("Showing page 2 of");
   });
+
+  test("shows loading then empty state with polite live announcement", async ({ page }) => {
+    let requestCount = 0;
+    await page.route("**/api/posts**", async (route) => {
+      requestCount += 1;
+      if (requestCount === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          page: 1,
+          pageSize: PAGE_SIZE,
+          hasNextPage: false,
+          items: [],
+          total: 0,
+          sort: "date-desc",
+        }),
+      });
+    });
+
+    await page.goto("/posts");
+
+    const section = page.locator("section[aria-label='Posts list']");
+    const loadingStatus = section.locator("div[role='status'][aria-live='polite']:not(.sr-only)");
+    await expect(loadingStatus).toHaveText(/Loading posts/);
+
+    const politeLive = section.locator("div.sr-only[aria-live='polite']");
+    await expect(politeLive).toHaveText(/Loading posts/);
+
+    await expect(section.getByRole("heading", { level: 2, name: "No posts yet" })).toBeVisible();
+    await expect(politeLive).toHaveText(/No posts available/);
+
+    const assertiveLive = section.locator("div.sr-only[aria-live='assertive']");
+    await expect(assertiveLive).toHaveText("");
+  });
+
+  test("allows retry after API error with assertive live region", async ({ page }) => {
+    let shouldFail = true;
+    await page.route("**/api/posts**", async (route) => {
+      if (shouldFail) {
+        shouldFail = false;
+        await route.fulfill({ status: 500, contentType: "text/plain", body: "Server error" });
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          page: 1,
+          pageSize: PAGE_SIZE,
+          hasNextPage: false,
+          items: [MOCK_POSTS[0]],
+          total: 1,
+          sort: "date-desc",
+        }),
+      });
+    });
+
+    await page.goto("/posts");
+
+    const section = page.locator("section[aria-label='Posts list']");
+    await expect(
+      section.getByRole("heading", { level: 2, name: "Error loading posts" })
+    ).toBeVisible();
+
+    const assertiveLive = section.locator("div.sr-only[aria-live='assertive']");
+    await expect(assertiveLive).toHaveText(/Error loading posts/);
+
+    await page.getByRole("button", { name: "Retry" }).click();
+
+    const loadingStatus = section.locator("div[role='status'][aria-live='polite']:not(.sr-only)");
+    await expect(loadingStatus).toHaveText(/Loading posts/);
+
+    const politeLive = section.locator("div.sr-only[aria-live='polite']");
+    await expect(politeLive).toHaveText(/Loading posts/);
+
+    await expect(section.locator("li").first()).toContainText(MOCK_POSTS[0].title);
+    await expect(assertiveLive).toHaveText("");
+    await expect(politeLive).toContainText(/Showing page 1 of/);
+  });
 });

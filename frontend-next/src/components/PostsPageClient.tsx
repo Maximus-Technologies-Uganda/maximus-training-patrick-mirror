@@ -187,7 +187,7 @@ function PostsPageClientInner({
 
   const initialFallbackData = shouldUseInitialFallback ? fallbackList : undefined;
 
-  const { data, isLoading, error } = usePostsList({
+  const { data, isLoading, isValidating, error, mutate } = usePostsList({
     page,
     pageSize,
     sort,
@@ -247,7 +247,8 @@ function PostsPageClientInner({
   // surfaced immediately without delaying polite status updates.
   const [errorAnnouncement, setErrorAnnouncement] = useState<string | null>(null);
   useEffect(() => {
-    if (isLoading) {
+    const hasPosts = posts.length > 0;
+    if ((isLoading || isValidating) && !hasPosts) {
       setLiveAnnouncement("Loading posts…");
       setErrorAnnouncement(null);
       return;
@@ -258,7 +259,12 @@ function PostsPageClientInner({
       setLiveAnnouncement("");
       return;
     }
-    if (posts.length === 0) {
+    if (isValidating && hasPosts) {
+      setLiveAnnouncement("Refreshing posts…");
+      setErrorAnnouncement(null);
+      return;
+    }
+    if (!hasPosts) {
       setLiveAnnouncement("No posts available");
       setErrorAnnouncement(null);
       return;
@@ -267,9 +273,15 @@ function PostsPageClientInner({
     const announcement = `Showing page ${page} of ${totalPages}, ${posts.length} posts, sorted by ${sortLabel}`;
     setLiveAnnouncement(announcement);
     setErrorAnnouncement(null);
-  }, [isLoading, error, posts.length, page, totalPages, sort]);
+  }, [isLoading, isValidating, error, posts.length, page, totalPages, sort]);
 
   const errorMessage = error instanceof Error ? error.message : undefined;
+
+  const handleRetry = useCallback(() => {
+    setErrorAnnouncement(null);
+    setLiveAnnouncement("Loading posts…");
+    void mutate();
+  }, [mutate]);
 
   return (
     <section aria-label="Posts list" className="flex flex-col gap-6">
@@ -305,10 +317,10 @@ function PostsPageClientInner({
         </label>
       </div>
 
-      {isLoading && posts.length === 0 ? (
+      {posts.length === 0 && (isLoading || isValidating) ? (
         <LoadingState message="Loading posts…" />
       ) : error && posts.length === 0 ? (
-        <ErrorState title="Error loading posts" message={errorMessage} />
+        <ErrorState title="Error loading posts" message={errorMessage} onRetry={handleRetry} />
       ) : posts.length === 0 ? (
         <EmptyState title="No posts yet" message="There are currently no posts." />
       ) : (

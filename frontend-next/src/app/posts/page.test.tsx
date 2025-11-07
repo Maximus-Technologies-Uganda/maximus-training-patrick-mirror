@@ -29,8 +29,8 @@ describe("SSR PostsPage (server component)", () => {
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     };
-    console.debug('[diag][page.test] globalThis.fetch before stub ->', globalThis.fetch);
-    console.debug('[diag][page.test] typeof fetch ->', typeof globalThis.fetch);
+    console.debug("[diag][page.test] globalThis.fetch before stub ->", globalThis.fetch);
+    console.debug("[diag][page.test] typeof fetch ->", typeof globalThis.fetch);
 
     const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
@@ -56,7 +56,9 @@ describe("SSR PostsPage (server component)", () => {
         sort: DEFAULT_POST_SORT,
       },
       isLoading: false,
+      isValidating: false,
       error: null,
+      mutate: vi.fn(),
     } as unknown as ReturnType<typeof usePostsList>);
 
     const el = await PostsPage({ searchParams: Promise.resolve({}) });

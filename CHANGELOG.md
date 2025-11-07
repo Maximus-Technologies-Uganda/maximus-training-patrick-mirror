@@ -1,5 +1,7 @@
 ## 2025-11-07 (Phase 2 - Playwright E2E)
 
+- feat(frontend-next): wire posts loading, empty, and error states with live region announcements and retry support.
+- test(frontend-next): add unit, integration, and Playwright coverage for posts state transitions and retry UX.
 - fix(ci): add frontend workspace coverage generation to quality-gate workflow for comprehensive coverage reporting.
 - fix(frontend-next): add pagination status announcements to live region (aria-live="polite") for screen reader users navigating pages.
 - test(playwright): fix ErrorState accessibility test selector to exclude Next.js route announcer (use `.flex` class discriminator).

@@ -1,4 +1,4 @@
-import useSWR, { mutate } from "swr";
+import useSWR, { mutate, type KeyedMutator } from "swr";
 // zod imported elsewhere; no direct use here
 
 import { getBaseUrl } from "./config";
@@ -33,13 +33,25 @@ export function usePostsList(params?: {
   q?: string;
   fallbackData?: PostList;
   revalidateOnMount?: boolean;
-}): { data: PostList | undefined; isLoading: boolean; error: unknown } {
+}): {
+  data: PostList | undefined;
+  isLoading: boolean;
+  isValidating: boolean;
+  error: unknown;
+  mutate: KeyedMutator<PostList>;
+} {
   const page = params?.page ?? 1;
   const pageSize = params?.pageSize ?? 10;
   const sort = params?.sort ?? DEFAULT_POST_SORT;
   const query = normalizeQuery(params?.q);
   const key = postsListKey(page, pageSize, sort, query);
-  const { data, isLoading, error } = useSWR<PostList>(
+  const {
+    data,
+    isLoading,
+    isValidating,
+    error,
+    mutate: mutateList,
+  } = useSWR<PostList>(
     key,
     async (url) => {
       const res = await fetch(url);
@@ -75,7 +87,7 @@ export function usePostsList(params?: {
       shouldRetryOnError: false,
     }
   );
-  return { data, isLoading, error };
+  return { data, isLoading, isValidating: Boolean(isValidating), error, mutate: mutateList };
 }
 
 /**
