@@ -5,6 +5,13 @@ import PostsPage from "./page";
 import { DEFAULT_POST_SORT } from "../../lib/schemas";
 
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
+vi.mock("../../lib/swr", async () => {
+  const actual = await vi.importActual<typeof import("../../lib/swr")>("../../lib/swr");
+  return {
+    ...actual,
+    usePostsList: vi.fn(),
+  };
+});
 
 describe("SSR PostsPage (server component)", () => {
   beforeEach(() => {
