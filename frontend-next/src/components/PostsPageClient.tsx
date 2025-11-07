@@ -8,6 +8,7 @@ import { ErrorState } from "./ErrorState";
 import { LoadingState } from "./LoadingState";
 import { PaginationControls } from "./PaginationControls";
 import { Card } from "./Card";
+import NewPostForm from "./NewPostForm";
 import {
   DEFAULT_POST_SORT,
   POST_SORT_VALUES,
@@ -16,6 +17,7 @@ import {
   type PostSort,
 } from "../lib/schemas";
 import { usePostsList } from "../lib/swr";
+import { useSession } from "../lib/auth/use-session";
 
 const SORT_OPTIONS = new Set<PostSort>(POST_SORT_VALUES);
 
@@ -199,6 +201,7 @@ function PostsPageClientInner({
   const posts = resolvedList?.items ?? [];
   const hasNextPage = resolvedList?.hasNextPage ?? false;
   const totalPages = deriveTotalPages(resolvedList, page, pageSize);
+  const { session } = useSession();
 
   const syncUrl = useCallback(
     (next: { page?: number; sort?: PostSort; q?: string; pageSize?: number }) => {
@@ -283,6 +286,13 @@ function PostsPageClientInner({
     void mutate();
   }, [mutate]);
 
+  const handleCreateSuccess = useCallback(() => {
+    if (page !== 1) {
+      setPage(1);
+      syncUrl({ page: 1 });
+    }
+  }, [page, syncUrl]);
+
   return (
     <section aria-label="Posts list" className="flex flex-col gap-6">
       {/* Polite live region for non-error announcements */}
@@ -316,6 +326,26 @@ function PostsPageClientInner({
           </select>
         </label>
       </div>
+
+      <Card
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-semibold text-text">Create a new post</h2>
+            <p className="text-sm text-text-muted">
+              {session
+                ? `Signed in as ${session.name ?? session.userId}`
+                : "You are browsing as a guest. Sign in to publish posts."}
+            </p>
+          </div>
+        }
+      >
+        <NewPostForm
+          pageSize={pageSize}
+          sort={sort}
+          query={searchQuery}
+          onSuccess={handleCreateSuccess}
+        />
+      </Card>
 
       {posts.length === 0 && (isLoading || isValidating) ? (
         <LoadingState message="Loading posts…" />
