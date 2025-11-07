@@ -11,8 +11,9 @@ const path = require('path');
  *  - coverage summary: <repo>/coverage/coverage-summary.json (from scripts/normalize-coverage.js)
  *  - unit/integration test summary: <repo>/test-results/summary.json (optional, best-effort)
  *  - type-check results: <repo>/typecheck/results.json (optional)
- *  - accessibility report: <repo>/a11y/report.json (optional)
+ *  - accessibility report: <repo>/a11y/results.json (optional)
  *  - contract validation report: <repo>/contract/report.json (optional)
+ *  - spectral lint report: <repo>/contract/spectral.json (optional)
  *  - security audit summary: <repo>/security/audit-summary.json (optional)
  *  - governance report: <repo>/governance/report.json (optional)
  *
@@ -32,9 +33,9 @@ const REPO_ROOT = process.cwd();
 const COVERAGE_FILE = path.join(REPO_ROOT, 'coverage', 'coverage-summary.json');
 const TEST_SUMMARY_FILE = path.join(REPO_ROOT, 'test-results', 'summary.json');
 const TYPECHECK_FILE = path.join(REPO_ROOT, 'typecheck', 'results.json');
-const A11Y_FILE = path.join(REPO_ROOT, 'a11y', 'report.json');
+const A11Y_FILE = path.join(REPO_ROOT, 'a11y', 'results.json');
 const CONTRACT_FILE = path.join(REPO_ROOT, 'contract', 'report.json');
-const SPECTRAL_FILE = path.join(REPO_ROOT, 'contract', 'spectral-report.json');
+const SPECTRAL_FILE = path.join(REPO_ROOT, 'contract', 'spectral.json');
 const SECURITY_FILE = path.join(REPO_ROOT, 'security', 'audit-summary.json');
 const GOVERNANCE_FILE = path.join(REPO_ROOT, 'governance', 'report.json');
 const GATE_OUT_DIR = path.join(REPO_ROOT, 'gate');
