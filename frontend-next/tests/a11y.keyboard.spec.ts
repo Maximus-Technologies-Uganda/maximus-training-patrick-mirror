@@ -104,7 +104,8 @@ test.describe("keyboard-only navigation", () => {
         // If URL doesn't change, wait for the page indicator text
       });
 
-    await expect(page.getByText("Page 2")).toBeVisible({ timeout: 10000 });
+    // Look for page 2 indicator in the pagination controls (not live region)
+    await expect(page.locator('span[aria-current="page"]')).toContainText("Page 2");
 
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
