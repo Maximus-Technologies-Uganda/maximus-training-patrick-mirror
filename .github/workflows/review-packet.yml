@@ -153,9 +153,6 @@ jobs:
     name: Frontend tests & coverage
     runs-on: ubuntu-latest
     needs: install-root-deps
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,6 +166,7 @@ jobs:
           frozen-lockfile: false
 
       - name: Run tests with coverage (Vitest)
+        working-directory: frontend
         run: pnpm run test -- --coverage
 
       - name: Upload frontend coverage and sources
@@ -177,9 +175,9 @@ jobs:
           name: coverage-frontend
           if-no-files-found: error
           path: |
-            coverage/coverage-summary.json
-            coverage/lcov.info
-            coverage/lcov-report/**
+            frontend/coverage/coverage-summary.json
+            frontend/coverage/lcov.info
+            frontend/coverage/lcov-report/**
 
   packet-frontend-next:
     name: Frontend Next tests & coverage
