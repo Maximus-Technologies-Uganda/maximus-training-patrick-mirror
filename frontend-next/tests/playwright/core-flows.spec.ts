@@ -163,7 +163,7 @@ test.describe("Posts initial load", () => {
     const firstItem = page.locator("section[aria-label='Posts list'] li").first();
     await expect(firstItem).toContainText("Post 11");
 
-    const liveRegion = page.getByRole("status");
+    const liveRegion = page.locator('div[aria-live="polite"][role="status"]').first();
     await expect(liveRegion).toContainText("Showing page 2 of");
   });
 

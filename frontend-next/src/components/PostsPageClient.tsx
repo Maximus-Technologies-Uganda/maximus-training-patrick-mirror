@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { SWRConfig, type Cache } from "swr";
 
 import { EmptyState } from "./EmptyState";
@@ -201,7 +202,7 @@ function PostsPageClientInner({
   const posts = resolvedList?.items ?? [];
   const hasNextPage = resolvedList?.hasNextPage ?? false;
   const totalPages = deriveTotalPages(resolvedList, page, pageSize);
-  const { session } = useSession();
+  const { session, signOut } = useSession();
 
   const syncUrl = useCallback(
     (next: { page?: number; sort?: PostSort; q?: string; pageSize?: number }) => {
@@ -302,6 +303,34 @@ function PostsPageClientInner({
       {/* Assertive live region for error announcements */}
       <div role="status" aria-live="assertive" className="sr-only">
         {errorAnnouncement}
+      </div>
+      {/* Auth banner */}
+      <div className="flex flex-col gap-3 items-start justify-between rounded-md border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center">
+        <div>
+          {session ? (
+            <p className="text-sm text-text-muted">
+              Signed in as <span className="font-semibold">{session.name ?? session.userId}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-text-muted">
+              You are browsing as a guest.{" "}
+              {/* @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06) */}
+              <Link href="/login" className="font-medium text-primary hover:underline">
+                Sign in
+              </Link>{" "}
+              to publish posts.
+            </p>
+          )}
+        </div>
+        {session ? (
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-md border border-text-muted/40 px-3 py-1 text-sm font-medium text-text transition hover:bg-primary/10 whitespace-nowrap"
+            onClick={signOut}
+          >
+            Sign out
+          </button>
+        ) : null}
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-text">Posts</h1>

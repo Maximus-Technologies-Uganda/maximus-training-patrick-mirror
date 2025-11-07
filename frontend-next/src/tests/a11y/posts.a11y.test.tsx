@@ -27,9 +27,8 @@ describe("A11y: /posts page states have basic roles/labels", () => {
     );
 
     render(<PostsPageClient />);
-    // Expect a polite live region to announce loading
-    // This will initially fail until live region exists
-    const live = screen.getByRole("status");
+    // Expect a polite live region to announce loading (use specific selector since there are multiple status roles)
+    const live = screen.getByRole("status", { hidden: true });
     expect(live).toHaveAttribute("aria-live", "polite");
 
     // Once loaded, expect a heading and landmark roles
