@@ -7,30 +7,56 @@ export default defineConfig({
   resolve: {
     // Use an array of alias entries so we can apply regex-based replacements
     // which Vite's resolver understands. This ensures imports that include
-    // nested paths (for example: @testing-library/react/node_modules/react/...) 
+    // nested paths (for example: @testing-library/react/node_modules/react/...)
     // are redirected to the hoisted monorepo copies.
     alias: [
-  // Specific aliases for the jsx runtime must come before the generic
-  // 'react' alias so imports like 'react/jsx-dev-runtime' are resolved to
-  // the shim file directly instead of being rewritten by the 'react'
-  // alias (which would append '/jsx-dev-runtime' to the shim path).
-  { find: "react/jsx-runtime", replacement: path.resolve(__dirname, "src", "test", "react-jsx-runtime-shim.cjs") },
-  { find: "react/jsx-dev-runtime", replacement: path.resolve(__dirname, "src", "test", "react-jsx-runtime-shim.cjs") },
-  // Point 'react' to the shim that normalizes interop and default exports.
-  { find: "react", replacement: path.resolve(__dirname, "src", "test", "react-shim.cjs") },
-  { find: "react-dom", replacement: path.resolve(__dirname, "..", "node_modules", "react-dom") },
-      { find: "@testing-library/react", replacement: path.resolve(__dirname, "src", "test", "testing-library-shim.cjs") },
+      { find: "@", replacement: path.resolve(__dirname, "src") },
+      // Specific aliases for the jsx runtime must come before the generic
+      // 'react' alias so imports like 'react/jsx-dev-runtime' are resolved to
+      // the shim file directly instead of being rewritten by the 'react'
+      // alias (which would append '/jsx-dev-runtime' to the shim path).
+      {
+        find: "react/jsx-runtime",
+        replacement: path.resolve(__dirname, "src", "test", "react-jsx-runtime-shim.cjs"),
+      },
+      {
+        find: "react/jsx-dev-runtime",
+        replacement: path.resolve(__dirname, "src", "test", "react-jsx-runtime-shim.cjs"),
+      },
+      // Point 'react' to the shim that normalizes interop and default exports.
+      { find: "react", replacement: path.resolve(__dirname, "src", "test", "react-shim.cjs") },
+      { find: "react-dom", replacement: path.resolve(__dirname, "..", "node_modules", "react-dom") },
+      {
+        find: "@testing-library/react",
+        replacement: path.resolve(__dirname, "src", "test", "testing-library-shim.cjs"),
+      },
       // Absolute-path aliases for nested copies that appear under the
       // monorepo root node_modules (pnpm sometimes hoists the package but
       // still leaves a nested node_modules inside it). These redirect any
       // absolute import that points to the nested react/react-dom folders
       // to the hoisted workspace copies.
       {
-        find: path.resolve(__dirname, "..", "node_modules", "@testing-library", "react", "node_modules", "react"),
+        find: path.resolve(
+          __dirname,
+          "..",
+          "node_modules",
+          "@testing-library",
+          "react",
+          "node_modules",
+          "react",
+        ),
         replacement: path.resolve(__dirname, "..", "node_modules", "react"),
       },
       {
-        find: path.resolve(__dirname, "..", "node_modules", "@testing-library", "react", "node_modules", "react-dom"),
+        find: path.resolve(
+          __dirname,
+          "..",
+          "node_modules",
+          "@testing-library",
+          "react",
+          "node_modules",
+          "react-dom",
+        ),
         replacement: path.resolve(__dirname, "..", "node_modules", "react-dom"),
       },
       // Regex: redirect any nested @testing-library/react/node_modules/react/* to hoisted react
@@ -46,7 +72,8 @@ export default defineConfig({
       // Also remap nested jsx-runtime imports under testing-library to hoisted react's jsx-runtime
       {
         find: /@testing-library\/react\/node_modules\/react\/jsx-runtime(\/.*)?$/,
-        replacement: path.resolve(__dirname, "..", "node_modules", "react", "jsx-runtime.js") + "$1",
+        replacement:
+          path.resolve(__dirname, "..", "node_modules", "react", "jsx-runtime.js") + "$1",
       },
       {
         find: /@testing-library\/react\/node_modules\/react\/jsx-dev-runtime(\/.*)?$/,

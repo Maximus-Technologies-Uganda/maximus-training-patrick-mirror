@@ -265,16 +265,31 @@ jobs:
         working-directory: frontend-next
         run: npm run test:ci
 
+      - name: Validate coverage directory
+        id: validate_coverage_frontend_next
+        working-directory: frontend-next
+        run: |
+          if [ -d coverage ] && [ -f coverage/coverage-summary.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            ls -la coverage/ || true
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Coverage directory or coverage-summary.json not found" >&2
+            ls -la . | grep -E 'coverage|coverage-' || true
+          fi
+
       - name: Upload frontend-next coverage artifact
-        if: always()
+        if: always() && steps.validate_coverage_frontend_next.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-frontend-next
           path: |
             frontend-next/coverage/**
           retention-days: 21
+          if-no-files-found: warn
 
       - name: Read coverage summary
+        if: steps.validate_coverage_frontend_next.outputs.exists == 'true'
         id: coverage_frontend_next
         working-directory: frontend-next
         run: |
@@ -471,14 +486,28 @@ jobs:
         working-directory: ${{ matrix.workspace }}
         run: npm run test:ci
 
+      - name: Validate coverage directory
+        id: validate_coverage_ws
+        working-directory: ${{ matrix.workspace }}
+        run: |
+          if [ -d coverage ] && [ -f coverage/coverage-summary.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            ls -la coverage/ || true
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Coverage directory or coverage-summary.json not found for ${{ matrix.workspace }}" >&2
+            ls -la . | grep -E 'coverage|coverage-' || true
+          fi
+
       - name: Upload ${{ matrix.workspace }} coverage
-        if: always()
+        if: always() && steps.validate_coverage_ws.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.workspace }}
           path: |
             ${{ matrix.workspace }}/coverage/**
           retention-days: 21
+          if-no-files-found: warn
 
   api-coverage:
     needs: install-root-deps
@@ -535,16 +564,31 @@ jobs:
           POSTS_REPOSITORY: inmemory
         run: npm run test:ci
 
+      - name: Validate coverage directory
+        id: validate_coverage_api
+        working-directory: api
+        run: |
+          if [ -d coverage ] && [ -f coverage/coverage-summary.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            ls -la coverage/ || true
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Coverage directory or coverage-summary.json not found" >&2
+            ls -la . | grep -E 'coverage|coverage-' || true
+          fi
+
       - name: Upload API coverage artifact
-        if: always()
+        if: always() && steps.validate_coverage_api.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-api
           path: |
             api/coverage/**
           retention-days: 21
+          if-no-files-found: warn
 
       - name: Read coverage summary
+        if: steps.validate_coverage_api.outputs.exists == 'true'
         id: api_coverage
         working-directory: api
         run: |

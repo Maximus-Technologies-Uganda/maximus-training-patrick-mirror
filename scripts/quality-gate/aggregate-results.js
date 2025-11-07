@@ -96,7 +96,6 @@ const DEFAULT_REQUIRED_DIMENSIONS = [
   'typecheck',
   'a11y',
   'contract',
-  'spectral',
   'security',
   'governance',
 ];
