@@ -134,7 +134,7 @@ describe("Posts state transitions", () => {
     const [politeRegion, assertiveRegion] = screen.getAllByRole("status");
     expect(assertiveRegion).toHaveAttribute("aria-live", "assertive");
     expect(assertiveRegion).toHaveTextContent("Error loading posts");
-    expect(politeRegion).toHaveTextContent(/^$/);
+    expect(politeRegion).toBeEmptyDOMElement();
 
     await act(async () => {
       await user.click(screen.getByRole("button", { name: /retry/i }));
