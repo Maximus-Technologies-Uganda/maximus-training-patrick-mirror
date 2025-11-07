@@ -70,10 +70,28 @@ function shouldTrustProxy(req: Request): boolean {
 
   if (typeof trustProxy === 'string') {
     const normalized = trustProxy.trim().toLowerCase();
+
     if (!normalized) {
       return false;
     }
-    return normalized !== 'false' && normalized !== '0';
+
+    if (normalized === 'false' || normalized === '0') {
+      return false;
+    }
+
+    if (!remoteAddress) {
+      return normalized === 'true' || normalized === '1';
+    }
+
+    if (typeof trustProxyFn === 'function') {
+      try {
+        return Boolean(trustProxyFn(remoteAddress, 0));
+      } catch {
+        return normalized === 'true' || normalized === '1';
+      }
+    }
+
+    return normalized === 'true' || normalized === '1';
   }
 
   return Boolean(trustProxy);

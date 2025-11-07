@@ -22,12 +22,13 @@ export default function LoginPage(): React.ReactElement {
   const [userId, setUserId] = useState<FieldState>(initialFieldState);
   const [name, setName] = useState<FieldState>(initialFieldState);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isSubmitDisabled = useMemo(() => {
     return normalize(userId.value) === "" || normalize(name.value) === "";
   }, [name.value, userId.value]);
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     const nextUserId = normalize(userId.value);
     const nextName = normalize(name.value);
@@ -47,10 +48,33 @@ export default function LoginPage(): React.ReactElement {
       return;
     }
 
-    const session: StoredSession = { userId: nextUserId, name: nextName, role: "owner" };
-    writeSession(session);
     setFormError(null);
-    router.push("/posts");
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId: nextUserId, name: nextName }),
+      });
+      if (!response.ok) {
+        const isUnauthorized = response.status === 401;
+        setFormError(
+          isUnauthorized
+            ? "Invalid credentials. Please try again."
+            : "Failed to sign in. Please try again."
+        );
+        return;
+      }
+
+      const session: StoredSession = { userId: nextUserId, name: nextName, role: "owner" };
+      writeSession(session);
+      router.push("/posts");
+    } catch {
+      setFormError("Unable to sign in. Check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -120,14 +144,19 @@ export default function LoginPage(): React.ReactElement {
           <button
             type="submit"
             className="w-full rounded bg-indigo-600 py-2 text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-            disabled={isSubmitDisabled}
+            disabled={isSubmitDisabled || isSubmitting}
           >
-            Continue
+            {isSubmitting ? "Signing in…" : "Continue"}
           </button>
         </form>
       </section>
       <p className="mt-4 text-center text-sm text-gray-600">
-        Looking for posts? <Link className="text-indigo-600 hover:underline" href="/posts">Go to posts</Link>.
+        Looking for posts?{" "}
+        {/* @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06) */}
+        <Link className="text-indigo-600 hover:underline" href="/posts">
+          Go to posts
+        </Link>
+        .
       </p>
     </main>
   );

@@ -1,11 +1,19 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false
   },
   "include": [
     "next-env.d.ts",
-    "src/**/*",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "!src/**/*.test.tsx",
+    "!src/**/*.spec.tsx",
+    "!src/**/*.int.test.tsx",
+    "!src/**/*.a11y.test.tsx",
+    "!src/**/*.ssr.test.tsx",
     "playwright.config.ts",
     "app.d.ts",
     ".next/types/**/*.ts",

@@ -6,7 +6,11 @@ import path from "path";
 const ARTIFACT_ROOT = path.resolve(__dirname, "..", "..", "a11y-frontend-next");
 
 function resolveCommitSha(): string {
-  const candidates = [process.env.GITHUB_SHA, process.env.VERCEL_GIT_COMMIT_SHA, process.env.COMMIT_SHA];
+  const candidates = [
+    process.env.GITHUB_SHA,
+    process.env.VERCEL_GIT_COMMIT_SHA,
+    process.env.COMMIT_SHA,
+  ];
   for (const candidate of candidates) {
     if (typeof candidate === "string" && candidate.trim().length > 0) {
       return candidate.trim();
@@ -67,35 +71,41 @@ test.describe("keyboard-only navigation", () => {
     });
 
     await page.goto("/posts");
-    await expect(page.getByRole("heading", { name: "Posts", level: 1 })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Posts", level: 1 })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.getByRole("main")).toBeVisible();
 
     await page.focus("body");
-    await tabUntil(
-      page,
-      () =>
-        page.evaluate(() => {
-          const active = document.activeElement;
-          return Boolean(active?.getAttribute("aria-label") === "Search");
-        }),
+    await tabUntil(page, () =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        return Boolean(active?.getAttribute("aria-label") === "Search");
+      })
     );
     await expect(page.getByLabel("Search")).toBeFocused();
 
     await page.keyboard.type("keyboard");
 
     const nextButton = page.getByRole("button", { name: "Next page" });
-    await tabUntil(
-      page,
-      () =>
-        page.evaluate(() => {
-          const active = document.activeElement;
-          return Boolean(active?.getAttribute("aria-label") === "Next page");
-        }),
+    await tabUntil(page, () =>
+      page.evaluate(() => {
+        const active = document.activeElement;
+        return Boolean(active?.getAttribute("aria-label") === "Next page");
+      })
     );
     await expect(nextButton).toBeFocused();
     await page.keyboard.press("Space");
 
-    await expect(page.getByText("Page 2")).toBeVisible();
+    // Wait for navigation to page 2 (URL or content change)
+    await page
+      .waitForURL((url) => url.searchParams.get("page") === "2", { timeout: 10000 })
+      .catch(() => {
+        // If URL doesn't change, wait for the page indicator text
+      });
+
+    // Look for page 2 indicator in the pagination controls (not live region)
+    await expect(page.locator('span[aria-current="page"]')).toContainText("Page 2");
 
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
@@ -106,17 +116,27 @@ test.describe("keyboard-only navigation", () => {
     await fs.mkdir(testInfo.outputDir, { recursive: true });
 
     const tempJsonPath = path.join(testInfo.outputDir, "axe-results.json");
-    await fs.writeFile(tempJsonPath, JSON.stringify({ violations: results.violations }, null, 2) + "\n", "utf8");
+    await fs.writeFile(
+      tempJsonPath,
+      JSON.stringify({ violations: results.violations }, null, 2) + "\n",
+      "utf8"
+    );
     const jsonPath = path.join(artifactDir, "axe-results.json");
     await fs.copyFile(tempJsonPath, jsonPath);
     await testInfo.attach("axe-results", { path: tempJsonPath, contentType: "application/json" });
 
     const video = page.video();
     await page.close();
-    expect(video, "Expected Playwright to record a video for keyboard-only navigation").not.toBeNull();
+    expect(
+      video,
+      "Expected Playwright to record a video for keyboard-only navigation"
+    ).not.toBeNull();
     const videoPath = await video!.path();
     const dest = path.join(artifactDir, "keyboard-only.webm");
     await fs.copyFile(videoPath, dest);
-    await testInfo.attach("keyboard-navigation-video", { path: videoPath, contentType: "video/webm" });
+    await testInfo.attach("keyboard-navigation-video", {
+      path: videoPath,
+      contentType: "video/webm",
+    });
   });
 });

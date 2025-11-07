@@ -9,19 +9,25 @@ import type { State } from "swr/_internal";
 import LiveRegion from "./LiveRegion";
 import NewPostForm from "./NewPostForm";
 import PageSizeSelect from "./PageSizeSelect";
-import PaginationControls from "./PaginationControls";
+import { PaginationControls } from "../src/components/PaginationControls";
 import PostsList from "./PostsList";
 import SearchInput from "./SearchInput";
 import { usePostsList } from "../src/lib/swr";
 import { useSession } from "../src/lib/auth/use-session";
-import type { Post, PostList } from "../src/lib/schemas";
+import {
+  DEFAULT_POST_SORT,
+  POST_SORT_VALUES,
+  type Post,
+  type PostList,
+  type PostSort,
+} from "../src/lib/schemas";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SWRCacheValue = State<unknown, any>;
 
 function ErrorState(): React.ReactElement {
   return (
-    <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-red-800">
+    <div role="alert" className="rounded-md border border-error/40 bg-error/10 p-3 text-error">
       Error loading posts. Please try again.
     </div>
   );
@@ -32,7 +38,7 @@ function useSessionCookieStatus(): boolean {
   const [hasSessionCookie, setHasSessionCookie] = React.useState(false);
 
   React.useEffect(() => {
-    if (typeof document === 'undefined') return;
+    if (typeof document === "undefined") return;
     try {
       const m = document.cookie.match(/(?:^|;\s*)session=([^;]+)/);
       const token = m?.[1];
@@ -40,15 +46,15 @@ function useSessionCookieStatus(): boolean {
         setHasSessionCookie(false);
         return;
       }
-      const parts = token.split('.');
+      const parts = token.split(".");
       if (parts.length !== 3) {
         setHasSessionCookie(false);
         return;
       }
-      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
       const payload = JSON.parse(atob(padded)) as { userId?: string };
-      setHasSessionCookie(typeof payload.userId === 'string');
+      setHasSessionCookie(typeof payload.userId === "string");
     } catch {
       setHasSessionCookie(false);
     }
@@ -59,7 +65,9 @@ function useSessionCookieStatus(): boolean {
 
 function EmptyState(): React.ReactElement {
   return (
-    <p className="text-gray-600" aria-live="polite">No posts yet</p>
+    <p className="text-text-muted" aria-live="polite">
+      No posts yet
+    </p>
   );
 }
 
@@ -83,25 +91,42 @@ function createSWRCache(): Cache<unknown> {
 
 function filterPostsByQuery<T extends { title: string; content: string }>(
   items: T[],
-  query: string,
+  query: string
 ): T[] {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return items;
   return items.filter(
-    (p) => p.title.toLowerCase().includes(normalized) || p.content.toLowerCase().includes(normalized),
+    (p) =>
+      p.title.toLowerCase().includes(normalized) || p.content.toLowerCase().includes(normalized)
   );
+}
+
+const SORT_OPTIONS = new Set<PostSort>(POST_SORT_VALUES);
+
+const SORT_LABELS: Record<PostSort, string> = {
+  "date-desc": "Newest First",
+  "date-asc": "Oldest First",
+  "title-asc": "Title (A-Z)",
+  "title-desc": "Title (Z-A)",
+};
+
+function isValidSort(value: string | null): value is PostSort {
+  if (!value) return false;
+  return SORT_OPTIONS.has(value as PostSort);
 }
 
 export default function PostsPageClient({
   page: initialPage = 1,
   pageSize: initialPageSize = 10,
   q: incomingSearchQuery = "",
+  sort: initialSort = DEFAULT_POST_SORT,
   initialData,
   initialHasNextPage,
 }: {
   page?: number;
   pageSize?: number;
   q?: string;
+  sort?: PostSort;
   initialData?: Post[];
   initialHasNextPage?: boolean;
 }): React.ReactElement {
@@ -111,25 +136,28 @@ export default function PostsPageClient({
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
   const [searchQuery, setSearchQuery] = useState<string>(incomingSearchQuery);
+  const [sort, setSort] = useState<PostSort>(initialSort);
 
   // Initialize from URL on mount
   useEffect(() => {
     try {
       const url = new URL(window.location.href);
       const nextPage = Number(url.searchParams.get("page") ?? String(initialPage));
-      const nextPageSize = Number(
-        url.searchParams.get("pageSize") ?? String(initialPageSize),
-      );
+      const nextPageSize = Number(url.searchParams.get("pageSize") ?? String(initialPageSize));
       const nextQ = url.searchParams.get("q") ?? incomingSearchQuery;
+      const nextSortParam = url.searchParams.get("sort");
       setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1);
-      setPageSize(
-        Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 10,
-      );
+      setPageSize(Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 10);
       setSearchQuery(nextQ);
+      if (isValidSort(nextSortParam)) {
+        setSort(nextSortParam);
+      } else {
+        setSort(initialSort);
+      }
     } catch (_error) {
       // Ignore malformed URL values; fall back to defaults.
     }
-  }, [initialPage, initialPageSize, incomingSearchQuery]);
+  }, [initialPage, initialPageSize, incomingSearchQuery, initialSort]);
 
   // Sync internal state with browser navigation (back/forward)
   useEffect(() => {
@@ -139,9 +167,15 @@ export default function PostsPageClient({
         const p = Number(url.searchParams.get("page") ?? "1");
         const ps = Number(url.searchParams.get("pageSize") ?? "10");
         const qParam = url.searchParams.get("q") ?? "";
+        const sortParam = url.searchParams.get("sort");
         setPage(Number.isFinite(p) && p > 0 ? p : 1);
         setPageSize(Number.isFinite(ps) && ps > 0 ? ps : 10);
         setSearchQuery(qParam);
+        if (isValidSort(sortParam)) {
+          setSort(sortParam);
+        } else {
+          setSort(DEFAULT_POST_SORT);
+        }
       } catch (_error) {
         // Ignore malformed URL values during history navigation.
       }
@@ -162,42 +196,106 @@ export default function PostsPageClient({
         ownerId: p.ownerId,
         tags: p.tags,
       })),
-    [initialData],
+    [initialData]
   );
   const initialList: PostList | undefined = useMemo(() => {
     if (!initialData || initialData.length === 0) return undefined;
-    return { page: initialPage, pageSize: initialPageSize, hasNextPage: Boolean(initialHasNextPage), items: initialItems };
-  }, [initialData, initialItems, initialPage, initialPageSize, initialHasNextPage]);
+    return {
+      page: initialPage,
+      pageSize: initialPageSize,
+      hasNextPage: Boolean(initialHasNextPage),
+      items: initialItems,
+      sort: initialSort,
+    };
+  }, [initialData, initialItems, initialPage, initialPageSize, initialHasNextPage, initialSort]);
 
   const shouldUseFallback = useMemo(
-    () => Boolean(initialList && page === initialPage && pageSize === initialPageSize),
-    [initialList, page, pageSize, initialPage, initialPageSize],
+    () =>
+      Boolean(
+        initialList &&
+          page === initialPage &&
+          pageSize === initialPageSize &&
+          sort === initialSort &&
+          searchQuery === incomingSearchQuery
+      ),
+    [
+      initialList,
+      page,
+      pageSize,
+      sort,
+      searchQuery,
+      initialPage,
+      initialPageSize,
+      initialSort,
+      incomingSearchQuery,
+    ]
   );
 
   const { data, isLoading, error } = usePostsList({
     page,
     pageSize,
+    q: searchQuery,
+    sort,
     fallbackData: shouldUseFallback ? initialList : undefined,
   });
 
-  const effectiveItems: Post[] = data?.items ?? (shouldUseFallback ? initialItems : []);
+  const effectiveItems: Post[] = useMemo(() => {
+    if (data?.items && data.items.length > 0) {
+      return data.items;
+    }
+    if (shouldUseFallback) {
+      return initialItems;
+    }
+    return [];
+  }, [data?.items, initialItems, shouldUseFallback]);
 
-  const statusMessage = useMemo(() => (isLoading && effectiveItems.length === 0 ? "Loading posts…" : ""), [isLoading, effectiveItems.length]);
+  const hasNextPage = Boolean(
+    data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false)
+  );
+
+  const totalPages = useMemo(() => {
+    const total = data?.total;
+    if (typeof total === "number" && Number.isFinite(total)) {
+      return Math.max(1, Math.ceil(total / pageSize));
+    }
+    if (hasNextPage) {
+      return Math.max(1, page + 1);
+    }
+    return Math.max(1, page);
+  }, [data?.total, hasNextPage, page, pageSize]);
+
+  const statusMessage = useMemo(() => {
+    if (isLoading && effectiveItems.length === 0) {
+      return "Loading posts…";
+    }
+    // Announce current page to screen readers when page changes
+    if (effectiveItems.length > 0) {
+      return `Showing page ${page} of ${totalPages}`;
+    }
+    return "";
+  }, [isLoading, effectiveItems.length, page, totalPages]);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     // Focus heading after page change for a11y
     headingRef.current?.focus();
-  }, [page, pageSize]);
+  }, [page, pageSize, sort]);
 
-  const updateUrlQuery = (next: { page?: number; pageSize?: number; q?: string }): void => {
+  const updateUrlQuery = (next: {
+    page?: number;
+    pageSize?: number;
+    q?: string;
+    sort?: PostSort;
+  }): void => {
     const url = new URL(window.location.href);
     const newPage = next.page ?? page;
     const newPageSize = next.pageSize ?? pageSize;
     const newQ = next.q ?? searchQuery;
+    const newSort = next.sort ?? sort;
     url.searchParams.set("page", String(newPage));
     url.searchParams.set("pageSize", String(newPageSize));
+    url.searchParams.set("sort", newSort);
     if (newQ) url.searchParams.set("q", newQ);
     else url.searchParams.delete("q");
     window.history.pushState({}, "", `${url.pathname}?${url.searchParams.toString()}`);
@@ -211,6 +309,11 @@ export default function PostsPageClient({
     setPage(1);
     setPageSize(nextSize);
     updateUrlQuery({ page: 1, pageSize: nextSize });
+  };
+  const onChangeSort = (nextSort: PostSort): void => {
+    setSort(nextSort);
+    setPage(1);
+    updateUrlQuery({ sort: nextSort, page: 1 });
   };
   const onChangeSearchQuery = (nextQ: string): void => {
     setSearchQuery(nextQ);
@@ -234,47 +337,69 @@ export default function PostsPageClient({
     () => ({
       provider: () => cacheRef.current as Cache<unknown>,
     }),
-    [],
+    []
   );
 
-
   return (
+    // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
     <SWRConfig value={swrValue}>
-      <main className="mx-auto max-w-3xl p-4">
+      <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
         <LiveRegion message={statusMessage} />
 
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          className="text-2xl font-bold text-gray-900"
-        >
+        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold text-text">
           Posts
         </h1>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <PageSizeSelect pageSize={pageSize} onChange={onChangePageSize} />
+          <label className="text-sm text-text">
+            Sort by
+            <select
+              value={sort}
+              onChange={(event) => {
+                const value = event.target.value;
+                if (isValidSort(value)) {
+                  onChangeSort(value);
+                }
+              }}
+              className="ml-2 rounded border border-text-muted/40 px-2 py-1 text-sm text-text"
+              aria-label="Sort posts"
+            >
+              {POST_SORT_VALUES.map((option) => (
+                <option key={option} value={option}>
+                  {SORT_LABELS[option]}
+                </option>
+              ))}
+            </select>
+          </label>
           <SearchInput value={searchQuery} onChange={onChangeSearchQuery} />
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-live="polite">
+        <div
+          className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          aria-live="polite"
+        >
           {session ? (
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-text">
               Signed in as <span className="font-semibold">{session.name ?? session.userId}</span>
             </p>
           ) : (
-            <p className="text-sm text-gray-600">You are browsing as a guest. Sign in to manage your posts.</p>
+            <p className="text-sm text-text-muted">
+              You are browsing as a guest. Sign in to manage your posts.
+            </p>
           )}
           {session ? (
             <button
               type="button"
-              className="inline-flex items-center justify-center rounded border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+              className="inline-flex items-center justify-center rounded-md border border-text-muted/40 px-3 py-1 text-sm font-medium text-text transition hover:bg-primary/10"
               onClick={signOut}
             >
               Sign out
             </button>
           ) : (
+            // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
             <Link
-              className="inline-flex items-center justify-center rounded bg-indigo-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-indigo-700"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-sm font-medium text-surface transition hover:bg-primary/90"
               href="/login"
             >
               Sign in
@@ -282,29 +407,49 @@ export default function PostsPageClient({
           )}
         </div>
 
-        <div className="mt-6">
-          <NewPostForm pageSize={pageSize} onSuccess={onCreateSuccess} />
+        <div className="mt-4">
+          <NewPostForm
+            pageSize={pageSize}
+            sort={sort}
+            query={searchQuery}
+            onSuccess={onCreateSuccess}
+          />
         </div>
 
-        <section className="mt-6" aria-label="Posts list">
+        <section className="mt-4" aria-label="Posts list">
           {error && effectiveItems.length === 0 ? (
             <ErrorState />
           ) : isLoading && effectiveItems.length === 0 ? (
-            <p className="text-gray-600">Loading…</p>
-          ) : (() => {
-            const items = filterPostsByQuery(effectiveItems, searchQuery);
-            return items.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <PostsList items={items} currentUserId={session?.userId ?? null} currentUserRole={session?.role} />
-            );
-          })()}
+            <p className="text-text-muted">Loading…</p>
+          ) : (
+            (() => {
+              const items = filterPostsByQuery(effectiveItems, searchQuery);
+              return items.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <PostsList
+                  items={items}
+                  currentUserId={session?.userId ?? null}
+                  currentUserRole={session?.role}
+                />
+              );
+            })()
+          )}
         </section>
 
         <PaginationControls
-          page={page}
-          hasNextPage={Boolean(data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false))}
-          onChangePage={onChangePage}
+          currentPage={page}
+          totalPages={totalPages}
+          onPrevious={() => {
+            if (page > 1) {
+              onChangePage(page - 1);
+            }
+          }}
+          onNext={() => {
+            if (page < totalPages) {
+              onChangePage(page + 1);
+            }
+          }}
         />
       </main>
     </SWRConfig>

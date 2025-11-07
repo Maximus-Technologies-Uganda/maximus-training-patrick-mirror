@@ -5,8 +5,8 @@ export interface PostRecord {
   content: string;
   tags: string[];
   published: boolean;
-  createdAt: string | Date;
-  updatedAt: string | Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 type Order = 'asc' | 'desc';
@@ -32,7 +32,7 @@ export class InMemoryPostsRepository {
 
   async create(post: Partial<PostRecord>): Promise<PostRecord> {
     const nanoid = (await import('nanoid')).nanoid;
-    const nowIso = new Date().toISOString();
+    const now = new Date();
     const toStore: PostRecord = {
       id: post.id || nanoid(),
       ownerId: post.ownerId,
@@ -40,8 +40,8 @@ export class InMemoryPostsRepository {
       content: String(post.content || ''),
       tags: Array.isArray(post.tags) ? post.tags.map(String) : [],
       published: Boolean(post.published ?? false),
-      createdAt: post.createdAt ?? nowIso,
-      updatedAt: post.updatedAt ?? nowIso,
+      createdAt: post.createdAt ?? now,
+      updatedAt: post.updatedAt ?? now,
     };
     this.postsById.set(toStore.id, deepClone(toStore));
     return deepClone(toStore);
@@ -94,4 +94,3 @@ export async function createRepository() {
 }
 
 export default InMemoryPostsRepository;
-

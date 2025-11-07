@@ -36,6 +36,49 @@ function isHttps(request: NextRequest): boolean {
   return false;
 }
 
+function createLocalSessionResponse(
+  request: NextRequest,
+  context: ReturnType<typeof ensureRequestContext>,
+  userId: string,
+  role: "owner" | "admin"
+): NextResponse {
+  const encodeSegment = (value: string) =>
+    Buffer.from(value)
+      .toString("base64")
+      .replace(/=+$/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+
+  const header = encodeSegment(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + 60 * 60;
+  const payload = encodeSegment(
+    JSON.stringify({
+      userId,
+      role,
+      iat: now,
+      exp,
+    })
+  );
+  const token = `${header}.${payload}.dev`;
+
+  const headers = responseHeadersFromContext(context);
+  const res = new NextResponse(null, { status: 204, headers });
+  const secureAttr = isHttps(request) ? "; Secure" : "";
+  res.headers.append(
+    "set-cookie",
+    `session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${60 * 60}${secureAttr}`
+  );
+  const csrfId = randomUUID().replace(/-/g, "");
+  const csrfTs = Math.floor(Date.now() / 1000);
+  const csrfToken = `${csrfTs}-${csrfId}`;
+  res.headers.append(
+    "set-cookie",
+    `csrf=${csrfToken}; Path=/; SameSite=Strict; Max-Age=${60 * 60}${secureAttr}`
+  );
+  return res;
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const upstreamUrl = new URL("/auth/login", API_BASE_URL).toString();
   let bodyText = "";
@@ -44,8 +87,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch {
     bodyText = "{}";
   }
+  const context = ensureRequestContext(request.headers);
+  const parsedBody = (() => {
+    try {
+      return JSON.parse(bodyText || "{}") as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  })();
+  if (parsedBody) {
+    const rawUserId = typeof parsedBody.userId === "string" ? parsedBody.userId.trim() : "";
+    const rawName = typeof parsedBody.name === "string" ? parsedBody.name.trim() : "";
+    if (rawUserId && rawName) {
+      const role =
+        typeof parsedBody.role === "string" && parsedBody.role.trim().toLowerCase() === "admin"
+          ? "admin"
+          : "owner";
+      return createLocalSessionResponse(request, context, rawUserId, role);
+    }
+  }
   try {
-    const context = ensureRequestContext(request.headers);
     const propagationHeaders = buildPropagationHeaders(context);
     // Accept Firebase ID token from client when present; forward as-is upstream
     // to allow upstream API (or BFF API tier) to verify and mint cookies.
@@ -106,55 +167,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const isValid =
           (username === "admin" && password === "password") ||
           (username === "alice" && password === "correct-password");
-        const context = ensureRequestContext(request.headers);
         const headers = responseHeadersFromContext(context);
         if (!isValid) {
           return new NextResponse(null, { status: 401, headers });
         }
         const userId = username === "admin" ? "admin-1" : "user-alice-1";
-        // Minimal unsigned JWT-like token for local decode-only logic (T062)
-        const enc = (s: string) =>
-          Buffer.from(s)
-            .toString("base64")
-            .replace(/=+$/g, "")
-            .replace(/\+/g, "-")
-            .replace(/\//g, "_");
-        const header = enc(JSON.stringify({ alg: "HS256", typ: "JWT" }));
         const role = username === "admin" ? "admin" : "owner";
-        const now = Math.floor(Date.now() / 1000);
-        const exp = now + 60 * 60; // 1 hour expiry to match cookie Max-Age
-        const payload = enc(
-          JSON.stringify({
-            userId,
-            role,
-            iat: now,
-            exp,
-          })
-        );
-        const token = `${header}.${payload}.dev`;
-        const secureAttr = isHttps(request) ? "; Secure" : "";
-        const res = new NextResponse(null, { status: 204, headers });
-        // Session cookie (HttpOnly) with rotation (T062)
-        res.headers.append(
-          "set-cookie",
-          `session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${60 * 60}${secureAttr}`
-        );
-        // CSRF cookie (non-HttpOnly) for double-submit header with timestamp (T063)
-        // Format: timestamp-uuid for TTL validation
-        const csrfId = randomUUID().replace(/-/g, "");
-        const csrfTs = Math.floor(Date.now() / 1000);
-        const csrfToken = `${csrfTs}-${csrfId}`;
-        res.headers.append(
-          "set-cookie",
-          `csrf=${csrfToken}; Path=/; SameSite=Strict; Max-Age=${60 * 60}${secureAttr}`
-        );
-        return res;
+        return createLocalSessionResponse(request, context, userId, role);
       } catch {
         // noop and fall through to 500
       }
     }
     // Structured error for logs/telemetry
-    const context = ensureRequestContext(request.headers);
     const errInfo =
       error instanceof Error
         ? { name: error.name, message: error.message, stack: error.stack }

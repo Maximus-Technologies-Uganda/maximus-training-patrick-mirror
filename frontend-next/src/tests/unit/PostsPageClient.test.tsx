@@ -1,13 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import PostsPageClient from "../../../components/PostsPageClient";
+import PostsPageClient from "@/components/PostsPageClient";
+import { DEFAULT_POST_SORT } from "../../lib/schemas";
 
 // Mock SWR to avoid network calls
 vi.mock("../../lib/swr", () => ({
   usePostsList: vi.fn(() => ({
-    data: { items: [], hasNextPage: false },
+    data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
     isLoading: false,
+    isValidating: false,
     error: null,
+    mutate: vi.fn(),
   })),
   mutatePostsPage1: vi.fn(),
 }));
@@ -18,6 +21,7 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
       <PostsPageClient
         page={1}
         pageSize={10}
+        sort={DEFAULT_POST_SORT}
         initialData={[]}
         initialHasNextPage={false}
       />
@@ -40,6 +44,7 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
       <PostsPageClient
         page={1}
         pageSize={10}
+        sort={DEFAULT_POST_SORT}
         initialData={[]}
         initialHasNextPage={false}
       />
@@ -50,11 +55,27 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
     expect(screen.getByLabelText(/content/i)).toBeInTheDocument();
   });
 
+  it("should render sort dropdown with default label", () => {
+    render(
+      <PostsPageClient
+        page={1}
+        pageSize={10}
+        sort={DEFAULT_POST_SORT}
+        initialData={[]}
+        initialHasNextPage={false}
+      />
+    );
+
+    expect(screen.getByLabelText(/sort posts/i)).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /newest first/i })).toBeInTheDocument();
+  });
+
   it("should render posts list for both anonymous and authenticated users", () => {
     const { rerender } = render(
       <PostsPageClient
         page={1}
         pageSize={10}
+        sort={DEFAULT_POST_SORT}
         initialData={[]}
         initialHasNextPage={false}
       />
@@ -68,6 +89,7 @@ describe("PostsPageClient - T008: Auth-aware UI", () => {
       <PostsPageClient
         page={1}
         pageSize={10}
+        sort={DEFAULT_POST_SORT}
         initialData={[]}
         initialHasNextPage={false}
       />

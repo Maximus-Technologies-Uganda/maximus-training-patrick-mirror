@@ -28,8 +28,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+          pnpm install --frozen-lockfile
 
       - name: Verify Node.js version (T028/DEV-702)
         run: npm run verify:node
@@ -381,8 +384,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+          pnpm install --frozen-lockfile
 
       - name: Verify Node.js version (T028/DEV-702)
         run: npm run verify:node

@@ -7,6 +7,7 @@ import {
   responseHeadersFromContext,
   type RequestContext,
 } from "../../../middleware/requestId";
+import { DEFAULT_POST_SORT, PostSortSchema, type PostSort } from "../../../lib/schemas";
 
 // Prefer a server-only base URL for backend calls; never expose secrets to the client
 // Fallback to NEXT_PUBLIC_API_URL so server and client target the same host in local dev
@@ -32,10 +33,52 @@ type LocalPost = {
   createdAt: string;
   updatedAt: string;
 };
-const localPostsFallback: Array<LocalPost> = (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ ?? [];
+const localPostsFallback: Array<LocalPost> =
+  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ ?? [];
 // Initialize global store if missing
 if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__) {
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ = localPostsFallback;
+  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ =
+    localPostsFallback;
+}
+
+function toTimestamp(value: string | undefined): number {
+  if (!value) return 0;
+  const timestamp = Date.parse(value);
+  // A zero fallback keeps malformed or missing dates at the beginning/end of
+  // the sorted list without throwing or introducing NaN into comparisons.
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function filterLocalPosts(posts: Array<LocalPost>, query: string | null | undefined): Array<LocalPost> {
+  const trimmed = typeof query === "string" ? query.trim() : "";
+  if (!trimmed) return posts;
+  const needle = trimmed.toLowerCase();
+  return posts.filter((post) => {
+    const candidates: Array<string | undefined> = [post.title, post.content, ...(post.tags ?? [])];
+    return candidates.some((value) =>
+      typeof value === "string" ? value.toLowerCase().includes(needle) : false
+    );
+  });
+}
+
+function sortLocalPosts(posts: Array<LocalPost>, sort: PostSort): Array<LocalPost> {
+  const copy = posts.slice();
+  switch (sort) {
+    case "date-asc":
+      copy.sort((a, b) => toTimestamp(a.createdAt) - toTimestamp(b.createdAt));
+      break;
+    case "title-asc":
+      copy.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
+      break;
+    case "title-desc":
+      copy.sort((a, b) => b.title.localeCompare(a.title, undefined, { sensitivity: "base" }));
+      break;
+    case "date-desc":
+    default:
+      copy.sort((a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt));
+      break;
+  }
+  return copy;
 }
 
 async function buildAuthHeaders(): Promise<Record<string, string>> {
@@ -53,7 +96,9 @@ async function buildAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
-async function extractUserIdentity(request: NextRequest): Promise<{ userId?: string; role?: string } | null> {
+async function extractUserIdentity(
+  request: NextRequest
+): Promise<{ userId?: string; role?: string } | null> {
   // Extract from session cookie (matches API implementation)
   const cookieHeader = request.headers.get("cookie") || "";
   const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
@@ -68,7 +113,7 @@ async function extractUserIdentity(request: NextRequest): Promise<{ userId?: str
     const payloadSegment = parts[1];
     const json = Buffer.from(
       payloadSegment.replace(/-/g, "+").replace(/_/g, "/") +
-      "=".repeat((4 - (payloadSegment.length % 4)) % 4),
+        "=".repeat((4 - (payloadSegment.length % 4)) % 4),
       "base64"
     ).toString("utf8");
     const payload = JSON.parse(json) as Record<string, unknown>;
@@ -97,7 +142,10 @@ function buildUpstreamUrl(pathname: string, search: URLSearchParams): string {
   return url.toString();
 }
 
-function createAbortController(timeoutMs: number): { controller: AbortController; clear: () => void } {
+function createAbortController(timeoutMs: number): {
+  controller: AbortController;
+  clear: () => void;
+} {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const clear = (): void => clearTimeout(timer);
@@ -108,7 +156,7 @@ async function fetchWithTimeoutAndRetries(
   url: string,
   init: RequestInit,
   timeoutMs: number = 5000,
-  retries: number = 1,
+  retries: number = 1
 ): Promise<Response> {
   let lastError: unknown = undefined;
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -139,7 +187,8 @@ async function fetchWithTimeoutAndRetries(
       break;
     }
   }
-  const err = lastError instanceof Error ? lastError : new Error(String(lastError || "Request failed"));
+  const err =
+    lastError instanceof Error ? lastError : new Error(String(lastError || "Request failed"));
   // Attach context for upstream logs without leaking secrets
   (err as Error & { upstream?: { url: string; method: string } }).upstream = {
     url,
@@ -148,14 +197,17 @@ async function fetchWithTimeoutAndRetries(
   throw err;
 }
 
-function initializeContext(request: NextRequest): { context: RequestContext; propagationHeaders: Record<string, string> } {
+function initializeContext(request: NextRequest): {
+  context: RequestContext;
+  propagationHeaders: Record<string, string>;
+} {
   const context = ensureRequestContext(request.headers);
   return { context, propagationHeaders: buildPropagationHeaders(context) };
 }
 
 function applyUpstreamContext(
   context: RequestContext,
-  upstream: Response,
+  upstream: Response
 ): { context: RequestContext; headers: Record<string, string> } {
   const merged = mergeUpstreamContext(context, upstream.headers);
   return { context: merged, headers: responseHeadersFromContext(merged) };
@@ -190,11 +242,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         cache: "no-store",
       },
       5000,
-      1,
+      1
     );
 
     const contentType = upstreamResponse.headers.get("content-type") || "";
-    const { context: mergedContext, headers: responseHeaders } = applyUpstreamContext(context, upstreamResponse);
+    const { context: mergedContext, headers: responseHeaders } = applyUpstreamContext(
+      context,
+      upstreamResponse
+    );
     context = mergedContext;
     const upstreamBodyText = await upstreamResponse.text();
     if (contentType.includes("application/json")) {
@@ -204,9 +259,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         const withPerms = (items: Array<Record<string, unknown>>): Array<Record<string, unknown>> =>
           items.map((p) => {
             const ownerId = (p as { ownerId?: unknown }).ownerId;
-            const isOwner = typeof ownerId === "string" && identity?.userId && ownerId === identity.userId;
+            const isOwner =
+              typeof ownerId === "string" && identity?.userId && ownerId === identity.userId;
             const isAdmin = identity?.role === "admin";
-            const permissions = { canEdit: Boolean(isAdmin || isOwner), canDelete: Boolean(isAdmin || isOwner) };
+            const permissions = {
+              canEdit: Boolean(isAdmin || isOwner),
+              canDelete: Boolean(isAdmin || isOwner),
+            };
             return { ...p, permissions };
           });
         if (Array.isArray(data)) {
@@ -243,30 +302,39 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const search = request.nextUrl.searchParams;
       const page = Number(search.get("page") ?? "1") || 1;
       const pageSize = Number(search.get("pageSize") ?? "10") || 10;
+      const sortParam = search.get("sort");
+      const query = search.get("q");
+      const sortResult = PostSortSchema.safeParse(sortParam);
+      const sort = sortResult.success ? sortResult.data : DEFAULT_POST_SORT;
+      const filteredPosts = filterLocalPosts(localPostsFallback, query);
+      const sortedPosts = sortLocalPosts(filteredPosts, sort);
       const start = (page - 1) * pageSize;
       const identity = await extractUserIdentity(request);
-      const items = localPostsFallback
-        .slice()
-        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
-        .slice(start, start + pageSize)
-        .map((p) => {
-          const isOwner = Boolean(p.ownerId && identity?.userId && p.ownerId === identity.userId);
-          const isAdmin = identity?.role === "admin";
-          const permissions = { canEdit: Boolean(isAdmin || isOwner), canDelete: Boolean(isAdmin || isOwner) };
-          return { ...p, permissions };
-        });
-      const total = localPostsFallback.length;
+      const items = sortedPosts.slice(start, start + pageSize).map((p) => {
+        const isOwner = Boolean(p.ownerId && identity?.userId && p.ownerId === identity.userId);
+        const isAdmin = identity?.role === "admin";
+        const permissions = {
+          canEdit: Boolean(isAdmin || isOwner),
+          canDelete: Boolean(isAdmin || isOwner),
+        };
+        return { ...p, permissions };
+      });
+      const total = sortedPosts.length;
       const hasNextPage = start + items.length < total;
       const fallbackHeaders = responseHeadersFromContext(context);
-      return NextResponse.json({ page, pageSize, hasNextPage, items }, {
-        status: 200,
-        headers: fallbackHeaders,
-      });
+      return NextResponse.json(
+        { page, pageSize, hasNextPage, items, total, sort },
+        {
+          status: 200,
+          headers: fallbackHeaders,
+        }
+      );
     }
     // Structured error for logs/telemetry
-    const errInfo = error instanceof Error
-      ? { name: error.name, message: error.message, stack: error.stack }
-      : String(error);
+    const errInfo =
+      error instanceof Error
+        ? { name: error.name, message: error.message, stack: error.stack }
+        : String(error);
     console.error(
       JSON.stringify({
         level: "error",
@@ -275,11 +343,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         requestId: context.requestId,
         traceparent: context.traceparent,
         error: errInfo,
-      }),
+      })
     );
     return NextResponse.json(
       { error: { code: "UPSTREAM_FETCH_FAILED", message: "Failed to fetch posts" } },
-      { status: 500, headers: responseHeadersFromContext(context) },
+      { status: 500, headers: responseHeadersFromContext(context) }
     );
   }
 }
@@ -307,13 +375,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         if (csrfMatch) {
           // Forward CSRF token with timestamp validation (T063)
           const csrfToken = csrfMatch[1];
-          if (csrfToken.includes('-')) {
-            const parts = csrfToken.split('-');
+          if (csrfToken.includes("-")) {
+            const parts = csrfToken.split("-");
             if (parts.length === 2) {
               const timestamp = parseInt(parts[0], 10);
               const now = Math.floor(Date.now() / 1000);
               // Only forward tokens that are not too old (2 hours) or from the future (>5 minutes)
-              if (!isNaN(timestamp) && timestamp <= now + 5 * 60 && now - timestamp <= 2 * 60 * 60) {
+              if (
+                !isNaN(timestamp) &&
+                timestamp <= now + 5 * 60 &&
+                now - timestamp <= 2 * 60 * 60
+              ) {
                 cookies.push(`csrf=${csrfToken}`);
               }
             }
@@ -331,7 +403,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!csrfHeader) {
       return NextResponse.json(
         { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
-        { status: 400 },
+        { status: 400 }
       );
     }
     // Extract and forward identity information (T053)
@@ -423,9 +495,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
     // Structured error for logs/telemetry
-    const errInfo = error instanceof Error
-      ? { name: error.name, message: error.message, stack: error.stack }
-      : String(error);
+    const errInfo =
+      error instanceof Error
+        ? { name: error.name, message: error.message, stack: error.stack }
+        : String(error);
     console.error(
       JSON.stringify({
         level: "error",
@@ -434,13 +507,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         requestId: context.requestId,
         traceparent: context.traceparent,
         error: errInfo,
-      }),
+      })
     );
     return NextResponse.json(
       { error: { code: "UPSTREAM_CREATE_FAILED", message: "Failed to create post" } },
-      { status: 500, headers: responseHeadersFromContext(context) },
+      { status: 500, headers: responseHeadersFromContext(context) }
     );
   }
 }
-
-

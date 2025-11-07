@@ -45,7 +45,7 @@
 - [ ] T014 [P] Create LoadingState component in `frontend-next/src/components/LoadingState.tsx`
 - [ ] T015 [P] Create EmptyState component in `frontend-next/src/components/EmptyState.tsx`
 - [ ] T016 [P] Create ErrorState component in `frontend-next/src/components/ErrorState.tsx`
-- [ ] T017 [P] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx`
+- [ ] T017 [P] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx` (used for both design system seed and pagination UI)
 
 ### Design System Validation
 
@@ -55,28 +55,30 @@
 
 ## Phase 3: User Story 1 - View Posts with Server-Side Rendering (Day 3)
 
-**Blockers**: Phase 2 complete | **Goal**: SSR <2s, posts in server HTML
+**Blockers**: Phase 2 complete | **Goal**: SSR server render time <2s (measured in CI, excluding network latency), posts in server HTML
 
 ### SSR Page Setup
 
-- [ ] T019 [US1] Enhance `/posts` page to support sort parameter in `frontend-next/src/app/posts/page.tsx`
-- [ ] T020 [US1] Update Zod schemas in `frontend-next/src/lib/schemas.ts` (PostListSchema, ErrorEnvelopeSchema)
-- [ ] T021 [US1] Enhance PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx` (token colors/spacing)
+- [ ] T019 [US1] Enhance `/posts` page to support combined sort parameter (`sort=date-desc|date-asc|title-asc|title-desc`) in `frontend-next/src/app/posts/page.tsx`
+- [ ] T020 [US1] Update Zod schemas in `frontend-next/src/lib/schemas.ts` (PostListSchema, ErrorEnvelopeSchema), and assess if backward compatibility or migration is required for existing data
+- [ ] T021 [US1] Enhance PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx` using token colors and spacing from `frontend-next/src/styles/tokens.css` for consistent design system alignment
 
 ### SSR Testing
 
-- [ ] T022 [US1] Create SSR snapshot test in `frontend-next/tests/integration/posts-ssr.spec.ts`
-- [ ] T023 [US1] Create Playwright E2E test for /posts initial load in `frontend-next/tests/playwright/core-flows.spec.ts`
+- [ ] T022 [US1] Create SSR snapshot test in `frontend-next/tests/integration/posts-ssr.spec.ts` (cover: empty posts, single post, multiple posts, error state, loading state, all sort/order param combinations)
+- [ ] T023 [US1] Create Playwright E2E test for /posts initial load in `frontend-next/tests/playwright/core-flows.spec.ts` (assert: posts visible, correct sort order, no loading spinner)
 
 ---
 
 ## Phase 4: User Story 2 - Pagination & Sorting (Day 3)
 
-**Blockers**: Phase 3 complete | **Goal**: URL params update, posts reorder, pagination works
+**Related User Story**: [US2 - Pagination & Sorting](spec.md#user-story-2-pagination--sorting) | **Acceptance Criteria**: See [./spec.md#acceptance-criteria-us2]
+**Blockers**: Phase 3 complete | **Goal**: URL params update, posts reorder, pagination works (validated via E2E and integration tests)
 
 ### Pagination UI (Parallelizable)
 
-- [ ] T024 [P] [US2] Create PaginationControls component in `frontend-next/src/components/PaginationControls.tsx`
+<!-- T024 merged with T017 to avoid duplication; see T017 above -->
+
 - [ ] T025 [P] [US2] Create unit tests for PaginationControls in `frontend-next/tests/unit/PaginationControls.spec.ts`
 
 ### Pagination Integration
@@ -94,20 +96,22 @@
 
 ## Phase 5: User Story 3 - State Management (Day 4)
 
-**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live
+**Blockers**: Phase 2 + Phase 3 complete | **Goal**: Loading/Empty/Error states render with ARIA live regions.
 
 ### State UI Integration
 
 - [ ] T031 [US3] Wire LoadingState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T032 [US3] Wire EmptyState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T033 [US3] Wire ErrorState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
-- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`
+- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`, ensuring loading and empty states use `aria-live="polite"` and error state uses `aria-live="assertive"` for accessibility compliance.
+- [ ] T035 [US3] Implement and test retry mechanism for ErrorState in `frontend-next/src/components/PostsPageClient.tsx`
 
 ### State Testing
 
-- [ ] T035 [US3] Create unit tests for LoadingState/EmptyState/ErrorState in `frontend-next/tests/unit/`
-- [ ] T036 [US3] Create integration test for state transitions in `frontend-next/tests/integration/posts-states.spec.ts`
-- [ ] T037 [US3] Create Playwright E2E test for state UX in `frontend-next/tests/playwright/core-flows.spec.ts` (extend)
+- [ ] T036 [US3] Create unit tests for LoadingState/EmptyState/ErrorState in `frontend-next/tests/unit/`
+- [ ] T037 [US3] Create integration test for state transitions in `frontend-next/tests/integration/posts-states.spec.ts`
+- [ ] T038 [US3] Create Playwright E2E test for state UX in `frontend-next/tests/playwright/core-flows.spec.ts` (extend)
+- [ ] T039 [US3] Create unit and integration tests for retry functionality in ErrorState
 
 ---
 
@@ -117,14 +121,14 @@
 
 ### Figma Documentation
 
-- [ ] T038 Create Figma page "Week 9 Tokens & Primitives" with all 11 tokens documented
-- [ ] T039 Export Figma token reference (PNG or PDF)
-- [ ] T040 Document token parity checklist in `specs/009-frontend-foundations/token-parity.md`
+- [ ] T040 Create Figma page "Week 9 Tokens & Primitives" with all 11 tokens documented
+- [ ] T041 Export Figma token reference (PNG or PDF)
+- [ ] T042 Document token parity checklist in `specs/009-frontend-foundations/token-parity.md`
 
 ### README Updates
 
-- [ ] T041 Add Design System section to `frontend-next/README.md`
-- [ ] T042 Update README with Live URLs and deployment info
+- [ ] T043 Add Design System section to `frontend-next/README.md`
+- [ ] T044 Update README with Live URLs and deployment info
 
 ---
 
@@ -134,14 +138,14 @@
 
 ### Final Validation
 
-- [ ] T043 Run comprehensive local validation (4-tier: Prettier, TypeScript, tests, act)
-- [ ] T044 Verify coverage ≥80% for components and route handlers
-- [ ] T045 Run Playwright a11y validation on all /posts flows in `frontend-next/tests/playwright/a11y-posts.spec.ts`
-- [ ] T046 Validate Spectral OpenAPI lint on `api/openapi.json`: 0 errors
+- [ ] T045 Run comprehensive local validation (4-tier: Prettier, TypeScript, tests, act)
+- [ ] T046 Verify coverage ≥80% for components and route handlers
+- [ ] T047 Run Playwright a11y validation on all /posts flows in `frontend-next/tests/playwright/a11y-posts.spec.ts`
+- [ ] T048 Validate Spectral OpenAPI lint on `api/openapi.json`: 0 errors
 
 ### Release & Documentation
 
-- [ ] T047 Create v9.0.0 release with traceability (links to spec PR, Linear issue, Gate run, artifacts, Cloud Run demo)
+- [ ] T049 Create v9.0.0 release with traceability (links to spec PR, Linear issue, Gate run, artifacts, Cloud Run demo)
 
 ---
 
@@ -245,7 +249,7 @@ Phase 7 (QA & Release)
 | 4     | Pagination works, URL params update, posts reorder                       |
 | 5     | Loading/Empty/Error render, ARIA live works, retry functional            |
 | 6     | Figma page created, tokens documented, README updated                    |
-| 7     | All 47 tasks complete, coverage ≥80%, Spectral 0 errors, v9.0.0 released |
+| 7     | All 49 tasks complete, coverage ≥80%, Spectral 0 errors, v9.0.0 released |
 
 ---
 

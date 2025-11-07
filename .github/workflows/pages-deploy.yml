@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 permissions:
   contents: read
@@ -31,8 +31,11 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.x --activate
+          pnpm install --frozen-lockfile
 
       - name: Build
         env:
@@ -57,5 +60,3 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
-
-
