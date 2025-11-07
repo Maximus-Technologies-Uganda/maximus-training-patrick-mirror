@@ -4,24 +4,96 @@
 // node_modules folder.
 
 const path = require('path');
-// Try multiple paths to handle different pnpm hoisting scenarios
+const { createRequire } = require('module');
+
 const paths = [
   '@testing-library/react',
   path.resolve(__dirname, '..', '..', '..', 'node_modules', '@testing-library/react'),
-  path.resolve(__dirname, '..', '..', '..', 'node_modules', '@testing-library/react', 'dist', 'index.js'),
+  path.resolve(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'node_modules',
+    '@testing-library/react',
+    'dist',
+    'index.js'
+  ),
 ];
+
+const requireForShim = createRequire(__filename);
+
+function isRequireEsmError(error) {
+  return Boolean(error && (error.code === 'ERR_REQUIRE_ESM' || /must use import/i.test(error.message)));
+}
+
+function resolveModulePath(specifier) {
+  try {
+    return requireForShim.resolve(specifier);
+  } catch (error) {
+    console.error(
+      `[testing-library-shim] Failed to resolve "${specifier}": ${error && error.message ? error.message : error}`
+    );
+    return null;
+  }
+}
+
+function loadEsmWithEsbuild(resolvedPath) {
+  const esbuild = requireForShim('esbuild');
+  const ModuleCtor = module.constructor;
+  const buildResult = esbuild.buildSync({
+    entryPoints: [resolvedPath],
+    bundle: true,
+    format: 'cjs',
+    platform: 'node',
+    write: false,
+    absWorkingDir: path.dirname(resolvedPath),
+    target: 'node20',
+    logLevel: 'silent',
+  });
+
+  if (!buildResult.outputFiles || buildResult.outputFiles.length === 0) {
+    throw new Error('esbuild failed to return any output files while transpiling ESM module.');
+  }
+
+  const compiledCode = buildResult.outputFiles[0].text;
+  const esmModule = new ModuleCtor(resolvedPath, module);
+  esmModule.filename = resolvedPath;
+  esmModule.paths = ModuleCtor._nodeModulePaths(path.dirname(resolvedPath));
+  esmModule._compile(compiledCode, resolvedPath);
+  return esmModule.exports;
+}
 
 let moduleExports = null;
 
 for (const modulePath of paths) {
   try {
-    moduleExports = require(modulePath);
+    moduleExports = requireForShim(modulePath);
     break;
   } catch (err) {
     console.error(
       `[testing-library-shim] Failed to require "${modulePath}": ${err && err.message ? err.message : err}`
     );
-    // Continue to next path
+
+    if (!isRequireEsmError(err)) {
+      continue;
+    }
+
+    const resolvedPath = resolveModulePath(modulePath);
+    if (!resolvedPath) {
+      continue;
+    }
+
+    try {
+      moduleExports = loadEsmWithEsbuild(resolvedPath);
+      break;
+    } catch (esmErr) {
+      console.error(
+        `[testing-library-shim] Failed to transpile ESM module "${resolvedPath}": ${
+          esmErr && esmErr.message ? esmErr.message : esmErr
+        }`
+      );
+    }
   }
 }
 
