@@ -70,13 +70,15 @@
 
 ---
 
-## Phase 4: User Story 2 - Pagination & Sorting (Day 3)  
+## Phase 4: User Story 2 - Pagination & Sorting (Day 3)
+
 **Related User Story**: [US2 - Pagination & Sorting](spec.md#user-story-2-pagination--sorting) | **Acceptance Criteria**: See [./spec.md#acceptance-criteria-us2]
 **Blockers**: Phase 3 complete | **Goal**: URL params update, posts reorder, pagination works (validated via E2E and integration tests)
 
 ### Pagination UI (Parallelizable)
 
 <!-- T024 merged with T017 to avoid duplication; see T017 above -->
+
 - [ ] T025 [P] [US2] Create unit tests for PaginationControls in `frontend-next/tests/unit/PaginationControls.spec.ts`
 
 ### Pagination Integration
@@ -101,14 +103,15 @@
 - [ ] T031 [US3] Wire LoadingState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T032 [US3] Wire EmptyState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
 - [ ] T033 [US3] Wire ErrorState to PostsPageClient in `frontend-next/src/components/PostsPageClient.tsx`
-- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`, ensuring non-error announcements remain `aria-live="polite"` and error announcements use `aria-live="assertive"`
-- [ ] T034a [US3] Implement and test retry mechanism for ErrorState in `frontend-next/src/components/PostsPageClient.tsx`
+- [ ] T034 [US3] Add aria-live regions for state announcements in `frontend-next/src/components/PostsPageClient.tsx`, ensuring loading and empty states use `aria-live="polite"` and error state uses `aria-live="assertive"` for accessibility compliance.
+- [ ] T035 [US3] Implement and test retry mechanism for ErrorState in `frontend-next/src/components/PostsPageClient.tsx`
+
 ### State Testing
 
-- [ ] T035 [US3] Create unit tests for LoadingState/EmptyState/ErrorState in `frontend-next/tests/unit/`
-- [ ] T036 [US3] Create integration test for state transitions in `frontend-next/tests/integration/posts-states.spec.ts`
-- [ ] T037 [US3] Create Playwright E2E test for state UX in `frontend-next/tests/playwright/core-flows.spec.ts` (extend)
-- [ ] T037a [US3] Create unit and integration tests for retry functionality in ErrorState
+- [ ] T036 [US3] Create unit tests for LoadingState/EmptyState/ErrorState in `frontend-next/tests/unit/`
+- [ ] T037 [US3] Create integration test for state transitions in `frontend-next/tests/integration/posts-states.spec.ts`
+- [ ] T038 [US3] Create Playwright E2E test for state UX in `frontend-next/tests/playwright/core-flows.spec.ts` (extend)
+- [ ] T039 [US3] Create unit and integration tests for retry functionality in ErrorState
 
 ---
 
@@ -118,14 +121,14 @@
 
 ### Figma Documentation
 
-- [ ] T038 Create Figma page "Week 9 Tokens & Primitives" with all 11 tokens documented
-- [ ] T039 Export Figma token reference (PNG or PDF)
-- [ ] T040 Document token parity checklist in `specs/009-frontend-foundations/token-parity.md`
+- [ ] T040 Create Figma page "Week 9 Tokens & Primitives" with all 11 tokens documented
+- [ ] T041 Export Figma token reference (PNG or PDF)
+- [ ] T042 Document token parity checklist in `specs/009-frontend-foundations/token-parity.md`
 
 ### README Updates
 
-- [ ] T041 Add Design System section to `frontend-next/README.md`
-- [ ] T042 Update README with Live URLs and deployment info
+- [ ] T043 Add Design System section to `frontend-next/README.md`
+- [ ] T044 Update README with Live URLs and deployment info
 
 ---
 
@@ -135,14 +138,14 @@
 
 ### Final Validation
 
-- [ ] T043 Run comprehensive local validation (4-tier: Prettier, TypeScript, tests, act)
-- [ ] T044 Verify coverage ≥80% for components and route handlers
-- [ ] T045 Run Playwright a11y validation on all /posts flows in `frontend-next/tests/playwright/a11y-posts.spec.ts`
-- [ ] T046 Validate Spectral OpenAPI lint on `api/openapi.json`: 0 errors
+- [ ] T045 Run comprehensive local validation (4-tier: Prettier, TypeScript, tests, act)
+- [ ] T046 Verify coverage ≥80% for components and route handlers
+- [ ] T047 Run Playwright a11y validation on all /posts flows in `frontend-next/tests/playwright/a11y-posts.spec.ts`
+- [ ] T048 Validate Spectral OpenAPI lint on `api/openapi.json`: 0 errors
 
 ### Release & Documentation
 
-- [ ] T047 Create v9.0.0 release with traceability (links to spec PR, Linear issue, Gate run, artifacts, Cloud Run demo)
+- [ ] T049 Create v9.0.0 release with traceability (links to spec PR, Linear issue, Gate run, artifacts, Cloud Run demo)
 
 ---
 
@@ -246,7 +249,7 @@ Phase 7 (QA & Release)
 | 4     | Pagination works, URL params update, posts reorder                       |
 | 5     | Loading/Empty/Error render, ARIA live works, retry functional            |
 | 6     | Figma page created, tokens documented, README updated                    |
-| 7     | All 47 tasks complete, coverage ≥80%, Spectral 0 errors, v9.0.0 released |
+| 7     | All 49 tasks complete, coverage ≥80%, Spectral 0 errors, v9.0.0 released |
 
 ---
 
