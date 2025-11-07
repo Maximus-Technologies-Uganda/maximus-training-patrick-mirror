@@ -153,9 +153,6 @@ jobs:
     name: Frontend tests & coverage
     runs-on: ubuntu-latest
     needs: install-root-deps
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,6 +166,7 @@ jobs:
           frozen-lockfile: false
 
       - name: Run tests with coverage (Vitest)
+        working-directory: frontend
         run: pnpm run test -- --coverage
 
       - name: Upload frontend coverage and sources
