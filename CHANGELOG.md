@@ -3,6 +3,7 @@ fix/resolve-ci-import-coverage-issues
 
 - fix: add `resolve.alias` to `frontend-next/vitest.config.ts` to correctly resolve `@/` path aliases during test execution. This fixes module resolution errors in Vitest for imports like `@/components/PostsPageClient` that were failing in unit, integration, and a11y tests.
 - fix: add coverage directory validation before artifact upload in GitHub Actions `quality-gate.yml` workflow to prevent "No files found" errors when coverage generation fails, improving error visibility and preventing silent CI failures across frontend-next, api, and monorepo workspaces.
+- fix(gate): keep the Spectral lint artifact optional in `scripts/quality-gate/aggregate-results.js` so the quality gate doesn't fail when CI runs `spectral lint` without producing `contract/spectral.json`.
 =======
 ## 2025-11-07 (Phase 2 - Playwright E2E)
 
