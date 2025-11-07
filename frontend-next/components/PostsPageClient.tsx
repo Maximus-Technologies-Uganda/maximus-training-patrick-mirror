@@ -235,11 +235,6 @@ export default function PostsPageClient({
     return [];
   }, [data?.items, initialItems, shouldUseFallback]);
 
-  const statusMessage = useMemo(
-    () => (isLoading && effectiveItems.length === 0 ? "Loading posts…" : ""),
-    [isLoading, effectiveItems.length]
-  );
-
   const hasNextPage = Boolean(
     data?.hasNextPage ?? (shouldUseFallback ? initialHasNextPage : false)
   );
@@ -254,6 +249,17 @@ export default function PostsPageClient({
     }
     return Math.max(1, page);
   }, [data?.total, hasNextPage, page, pageSize]);
+
+  const statusMessage = useMemo(() => {
+    if (isLoading && effectiveItems.length === 0) {
+      return "Loading posts…";
+    }
+    // Announce current page to screen readers when page changes
+    if (effectiveItems.length > 0) {
+      return `Showing page ${page} of ${totalPages}`;
+    }
+    return "";
+  }, [isLoading, effectiveItems.length, page, totalPages]);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
