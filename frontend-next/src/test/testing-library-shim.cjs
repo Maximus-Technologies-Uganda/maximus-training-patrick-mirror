@@ -46,6 +46,7 @@ function loadEsmWithEsbuild(resolvedPath) {
     bundle: true,
     format: 'cjs',
     platform: 'node',
+    external: ['react', 'react-dom', 'react-dom/client'],
     write: false,
     absWorkingDir: path.dirname(resolvedPath),
     target: 'node20',
