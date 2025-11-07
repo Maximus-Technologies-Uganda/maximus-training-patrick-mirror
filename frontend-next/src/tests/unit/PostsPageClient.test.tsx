@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import PostsPageClient from "../../../components/PostsPageClient";
+import PostsPageClient from "@/components/PostsPageClient";
 import { DEFAULT_POST_SORT } from "../../lib/schemas";
 
 // Mock SWR to avoid network calls

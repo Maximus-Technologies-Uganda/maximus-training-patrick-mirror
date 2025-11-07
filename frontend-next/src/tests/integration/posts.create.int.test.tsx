@@ -4,7 +4,7 @@ import { http, HttpResponse } from "msw";
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
 
-import PostsPageClient from "../../../components/PostsPageClient";
+import PostsPageClient from "@/components/PostsPageClient";
 import { server } from "../../test/test-server";
 
 // Route Handlers proxy at /api/posts; stub those endpoints directly for tests
