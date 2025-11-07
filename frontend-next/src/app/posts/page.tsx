@@ -2,7 +2,7 @@ import React from "react";
 
 import { headers } from "next/headers";
 
-import PostsPageClient from "../../../components/PostsPageClient";
+import PostsPageClient from "@/components/PostsPageClient";
 import {
   DEFAULT_POST_SORT,
   POST_SORT_VALUES,

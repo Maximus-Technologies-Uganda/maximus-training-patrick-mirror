@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
-import PostsPageClient from "../../../components/PostsPageClient";
+import PostsPageClient from "@/components/PostsPageClient";
 import { DEFAULT_POST_SORT } from "../../lib/schemas";
 
 // Mock SWR to avoid network calls
@@ -8,7 +8,9 @@ vi.mock("../../lib/swr", () => ({
   usePostsList: vi.fn(() => ({
     data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
     isLoading: false,
+    isValidating: false,
     error: null,
+    mutate: vi.fn(),
   })),
   mutatePostsPage1: vi.fn(),
 }));

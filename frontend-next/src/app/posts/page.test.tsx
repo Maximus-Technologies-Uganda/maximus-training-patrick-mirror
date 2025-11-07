@@ -5,6 +5,13 @@ import PostsPage from "./page";
 import { DEFAULT_POST_SORT } from "../../lib/schemas";
 
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
+vi.mock("../../lib/swr", async () => {
+  const actual = await vi.importActual<typeof import("../../lib/swr")>("../../lib/swr");
+  return {
+    ...actual,
+    usePostsList: vi.fn(),
+  };
+});
 
 describe("SSR PostsPage (server component)", () => {
   beforeEach(() => {
@@ -29,8 +36,8 @@ describe("SSR PostsPage (server component)", () => {
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     };
-    console.debug('[diag][page.test] globalThis.fetch before stub ->', globalThis.fetch);
-    console.debug('[diag][page.test] typeof fetch ->', typeof globalThis.fetch);
+    console.debug("[diag][page.test] globalThis.fetch before stub ->", globalThis.fetch);
+    console.debug("[diag][page.test] typeof fetch ->", typeof globalThis.fetch);
 
     const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
@@ -56,7 +63,9 @@ describe("SSR PostsPage (server component)", () => {
         sort: DEFAULT_POST_SORT,
       },
       isLoading: false,
+      isValidating: false,
       error: null,
+      mutate: vi.fn(),
     } as unknown as ReturnType<typeof usePostsList>);
 
     const el = await PostsPage({ searchParams: Promise.resolve({}) });

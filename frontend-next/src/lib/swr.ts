@@ -1,4 +1,4 @@
-import useSWR, { mutate } from "swr";
+import useSWR, { mutate, type KeyedMutator } from "swr";
 // zod imported elsewhere; no direct use here
 
 import { getBaseUrl } from "./config";
@@ -33,23 +33,33 @@ export function usePostsList(params?: {
   q?: string;
   fallbackData?: PostList;
   revalidateOnMount?: boolean;
-}): { data: PostList | undefined; isLoading: boolean; error: unknown } {
+}): {
+  data: PostList | undefined;
+  isLoading: boolean;
+  isValidating: boolean;
+  error: unknown;
+  mutate: KeyedMutator<PostList>;
+} {
   const page = params?.page ?? 1;
   const pageSize = params?.pageSize ?? 10;
   const sort = params?.sort ?? DEFAULT_POST_SORT;
   const query = normalizeQuery(params?.q);
   const key = postsListKey(page, pageSize, sort, query);
-  const { data, isLoading, error } = useSWR<PostList>(
+  const {
+    data,
+    isLoading,
+    isValidating,
+    error,
+    mutate: mutateList,
+  } = useSWR<PostList>(
     key,
     async (url) => {
       const res = await fetch(url);
-      if (res.status === 401) {
-        // Treat unauthorized as an empty list for guests
-        return { page, pageSize, hasNextPage: false, items: [], sort, total: 0 } as PostList;
-      }
       if (!res.ok) {
-        const message = `Request failed with ${res.status}`;
-        throw new Error(message);
+        const message = res.status === 401 ? "Unauthorized" : `Request failed with ${res.status}`;
+        const error = new Error(message) as Error & { status?: number };
+        error.status = res.status;
+        throw error;
       }
       const json = (await res.json()) as unknown;
       const normalizedJson: unknown = Array.isArray(json)
@@ -75,7 +85,7 @@ export function usePostsList(params?: {
       shouldRetryOnError: false,
     }
   );
-  return { data, isLoading, error };
+  return { data, isLoading, isValidating: Boolean(isValidating), error, mutate: mutateList };
 }
 
 /**

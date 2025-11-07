@@ -212,9 +212,23 @@ export default function PostsPageClient({
   const shouldUseFallback = useMemo(
     () =>
       Boolean(
-        initialList && page === initialPage && pageSize === initialPageSize && sort === initialSort
+        initialList &&
+          page === initialPage &&
+          pageSize === initialPageSize &&
+          sort === initialSort &&
+          searchQuery === incomingSearchQuery
       ),
-    [initialList, page, pageSize, sort, initialPage, initialPageSize, initialSort]
+    [
+      initialList,
+      page,
+      pageSize,
+      sort,
+      searchQuery,
+      initialPage,
+      initialPageSize,
+      initialSort,
+      incomingSearchQuery,
+    ]
   );
 
   const { data, isLoading, error } = usePostsList({

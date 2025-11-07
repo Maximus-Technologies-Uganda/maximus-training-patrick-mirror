@@ -15,7 +15,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // during Vitest runs. Overriding Module.require here ensures a single React
 // instance is used across the test runtime.
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Module = require("module");
   const origRequire = Module.prototype.require;
   const monorepoRoot = path.resolve(__dirname, "..", "..", "..");
@@ -36,7 +35,6 @@ try {
   const localJsxRuntimeShim = path.resolve(__dirname, "react-jsx-runtime-shim.cjs");
   const localTestingLibraryShim = path.resolve(__dirname, "testing-library-shim.cjs");
   try {
-     
     rootReactPath = require.resolve("react", { paths: [monorepoRoot] });
     try {
       rootReactCjsPath = require.resolve("react/cjs/react.development.js", {
@@ -49,7 +47,6 @@ try {
     // ignore
   }
   try {
-     
     rootReactDomPath = require.resolve("react-dom", { paths: [monorepoRoot] });
     try {
       rootReactDomCjsPath = require.resolve("react-dom/cjs/react-dom.development.js", {
@@ -70,10 +67,9 @@ try {
       // ignore
     }
     try {
-      rootReactDomClientCjsPath = require.resolve(
-        "react-dom/cjs/react-dom-client.development.js",
-        { paths: [monorepoRoot] }
-      );
+      rootReactDomClientCjsPath = require.resolve("react-dom/cjs/react-dom-client.development.js", {
+        paths: [monorepoRoot],
+      });
     } catch (_e) {
       try {
         rootReactDomClientCjsPath = require.resolve(
@@ -91,13 +87,11 @@ try {
     // ignore
   }
   try {
-     
     rootReactJsxRuntimePath = require.resolve("react/jsx-runtime", { paths: [monorepoRoot] });
   } catch (_err) {
     // ignore
   }
   try {
-     
     rootReactJsxDevRuntimePath = require.resolve("react/jsx-dev-runtime", {
       paths: [monorepoRoot],
     });
@@ -108,7 +102,6 @@ try {
   // If react was resolved from a project-local directory, prefer jsx-runtime
   // files from the same package directory to avoid mixing versions.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
     if (rootReactPath) {
       const reactPkgDir = path.dirname(rootReactPath);
@@ -129,7 +122,6 @@ try {
   // use it as the target for any require('react') or require('react/jsx-runtime')
   // calls so that CJS require paths also receive a normalized module shape.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
     if (fs.existsSync(localReactShim)) {
       // Use local shim for all react requires
@@ -157,9 +149,9 @@ try {
     // errors.
 
     // Cache normalized modules by resolved path to preserve identity
-     
+
     const __normalizeCache: Record<string, any> = {};
-     
+
     function normalizeReact(mod: any, resolvedPath?: string) {
       try {
         if (!mod || typeof mod !== "object") return mod;
@@ -178,7 +170,7 @@ try {
           try {
             // Prefer to set default to the same module object so identity
             // remains the same for any code checking equality.
-             
+
             (mod as any).default = mod;
           } catch (_e) {
             // If the exports object is non-writable, fall back to returning
@@ -191,10 +183,9 @@ try {
         const fnNames = ["forwardRef", "createContext", "createElement", "useState", "useId"];
         for (const n of fnNames) {
           try {
-             
             if (!(n in mod) && mod.default && n in mod.default)
               (mod as any)[n] = (mod as any).default[n];
-             
+
             if (mod.default && !(n in mod.default) && n in mod)
               (mod as any).default[n] = (mod as any)[n];
           } catch (_e) {
@@ -213,7 +204,7 @@ try {
     // require to avoid intercepting requires performed while loading the
     // shims or the real React runtime (prevents circular resolution).
     let __overrideSkip = false;
-     
+
     Module.prototype.require = function (this: any, request: string) {
       if (__overrideSkip) {
         return origRequire.call(this, request);
@@ -223,7 +214,7 @@ try {
         // and internal requires inside packages). If the resolved path points
         // into a nested @testing-library/react node_modules/react or
         // node_modules/react-dom folder, redirect to the hoisted copies.
-         
+
         const resolveFilename = Module._resolveFilename as (id: string, parent: any) => string;
         let resolved: string | null = null;
         try {
@@ -514,7 +505,6 @@ try {
     console.log(`[test-setup] forced react/jsx-dev-runtime -> ${rootReactJsxDevRuntimePath}`);
   }
 } catch (_err) {
-   
   const _msg = (_err as any) && (_err as any).message ? (_err as any).message : String(_err);
   console.warn("[test-setup] could not override Module.require:", _msg);
 }
@@ -524,18 +514,17 @@ try {
 // debug intermittent "Invalid hook call" and "document is not defined" errors.
 try {
   // Use CommonJS require.resolve for deterministic paths inside Vitest runtime
-   
+
   const r = require as any;
   const reactPath = r.resolve("react");
   const reactDomPath = r.resolve("react-dom");
-   
+
   console.log(`[test-setup] resolved react -> ${reactPath}`);
-   
+
   console.log(`[test-setup] resolved react-dom -> ${reactDomPath}`);
 } catch (_err) {
-   
   const _msg = (_err as any) && (_err as any).message ? (_err as any).message : String(_err);
-   
+
   console.warn("[test-setup] could not resolve react/react-dom:", _msg);
 }
 
@@ -579,7 +568,9 @@ vi.mock("../lib/auth/use-session", () => ({
 const usePostsListMock = vi.fn(() => ({
   data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
   isLoading: false,
+  isValidating: false,
   error: null,
+  mutate: vi.fn(),
 }));
 
 vi.mock("../lib/swr", () => ({

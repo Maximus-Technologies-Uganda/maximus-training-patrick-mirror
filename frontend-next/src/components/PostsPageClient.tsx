@@ -8,6 +8,7 @@ import { ErrorState } from "./ErrorState";
 import { LoadingState } from "./LoadingState";
 import { PaginationControls } from "./PaginationControls";
 import { Card } from "./Card";
+import NewPostForm from "./NewPostForm";
 import {
   DEFAULT_POST_SORT,
   POST_SORT_VALUES,
@@ -16,6 +17,7 @@ import {
   type PostSort,
 } from "../lib/schemas";
 import { usePostsList } from "../lib/swr";
+import { useSession } from "../lib/auth/use-session";
 
 const SORT_OPTIONS = new Set<PostSort>(POST_SORT_VALUES);
 
@@ -187,7 +189,7 @@ function PostsPageClientInner({
 
   const initialFallbackData = shouldUseInitialFallback ? fallbackList : undefined;
 
-  const { data, isLoading, error } = usePostsList({
+  const { data, isLoading, isValidating, error, mutate } = usePostsList({
     page,
     pageSize,
     sort,
@@ -199,6 +201,7 @@ function PostsPageClientInner({
   const posts = resolvedList?.items ?? [];
   const hasNextPage = resolvedList?.hasNextPage ?? false;
   const totalPages = deriveTotalPages(resolvedList, page, pageSize);
+  const { session } = useSession();
 
   const syncUrl = useCallback(
     (next: { page?: number; sort?: PostSort; q?: string; pageSize?: number }) => {
@@ -247,7 +250,8 @@ function PostsPageClientInner({
   // surfaced immediately without delaying polite status updates.
   const [errorAnnouncement, setErrorAnnouncement] = useState<string | null>(null);
   useEffect(() => {
-    if (isLoading) {
+    const hasPosts = posts.length > 0;
+    if ((isLoading || isValidating) && !hasPosts) {
       setLiveAnnouncement("Loading posts…");
       setErrorAnnouncement(null);
       return;
@@ -258,7 +262,12 @@ function PostsPageClientInner({
       setLiveAnnouncement("");
       return;
     }
-    if (posts.length === 0) {
+    if (isValidating && hasPosts) {
+      setLiveAnnouncement("Refreshing posts…");
+      setErrorAnnouncement(null);
+      return;
+    }
+    if (!hasPosts) {
       setLiveAnnouncement("No posts available");
       setErrorAnnouncement(null);
       return;
@@ -267,9 +276,22 @@ function PostsPageClientInner({
     const announcement = `Showing page ${page} of ${totalPages}, ${posts.length} posts, sorted by ${sortLabel}`;
     setLiveAnnouncement(announcement);
     setErrorAnnouncement(null);
-  }, [isLoading, error, posts.length, page, totalPages, sort]);
+  }, [isLoading, isValidating, error, posts.length, page, totalPages, sort]);
 
   const errorMessage = error instanceof Error ? error.message : undefined;
+
+  const handleRetry = useCallback(() => {
+    setErrorAnnouncement(null);
+    setLiveAnnouncement("Loading posts…");
+    void mutate();
+  }, [mutate]);
+
+  const handleCreateSuccess = useCallback(() => {
+    if (page !== 1) {
+      setPage(1);
+      syncUrl({ page: 1 });
+    }
+  }, [page, syncUrl]);
 
   return (
     <section aria-label="Posts list" className="flex flex-col gap-6">
@@ -305,10 +327,30 @@ function PostsPageClientInner({
         </label>
       </div>
 
-      {isLoading && posts.length === 0 ? (
+      <Card
+        header={
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-semibold text-text">Create a new post</h2>
+            <p className="text-sm text-text-muted">
+              {session
+                ? `Signed in as ${session.name ?? session.userId}`
+                : "You are browsing as a guest. Sign in to publish posts."}
+            </p>
+          </div>
+        }
+      >
+        <NewPostForm
+          pageSize={pageSize}
+          sort={sort}
+          query={searchQuery}
+          onSuccess={handleCreateSuccess}
+        />
+      </Card>
+
+      {posts.length === 0 && (isLoading || isValidating) ? (
         <LoadingState message="Loading posts…" />
       ) : error && posts.length === 0 ? (
-        <ErrorState title="Error loading posts" message={errorMessage} />
+        <ErrorState title="Error loading posts" message={errorMessage} onRetry={handleRetry} />
       ) : posts.length === 0 ? (
         <EmptyState title="No posts yet" message="There are currently no posts." />
       ) : (

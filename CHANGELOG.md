@@ -1,7 +1,10 @@
 ## 2025-11-07 (Phase 2 - Playwright E2E)
 
+- feat(frontend-next): wire posts loading, empty, and error states with live region announcements and retry support.
+- test(frontend-next): add unit, integration, and Playwright coverage for posts state transitions and retry UX.
 - fix(ci): add frontend workspace coverage generation to quality-gate workflow for comprehensive coverage reporting.
 - fix(frontend-next): add pagination status announcements to live region (aria-live="polite") for screen reader users navigating pages.
+- fix(frontend-next): stop reusing SSR fallback data when the search query changes so SWR refetches filtered results.
 - test(playwright): fix ErrorState accessibility test selector to exclude Next.js route announcer (use `.flex` class discriminator).
 - test(playwright): fix keyboard navigation test to use aria-current selector for unambiguous page indicator matching.
 - test(playwright): improve SSR performance budget test resilience when API unavailable (graceful fallback to client-side rendering).
