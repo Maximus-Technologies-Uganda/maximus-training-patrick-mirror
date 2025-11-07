@@ -1,3 +1,11 @@
+## 2025-11-07 (Phase 2 - Playwright E2E)
+
+- fix(ci): add frontend workspace coverage generation to quality-gate workflow for comprehensive coverage reporting.
+- fix(frontend-next): add pagination status announcements to live region (aria-live="polite") for screen reader users navigating pages.
+- test(playwright): fix ErrorState accessibility test selector to exclude Next.js route announcer (use `.flex` class discriminator).
+- test(playwright): fix keyboard navigation test to use aria-current selector for unambiguous page indicator matching.
+- test(playwright): improve SSR performance budget test resilience when API unavailable (graceful fallback to client-side rendering).
+
 ## 2025-11-07
 
 - fix(frontend-next): externalize React dependencies when transpiling the testing-library shim fallback to avoid duplicate bundles.
