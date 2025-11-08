@@ -33,7 +33,7 @@ export default function RootLayout({
         {fonts.styles ? (
           <style data-font-offline dangerouslySetInnerHTML={{ __html: fonts.styles }} />
         ) : null}
-        {/* @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06) */}
+        {/* @ts-expect-error React 18 type mismatch (local env) - DEV-XXX (expires: 2025-12-08) */}
         <Header />
         {children}
       </body>

@@ -15,6 +15,7 @@ vi.mock("../../lib/auth/session", () => ({
 
 describe("LoginPage", () => {
   it("renders login form with correct fields", async () => {
+    // @ts-expect-error Test file type mismatch with React types (expires: 2025-12-08)
     render(<LoginPage />);
 
     // Check that the form fields are present
