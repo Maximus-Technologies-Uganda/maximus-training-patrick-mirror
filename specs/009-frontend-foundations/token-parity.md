@@ -38,7 +38,7 @@ This document verifies token consistency across three systems:
 | `error`     | `--color-error`     | `colors.error`     | `Color/Error`     | `#EF4444` | Error and destructive states                      |
 | `neutral`   | `--color-neutral`   | `colors.neutral`   | `Color/Neutral`   | `#F3F4F6` | Backgrounds, borders, disabled states             |
 
-### Typographys (3)
+### Typography (3)
 
 | Token          | CSS Variable     | Tailwind Key         | Figma Name               | Value                      | Description                                |
 | -------------- | ---------------- | -------------------- | ------------------------ | -------------------------- | ------------------------------------------ |
@@ -52,7 +52,7 @@ This document verifies token consistency across three systems:
 | -------------- | ---------------- | ------------ | -------------- | ----- | -------------------------------------------------------- |
 | `spacing-unit` | `--spacing-unit` | `spacing.1`  | `Spacing/Unit` | `8px` | Base spacing unit - use multiples for consistent spacing |
 
-### Radiuss (1)
+### Radius (1)
 
 | Token         | CSS Variable    | Tailwind Key        | Figma Name    | Value | Description              |
 | ------------- | --------------- | ------------------- | ------------- | ----- | ------------------------ |
