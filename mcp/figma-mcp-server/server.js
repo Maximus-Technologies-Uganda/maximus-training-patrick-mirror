@@ -31,11 +31,18 @@ if (!FIGMA_FILE_ID) {
   process.exit(1);
 }
 
-// Create MCP server
-const server = new Server({
-  name: 'figma-mcp',
-  version: '1.0.0',
-});
+// Create MCP server with tools capability
+const server = new Server(
+  {
+    name: 'figma-mcp',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  },
+);
 
 // Define available tools
 const tools = [
