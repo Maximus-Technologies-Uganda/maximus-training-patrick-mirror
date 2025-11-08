@@ -28,12 +28,14 @@ describe("A11y: /posts page states have basic roles/labels", () => {
 
     render(<PostsPageClient />);
     // Expect a polite live region to announce loading (use specific selector since there are multiple status roles)
-    const live = screen.getByRole("status", { hidden: true });
-    expect(live).toHaveAttribute("aria-live", "polite");
+    const liveRegions = screen.getAllByRole("status", { hidden: true });
+    const politeLive = liveRegions.find((el) => el.getAttribute("aria-live") === "polite");
+    expect(politeLive).toBeDefined();
 
     // Once loaded, expect a heading and landmark roles
     const heading = await screen.findByRole("heading", { name: /posts/i });
     expect(heading).toBeInTheDocument();
-    expect(screen.getByRole("main")).toBeInTheDocument();
+    const section = screen.getByRole("region", { name: /posts list/i });
+    expect(section).toBeInTheDocument();
   }, 10000);
 });
