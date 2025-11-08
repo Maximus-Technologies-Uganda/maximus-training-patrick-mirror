@@ -19,7 +19,7 @@ export const Card: React.FC<CardProps> = ({ header, children, footer, className 
   const cardBaseStyles = [
     "bg-surface",
     "border",
-    "border-gray-200",
+    "border-text-muted/20",
     "rounded-md",
     "shadow-sm",
     "overflow-hidden",
@@ -29,19 +29,9 @@ export const Card: React.FC<CardProps> = ({ header, children, footer, className 
 
   return (
     <div className={cardClassName}>
-      {header && (
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          {header}
-        </div>
-      )}
-      <div className="px-4 py-3">
-        {children}
-      </div>
-      {footer && (
-        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
-          {footer}
-        </div>
-      )}
+      {header && <div className="px-3 py-2 border-b border-text-muted/20 bg-surface">{header}</div>}
+      <div className="px-3 py-2">{children}</div>
+      {footer && <div className="px-3 py-2 border-t border-text-muted/20 bg-surface">{footer}</div>}
     </div>
   );
 };

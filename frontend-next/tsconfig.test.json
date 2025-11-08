@@ -1,0 +1,36 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "vitest/globals",
+      "vitest/matchers",
+      "@testing-library/jest-dom",
+      "@testing-library/jest-dom/vitest",
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/**/*.int.test.ts",
+    "src/**/*.int.test.tsx",
+    "src/**/*.a11y.test.ts",
+    "src/**/*.a11y.test.tsx",
+    "src/**/*.ssr.test.ts",
+    "src/**/*.ssr.test.tsx",
+    "src/test/**/*",
+    "tests/**/*.test.ts",
+    "tests/**/*.test.tsx",
+    "tests/**/*.spec.ts",
+    "tests/**/*.spec.tsx",
+    "tests/**/*.int.test.ts",
+    "tests/**/*.int.test.tsx",
+    "tests/**/*.a11y.test.ts",
+    "tests/**/*.a11y.test.tsx",
+    "tests/**/*.ssr.test.ts",
+    "tests/**/*.ssr.test.tsx"
+  ]
+}

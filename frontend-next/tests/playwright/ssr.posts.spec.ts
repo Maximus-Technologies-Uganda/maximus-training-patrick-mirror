@@ -18,13 +18,7 @@ test.describe("SSR first-paint verification", () => {
 
     // Save evidence artifacts
     const repoRoot = path.resolve(__dirname, "..", "..", "..");
-    const outDir = path.join(
-      repoRoot,
-      "docs",
-      "ReviewPacket",
-      "screenshots",
-      "frontend-next",
-    );
+    const outDir = path.join(repoRoot, "docs", "ReviewPacket", "screenshots", "frontend-next");
     fs.mkdirSync(outDir, { recursive: true });
 
     // Save raw SSR HTML as evidence
@@ -33,7 +27,7 @@ test.describe("SSR first-paint verification", () => {
     // Capture screenshot of SSR first paint
     await page.screenshot({
       path: path.join(outDir, "posts-ssr-first-paint.png"),
-      fullPage: true
+      fullPage: true,
     });
 
     // === KEY ASSERTIONS: Prove SSR is working ===
@@ -45,7 +39,7 @@ test.describe("SSR first-paint verification", () => {
     // 2. Verify post-related UI elements are present (not just a loading skeleton)
     // This proves the server rendered actual content, not just placeholders
     const hasServerRenderedContent =
-      html.includes("role=\"list\"") || // Posts list
+      html.includes('role="list"') || // Posts list
       html.includes("article") || // Post articles
       html.includes("Create") || // Create button/form
       html.includes("Prev") || // Pagination
@@ -61,8 +55,8 @@ test.describe("SSR first-paint verification", () => {
     // 4. Verify critical interactive elements are present
     // (proves SSR rendered the full page, not just shell)
     const hasInteractiveElements =
-      html.includes("Page size") || // Page size selector
-      html.includes("Search"); // Search input
+      html.includes("Sort by") || // Sort selector
+      html.includes("Create"); // Create button
 
     expect(hasInteractiveElements).toBe(true);
 

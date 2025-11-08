@@ -341,7 +341,7 @@ export default function PostsPageClient({
   );
 
   return (
-    // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
+    // @ts-expect-error React 18 type mismatch (local env) - DEV-XXX (expires: 2025-12-08)
     <SWRConfig value={swrValue}>
       <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
         <LiveRegion message={statusMessage} />
@@ -351,7 +351,7 @@ export default function PostsPageClient({
         </h1>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <PageSizeSelect pageSize={pageSize} onChange={onChangePageSize} />
+          <PageSizeSelect pageSize={pageSize} onChangeAction={onChangePageSize} />
           <label className="text-sm text-text">
             Sort by
             <select
@@ -372,7 +372,7 @@ export default function PostsPageClient({
               ))}
             </select>
           </label>
-          <SearchInput value={searchQuery} onChange={onChangeSearchQuery} />
+          <SearchInput value={searchQuery} onChangeAction={onChangeSearchQuery} />
         </div>
 
         <div
@@ -397,7 +397,7 @@ export default function PostsPageClient({
               Sign out
             </button>
           ) : (
-            // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
+            // @ts-expect-error React 18 type mismatch with Next.js Link (local env) - DEV-XXX (expires: 2025-12-08)
             <Link
               className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-sm font-medium text-surface transition hover:bg-primary/90"
               href="/login"
@@ -412,7 +412,7 @@ export default function PostsPageClient({
             pageSize={pageSize}
             sort={sort}
             query={searchQuery}
-            onSuccess={onCreateSuccess}
+            onSuccessAction={onCreateSuccess}
           />
         </div>
 

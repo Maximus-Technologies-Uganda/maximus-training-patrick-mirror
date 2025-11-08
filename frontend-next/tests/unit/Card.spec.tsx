@@ -126,25 +126,25 @@ describe("Card", () => {
       const { container } = render(<Card header="Header">Content</Card>);
       const header = container.querySelector(".border-b");
       expect(header).toBeInTheDocument();
-      expect(header).toHaveClass("bg-gray-50");
+      expect(header).toHaveClass("bg-surface");
     });
 
     it("footer has top border", () => {
       const { container } = render(<Card footer="Footer">Content</Card>);
       const footer = container.querySelector(".border-t");
       expect(footer).toBeInTheDocument();
-      expect(footer).toHaveClass("bg-gray-50");
+      expect(footer).toHaveClass("bg-surface");
     });
 
     it("body section has proper padding", () => {
       const { container } = render(<Card>Content</Card>);
       // Get the body div (second child of card, or first if no header)
       const card = container.firstChild as HTMLElement;
-      const bodyDiv = Array.from(card.children).find(child =>
-        child.textContent === "Content"
+      const bodyDiv = Array.from(card.children).find(
+        (child) => child.textContent === "Content"
       ) as HTMLElement;
-      expect(bodyDiv).toHaveClass("px-4");
-      expect(bodyDiv).toHaveClass("py-3");
+      expect(bodyDiv).toHaveClass("px-3");
+      expect(bodyDiv).toHaveClass("py-2");
     });
   });
 

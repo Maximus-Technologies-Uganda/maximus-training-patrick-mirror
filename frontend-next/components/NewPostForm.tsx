@@ -16,12 +16,12 @@ export default function NewPostForm({
   pageSize,
   sort = DEFAULT_POST_SORT,
   query = "",
-  onSuccess,
+  onSuccessAction,
 }: {
   pageSize: number;
   sort?: PostSort;
   query?: string;
-  onSuccess?: () => void;
+  onSuccessAction?: () => void;
 }): React.ReactElement {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -79,7 +79,7 @@ export default function NewPostForm({
       setSuccess("Created successfully");
       await mutatePostsPage1(pageSize, sort, query);
       // Notify parent so it can reset pagination and URL
-      onSuccess?.();
+      onSuccessAction?.();
     } else {
       setError("Failed to create post");
     }

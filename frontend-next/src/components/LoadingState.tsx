@@ -28,7 +28,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const combinedClassName = [containerStyles, className].filter(Boolean).join(" ");
 
   return (
-    <div className={combinedClassName}>
+    <div className={combinedClassName} role="status" aria-live="polite">
       <svg
         className="animate-spin h-8 w-8 mb-2"
         xmlns="http://www.w3.org/2000/svg"

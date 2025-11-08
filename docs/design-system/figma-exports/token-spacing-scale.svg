@@ -1,0 +1,43 @@
+
+    <svg width="350" height="400" xmlns="http://www.w3.org/2000/svg">
+      <text x="10" y="25" font-family="Inter" font-weight="bold" font-size="14" fill="#000">
+        Spacing Scale (Base: 8px)
+      </text>
+      
+      <rect x="20" y="0" width="8" height="30" fill="#0066CC" opacity="0.7" rx="2"/>
+      <text x="200" y="20" font-family="Inter" font-size="12" fill="#000">
+        4px (0.5x)
+      </text>
+    
+      <rect x="20" y="40" width="16" height="30" fill="#0066CC" opacity="0.7" rx="2"/>
+      <text x="200" y="60" font-family="Inter" font-size="12" fill="#000">
+        8px (1x)
+      </text>
+    
+      <rect x="20" y="80" width="32" height="30" fill="#0066CC" opacity="0.7" rx="2"/>
+      <text x="200" y="100" font-family="Inter" font-size="12" fill="#000">
+        16px (2x)
+      </text>
+    
+      <rect x="20" y="120" width="48" height="30" fill="#0066CC" opacity="0.7" rx="2"/>
+      <text x="200" y="140" font-family="Inter" font-size="12" fill="#000">
+        24px (3x)
+      </text>
+    
+      <rect x="20" y="160" width="64" height="30" fill="#0066CC" opacity="0.7" rx="2"/>
+      <text x="200" y="180" font-family="Inter" font-size="12" fill="#000">
+        32px (4x)
+      </text>
+    
+      <rect x="20" y="200" width="96" height="30" fill="#0066CC" opacity="0.7" rx="2"/>
+      <text x="200" y="220" font-family="Inter" font-size="12" fill="#000">
+        48px (6x)
+      </text>
+    
+      <rect x="20" y="240" width="128" height="30" fill="#0066CC" opacity="0.7" rx="2"/>
+      <text x="200" y="260" font-family="Inter" font-size="12" fill="#000">
+        64px (8x)
+      </text>
+    
+    </svg>
+  

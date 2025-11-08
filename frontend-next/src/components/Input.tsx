@@ -60,8 +60,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       // Base styles using design tokens
       "block",
       "w-full",
-      "px-3",
-      "py-2",
+      "px-2",
+      "py-1",
       "bg-surface",
       "border",
       "rounded-sm",
@@ -75,18 +75,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       "disabled:opacity-50",
       "disabled:cursor-not-allowed",
       // Error state styles
-      error
-        ? "border-error focus:ring-error"
-        : "border-gray-300 hover:border-gray-400"
+      error ? "border-error focus:ring-error" : "border-text-muted/40 hover:border-text-muted/60"
     );
 
     return (
       <div className={className}>
         {label ? (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-text mb-1"
-          >
+          <label htmlFor={inputId} className="block text-sm font-medium text-text mb-1">
             {label}
           </label>
         ) : null}
@@ -99,19 +94,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {description ? (
-          <p
-            id={descriptionId}
-            className="mt-1 text-sm text-text-muted"
-          >
+          <p id={descriptionId} className="mt-1 text-sm text-text-muted">
             {description}
           </p>
         ) : null}
         {error ? (
-          <p
-            id={errorId}
-            role="alert"
-            className="mt-1 text-sm text-error"
-          >
+          <p id={errorId} role="alert" className="mt-1 text-sm text-error">
             {error}
           </p>
         ) : null}

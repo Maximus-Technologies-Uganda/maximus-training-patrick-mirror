@@ -4,10 +4,10 @@ import React, { useEffect, useRef, useState } from "react";
 
 export default function SearchInput({
   value,
-  onChange,
+  onChangeAction,
 }: {
   value: string;
-  onChange: (next: string) => void;
+  onChangeAction: (next: string) => void;
 }): React.ReactElement {
   const [input, setInput] = useState<string>(value);
   const timer = useRef<number | null>(null);
@@ -19,12 +19,12 @@ export default function SearchInput({
   useEffect(() => {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
-      onChange(input);
+      onChangeAction(input);
     }, 300);
     return () => {
       if (timer.current) window.clearTimeout(timer.current);
     };
-  }, [input, onChange]);
+  }, [input, onChangeAction]);
 
   return (
     <label className="block text-sm text-gray-700">
@@ -40,5 +40,3 @@ export default function SearchInput({
     </label>
   );
 }
-
-

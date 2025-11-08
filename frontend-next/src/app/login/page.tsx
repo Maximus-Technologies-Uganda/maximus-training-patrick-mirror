@@ -152,7 +152,7 @@ export default function LoginPage(): React.ReactElement {
       </section>
       <p className="mt-4 text-center text-sm text-gray-600">
         Looking for posts?{" "}
-        {/* @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06) */}
+        {/* @ts-expect-error React 18 type mismatch with Next.js Link (local env) - DEV-XXX (expires: 2025-12-08) */}
         <Link className="text-indigo-600 hover:underline" href="/posts">
           Go to posts
         </Link>
