@@ -1,0 +1,28 @@
+
+    <svg width="600" height="150" xmlns="http://www.w3.org/2000/svg">
+      <text x="300" y="25" text-anchor="middle" font-family="Inter" font-weight="bold" font-size="14" fill="#000">
+        Border Radius Examples
+      </text>
+      
+      <rect x="20" y="40" width="80" height="80" fill="#0066CC" opacity="0.7" rx="4"/>
+      <text x="60" y="145" text-anchor="middle" font-family="Inter" font-size="12" fill="#000">
+        Base (4px)
+      </text>
+    
+      <rect x="160" y="40" width="80" height="80" fill="#0066CC" opacity="0.7" rx="8"/>
+      <text x="200" y="145" text-anchor="middle" font-family="Inter" font-size="12" fill="#000">
+        Medium (8px)
+      </text>
+    
+      <rect x="300" y="40" width="80" height="80" fill="#0066CC" opacity="0.7" rx="12"/>
+      <text x="340" y="145" text-anchor="middle" font-family="Inter" font-size="12" fill="#000">
+        Large (12px)
+      </text>
+    
+      <rect x="440" y="40" width="80" height="80" fill="#0066CC" opacity="0.7" rx="50"/>
+      <text x="480" y="145" text-anchor="middle" font-family="Inter" font-size="12" fill="#000">
+        Full (999px)
+      </text>
+    
+    </svg>
+  
