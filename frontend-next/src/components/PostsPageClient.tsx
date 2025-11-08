@@ -295,7 +295,7 @@ function PostsPageClientInner({
   }, [page, syncUrl]);
 
   return (
-    <section aria-label="Posts list" className="flex flex-col gap-6">
+    <section aria-label="Posts list" className="flex flex-col gap-4">
       {/* Polite live region for non-error announcements */}
       <div role="status" aria-live="polite" className="sr-only">
         {errorAnnouncement ? "" : liveAnnouncement}
@@ -305,7 +305,7 @@ function PostsPageClientInner({
         {errorAnnouncement}
       </div>
       {/* Auth banner */}
-      <div className="flex flex-col gap-3 items-start justify-between rounded-md border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2 items-start justify-between rounded-md border border-text-muted/20 bg-surface p-3 sm:flex-row sm:items-center">
         <div>
           {session ? (
             <p className="text-sm text-text-muted">
@@ -325,14 +325,14 @@ function PostsPageClientInner({
         {session ? (
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md border border-text-muted/40 px-3 py-1 text-sm font-medium text-text transition hover:bg-primary/10 whitespace-nowrap"
+            className="inline-flex items-center justify-center rounded-md border border-text-muted/40 px-2 py-1 text-sm font-medium text-text transition hover:bg-primary/10 whitespace-nowrap"
             onClick={signOut}
           >
             Sign out
           </button>
         ) : null}
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-text">Posts</h1>
         <label className="text-sm text-text">
           Sort by
@@ -345,7 +345,7 @@ function PostsPageClientInner({
               }
             }}
             aria-label="Sort posts"
-            className="ml-2 rounded border border-text-muted/40 px-2 py-1 text-sm text-text"
+            className="ml-1 rounded-md border border-text-muted/40 px-2 py-1 text-sm text-text"
           >
             {POST_SORT_VALUES.map((option) => (
               <option key={option} value={option}>
@@ -383,7 +383,7 @@ function PostsPageClientInner({
       ) : posts.length === 0 ? (
         <EmptyState title="No posts yet" message="There are currently no posts." />
       ) : (
-        <ul role="list" className="space-y-4">
+        <ul role="list" className="space-y-3">
           {posts.map((post) => (
             <li key={post.id}>
               <Card>
