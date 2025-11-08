@@ -127,8 +127,8 @@
 
 ### README Updates
 
-- [ ] T043 Add Design System section to `frontend-next/README.md`
-- [ ] T044 Update README with Live URLs and deployment info
+- [x] T043 Add Design System section to `frontend-next/README.md`
+- [x] T044 Update README with Live URLs and deployment info
 
 ---
 
