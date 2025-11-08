@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "timestamp": "2025-11-08T08:21:34.647Z",
+  "fileId": "MGlfufUnqRLzy4wRwgA4r5",
+  "tokens": [
+    {
+      "id": "color-primary",
+      "name": "Primary",
+      "path": "Color/Primary",
+      "description": "Primary brand color - used for CTAs and key interactions",
+      "value": "#0066CC",
+      "type": "color",
+      "cssVariable": "--colorPrimary"
+    },
+    {
+      "id": "color-secondary",
+      "name": "Secondary",
+      "path": "Color/Secondary",
+      "description": "Secondary brand color - used for accents",
+      "value": "#6B7280",
+      "type": "color",
+      "cssVariable": "--colorSecondary"
+    },
+    {
+      "id": "color-success",
+      "name": "Success",
+      "path": "Color/Success",
+      "description": "Success states and confirmations",
+      "value": "#10B981",
+      "type": "color",
+      "cssVariable": "--colorSuccess"
+    },
+    {
+      "id": "color-warning",
+      "name": "Warning",
+      "path": "Color/Warning",
+      "description": "Warning and caution states",
+      "value": "#F59E0B",
+      "type": "color",
+      "cssVariable": "--colorWarning"
+    },
+    {
+      "id": "color-error",
+      "name": "Error",
+      "path": "Color/Error",
+      "description": "Error and destructive states",
+      "value": "#EF4444",
+      "type": "color",
+      "cssVariable": "--colorError"
+    },
+    {
+      "id": "color-neutral",
+      "name": "Neutral",
+      "path": "Color/Neutral",
+      "description": "Backgrounds, borders, disabled states",
+      "value": "#F3F4F6",
+      "type": "color",
+      "cssVariable": "--colorNeutral"
+    },
+    {
+      "id": "typography-heading-font",
+      "name": "Heading Font",
+      "path": "Typography/Heading Font",
+      "description": "Font for headings",
+      "value": "Inter",
+      "type": "typography",
+      "cssVariable": "--typographyHeadingFont"
+    },
+    {
+      "id": "typography-body-font",
+      "name": "Body Font",
+      "path": "Typography/Body Font",
+      "description": "Font for body text",
+      "value": "Inter",
+      "type": "typography",
+      "cssVariable": "--typographyBodyFont"
+    },
+    {
+      "id": "typography-mono-font",
+      "name": "Mono Font",
+      "path": "Typography/Mono Font",
+      "description": "Font for code and technical content",
+      "value": "IBM Plex Mono",
+      "type": "typography",
+      "cssVariable": "--typographyMonoFont"
+    },
+    {
+      "id": "spacing-unit",
+      "name": "Spacing Unit",
+      "path": "Spacing/Spacing Unit",
+      "description": "Base spacing unit (8px) - use multiples for consistent spacing",
+      "value": "8px",
+      "type": "spacing",
+      "cssVariable": "--spacingUnit"
+    },
+    {
+      "id": "radius-base",
+      "name": "Radius Base",
+      "path": "Radius/Radius Base",
+      "description": "Standard corner rounding (4px)",
+      "value": "4px",
+      "type": "radius",
+      "cssVariable": "--radiusBase"
+    }
+  ],
+  "categories": ["Color", "Typography", "Spacing", "Radius"]
+}

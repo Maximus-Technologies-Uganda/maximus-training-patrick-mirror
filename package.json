@@ -52,7 +52,10 @@
     "release:create": "tsx scripts/release/create.ts",
     "mcp:playwright": "mcp-server-playwright --stdio",
     "mcp:inspect": "mcp-inspector pnpm mcp:playwright",
-    "mcp:inspect:cli": "mcp-inspector --cli pnpm mcp:playwright"
+    "mcp:inspect:cli": "mcp-inspector --cli pnpm mcp:playwright",
+    "generate:token-parity": "tsx scripts/figma/generate-token-parity.ts",
+    "setup:figma": "tsx scripts/figma/create-design-system.ts",
+    "setup:design-system": "pnpm run generate:token-parity && pnpm run setup:figma"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
