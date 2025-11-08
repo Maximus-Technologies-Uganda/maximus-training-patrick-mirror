@@ -19,5 +19,8 @@
     "yaml.lint.ignoreUnknownKeyError": true,
     "yaml.lint.ignore": [
         "Context access might be invalid"
-    ]
+    ],
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }
