@@ -15,13 +15,8 @@ All **8 failing Playwright E2E tests** have been fixed with a comprehensive solu
 └─ frontend-next/playwright.config.ts (Fixed test discovery)
 ```
 
-### Documentation (4 comprehensive guides)
+### Documentation (8 comprehensive guides)
 
-```
-✓ FIX_E2E_SUMMARY.md ............ Technical deep-dive (500+ lines)
-✓ FIX_SUMMARY_VISUAL.md ........ Before/after comparison
-✓ TEST_EXPECTATIONS.md ........ Test execution & verification guide
-✓ PR_READY_SUMMARY.md ......... Pull request ready document
 ```
 
 ### Git Commits (2 total)
