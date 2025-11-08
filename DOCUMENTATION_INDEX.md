@@ -155,7 +155,7 @@ Tests Resolved:
 
 | Metric          | Value    |
 | --------------- | -------- |
-| Total Documents | 7        |
+| Total Documents | 9        |
 | Total Lines     | 1,500+   |
 | Code Changes    | 3 files  |
 | Test Coverage   | 8 tests  |
