@@ -19,11 +19,8 @@ All **8 failing Playwright E2E tests** have been fixed with a comprehensive solu
 
 ```
 
-### Git Commits (2 total)
+### Git Commits (3 total)
 
-```
-55526652 fix: resolve E2E test failures - consolidate duplicate status elements and add auth banner
-79fe680f docs: add comprehensive E2E test fixes documentation
 ```
 
 ## 🎯 Tests Fixed (8/8)
