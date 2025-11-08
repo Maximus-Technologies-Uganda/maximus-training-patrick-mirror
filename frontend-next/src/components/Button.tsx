@@ -1,50 +1,50 @@
-import React from 'react';
-import { cn } from '../lib/utils';
+import React from "react";
+import { cn } from "../lib/utils";
 
 // Type-safe variant and size definitions
 const BUTTON_VARIANTS = {
   primary: [
-    'bg-primary',
-    'text-surface',
-    'hover:bg-gray-800',
-    'focus:ring-primary',
-    'border-transparent',
-  ].join(' '),
+    "bg-primary",
+    "text-surface",
+    "hover:bg-primary/90",
+    "focus:ring-primary",
+    "border-transparent",
+  ].join(" "),
   secondary: [
-    'bg-surface',
-    'text-primary',
-    'border',
-    'border-gray-300',
-    'hover:bg-gray-50',
-    'focus:ring-primary',
-  ].join(' '),
+    "bg-surface",
+    "text-primary",
+    "border",
+    "border-text-muted/40",
+    "hover:bg-surface/90",
+    "focus:ring-primary",
+  ].join(" "),
   ghost: [
-    'bg-transparent',
-    'text-primary',
-    'hover:bg-gray-100',
-    'focus:ring-primary',
-    'border-transparent',
-  ].join(' '),
+    "bg-transparent",
+    "text-primary",
+    "hover:bg-primary/10",
+    "focus:ring-primary",
+    "border-transparent",
+  ].join(" "),
 } as const;
 
 const BUTTON_SIZES = {
-  sm: 'px-3 py-1.5 text-sm rounded-sm',
-  md: 'px-4 py-2 text-base rounded-md',
-  lg: 'px-6 py-3 text-lg rounded-lg',
+  sm: "px-2 py-1 text-sm rounded-sm",
+  md: "px-3 py-2 text-base rounded-md",
+  lg: "px-4 py-3 text-lg rounded-lg",
 } as const;
 
 const BUTTON_BASE_STYLES = [
-  'inline-flex',
-  'items-center',
-  'justify-center',
-  'font-medium',
-  'transition-colors',
-  'focus:outline-none',
-  'focus:ring-2',
-  'focus:ring-offset-2',
-  'disabled:opacity-50',
-  'disabled:cursor-not-allowed',
-].join(' ');
+  "inline-flex",
+  "items-center",
+  "justify-center",
+  "font-medium",
+  "transition-colors",
+  "focus:outline-none",
+  "focus:ring-2",
+  "focus:ring-offset-2",
+  "disabled:opacity-50",
+  "disabled:cursor-not-allowed",
+].join(" ");
 
 // Type-safe variants and sizes
 export type ButtonVariant = keyof typeof BUTTON_VARIANTS;
@@ -78,7 +78,19 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
  * <Button type="submit">Submit Form</Button>
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', loading = false, size = 'md', className, disabled, type = 'button', children, ...props }, ref) => {
+  (
+    {
+      variant = "primary",
+      loading = false,
+      size = "md",
+      className,
+      disabled,
+      type = "button",
+      children,
+      ...props
+    },
+    ref
+  ) => {
     const combinedClassName = cn(
       BUTTON_BASE_STYLES,
       BUTTON_VARIANTS[variant],
@@ -124,4 +136,4 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   }
 );
 
-Button.displayName = 'Button';
+Button.displayName = "Button";
