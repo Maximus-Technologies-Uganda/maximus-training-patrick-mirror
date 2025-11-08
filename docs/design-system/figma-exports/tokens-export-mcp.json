@@ -1,0 +1,72 @@
+{
+  "tokens": [
+    {
+      "name": "Primary",
+      "value": "#0066CC",
+      "category": "Color",
+      "description": "Primary brand color"
+    },
+    {
+      "name": "Secondary",
+      "value": "#6B7280",
+      "category": "Color",
+      "description": "Secondary neutral color"
+    },
+    {
+      "name": "Success",
+      "value": "#10B981",
+      "category": "Color",
+      "description": "Success state color"
+    },
+    {
+      "name": "Warning",
+      "value": "#F59E0B",
+      "category": "Color",
+      "description": "Warning state color"
+    },
+    {
+      "name": "Error",
+      "value": "#EF4444",
+      "category": "Color",
+      "description": "Error state color"
+    },
+    {
+      "name": "Neutral",
+      "value": "#F3F4F6",
+      "category": "Color",
+      "description": "Neutral background color"
+    },
+    {
+      "name": "Base Unit",
+      "value": "8px",
+      "category": "Spacing",
+      "description": "Base spacing unit"
+    },
+    {
+      "name": "Font - Heading",
+      "value": "Inter",
+      "category": "Typography",
+      "description": "Heading font family"
+    },
+    {
+      "name": "Font - Body",
+      "value": "Inter",
+      "category": "Typography",
+      "description": "Body text font family"
+    },
+    {
+      "name": "Font - Mono",
+      "value": "IBM Plex Mono",
+      "category": "Typography",
+      "description": "Monospace font family"
+    },
+    {
+      "name": "Base Radius",
+      "value": "4px",
+      "category": "Radius",
+      "description": "Base border radius"
+    }
+  ],
+  "exportedAt": "2025-11-08T08:54:50.218Z",
+  "figmaFileId": "MGlfufUnqRLzy4wRwgA4r5"
+}
