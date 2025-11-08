@@ -314,7 +314,7 @@ function PostsPageClientInner({
           ) : (
             <p className="text-sm text-text-muted">
               You are browsing as a guest.{" "}
-              {/* @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06) */}
+              {/* @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2025-06-06) */}
               <Link href="/login" className="font-medium text-primary hover:underline">
                 Sign in
               </Link>{" "}
@@ -426,7 +426,7 @@ export default function PostsPageClient(props: PostsPageClientProps): React.Reac
   );
 
   return (
-    // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2024-12-06)
+    // @ts-expect-error React 18 + Next.js 16 JSX type conflict (expires: 2025-06-06)
     <SWRConfig value={swrValue}>
       <PostsPageClientInner {...props} />
     </SWRConfig>
