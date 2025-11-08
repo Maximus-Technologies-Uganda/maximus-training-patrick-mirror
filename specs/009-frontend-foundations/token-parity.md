@@ -111,7 +111,7 @@ theme: {
 - [ ] Component library updated with tokens
 - [ ] Exports generated (PNG/PDF)
 
-**Figma Link**: https://www.figma.com/design/MGlfufUnqRLzy4wRwgA4r5/Untitled
+**Figma Link**: https://www.figma.com/design/MGlfufUnqRLzy4wRwgA4r5/Week%209%20Tokens%20%26%20Primitives
 
 ---
 
@@ -229,7 +229,7 @@ Color Pairs (WCAG AA minimum: 4.5:1):
 - [spec.md](spec.md) - Design System specification
 - [plan.md](plan.md) - Implementation plan
 - [frontend-next/README.md](../../frontend-next/README.md) - Design System usage
-- [Figma Design File](https://www.figma.com/design/MGlfufUnqRLzy4wRwgA4r5/Untitled) - Design source of truth
+- [Figma Design File](https://www.figma.com/design/MGlfufUnqRLzy4wRwgA4r5/Week%209%20Tokens%20%26%20Primitives) - Design source of truth
 - [Token Exports](../../docs/design-system/figma-exports/) - Generated references
 
 ---
