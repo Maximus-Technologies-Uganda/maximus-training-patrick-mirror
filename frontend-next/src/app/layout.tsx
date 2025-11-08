@@ -19,12 +19,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  fontsOverride,
 }: Readonly<{
   children: React.ReactNode;
-  fontsOverride?: LoadedFonts;
 }>) {
-  const fonts = fontsOverride ?? loadFonts();
+  const fonts = loadFonts();
   const bodyClassName = composeBodyClassName(fonts);
 
   return (

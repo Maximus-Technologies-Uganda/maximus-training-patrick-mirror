@@ -6,10 +6,10 @@ const PAGE_SIZES = [5, 10, 20, 50];
 
 export default function PageSizeSelect({
   pageSize,
-  onChange,
+  onChangeAction,
 }: {
   pageSize: number;
-  onChange: (nextSize: number) => void;
+  onChangeAction: (nextSize: number) => void;
 }): React.ReactElement {
   return (
     <label className="text-sm text-gray-700">
@@ -18,7 +18,7 @@ export default function PageSizeSelect({
         aria-label="Page size"
         className="ml-2 rounded border border-gray-300 px-2 py-1"
         value={pageSize}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => onChangeAction(parseInt(e.target.value, 10))}
       >
         {PAGE_SIZES.map((n) => (
           <option key={n} value={n}>
@@ -29,5 +29,3 @@ export default function PageSizeSelect({
     </label>
   );
 }
-
-

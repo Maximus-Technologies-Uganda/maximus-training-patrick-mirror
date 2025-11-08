@@ -14,11 +14,23 @@
     "!src/**/*.int.test.tsx",
     "!src/**/*.a11y.test.tsx",
     "!src/**/*.ssr.test.tsx",
+    "components/**/*.tsx",
+    "!components/**/*.test.tsx",
+    "!components/**/*.spec.tsx",
     "playwright.config.ts",
     "app.d.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     ".next\\dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "tests", "types"]
+  "exclude": [
+    "node_modules",
+    "tests",
+    "types",
+    "**/*.int.test.tsx",
+    "**/*.test.tsx",
+    "**/*.spec.tsx",
+    "**/*.a11y.test.tsx",
+    "**/*.ssr.test.tsx"
+  ]
 }

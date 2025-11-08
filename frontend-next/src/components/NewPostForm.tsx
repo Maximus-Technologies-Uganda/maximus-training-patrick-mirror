@@ -23,7 +23,7 @@ export interface NewPostFormProps {
   pageSize: number;
   sort?: PostSort;
   query?: string;
-  onSuccess?: () => void;
+  onSuccessAction?: () => void;
   className?: string;
 }
 
@@ -31,7 +31,7 @@ export function NewPostForm({
   pageSize,
   sort = DEFAULT_POST_SORT,
   query = "",
-  onSuccess,
+  onSuccessAction,
   className,
 }: NewPostFormProps): React.ReactElement {
   const [values, setValues] = useState<FormValues>({ title: "", content: "" });
@@ -115,7 +115,7 @@ export function NewPostForm({
           resetForm();
           setSuccessMessage("Post created successfully");
           await mutatePostsPage1(pageSize, sort, query);
-          onSuccess?.();
+          onSuccessAction?.();
           return;
         }
 
@@ -135,7 +135,7 @@ export function NewPostForm({
         setIsSubmitting(false);
       }
     },
-    [values, pageSize, sort, query, resetForm, onSuccess]
+    [values, pageSize, sort, query, resetForm, onSuccessAction]
   );
 
   return (
@@ -186,11 +186,7 @@ export function NewPostForm({
           rows={4}
         />
         {fieldErrors.content ? (
-          <p
-            id="new-post-content-error"
-            role="alert"
-            className="text-sm text-error"
-          >
+          <p id="new-post-content-error" role="alert" className="text-sm text-error">
             {fieldErrors.content}
           </p>
         ) : null}

@@ -1,6 +1,6 @@
-import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
 import LoginPage from "./page";
 
 // Mock App Router hooks for component to mount without Next.js app router context
@@ -15,7 +15,6 @@ vi.mock("../../lib/auth/session", () => ({
 
 describe("LoginPage", () => {
   it("renders login form with correct fields", async () => {
-    // @ts-expect-error Test file type mismatch with React types (expires: 2025-12-08)
     render(<LoginPage />);
 
     // Check that the form fields are present

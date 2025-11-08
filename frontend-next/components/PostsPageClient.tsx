@@ -351,7 +351,7 @@ export default function PostsPageClient({
         </h1>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <PageSizeSelect pageSize={pageSize} onChange={onChangePageSize} />
+          <PageSizeSelect pageSize={pageSize} onChangeAction={onChangePageSize} />
           <label className="text-sm text-text">
             Sort by
             <select
@@ -372,7 +372,7 @@ export default function PostsPageClient({
               ))}
             </select>
           </label>
-          <SearchInput value={searchQuery} onChange={onChangeSearchQuery} />
+          <SearchInput value={searchQuery} onChangeAction={onChangeSearchQuery} />
         </div>
 
         <div
@@ -412,7 +412,7 @@ export default function PostsPageClient({
             pageSize={pageSize}
             sort={sort}
             query={searchQuery}
-            onSuccess={onCreateSuccess}
+            onSuccessAction={onCreateSuccess}
           />
         </div>
 

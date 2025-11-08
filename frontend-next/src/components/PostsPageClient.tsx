@@ -372,7 +372,7 @@ function PostsPageClientInner({
           pageSize={pageSize}
           sort={sort}
           query={searchQuery}
-          onSuccess={handleCreateSuccess}
+          onSuccessAction={handleCreateSuccess}
         />
       </Card>
 
