@@ -13,7 +13,7 @@ fix/e2e-test-failures
 └─ Ready for PR to: fix/resolve-ci-import-coverage-issues or main
 ```
 
-### Commits (4 total)
+### Commits (3 total)
 
 ```
 ✅ 055370ce - docs: add documentation index and project summary
