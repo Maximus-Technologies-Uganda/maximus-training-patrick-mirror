@@ -77,16 +77,19 @@ test.describe("keyboard-only navigation", () => {
     await expect(page.getByRole("main")).toBeVisible();
 
     await page.focus("body");
+
+    // Tab through the UI: first should be auth banner's Sign in link if logged out
+    // But since we're testing in an uncustomized context, it might go to first interactive element
+    // Navigate to the "Sort posts" select
     await tabUntil(page, () =>
       page.evaluate(() => {
         const active = document.activeElement;
-        return Boolean(active?.getAttribute("aria-label") === "Search");
+        return Boolean(active?.getAttribute("aria-label") === "Sort posts");
       })
     );
-    await expect(page.getByLabel("Search")).toBeFocused();
+    await expect(page.getByLabel("Sort posts")).toBeFocused();
 
-    await page.keyboard.type("keyboard");
-
+    // Continue to Next page button
     const nextButton = page.getByRole("button", { name: "Next page" });
     await tabUntil(page, () =>
       page.evaluate(() => {

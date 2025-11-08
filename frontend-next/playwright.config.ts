@@ -29,6 +29,8 @@ export default defineConfig({
     "**/contract.*.spec.ts",
     "**/idempotency.e2e.spec.ts",
     "**/tests/integration/**/*.spec.ts",
+    "**/openapi.validation.test.ts",
+    "**/request-context.test.ts",
   ],
   // Start servers for E2E/a11y tests
   // In CI we do NOT start the API server to avoid missing dev deps; Next.js BFF routes fall back to local stubs

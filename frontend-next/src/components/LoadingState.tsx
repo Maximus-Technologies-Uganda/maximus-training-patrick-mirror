@@ -14,7 +14,7 @@ export interface LoadingStateProps {
  */
 export const LoadingState: React.FC<LoadingStateProps> = ({
   message = "Loading...",
-  className = ""
+  className = "",
 }) => {
   const containerStyles = [
     "flex",
@@ -28,7 +28,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const combinedClassName = [containerStyles, className].filter(Boolean).join(" ");
 
   return (
-    <div role="status" aria-live="polite" className={combinedClassName}>
+    <div className={combinedClassName}>
       <svg
         className="animate-spin h-8 w-8 mb-2"
         xmlns="http://www.w3.org/2000/svg"

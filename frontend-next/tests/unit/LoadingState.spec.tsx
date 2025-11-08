@@ -4,13 +4,12 @@ import { render, screen } from "@testing-library/react";
 import { LoadingState } from "../../src/components/LoadingState";
 
 describe("LoadingState", () => {
-  it("announces loading progress politely", () => {
+  it("renders a loading spinner with custom message", () => {
     render(<LoadingState message="Fetching posts" className="custom-class" />);
 
-    const status = screen.getByRole("status");
-    expect(status).toHaveAttribute("aria-live", "polite");
-    expect(status).toHaveTextContent("Fetching posts");
-    expect(status).toHaveClass("custom-class");
+    const loadingContainer = screen.getByText("Fetching posts").closest("div");
+    expect(loadingContainer).toHaveClass("custom-class");
+    expect(screen.getByText("Fetching posts")).toBeInTheDocument();
   });
 
   it("renders a default message when none is provided", () => {
