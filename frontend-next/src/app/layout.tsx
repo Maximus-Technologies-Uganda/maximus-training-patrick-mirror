@@ -33,7 +33,8 @@ export default function RootLayout({
         ) : null}
         {/* @ts-expect-error React 18 type mismatch (local env) - DEV-XXX (expires: 2025-12-08) */}
         <Header />
-        {children}
+        {/* @ts-expect-error React 18 type mismatch (local env) - DEV-XXX (expires: 2025-12-08) */}
+        <main>{children}</main>
       </body>
     </html>
   );

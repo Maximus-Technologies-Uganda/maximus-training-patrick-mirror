@@ -10,6 +10,7 @@ import { LoadingState } from "./LoadingState";
 import { PaginationControls } from "./PaginationControls";
 import { Card } from "./Card";
 import NewPostForm from "./NewPostForm";
+import PostsList from "../../components/PostsList";
 import {
   DEFAULT_POST_SORT,
   POST_SORT_VALUES,
@@ -383,18 +384,11 @@ function PostsPageClientInner({
       ) : posts.length === 0 ? (
         <EmptyState title="No posts yet" message="There are currently no posts." />
       ) : (
-        <ul role="list" className="space-y-3">
-          {posts.map((post) => (
-            <li key={post.id}>
-              <Card>
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-lg font-semibold text-text">{post.title}</h2>
-                  <p className="text-sm text-text-muted">{post.content}</p>
-                </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <PostsList
+          items={posts}
+          currentUserId={session?.userId}
+          currentUserRole={session?.role as "owner" | "admin" | undefined}
+        />
       )}
 
       <PaginationControls
