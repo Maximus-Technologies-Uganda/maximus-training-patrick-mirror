@@ -86,7 +86,7 @@ pnpm exec playwright test  # Should see 8 passed
 | Fact               | Value           |
 | ------------------ | --------------- |
 | Tests Fixed        | 8/8             |
-| Files Changed      | 3 code + 5 docs |
+| Files Changed      | 3 code + 6 docs |
 | Breaking Changes   | 0               |
 | Type Errors        | 0               |
 | Performance Impact | None            |
