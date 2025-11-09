@@ -150,6 +150,16 @@ jobs:
         shell: bash
         continue-on-error: true
 
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
+        shell: bash
+        continue-on-error: true
+
+      - name: Run frontend tests with coverage
+        run: cd frontend && pnpm run test:coverage
+        shell: bash
+        continue-on-error: true
+
       - name: Generate review.md
         shell: bash
         run: |
@@ -179,6 +189,11 @@ jobs:
               echo "- Quote app: coverage generated"
             else
               echo "- Quote app: no coverage"
+            fi
+            if [ -d "frontend/coverage" ]; then
+              echo "- Frontend app: coverage generated"
+            else
+              echo "- Frontend app: no coverage"
             fi
             echo
             echo "## Commit Summary (last 10)"
@@ -220,6 +235,16 @@ jobs:
           path: |
             quote/coverage/coverage-final.json
             quote/coverage/lcov-report/index.html
+
+      - name: Upload frontend coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: |
+            frontend/coverage/coverage-summary.json
+            frontend/coverage/lcov.info
+            frontend/coverage/lcov-report/**
 
       - name: Upload review.md
         if: always()
