@@ -341,7 +341,7 @@ export default function PostsPageClient({
   );
 
   return (
-    // @ts-expect-error React 18 type mismatch (local env) - DEV-XXX (expires: 2025-12-08)
+    // @ts-expect-error React 18 JSX component type mismatch (expires: 2025-12-10)
     <SWRConfig value={swrValue}>
       <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
         <LiveRegion message={statusMessage} />
@@ -397,13 +397,12 @@ export default function PostsPageClient({
               Sign out
             </button>
           ) : (
-            // @ts-expect-error React 18 type mismatch with Next.js Link (local env) - DEV-XXX (expires: 2025-12-08)
-            <Link
+            <a
               className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-sm font-medium text-surface transition hover:bg-primary/90"
               href="/login"
             >
               Sign in
-            </Link>
+            </a>
           )}
         </div>
 

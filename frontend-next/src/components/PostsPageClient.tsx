@@ -315,10 +315,9 @@ function PostsPageClientInner({
           ) : (
             <p className="text-sm text-text-muted">
               You are browsing as a guest.{" "}
-              {/* @ts-expect-error React 18 type mismatch with Next.js Link (local env) - DEV-XXX (expires: 2025-12-08) */}
-              <Link href="/login" className="font-medium text-primary hover:underline">
+              <a href="/login" className="font-medium text-primary hover:underline">
                 Sign in
-              </Link>{" "}
+              </a>{" "}
               to publish posts.
             </p>
           )}
@@ -420,7 +419,7 @@ export default function PostsPageClient(props: PostsPageClientProps): React.Reac
   );
 
   return (
-    // @ts-expect-error React 18 type mismatch (local env) - DEV-XXX (expires: 2025-12-08)
+    // @ts-expect-error React 18 JSX component type mismatch (expires: 2025-12-10)
     <SWRConfig value={swrValue}>
       <PostsPageClientInner {...props} />
     </SWRConfig>

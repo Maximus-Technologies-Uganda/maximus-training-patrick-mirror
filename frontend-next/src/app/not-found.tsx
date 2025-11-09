@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 export default function NotFound(): React.ReactElement {
   return (
     <main style={{ padding: "2rem" }}>
@@ -9,8 +7,7 @@ export default function NotFound(): React.ReactElement {
       <p style={{ marginBottom: "1rem" }}>The page you are looking for does not exist.</p>
       <p>
         Go back to{" "}
-        {/* @ts-expect-error React 18 type mismatch with Next.js Link (local env) - DEV-XXX (expires: 2025-12-08) */}
-        <Link href="/posts">/posts</Link>.
+        <a href="/posts">/posts</a>.
       </p>
     </main>
   );
