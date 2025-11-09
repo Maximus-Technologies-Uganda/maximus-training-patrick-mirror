@@ -1,3 +1,5 @@
+import React from "react";
+
 import type { ReactElement } from "react";
 import Link from "next/link";
 

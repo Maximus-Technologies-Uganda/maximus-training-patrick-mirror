@@ -1,3 +1,5 @@
+import React from "react";
+
 import type { Metadata } from "next";
 import { validateFrontendEnvOnBoot } from "../config/env";
 import { loadFonts, type LoadedFonts } from "../lib/fonts";
