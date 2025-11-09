@@ -272,6 +272,7 @@ jobs:
           echo "pnpm version: $(pnpm -v)"
           npm run test:ci 2>&1 || {
             echo "Test execution failed. Checking environment..."
+            # Check for both 'vitest' and 'jest' binaries in case the test runner changes or is misconfigured.
             ls -la node_modules/.bin/ | grep -E 'vitest|jest' || true
             exit 1
           }
