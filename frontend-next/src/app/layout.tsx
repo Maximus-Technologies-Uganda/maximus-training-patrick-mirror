@@ -33,8 +33,7 @@ export default function RootLayout({
         {fonts.styles ? (
           <style data-font-offline dangerouslySetInnerHTML={{ __html: fonts.styles }} />
         ) : null}
-        {/* @ts-expect-error React Server Components type mismatch - https://github.com/vercel/next.js/issues/55849 (expires: 2025-12-31) */}
-        <Header />
+        {React.createElement(Header as any, null)}
         <main>{children}</main>
       </body>
     </html>
