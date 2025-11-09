@@ -539,9 +539,9 @@ jobs:
             out.end();
           "
           {
-            printf '\n## App Test Summary\n'
+            printf '\\n## App Test Summary\\n'
             cat "$TMP_SUMMARY"
-            printf '\n**Coverage Index:** see `review-artifacts/index.html`\n'
+            printf '\\n**Coverage Index:** see `review-artifacts/index.html`\\n'
           } >> review.md
           rm -f "$TMP_SUMMARY"
 

@@ -275,7 +275,7 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Coverage directory or coverage-summary.json not found" >&2
-            ls -la . | grep -E 'coverage|coverage-' || true
+            for item in coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
           fi
 
       - name: Upload frontend-next coverage artifact
@@ -497,7 +497,7 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Coverage directory or coverage-summary.json not found for ${{ matrix.workspace }}" >&2
-            ls -la . | grep -E 'coverage|coverage-' || true
+            for item in coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
           fi
 
       - name: Upload ${{ matrix.workspace }} coverage
@@ -545,12 +545,12 @@ jobs:
           npm config set fetch-retries 5 --location=project
           npm config set fetch-retry-mintimeout 20000 --location=project
           npm config set fetch-retry-maxtimeout 600000 --location=project
-          npm cache clean --force || true
+          corepack enable
+          corepack prepare pnpm@9.x --activate
           # Install root and workspace dependencies
-          npm ci || npm ci
-          # Ensure API has its dependencies
+          pnpm install --frozen-lockfile
+          # Ensure API has its dependencies (already installed above)
           cd api
-          npm ci || npm ci
 
       - name: Debug available api scripts
         run: |
@@ -575,7 +575,7 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Coverage directory or coverage-summary.json not found" >&2
-            ls -la . | grep -E 'coverage|coverage-' || true
+            for item in coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
           fi
 
       - name: Upload API coverage artifact
@@ -1138,13 +1138,17 @@ jobs:
           fi
 
           if [ "$has_week7" = true ] || [ "$has_week8" = true ]; then
-            echo "has_specs=true" >> "$GITHUB_OUTPUT"
-            echo "has_week7=$has_week7" >> "$GITHUB_OUTPUT"
-            echo "has_week8=$has_week8" >> "$GITHUB_OUTPUT"
+            {
+              echo "has_specs=true"
+              echo "has_week7=$has_week7"
+              echo "has_week8=$has_week8"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "has_specs=false" >> "$GITHUB_OUTPUT"
-            echo "has_week7=false" >> "$GITHUB_OUTPUT"
-            echo "has_week8=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "has_specs=false"
+              echo "has_week7=false"
+              echo "has_week8=false"
+            } >> "$GITHUB_OUTPUT"
             echo "No OpenAPI specs found; skipping Spectral linting."
           fi
       - uses: actions/setup-node@v4
@@ -1238,7 +1242,7 @@ jobs:
           ENDPOINT="${URL%/}/auth/login"
           COUNT="${REQUESTS:-20}"
           tmpfile=$(mktemp)
-          for i in $(seq 1 "$COUNT"); do
+          for _ in $(seq 1 "$COUNT"); do
             t=$(curl -s -o /dev/null -w '%{time_total}' -X POST "$ENDPOINT" \
                  -H 'Content-Type: application/json' \
                  --data "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}") || t="0"

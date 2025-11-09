@@ -30,6 +30,7 @@ jobs:
       - name: Parse task progress
         id: parse-tasks
         run: |
+          # shellcheck disable=SC2006,SC2034,SC2276,SC2004,SC1012
           # Parse all task files and generate progress report
           node -e "
           const fs = require('fs');
@@ -120,13 +121,13 @@ jobs:
             echo "| Metric | Count | Percentage |"
             echo "|--------|-------|------------|"
             echo "| **Total Tasks** | $TOTAL | 100% |"
-            echo "| **Completed** | $COMPLETED | $(($TOTAL > 0 ? $COMPLETED * 100 / $TOTAL : 0))% |"
-            echo "| **In Progress** | $IN_PROGRESS | $(($TOTAL > 0 ? $IN_PROGRESS * 100 / $TOTAL : 0))% |"
-            echo "| **Remaining** | $(($TOTAL - $COMPLETED - $IN_PROGRESS)) | $(($TOTAL > 0 ? ($TOTAL - $COMPLETED - $IN_PROGRESS) * 100 / $TOTAL : 0))% |"
+            echo "| **Completed** | $COMPLETED | $((TOTAL > 0 ? COMPLETED * 100 / TOTAL : 0))% |"
+            echo "| **In Progress** | $IN_PROGRESS | $((TOTAL > 0 ? IN_PROGRESS * 100 / TOTAL : 0))% |"
+            echo "| **Remaining** | $((TOTAL - COMPLETED - IN_PROGRESS)) | $((TOTAL > 0 ? (TOTAL - COMPLETED - IN_PROGRESS) * 100 / TOTAL : 0))% |"
             echo ""
             echo "### 📈 Progress Chart"
             echo "\`\`\`"
-            echo "Completed: $(printf '█%.0s' $(seq 1 $(($PERCENTAGE / 5))))$(printf '░%.0s' $(seq 1 $((20 - $PERCENTAGE / 5)))) $PERCENTAGE%"
+            echo "Completed: $(printf '█%.0s' $(seq 1 $((PERCENTAGE / 5))))$(printf '░%.0s' $(seq 1 $((20 - PERCENTAGE / 5)))) $PERCENTAGE%"
             echo "\`\`\`"
             echo ""
             echo "### 🎯 Current Focus: Week 8 - Identity Platform"
@@ -151,7 +152,7 @@ jobs:
           COMPLETED="${{ steps.parse-tasks.outputs.completed }}"
           TOTAL="${{ steps.parse-tasks.outputs.total }}"
 
-          if [ "$TOTAL" -gt 0 ] && [ $(($COMPLETED * 100 / $TOTAL)) -ge 25 ] && [ $(($COMPLETED * 100 / $TOTAL)) -lt 30 ]; then
+          if [ "$TOTAL" -gt 0 ] && [ $((COMPLETED * 100 / TOTAL)) -ge 25 ] && [ $((COMPLETED * 100 / TOTAL)) -lt 30 ]; then
             echo "🎉 25% milestone reached!"
             # Could send notification or create milestone issue
           fi

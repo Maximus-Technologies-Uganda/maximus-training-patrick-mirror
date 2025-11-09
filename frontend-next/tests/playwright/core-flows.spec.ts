@@ -121,13 +121,28 @@ test.describe("Posts initial load", () => {
     await expect(sortSelect).toBeVisible();
     await expect(sortSelect).toHaveValue("date-desc");
 
-    // Change sort order and wait for both URL and posts to update
+    // Wait for initial posts to be visible before changing sort
+    const postItems = page.locator("section[aria-label='Posts list'] li");
+    await expect(postItems.first()).toBeVisible({ timeout: 5000 });
+
+    // Change sort order and wait for API request to complete
+    // SWR will trigger a new fetch when the key changes due to sort parameter change
+    const apiResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/posts") && response.url().includes("sort=title-asc")
+    );
+
     await sortSelect.selectOption("title-asc");
+
+    // Wait for the API response with the new sort parameter
+    await apiResponsePromise;
+
+    // Verify URL and select value updated
     await page.waitForURL((url) => url.searchParams.get("sort") === "title-asc");
     await expect(sortSelect).toHaveValue("title-asc");
 
     // Wait for posts list items to be rendered with new sort order
-    const postItems = page.locator("section[aria-label='Posts list'] li");
+    // Use a longer timeout since we need to wait for the response and re-render
     await expect(postItems.first()).toBeVisible({ timeout: 5000 });
   });
 
