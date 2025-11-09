@@ -61,14 +61,14 @@ steps:
       - -ceu
       - |
         set -euxo pipefail
-        ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${_PROD_API_URL},ID_TOKEN_AUDIENCE=${_PROD_API_URL}"
+        ENVVARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${_PROD_API_URL},ID_TOKEN_AUDIENCE=${_PROD_API_URL}"
         DEPLOY_ARGS=(run deploy "${_SERVICE_NAME}" \
           --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}" \
           --project="${PROJECT_ID}" \
           --region="${_REGION}" \
           --platform=managed \
           --port=3000 \
-          --set-env-vars="${ENV_VARS}" \
+          --set-env-vars="$ENVVARS" \
           --memory=512Mi \
           --cpu=1 \
           --min-instances=0 \
