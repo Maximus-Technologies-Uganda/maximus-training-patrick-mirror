@@ -112,17 +112,23 @@ test.describe("Posts initial load", () => {
   });
 
   test("user can change sort order via dropdown", async ({ page }) => {
+    // Stub API before navigation to ensure posts are mocked
+    await stubPostsApi(page);
+
     await page.goto("/posts");
 
     const sortSelect = page.locator('select[aria-label="Sort posts"]');
     await expect(sortSelect).toBeVisible();
     await expect(sortSelect).toHaveValue("date-desc");
 
+    // Change sort order and wait for both URL and posts to update
     await sortSelect.selectOption("title-asc");
     await page.waitForURL((url) => url.searchParams.get("sort") === "title-asc");
     await expect(sortSelect).toHaveValue("title-asc");
 
-    await expect(page.locator("section[aria-label='Posts list'] li").first()).toBeVisible();
+    // Wait for posts list items to be rendered with new sort order
+    const postItems = page.locator("section[aria-label='Posts list'] li");
+    await expect(postItems.first()).toBeVisible({ timeout: 5000 });
   });
 
   test("supports pagination and URL state", async ({ page }) => {
