@@ -1,5 +1,6 @@
 ## 2025-11-09
 
+- feat(deploy): successfully deployed maximus-training-api and maximus-training-frontend to Google Cloud Run (africa-south1) after resolving gcloud substitution validation, TypeScript type mismatches, and Next.js Link component incompatibilities. Migrated environment variable injection to external bash script to bypass gcloud YAML parsing. Replaced Next.js Link with HTML anchors and used React.createElement for async/SWR components to resolve React 18 type conflicts. Both services now running at africa-south1.run.app.
 - fix(gate): require Spectral lint artifacts in the quality gate and export the default dimension list for tests so missing OpenAPI reports fail the gate instead of silently passing.
 
 ## 2025-11-08
