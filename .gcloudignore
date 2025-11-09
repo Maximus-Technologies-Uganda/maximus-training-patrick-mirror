@@ -1,0 +1,11 @@
+# Ignore frontend-next specific cloudbuild configuration
+frontend-next/cloudbuild.yaml
+
+# Standard ignores
+.git
+.gitignore
+node_modules
+dist
+build
+.next
+.env.local
