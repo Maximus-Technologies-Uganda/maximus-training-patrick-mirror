@@ -341,7 +341,7 @@ export default function PostsPageClient({
   );
 
   return (
-    // @ts-expect-error React 18 JSX component type mismatch - temporary
+    // @ts-expect-error React 18 JSX component type mismatch - https://github.com/vercel/swr/issues/2407 (expires: 2025-12-31)
     <SWRConfig value={swrValue}>
       <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
         <LiveRegion message={statusMessage} />
