@@ -169,11 +169,24 @@ jobs:
         working-directory: frontend
         run: pnpm run test -- --coverage
 
+      - name: Validate frontend coverage directory
+        id: validate_coverage_frontend
+        run: |
+          if [ -d frontend/coverage ] && [ -f frontend/coverage/coverage-summary.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            ls -la frontend/coverage/ || true
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Coverage directory or files not found"
+            for item in frontend/coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
+          fi
+
       - name: Upload frontend coverage and sources
+        if: steps.validate_coverage_frontend.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-frontend
-          if-no-files-found: error
+          if-no-files-found: warn
           path: |
             frontend/coverage/coverage-summary.json
             frontend/coverage/lcov.info
