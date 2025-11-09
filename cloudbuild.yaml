@@ -141,21 +141,17 @@ steps:
       - -ceu
       - |
         set -euxo pipefail
-        API_URL_VAL=$(cat api_url.txt)
-        gcloud run deploy "${_FRONTEND_SERVICE_NAME}" \
-          --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
-          --project="${PROJECT_ID}" \
-          --region="${_REGION}" \
-          --platform=managed \
-          --port=8080 \
-          --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$(printf '%s' "$API_URL_VAL"),ID_TOKEN_AUDIENCE=$(printf '%s' "$API_URL_VAL")" \
-          --memory="${_FRONTEND_MEMORY}" \
-          --cpu="${_FRONTEND_CPU}" \
-          --min-instances="${_FRONTEND_MIN_INSTANCES}" \
-          --max-instances="${_FRONTEND_MAX_INSTANCES}" \
-          --timeout="${_FRONTEND_TIMEOUT}" \
-          --ingress=all \
-          $([ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ] && echo --allow-unauthenticated || true)
+        bash scripts/deploy-frontend.sh \
+          "${_FRONTEND_SERVICE_NAME}" \
+          "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
+          "${PROJECT_ID}" \
+          "${_REGION}" \
+          "${_FRONTEND_MEMORY}" \
+          "${_FRONTEND_CPU}" \
+          "${_FRONTEND_MIN_INSTANCES}" \
+          "${_FRONTEND_MAX_INSTANCES}" \
+          "${_FRONTEND_TIMEOUT}" \
+          "$([ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ] && echo --allow-unauthenticated || true)"
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: Grant Frontend Invoker on API
