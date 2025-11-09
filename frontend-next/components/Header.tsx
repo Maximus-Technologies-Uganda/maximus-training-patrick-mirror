@@ -42,7 +42,7 @@ export default async function Header(): Promise<React.ReactElement> {
   return (
     <header className="border-b border-gray-200 bg-gray-50">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        {/* @ts-expect-error React 18 JSX component type mismatch - expires: 2025-12-09 */}
+        {/* @ts-expect-error React 18 JSX component type mismatch - TEMP */}
         <Link href="/posts" className="text-lg font-semibold text-gray-900">
           Posts App
         </Link>
