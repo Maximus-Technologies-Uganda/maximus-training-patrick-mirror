@@ -5,7 +5,6 @@ substitutions:
   _PROD_API_URL: https://maximus-training-api-673209018655.africa-south1.run.app
   _SERVICE_ACCOUNT: ""
   _ALLOW_UNAUTH: "false"
-  _IAP_AUDIENCE: ""
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -63,11 +62,6 @@ steps:
       - |
         set -euxo pipefail
         ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${_PROD_API_URL},ID_TOKEN_AUDIENCE=${_PROD_API_URL}"
-        if [ -n "${_IAP_AUDIENCE:-}" ]; then
-          ENV_VARS+=",IAP_AUDIENCE=${_IAP_AUDIENCE}"
-        elif [ -n "${IAP_AUDIENCE:-}" ]; then
-          ENV_VARS+=",IAP_AUDIENCE=${IAP_AUDIENCE}"
-        fi
         DEPLOY_ARGS=(run deploy "${_SERVICE_NAME}" \
           --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}" \
           --project="${PROJECT_ID}" \
