@@ -6,7 +6,16 @@ const { spawnSync } = require('child_process');
 const CLI = path.resolve(__dirname, '../src/index.js');
 
 function run(args) {
-  return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8', cwd: path.resolve(__dirname, '..'), windowsHide: true });
+  // Clear JEST_WORKER_ID to ensure the subprocess actually exits with the proper code
+  // (not just return from exitWithError)
+  const env = { ...process.env };
+  delete env.JEST_WORKER_ID;
+  return spawnSync(process.execPath, [CLI, ...args], {
+    encoding: 'utf8',
+    cwd: path.resolve(__dirname, '..'),
+    env,
+    windowsHide: true,
+  });
 }
 
 describe('smoke', () => {
