@@ -136,15 +136,15 @@ steps:
       - -c
       - |
         set -euo pipefail
-        API_URL=$$(cat api_url.txt)
-        ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$${API_URL},ID_TOKEN_AUDIENCE=$${API_URL}"
+        API_URL=$(cat api_url.txt)
+        ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${API_URL},ID_TOKEN_AUDIENCE=${API_URL}"
         gcloud run deploy "${_FRONTEND_SERVICE_NAME}" \
           --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
           --project="${PROJECT_ID}" \
           --region="${_REGION}" \
           --platform=managed \
           --port=8080 \
-          --set-env-vars="$${ENV_VARS}" \
+          --set-env-vars="${ENV_VARS}" \
           --memory="512Mi" \
           --cpu="1" \
           --min-instances="1" \
