@@ -56,7 +56,7 @@ export default async function Header(): Promise<React.ReactElement> {
             </>
           ) : (
             // Render a link with role=button to satisfy tests expecting a button
-            // @ts-expect-error React 18 type mismatch with Next.js Link (local env) - DEV-XXX (expires: 2025-12-08)
+            // @ts-expect-error React 18 type mismatch with Next.js Link (local env) - expires after 2025-12-08
             <Link href="/login" role="button" className="rounded bg-blue-600 px-3 py-1 text-white">
               Login
             </Link>
