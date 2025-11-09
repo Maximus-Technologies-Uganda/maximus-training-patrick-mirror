@@ -419,9 +419,6 @@ export default function PostsPageClient(props: PostsPageClientProps): React.Reac
   );
 
   return (
-    // @ts-expect-error React 18 JSX component type mismatch - https://github.com/vercel/swr/issues/2407 (expires: 2025-12-31)
-    <SWRConfig value={swrValue}>
-      <PostsPageClientInner {...props} />
-    </SWRConfig>
+    React.createElement(SWRConfig as any, { value: swrValue }, <PostsPageClientInner {...props} />)
   );
 }
