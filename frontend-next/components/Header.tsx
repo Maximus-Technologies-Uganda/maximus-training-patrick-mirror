@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import LogoutButton from "./LogoutButton";
 
@@ -42,10 +41,9 @@ export default async function Header(): Promise<React.ReactElement> {
   return (
     <header className="border-b border-gray-200 bg-gray-50">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        {/* @ts-expect-error React 18 JSX component type mismatch - TEMP */}
-        <Link href="/posts" className="text-lg font-semibold text-gray-900">
+        <a href="/posts" className="text-lg font-semibold text-gray-900">
           Posts App
-        </Link>
+        </a>
         <div className="flex items-center gap-3">
           {isSignedIn ? (
             <>
@@ -56,10 +54,9 @@ export default async function Header(): Promise<React.ReactElement> {
             </>
           ) : (
             // Render a link with role=button to satisfy tests expecting a button
-            // @ts-expect-error React 18 type mismatch with Next.js Link (local env) - expires after 2025-12-08
-            <Link href="/login" role="button" className="rounded bg-blue-600 px-3 py-1 text-white">
+            <a href="/login" role="button" className="rounded bg-blue-600 px-3 py-1 text-white">
               Login
-            </Link>
+            </a>
           )}
         </div>
       </nav>
