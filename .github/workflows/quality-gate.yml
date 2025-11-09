@@ -260,10 +260,22 @@ jobs:
           # Ensure frontend-next has its dependencies
           cd frontend-next
           pnpm install --ignore-scripts --frozen-lockfile=false
+          pnpm ls
 
       - name: Run frontend-next tests with coverage
         working-directory: frontend-next
-        run: npm run test:ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Node version: $(node -v)"
+          echo "npm version: $(npm -v)"
+          echo "pnpm version: $(pnpm -v)"
+          npm run test:ci 2>&1 || {
+            echo "Test execution failed. Checking environment..."
+            # Check for both 'vitest' and 'jest' binaries in case the test runner changes or is misconfigured.
+            ls -la node_modules/.bin/ | grep -E 'vitest|jest' || true
+            exit 1
+          }
 
       - name: Validate coverage directory
         id: validate_coverage_frontend_next

@@ -32,7 +32,7 @@ beforeAll(() => {
   );
   try {
     execSync(`"${spectralBin}" lint "${specPath}"`, { stdio: 'inherit' });
-  } catch (_err) {
+  } catch {
     // Fallback to npx if local binary missing
     execSync(`npx @stoplight/spectral-cli@6.11.0 lint "${specPath}"`, { stdio: 'inherit' });
   }
