@@ -6,7 +6,7 @@ const os = require('os');
 let betterSqlite3Available = true;
 try {
   require.resolve('better-sqlite3');
-} catch (_e) {
+} catch {
   betterSqlite3Available = false;
 }
 
