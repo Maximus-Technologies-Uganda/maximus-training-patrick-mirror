@@ -172,12 +172,12 @@ jobs:
       - name: Validate frontend coverage directory
         id: validate_coverage_frontend
         run: |
-          if [ -d frontend/coverage ] && [ -f frontend/coverage/coverage-summary.json ]; then
+          if [ -d frontend/coverage ] && [ -f frontend/coverage/coverage-summary.json ] && [ -f frontend/coverage/lcov.info ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             ls -la frontend/coverage/ || true
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Coverage directory or files not found"
+            echo "⚠️ Coverage directory or required files not found"
             for item in frontend/coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
           fi
 
