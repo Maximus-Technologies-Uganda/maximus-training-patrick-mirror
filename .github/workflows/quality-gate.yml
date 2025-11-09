@@ -390,6 +390,7 @@ jobs:
           name: coverage-frontend
           path: |
             frontend/coverage/**
+          if-no-files-found: warn
           retention-days: 21
 
       - name: Read coverage summary
