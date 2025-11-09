@@ -1,3 +1,7 @@
+## 2025-11-08
+
+- fix: point quality gate a11y artifact lookup back to `a11y/report.json` so existing accessibility reports register for gate evaluation.
+
 ## 2025-11-05
 
 - fix: point quality gate Spectral artifact lookup to CI-generated path to keep gate green when Spectral passes.

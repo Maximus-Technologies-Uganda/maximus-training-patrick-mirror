@@ -32,7 +32,7 @@ const REPO_ROOT = process.cwd();
 const COVERAGE_FILE = path.join(REPO_ROOT, 'coverage', 'coverage-summary.json');
 const TEST_SUMMARY_FILE = path.join(REPO_ROOT, 'test-results', 'summary.json');
 const TYPECHECK_FILE = path.join(REPO_ROOT, 'typecheck', 'results.json');
-const A11Y_FILE = path.join(REPO_ROOT, 'a11y', 'results.json');
+const A11Y_FILE = path.join(REPO_ROOT, 'a11y', 'report.json');
 const CONTRACT_FILE = path.join(REPO_ROOT, 'contract', 'report.json');
 // Spectral reports are generated under specs/008-identity-platform/contracts in CI.
 const SPECTRAL_FILE = path.join(
