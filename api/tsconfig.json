@@ -12,10 +12,10 @@
     "outDir": "dist",
     "rootDir": "src",
     "baseUrl": ".",
+    "types": ["node"],
     "paths": {
       "#tsApp": ["src/app.ts"]
-    },
-    "types": []
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "tests"]
