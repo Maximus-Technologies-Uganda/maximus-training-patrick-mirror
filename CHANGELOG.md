@@ -1,3 +1,7 @@
+## 2025-11-09
+
+- fix(gate): require Spectral lint artifacts in the quality gate and export the default dimension list for tests so missing OpenAPI reports fail the gate instead of silently passing.
+
 ## 2025-11-08
 
 - fix: point quality gate a11y artifact lookup back to `a11y/report.json` so existing accessibility reports register for gate evaluation.

@@ -102,6 +102,7 @@ const DEFAULT_REQUIRED_DIMENSIONS = [
   'typecheck',
   'a11y',
   'contract',
+  'spectral',
   'security',
   'governance',
 ];
@@ -767,6 +768,7 @@ module.exports = {
   API_COVERAGE_THRESHOLDS,
   FRONTEND_COVERAGE_THRESHOLDS,
   COVERAGE_THRESHOLDS,
+  DEFAULT_REQUIRED_DIMENSIONS,
 };
 
 if (require.main === module) {
