@@ -5,6 +5,7 @@ const {
   evaluateCoverage,
   API_COVERAGE_THRESHOLDS,
   FRONTEND_COVERAGE_THRESHOLDS,
+  DEFAULT_REQUIRED_DIMENSIONS,
 } = require('../aggregate-results');
 
 /**
@@ -281,5 +282,13 @@ describe('Coverage Helpers', () => {
       expect(result.reason).toContain('API coverage data invalid');
       expect(result.reason).toContain('metrics.branches.total must be a non-negative number');
     });
+  });
+});
+
+describe('Default required dimensions', () => {
+  it('includes spectral so missing reports fail the gate', () => {
+    expect(DEFAULT_REQUIRED_DIMENSIONS).toEqual(
+      expect.arrayContaining(['spectral']),
+    );
   });
 });
