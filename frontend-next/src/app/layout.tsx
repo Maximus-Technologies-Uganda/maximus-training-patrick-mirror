@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     "A modern platform for creating and sharing posts. Sign in to start publishing your content.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
