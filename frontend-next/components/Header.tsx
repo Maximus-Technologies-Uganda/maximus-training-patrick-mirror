@@ -39,22 +39,30 @@ export default async function Header(): Promise<React.ReactElement> {
   const isSignedIn = Boolean(username ?? decoded?.userId?.trim());
 
   return (
-    <header className="border-b border-gray-200 bg-gray-50">
+    <header className="border-b-2 border-primary/20 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50">
       <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <a href="/posts" className="text-lg font-semibold text-gray-900">
+        <a
+          href="/posts"
+          className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all"
+        >
           Posts App
         </a>
         <div className="flex items-center gap-3">
           {isSignedIn ? (
             <>
-              <span className="text-sm text-gray-800">
-                Signed in{username ? ` as ${username}` : ""}
+              <span className="text-sm font-medium text-gray-700">
+                Signed in{username ? ` as ` : ""}
+                {username && <span className="font-semibold text-purple-600">{username}</span>}
               </span>
               <LogoutButton />
             </>
           ) : (
             // Render a link with role=button to satisfy tests expecting a button
-            <a href="/login" role="button" className="rounded bg-blue-600 px-3 py-1 text-white">
+            <a
+              href="/login"
+              role="button"
+              className="rounded-md bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-1.5 text-white font-medium shadow-md hover:from-blue-700 hover:to-purple-700 transition-all hover:shadow-lg"
+            >
               Login
             </a>
           )}

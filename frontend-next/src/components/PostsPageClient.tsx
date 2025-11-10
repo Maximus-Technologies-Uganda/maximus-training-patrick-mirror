@@ -305,16 +305,20 @@ function PostsPageClientInner({
         {errorAnnouncement}
       </div>
       {/* Auth banner */}
-      <div className="flex flex-col gap-2 items-start justify-between rounded-md border border-text-muted/20 bg-surface p-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2 items-start justify-between rounded-lg border-2 border-purple-200 bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:flex-row sm:items-center shadow-md">
         <div>
           {session ? (
-            <p className="text-sm text-text-muted">
-              Signed in as <span className="font-semibold">{session.name ?? session.userId}</span>
+            <p className="text-sm text-gray-700">
+              Signed in as{" "}
+              <span className="font-bold text-purple-600">{session.name ?? session.userId}</span>
             </p>
           ) : (
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-gray-700">
               You are browsing as a guest.{" "}
-              <a href="/login" className="font-medium text-primary hover:underline">
+              <a
+                href="/login"
+                className="font-semibold text-purple-600 hover:text-purple-700 hover:underline transition-colors"
+              >
                 Sign in
               </a>{" "}
               to publish posts.
@@ -324,7 +328,7 @@ function PostsPageClientInner({
         {session ? (
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md border border-text-muted/40 px-2 py-1 text-sm font-medium text-text transition hover:bg-primary/10 whitespace-nowrap"
+            className="inline-flex items-center justify-center rounded-lg border-2 border-purple-300 bg-white px-3 py-1.5 text-sm font-medium text-purple-700 transition-all hover:bg-purple-50 hover:border-purple-400 whitespace-nowrap focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 shadow-sm hover:shadow-md"
             onClick={signOut}
           >
             Sign out
@@ -332,8 +336,10 @@ function PostsPageClientInner({
         ) : null}
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-text">Posts</h1>
-        <label className="text-sm text-text">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Posts
+        </h1>
+        <label className="text-sm font-medium text-gray-700">
           Sort by
           <select
             value={sort}
@@ -344,7 +350,7 @@ function PostsPageClientInner({
               }
             }}
             aria-label="Sort posts"
-            className="ml-1 rounded-md border border-text-muted/40 px-2 py-1 text-sm text-text"
+            className="ml-2 rounded-lg border-2 border-purple-200 px-3 py-1.5 text-sm text-gray-900 focus:border-purple-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 focus-visible:ring-offset-1 transition-all duration-200 bg-white hover:border-purple-300"
           >
             {POST_SORT_VALUES.map((option) => (
               <option key={option} value={option}>
@@ -355,38 +361,74 @@ function PostsPageClientInner({
         </label>
       </div>
 
-      <Card
-        header={
-          <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold text-text">Create a new post</h2>
-            <p className="text-sm text-text-muted">
-              {session
-                ? `Signed in as ${session.name ?? session.userId}`
-                : "You are browsing as a guest. Sign in to publish posts."}
-            </p>
-          </div>
-        }
-      >
-        <NewPostForm
-          pageSize={pageSize}
-          sort={sort}
-          query={searchQuery}
-          onSuccessAction={handleCreateSuccess}
-        />
-      </Card>
-
       {posts.length === 0 && !resolvedList && (isLoading || isValidating) ? (
         <LoadingState message="Loading posts…" />
       ) : error && posts.length === 0 ? (
         <ErrorState title="Error loading posts" message={errorMessage} onRetry={handleRetry} />
       ) : posts.length === 0 ? (
-        <EmptyState title="No posts yet" message="There are currently no posts." />
-      ) : (
-        <PostsList
-          items={posts}
-          currentUserId={session?.userId}
-          currentUserRole={session?.role as "owner" | "admin" | undefined}
+        <EmptyState
+          title="No posts yet"
+          message={
+            session?.userId
+              ? "Get started by creating your first post! Use the form below to share your thoughts with the community."
+              : "There are currently no posts. Sign in to create and share your first post."
+          }
         />
+      ) : null}
+
+      {posts.length === 0 && (
+        <Card
+          header={
+            <div className="flex flex-col gap-1">
+              <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Create a new post
+              </h2>
+              <p className="text-sm text-gray-600">
+                {session
+                  ? `Signed in as ${session.name ?? session.userId}`
+                  : "You are browsing as a guest. Sign in to publish posts."}
+              </p>
+            </div>
+          }
+        >
+          <NewPostForm
+            pageSize={pageSize}
+            sort={sort}
+            query={searchQuery}
+            onSuccessAction={handleCreateSuccess}
+          />
+        </Card>
+      )}
+
+      {posts.length > 0 && (
+        <>
+          <Card
+            header={
+              <div className="flex flex-col gap-1">
+                <h2 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Create a new post
+                </h2>
+                <p className="text-sm text-gray-600">
+                  {session
+                    ? `Signed in as ${session.name ?? session.userId}`
+                    : "You are browsing as a guest. Sign in to publish posts."}
+                </p>
+              </div>
+            }
+          >
+            <NewPostForm
+              pageSize={pageSize}
+              sort={sort}
+              query={searchQuery}
+              onSuccessAction={handleCreateSuccess}
+            />
+          </Card>
+          <PostsList
+            items={posts}
+            currentUserId={session?.userId}
+            currentUserRole={session?.role as "owner" | "admin" | undefined}
+          />
+        </>
       )}
 
       <PaginationControls
