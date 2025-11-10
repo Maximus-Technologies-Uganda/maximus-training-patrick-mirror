@@ -81,7 +81,7 @@ describe("NewPostForm", () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/failed to create post/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/server error/i);
     });
   });
 
