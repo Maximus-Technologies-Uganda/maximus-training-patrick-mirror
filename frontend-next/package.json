@@ -14,7 +14,7 @@
     "test": "vitest",
     "test:ci": "vitest run --coverage",
     "test:coverage:verify": "vitest run --coverage && node scripts/verify-coverage.mjs",
-    "test:contract": "vitest run --coverage tests/openapi.validation.test.ts",
+    "test:contract": "vitest run --coverage --coverage.thresholds.lines=0 --coverage.thresholds.branches=0 --coverage.thresholds.functions=0 --coverage.thresholds.statements=0 tests/openapi.validation.test.ts",
     "test:e2e": "node ./scripts/run-playwright.mjs",
     "test:performance": "playwright test tests/playwright/performance.spec.ts"
   },
