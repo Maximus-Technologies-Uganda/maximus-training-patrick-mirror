@@ -27,6 +27,7 @@ export default async function RootLayout({
 }>) {
   const fonts = loadFonts();
   const bodyClassName = composeBodyClassName(fonts);
+  const headerElement = await Header();
 
   return (
     <html lang="en">
@@ -34,7 +35,7 @@ export default async function RootLayout({
         {fonts.styles ? (
           <style data-font-offline dangerouslySetInnerHTML={{ __html: fonts.styles }} />
         ) : null}
-        <Header />
+        {headerElement as React.ReactNode}
         <main>{children}</main>
       </body>
     </html>
