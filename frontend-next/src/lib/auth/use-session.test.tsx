@@ -1,5 +1,9 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// Unmock use-session so we can test the actual implementation
+vi.unmock("./use-session");
+
 import { useSession } from "./use-session";
 import * as sessionModule from "./session";
 import type { StoredSession } from "./session";
@@ -9,7 +13,7 @@ vi.mock("./session", () => ({
   readSession: vi.fn(),
   writeSession: vi.fn(),
   clearSession: vi.fn(),
-  subscribeToSessionChanges: vi.fn(),
+  subscribeToSessionChanges: vi.fn(() => vi.fn()), // Should return an unsubscribe function
 }));
 
 describe("useSession", () => {
@@ -18,6 +22,8 @@ describe("useSession", () => {
     if (typeof window !== "undefined") {
       window.localStorage.clear();
     }
+    // Reset subscribeToSessionChanges mock to return an unsubscribe function
+    vi.mocked(sessionModule.subscribeToSessionChanges).mockReturnValue(vi.fn());
   });
 
   it("initializes with session from localStorage", () => {

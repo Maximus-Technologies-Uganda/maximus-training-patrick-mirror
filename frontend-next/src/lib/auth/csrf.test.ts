@@ -6,6 +6,7 @@ describe("getCsrfTokenFromCookie", () => {
     // Reset document.cookie before each test
     Object.defineProperty(document, "cookie", {
       writable: true,
+      configurable: true,
       value: "",
     });
   });
@@ -57,6 +58,7 @@ describe("withCsrf", () => {
   beforeEach(() => {
     Object.defineProperty(document, "cookie", {
       writable: true,
+      configurable: true,
       value: "",
     });
   });
