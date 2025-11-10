@@ -152,6 +152,7 @@ export default defineConfig({
       "tests/observability.spec.ts",
       "tests/a11y.keyboard.spec.ts",
       "tests/cookie.samesite.spec.ts",
+      "tests/deployed-app-validation.spec.ts", // Playwright test, not Vitest
     ],
     coverage: {
       provider: "v8",
