@@ -5,7 +5,7 @@ import { validateFrontendEnvOnBoot } from "../config/env";
 import { loadFonts, type LoadedFonts } from "../lib/fonts";
 import "./globals.css";
 import "../styles/tokens.css";
-import Header from "../../components/Header";
+import Header from "../components/Header";
 
 validateFrontendEnvOnBoot();
 
@@ -20,14 +20,13 @@ export const metadata: Metadata = {
     "A modern platform for creating and sharing posts. Sign in to start publishing your content.",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const fonts = loadFonts();
   const bodyClassName = composeBodyClassName(fonts);
-  const headerElement = await Header();
 
   return (
     <html lang="en">
@@ -35,7 +34,7 @@ export default async function RootLayout({
         {fonts.styles ? (
           <style data-font-offline dangerouslySetInnerHTML={{ __html: fonts.styles }} />
         ) : null}
-        {headerElement as React.ReactNode}
+        <Header />
         <main>{children}</main>
       </body>
     </html>

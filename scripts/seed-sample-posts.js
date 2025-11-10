@@ -235,7 +235,7 @@ async function seedPosts() {
   cookieJar = '';
 
   for (const post of samplePosts) {
-    const result = await createPost(post, 'admin', 'admin');
+    const result = await createPost(post, 'admin');
     if (result) {
       successCount++;
     } else {

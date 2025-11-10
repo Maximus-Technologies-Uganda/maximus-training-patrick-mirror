@@ -96,33 +96,56 @@ export function useSession(): UseSessionResult {
 
     // Sync with server on mount
     setIsLoading(true);
-    syncSessionWithServer().then((synced) => {
-      if (mounted) {
-        setSessionState(synced);
-        setIsLoading(false);
-      }
-    });
+    syncSessionWithServer()
+      .then((synced) => {
+        if (mounted) {
+          setSessionState(synced);
+          setIsLoading(false);
+        }
+      })
+      .catch((error) => {
+        // Log error but don't break the app - use localStorage session as fallback
+        console.error("Failed to sync session on mount:", error);
+        if (mounted) {
+          setIsLoading(false);
+          // Keep existing session from localStorage if sync fails
+        }
+      });
 
     // Subscribe to localStorage changes
     const unsubscribe = subscribeToSessionChanges((localStorageSession) => {
       if (mounted) {
         // When localStorage changes, check server to verify
-        syncSessionWithServer().then((serverSession) => {
-          if (mounted) {
-            setSessionState(serverSession || localStorageSession);
-          }
-        });
+        syncSessionWithServer()
+          .then((serverSession) => {
+            if (mounted) {
+              setSessionState(serverSession || localStorageSession);
+            }
+          })
+          .catch((error) => {
+            // Log error but use localStorage session as fallback
+            console.error("Failed to sync session on storage change:", error);
+            if (mounted) {
+              setSessionState(localStorageSession);
+            }
+          });
       }
     });
 
     // Periodically sync with server (every 30 seconds)
     const interval = setInterval(() => {
       if (mounted) {
-        syncSessionWithServer().then((synced) => {
-          if (mounted) {
-            setSessionState(synced);
-          }
-        });
+        syncSessionWithServer()
+          .then((synced) => {
+            if (mounted) {
+              setSessionState(synced);
+            }
+          })
+          .catch((error) => {
+            // Log error but don't break the app - keep existing session
+            console.error("Failed to sync session periodically:", error);
+            // Session state remains unchanged on error
+          });
       }
     }, 30000);
 
