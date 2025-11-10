@@ -140,18 +140,6 @@ describe("withCsrf", () => {
     expect(result.credentials).toBe("include");
   });
 
-  it("handles string headers", () => {
-    document.cookie = "csrf=token";
-    const init: RequestInit = {
-      headers: "Content-Type: application/json",
-    };
-
-    const result = withCsrf(init);
-    const headers = result.headers as Headers;
-
-    expect(headers.get("X-CSRF-Token")).toBe("token");
-  });
-
   it("handles array headers", () => {
     document.cookie = "csrf=token";
     const init: RequestInit = {

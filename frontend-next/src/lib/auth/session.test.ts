@@ -21,8 +21,8 @@ describe("session", () => {
     it("returns null when not in browser", () => {
       // Mock window as undefined
       const originalWindow = global.window;
-      // @ts-expect-error - intentionally removing window
-      delete global.window;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (global as any).window;
 
       const result = readSession();
       expect(result).toBeNull();
@@ -72,8 +72,8 @@ describe("session", () => {
   describe("writeSession", () => {
     it("does nothing when not in browser", () => {
       const originalWindow = global.window;
-      // @ts-expect-error - intentionally removing window
-      delete global.window;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (global as any).window;
 
       const session: StoredSession = {
         userId: "user-123",
@@ -100,8 +100,8 @@ describe("session", () => {
   describe("clearSession", () => {
     it("does nothing when not in browser", () => {
       const originalWindow = global.window;
-      // @ts-expect-error - intentionally removing window
-      delete global.window;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (global as any).window;
 
       clearSession();
       // Should not throw
@@ -123,8 +123,8 @@ describe("session", () => {
   describe("subscribeToSessionChanges", () => {
     it("returns no-op function when not in browser", () => {
       const originalWindow = global.window;
-      // @ts-expect-error - intentionally removing window
-      delete global.window;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (global as any).window;
 
       const unsubscribe = subscribeToSessionChanges(() => {});
       expect(typeof unsubscribe).toBe("function");
