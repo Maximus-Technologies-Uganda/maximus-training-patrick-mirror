@@ -23,25 +23,33 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   className = "",
 }) => {
   return (
-    <Card className={className}>
-      <div role="alert" aria-live="assertive" className="flex flex-col items-center justify-center py-8 text-center">
-        <svg
-          className="w-12 h-12 mb-4 text-error"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        {title && <h2 className="text-lg font-semibold text-error mb-2">{title}</h2>}
-        <p className="text-sm text-text-muted mb-4">{message}</p>
+    <Card className={className} id="error-message">
+      <div
+        role="alert"
+        aria-live="assertive"
+        className="flex flex-col items-center justify-center py-12 text-center"
+      >
+        <div className="mb-6 rounded-full bg-gradient-to-br from-red-100 via-pink-100 to-orange-100 p-4">
+          <svg
+            className="w-12 h-12 text-red-600"
+            width="48"
+            height="48"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        {title && <h2 className="text-xl font-bold text-red-600 mb-3">{title}</h2>}
+        <p className="text-sm text-gray-700 mb-6 max-w-md">{message}</p>
         {onRetry && (
           <Button onClick={onRetry} variant="primary">
             Retry

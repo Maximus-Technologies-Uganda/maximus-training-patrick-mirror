@@ -76,4 +76,257 @@ describe("SSR PostsPage (server component)", () => {
       expect.objectContaining({ headers: {}, cache: "no-store" })
     );
   });
+
+  it("handles pagination params correctly", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: { items: [], hasNextPage: false, page: 2, pageSize: 20, sort: DEFAULT_POST_SORT },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({
+      searchParams: Promise.resolve({ page: "2", pageSize: "20" }),
+    });
+    render(el);
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.stringContaining("page=2&pageSize=21"),
+      expect.any(Object)
+    );
+  });
+
+  it("handles search query param", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({
+      searchParams: Promise.resolve({ q: "test query" }),
+    });
+    render(el);
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.stringContaining("q=test+query"),
+      expect.any(Object)
+    );
+  });
+
+  it("handles sort param", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: "title-asc" },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({
+      searchParams: Promise.resolve({ sort: "title-asc" }),
+    });
+    render(el);
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.stringContaining("sort=title-asc"),
+      expect.any(Object)
+    );
+  });
+
+  it("handles invalid sort param by using default", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({
+      searchParams: Promise.resolve({ sort: "invalid-sort" }),
+    });
+    render(el);
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.stringContaining(`sort=${DEFAULT_POST_SORT}`),
+      expect.any(Object)
+    );
+  });
+
+  it("handles fetch error gracefully", async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new Error("Network error"));
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    render(el);
+    // Should render without crashing
+    expect(el).toBeTruthy();
+  });
+
+  it("handles non-ok response", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    render(el);
+    // Should render without crashing
+    expect(el).toBeTruthy();
+  });
+
+  it("handles array response format", async () => {
+    const testPost = {
+      id: "1",
+      title: "Test Post",
+      content: "Content",
+      published: true,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
+
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [testPost, testPost], // Array format
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: {
+        items: [testPost],
+        hasNextPage: true,
+        page: 1,
+        pageSize: 10,
+        sort: DEFAULT_POST_SORT,
+      },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    render(el);
+    expect(el).toBeTruthy();
+  });
+
+  it("handles object response with items array", async () => {
+    const testPost = {
+      id: "1",
+      title: "Test Post",
+      content: "Content",
+      published: true,
+      createdAt: "2024-01-01T00:00:00Z",
+      updatedAt: "2024-01-01T00:00:00Z",
+    };
+
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        items: [testPost],
+        hasNextPage: true,
+      }),
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: {
+        items: [testPost],
+        hasNextPage: true,
+        page: 1,
+        pageSize: 10,
+        sort: DEFAULT_POST_SORT,
+      },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    render(el);
+    expect(el).toBeTruthy();
+  });
+
+  it("handles missing searchParams", async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => [],
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchFn);
+
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+
+    const el = await PostsPage({});
+    render(el);
+    expect(el).toBeTruthy();
+  });
 });

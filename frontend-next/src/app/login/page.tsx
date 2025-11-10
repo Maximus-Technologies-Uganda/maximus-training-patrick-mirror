@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 
@@ -78,12 +77,27 @@ export default function LoginPage(): React.ReactElement {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center p-6">
-      <section className="rounded border border-gray-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-gray-900">Sign in</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Enter your information to continue. You can manage posts you own once signed in.
-        </p>
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      <section className="rounded-lg border-2 border-purple-200 bg-white p-6 shadow-xl">
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Sign in
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Enter your information to continue. You can manage posts you own once signed in.
+          </p>
+        </div>
+        <div className="mt-3 rounded-lg bg-gradient-to-r from-blue-100 to-purple-100 p-4 text-sm border-2 border-blue-200">
+          <p className="font-semibold text-blue-900">Demo Credentials:</p>
+          <p className="mt-2 text-blue-800">
+            User ID:{" "}
+            <code className="rounded bg-blue-200 px-2 py-1 font-mono font-semibold">admin</code>
+          </p>
+          <p className="text-blue-800">
+            Display Name:{" "}
+            <code className="rounded bg-blue-200 px-2 py-1 font-mono font-semibold">admin</code>
+          </p>
+        </div>
         {formError ? (
           <div
             role="alert"
@@ -93,15 +107,23 @@ export default function LoginPage(): React.ReactElement {
           </div>
         ) : null}
         <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
+          {/* 
+            Note: This form uses "User ID" and "Display name" fields instead of traditional 
+            "username" and "password" fields. The API endpoint supports both formats:
+            - userId/name (used by this form)
+            - username/password (fallback for local/CI environments)
+            The field names align with the application's authentication model where users
+            are identified by a User ID and authenticated with a Display name.
+          */}
           <div>
             <label className="block text-sm font-medium text-gray-700" htmlFor="userId">
-              User ID
+              User ID <span className="text-gray-500 font-normal">(e.g., admin, user123)</span>
             </label>
             <input
               id="userId"
               name="userId"
               type="text"
-              className="mt-1 w-full rounded border border-gray-300 p-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="mt-1 w-full rounded-lg border-2 border-purple-200 p-2.5 text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors"
               value={userId.value}
               onChange={(event) => {
                 const value = event.target.value;
@@ -109,6 +131,7 @@ export default function LoginPage(): React.ReactElement {
                 if (formError) setFormError(null);
               }}
               autoComplete="username"
+              placeholder="Enter your user ID"
               required
             />
             {userId.error ? (
@@ -119,13 +142,14 @@ export default function LoginPage(): React.ReactElement {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700" htmlFor="displayName">
-              Display name
+              Display Name{" "}
+              <span className="text-gray-500 font-normal">(how your name appears)</span>
             </label>
             <input
               id="displayName"
               name="displayName"
               type="text"
-              className="mt-1 w-full rounded border border-gray-300 p-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              className="mt-1 w-full rounded-lg border-2 border-purple-200 p-2.5 text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors"
               value={name.value}
               onChange={(event) => {
                 const value = event.target.value;
@@ -133,6 +157,7 @@ export default function LoginPage(): React.ReactElement {
                 if (formError) setFormError(null);
               }}
               autoComplete="name"
+              placeholder="Enter your display name"
               required
             />
             {name.error ? (
@@ -143,7 +168,7 @@ export default function LoginPage(): React.ReactElement {
           </div>
           <button
             type="submit"
-            className="w-full rounded bg-indigo-600 py-2 text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 py-2.5 text-white font-semibold transition-all hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 shadow-md hover:shadow-lg"
             disabled={isSubmitDisabled || isSubmitting}
           >
             {isSubmitting ? "Signing in…" : "Continue"}
@@ -152,7 +177,10 @@ export default function LoginPage(): React.ReactElement {
       </section>
       <p className="mt-4 text-center text-sm text-gray-600">
         Looking for posts?{" "}
-        <a className="text-indigo-600 hover:underline" href="/posts">
+        <a
+          className="font-semibold text-purple-600 hover:text-purple-700 hover:underline transition-colors"
+          href="/posts"
+        >
           Go to posts
         </a>
         .

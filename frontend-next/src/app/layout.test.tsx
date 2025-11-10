@@ -5,13 +5,15 @@ vi.mock("next/font/google", () => ({
   Geist: () => ({ variable: "--font-geist-sans" }),
   Geist_Mono: () => ({ variable: "--font-geist-mono" }),
 }));
-vi.mock("../../components/Header", () => ({ default: () => <div>Header</div> }));
+vi.mock("../../components/Header", () => ({
+  default: async () => <div>Header</div>,
+}));
 
 import RootLayout from "./layout";
 
 describe("RootLayout", () => {
-  it("renders children", () => {
-    render(<RootLayout><div>hello</div></RootLayout>);
+  it("renders children", async () => {
+    render(await RootLayout({ children: <div>hello</div> }));
     expect(screen.getByText("hello")).toBeInTheDocument();
   });
 });

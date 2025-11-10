@@ -21,7 +21,7 @@
      ============================================ */
 
   /** Primary action color - buttons, links, focus rings */
-  --color-primary: #1f2937;
+  --color-primary: #0066CC;
 
   /** Surface/background color - cards, inputs, containers */
   --color-surface: #ffffff;
@@ -31,6 +31,20 @@
 
   /** Muted text color - secondary text, descriptions, disabled states */
   --color-text-muted: #6b7280;
+
+  /** Secondary brand color - accents, secondary actions */
+  --color-secondary: #6B7280;
+
+  /** Accent colors for vibrant UI elements */
+  --color-accent-1: #8B5CF6; /* Purple */
+  --color-accent-2: #EC4899; /* Pink */
+  --color-accent-3: #F59E0B; /* Amber */
+  --color-accent-4: #10B981; /* Green */
+  
+  /** Gradient colors */
+  --gradient-primary: linear-gradient(135deg, #0066CC 0%, #8B5CF6 100%);
+  --gradient-accent: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+  --gradient-success: linear-gradient(135deg, #10B981 0%, #059669 100%);
 
   /* ============================================
      Spacing (4)
@@ -67,8 +81,18 @@
    ============================================ */
 
 :root {
-  --color-error: #dc2626;      /* Error states, validation */
-  --color-success: #16a34a;    /* Success states, confirmations */
-  --color-warning: #ea8900;    /* Warning states, alerts */
-  --color-info: #0284c7;       /* Informational states */
+  /** Error states, validation - matches Figma Color/Error */
+  --color-error: #EF4444;
+
+  /** Success states, confirmations - matches Figma Color/Success */
+  --color-success: #10B981;
+
+  /** Warning states, alerts - matches Figma Color/Warning */
+  --color-warning: #F59E0B;
+
+  /** Informational states */
+  --color-info: #0284c7;
+
+  /** Neutral background color - matches Figma Color/Neutral */
+  --color-neutral: #F3F4F6;
 }

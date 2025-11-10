@@ -21,14 +21,17 @@ describe("Button", () => {
     it("renders primary variant by default", () => {
       render(<Button>Primary</Button>);
       const button = screen.getByRole("button");
-      expect(button).toHaveClass("bg-primary");
+      expect(button).toHaveClass("bg-gradient-to-r");
+      expect(button).toHaveClass("from-blue-600");
+      expect(button).toHaveClass("to-purple-600");
     });
 
     it("renders secondary variant", () => {
       render(<Button variant="secondary">Secondary</Button>);
       const button = screen.getByRole("button");
       expect(button).toHaveClass("bg-surface");
-      expect(button).toHaveClass("border");
+      expect(button).toHaveClass("border-2");
+      expect(button).toHaveClass("border-purple-300");
     });
 
     it("renders ghost variant", () => {
@@ -132,7 +135,9 @@ describe("Button", () => {
       render(<Button>Focus me</Button>);
       const button = screen.getByRole("button");
       expect(button).toHaveClass("focus:outline-none");
-      expect(button).toHaveClass("focus:ring-2");
+      expect(button).toHaveClass("focus-visible:outline-none");
+      expect(button).toHaveClass("focus-visible:ring-2");
+      expect(button).toHaveClass("focus-visible:ring-offset-1");
     });
 
     it("supports aria-label", () => {
@@ -180,9 +185,9 @@ describe("Button", () => {
     // These verify exact HTML output like snapshot tests, but explicitly
 
     const variantClasses = {
-      primary: ["bg-primary", "text-surface", "hover:bg-primary/90"],
-      secondary: ["bg-surface", "text-primary", "border", "border-text-muted/40"],
-      ghost: ["bg-transparent", "text-primary", "hover:bg-primary/10"],
+      primary: ["bg-gradient-to-r", "from-blue-600", "to-purple-600", "text-white"],
+      secondary: ["bg-surface", "text-primary", "border-2", "border-purple-300"],
+      ghost: ["bg-transparent", "text-primary", "hover:bg-purple-50"],
     };
 
     const sizeClasses = {
@@ -196,10 +201,11 @@ describe("Button", () => {
       "items-center",
       "justify-center",
       "font-medium",
-      "transition-colors",
+      "transition-all",
       "focus:outline-none",
-      "focus:ring-2",
-      "focus:ring-offset-2",
+      "focus-visible:outline-none",
+      "focus-visible:ring-2",
+      "focus-visible:ring-offset-1",
       "disabled:opacity-50",
       "disabled:cursor-not-allowed",
     ];

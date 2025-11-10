@@ -3,16 +3,22 @@
 # Stage 1: Dependencies
 FROM node:20-bookworm-slim AS deps
 WORKDIR /repo
+# Install build tools needed for native modules (lightningcss)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY frontend-next/package.json ./frontend-next/package.json
 ENV NODE_OPTIONS=--max-old-space-size=2048
 # Install frontend dependencies within the frontend-next workspace specifically.
 # This avoids running `npm ci` at the monorepo root which can fail for workspace setups.
 RUN if [ -f frontend-next/package-lock.json ]; then \
-      npm ci --prefix frontend-next --omit=optional --no-audit --no-fund --prefer-offline --progress=false; \
+      npm ci --prefix frontend-next --no-audit --no-fund --prefer-offline --progress=false; \
     else \
       echo "No frontend-next/package-lock.json found; running npm install in frontend-next as a fallback"; \
-      npm install --prefix frontend-next --omit=optional --no-audit --no-fund --prefer-offline --progress=false; \
+      npm install --prefix frontend-next --no-audit --no-fund --prefer-offline --progress=false; \
     fi
 # Ensure /repo/node_modules exists so later stages can copy it (some build paths expect it).
 RUN mkdir -p /repo/node_modules
@@ -20,6 +26,12 @@ RUN mkdir -p /repo/node_modules
 # Stage 2: Builder
 FROM node:20-bookworm-slim AS builder
 WORKDIR /repo
+# Install build tools needed for native modules (lightningcss)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /repo/node_modules ./node_modules
 COPY --from=deps /repo/frontend-next/node_modules ./frontend-next/node_modules
 COPY --from=deps /repo/package.json ./package.json

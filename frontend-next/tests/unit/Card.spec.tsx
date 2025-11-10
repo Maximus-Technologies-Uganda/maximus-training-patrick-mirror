@@ -19,8 +19,8 @@ describe("Card", () => {
       render(<Card>Content</Card>);
       const card = screen.getByText("Content").closest("div")?.parentElement;
       expect(card).toHaveClass("bg-surface");
-      expect(card).toHaveClass("border");
-      expect(card).toHaveClass("rounded-md");
+      expect(card).toHaveClass("border-2");
+      expect(card).toHaveClass("rounded-lg");
     });
   });
 
@@ -124,16 +124,18 @@ describe("Card", () => {
   describe("Styling", () => {
     it("header has bottom border", () => {
       const { container } = render(<Card header="Header">Content</Card>);
-      const header = container.querySelector(".border-b");
+      const header = container.querySelector('[class*="border-b"]');
       expect(header).toBeInTheDocument();
-      expect(header).toHaveClass("bg-surface");
+      // Header now has gradient background instead of bg-surface
+      expect(header).toHaveClass("bg-gradient-to-r");
     });
 
     it("footer has top border", () => {
       const { container } = render(<Card footer="Footer">Content</Card>);
-      const footer = container.querySelector(".border-t");
+      const footer = container.querySelector('[class*="border-t"]');
       expect(footer).toBeInTheDocument();
-      expect(footer).toHaveClass("bg-surface");
+      // Footer now has gradient background instead of bg-surface
+      expect(footer).toHaveClass("bg-gradient-to-r");
     });
 
     it("body section has proper padding", () => {

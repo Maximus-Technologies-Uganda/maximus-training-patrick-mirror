@@ -161,7 +161,7 @@ describe('Posts API Contract Tests', () => {
       expect(lastResponse!.statusCode).toBe(429);
       expect(String(lastResponse!.body.code).toUpperCase()).toBe('RATE_LIMITED');
       expect(lastResponse!.headers).toHaveProperty('retry-after');
-    });
+    }, 30000); // 30 second timeout for 101 sequential requests
 
     it('should return 413 if payload is too large', async () => {
       const largeBody = 'a'.repeat(1024 * 1024 + 1); // > 1MB

@@ -1,14 +1,17 @@
+@import "tailwindcss";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Disable dark mode for now to ensure consistent colorful UI */
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
+} */
 
 html,
 body {
@@ -18,10 +21,12 @@ body {
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: linear-gradient(to bottom right, #e0f2fe 0%, #f3e8ff 50%, #fce7f3 100%);
+  background-attachment: fixed;
   font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
 /* Font stacks mirror the fallbacks defined in src/lib/fonts.ts */
@@ -46,11 +51,12 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Disable dark mode for consistent colorful UI */
+/* @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
   }
-}
+} */
 
 /* A11y: visibly indicate keyboard focus */
 a:focus-visible,
