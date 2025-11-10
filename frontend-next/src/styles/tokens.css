@@ -21,7 +21,7 @@
      ============================================ */
 
   /** Primary action color - buttons, links, focus rings */
-  --color-primary: #1f2937;
+  --color-primary: #0066CC;
 
   /** Surface/background color - cards, inputs, containers */
   --color-surface: #ffffff;
@@ -31,6 +31,9 @@
 
   /** Muted text color - secondary text, descriptions, disabled states */
   --color-text-muted: #6b7280;
+
+  /** Secondary brand color - accents, secondary actions */
+  --color-secondary: #6B7280;
 
   /* ============================================
      Spacing (4)
@@ -67,8 +70,18 @@
    ============================================ */
 
 :root {
-  --color-error: #dc2626;      /* Error states, validation */
-  --color-success: #16a34a;    /* Success states, confirmations */
-  --color-warning: #ea8900;    /* Warning states, alerts */
-  --color-info: #0284c7;       /* Informational states */
+  /** Error states, validation - matches Figma Color/Error */
+  --color-error: #EF4444;
+
+  /** Success states, confirmations - matches Figma Color/Success */
+  --color-success: #10B981;
+
+  /** Warning states, alerts - matches Figma Color/Warning */
+  --color-warning: #F59E0B;
+
+  /** Informational states */
+  --color-info: #0284c7;
+
+  /** Neutral background color - matches Figma Color/Neutral */
+  --color-neutral: #F3F4F6;
 }

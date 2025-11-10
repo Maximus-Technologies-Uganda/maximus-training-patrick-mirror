@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { SWRConfig, type Cache } from "swr";
 
 import { EmptyState } from "./EmptyState";
@@ -376,7 +375,7 @@ function PostsPageClientInner({
         />
       </Card>
 
-      {posts.length === 0 && (isLoading || isValidating) ? (
+      {posts.length === 0 && !resolvedList && (isLoading || isValidating) ? (
         <LoadingState message="Loading posts…" />
       ) : error && posts.length === 0 ? (
         <ErrorState title="Error loading posts" message={errorMessage} onRetry={handleRetry} />
@@ -419,6 +418,7 @@ export default function PostsPageClient(props: PostsPageClientProps): React.Reac
   );
 
   return (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     React.createElement(SWRConfig as any, { value: swrValue }, <PostsPageClientInner {...props} />)
   );
 }
