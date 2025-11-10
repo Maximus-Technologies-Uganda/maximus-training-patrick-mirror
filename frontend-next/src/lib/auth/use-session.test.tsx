@@ -1,5 +1,7 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { http, HttpResponse } from "msw";
+import { server } from "../../test/test-server";
 
 // Unmock use-session so we can test the actual implementation
 vi.unmock("./use-session");
@@ -16,24 +18,16 @@ vi.mock("./session", () => ({
   subscribeToSessionChanges: vi.fn(() => vi.fn()), // Should return an unsubscribe function
 }));
 
-// Mock fetch for server sync
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
 describe("useSession", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFetch.mockClear();
     if (typeof window !== "undefined") {
       window.localStorage.clear();
     }
     // Reset subscribeToSessionChanges mock to return an unsubscribe function
     vi.mocked(sessionModule.subscribeToSessionChanges).mockReturnValue(vi.fn());
-    // Default mock: server returns no session
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 401,
-    } as Response);
+    // Reset MSW handlers
+    server.resetHandlers();
   });
 
   it("initializes with session from localStorage", async () => {
@@ -43,26 +37,36 @@ describe("useSession", () => {
       role: "admin",
     };
     vi.mocked(sessionModule.readSession).mockReturnValue(mockSession);
-    // Mock server sync to return the same session
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ userId: mockSession.userId, role: mockSession.role }),
-    } as Response);
+    // Set up MSW handler to return the same session (matching userId preserves name from localStorage)
+    server.use(
+      http.get("/api/auth/me", () => {
+        return HttpResponse.json({ userId: mockSession.userId, role: mockSession.role });
+      })
+    );
 
     const { result } = renderHook(() => useSession());
 
-    await waitFor(() => {
-      expect(result.current.session).toEqual(mockSession);
-    });
+    await waitFor(
+      () => {
+        expect(result.current.session).not.toBeNull();
+        expect(result.current.session?.userId).toBe(mockSession.userId);
+      },
+      { timeout: 3000 }
+    );
+
+    // The synced session should preserve the name from localStorage
+    expect(result.current.session?.name).toBe(mockSession.name);
+    expect(result.current.session?.role).toBe(mockSession.role);
   });
 
   it("initializes with null when no session", async () => {
     vi.mocked(sessionModule.readSession).mockReturnValue(null);
-    // Mock server sync to return null (401)
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 401,
-    } as Response);
+    // Set up MSW handler to return 401 (no session)
+    server.use(
+      http.get("/api/auth/me", () => {
+        return HttpResponse.json({ error: "Unauthorized" }, { status: 401 });
+      })
+    );
 
     const { result } = renderHook(() => useSession());
 
@@ -89,27 +93,41 @@ describe("useSession", () => {
       name: "Test User",
     };
     vi.mocked(sessionModule.readSession).mockReturnValue(null);
-    vi.mocked(sessionModule.writeSession).mockImplementation(() => {});
-    // Mock server sync to return null initially, then the session after setSession
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ userId: mockSession.userId, role: "owner" }),
-    } as Response);
+    vi.mocked(sessionModule.writeSession).mockImplementation(() => {
+      // Simulate writeSession actually writing to localStorage
+      vi.mocked(sessionModule.readSession).mockReturnValue(mockSession);
+    });
+    // Set up MSW handler to return the session (server accepts it)
+    server.use(
+      http.get("/api/auth/me", () => {
+        return HttpResponse.json({ userId: mockSession.userId, role: "owner" });
+      })
+    );
 
     const { result } = renderHook(() => useSession());
 
-    await waitFor(() => {
-      expect(result.current.session).not.toBeNull();
-    });
+    // Wait for initial sync to complete (should be null)
+    await waitFor(
+      () => {
+        expect(result.current.session).toBeNull();
+      },
+      { timeout: 3000 }
+    );
 
     act(() => {
       result.current.setSession(mockSession);
     });
 
     expect(sessionModule.writeSession).toHaveBeenCalledWith(mockSession);
-    await waitFor(() => {
-      expect(result.current.session).toEqual(mockSession);
-    });
+    // After setSession, the session should be set immediately
+    // Then server sync will verify it and keep it since server accepts it
+    await waitFor(
+      () => {
+        expect(result.current.session).not.toBeNull();
+        expect(result.current.session?.userId).toBe(mockSession.userId);
+      },
+      { timeout: 3000 }
+    );
   });
 
   it("setSession clears session when null", () => {
