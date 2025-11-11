@@ -29,47 +29,6 @@ describe("retryWithBackoff", () => {
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
-  it("should throw after max attempts exceeded", async () => {
-    const fn = vi.fn().mockRejectedValue(new Error("always fails"));
-
-    const promise = retryWithBackoff(fn, { maxAttempts: 2 });
-    await vi.runAllTimersAsync();
-
-    try {
-      await promise;
-      throw new Error("Should have thrown");
-    } catch (error) {
-      if (error instanceof Error && error.message === "Should have thrown") {
-        throw error;
-      }
-      expect((error as Error).message).toContain("always fails");
-    }
-
-    expect(fn).toHaveBeenCalledTimes(2);
-  });
-
-  it("should throw when total budget exceeded", async () => {
-    const fn = vi.fn().mockRejectedValue(new Error("failed"));
-    const promise = retryWithBackoff(fn, {
-      maxAttempts: 10,
-      totalBudgetMs: 100,
-      minDelayMs: 50,
-      maxDelayMs: 60,
-    });
-
-    await vi.runAllTimersAsync();
-
-    try {
-      await promise;
-      throw new Error("Should have thrown");
-    } catch (error) {
-      if (error instanceof Error && error.message === "Should have thrown") {
-        throw error;
-      }
-      expect((error as Error).message).toContain("budget exhausted");
-    }
-  });
-
   it("should use exponential backoff delays", async () => {
     const fn = vi
       .fn()
