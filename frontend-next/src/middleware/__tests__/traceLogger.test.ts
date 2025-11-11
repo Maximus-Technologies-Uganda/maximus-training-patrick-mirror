@@ -152,14 +152,14 @@ describe("createTraceLogger", () => {
 
   it("should redact sensitive fields before logging", () => {
     const logger = createTraceLogger();
-     
-    // @ts-expect-error Testing with partial entry
-    logger.logRequest({
+    const entry = {
       trace: "trace-123",
       route: "/posts",
       latency_ms: 150,
       status: 200,
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+    logger.logRequest(entry);
 
     const logged = JSON.parse(consoleSpy.mock.calls[0][0]);
     expect(logged.authorization).not.toBeDefined();
