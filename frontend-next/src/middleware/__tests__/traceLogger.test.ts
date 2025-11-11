@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { redactSensitiveFields, getOrGenerateTraceId, createTraceLogger } from "../traceLogger";
 
 describe("redactSensitiveFields", () => {
@@ -82,10 +83,10 @@ describe("getOrGenerateTraceId", () => {
 });
 
 describe("createTraceLogger", () => {
-  let consoleSpy: jest.SpyInstance;
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    consoleSpy = jest.spyOn(console, "log").mockImplementation();
+    consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {

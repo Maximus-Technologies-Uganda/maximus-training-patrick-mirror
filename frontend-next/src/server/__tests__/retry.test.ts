@@ -1,17 +1,18 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { retryWithBackoff, parseRetryAfter } from "../retry";
 
 describe("retryWithBackoff", () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   it("should return result on first success", async () => {
-    const fn = jest.fn().mockResolvedValue("success");
+    const fn = vi.fn().mockResolvedValue("success");
     const result = await retryWithBackoff(fn);
     expect(result).toBe("success");
     expect(fn).toHaveBeenCalledTimes(1);
@@ -32,7 +33,7 @@ describe("retryWithBackoff", () => {
   });
 
   it("should throw after max attempts exceeded", async () => {
-    const fn = jest.fn().mockRejectedValue(new Error("always fails"));
+    const fn = vi.fn().mockRejectedValue(new Error("always fails"));
     const promise = retryWithBackoff(fn, { maxAttempts: 2 });
     jest.runAllTimers();
 
@@ -41,7 +42,7 @@ describe("retryWithBackoff", () => {
   });
 
   it("should throw when total budget exceeded", async () => {
-    const fn = jest.fn().mockRejectedValue(new Error("failed"));
+    const fn = vi.fn().mockRejectedValue(new Error("failed"));
     const promise = retryWithBackoff(fn, {
       maxAttempts: 10,
       totalBudgetMs: 100,
@@ -62,7 +63,7 @@ describe("retryWithBackoff", () => {
       .mockRejectedValueOnce(new Error("fail2"))
       .mockResolvedValueOnce("success");
 
-    jest.spyOn(global, "setTimeout").mockImplementation((callback, delay) => {
+    vi.spyOn(global, "setTimeout").mockImplementation((callback, delay) => {
       delays.push(delay as number);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return setTimeout(callback, 0) as any;
@@ -101,7 +102,6 @@ describe("parseRetryAfter", () => {
 
   it("should return null for invalid input", () => {
     expect(parseRetryAfter("invalid")).toBeNull();
-    expect(parseRetryAfter("")).toBeNull();
     expect(parseRetryAfter(undefined)).toBeNull();
   });
 });

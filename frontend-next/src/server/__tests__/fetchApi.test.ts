@@ -1,16 +1,17 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fetchApi, initializeIdTokenClient, fetchApiWithTrace } from "../fetchApi";
 
 // Mock the retry module
-jest.mock("../retry", () => ({
-  retryWithBackoff: jest.fn(async (fn) => fn()),
+vi.mock("../retry", () => ({
+  retryWithBackoff: vi.fn(async (fn) => fn()),
 }));
 
 // Mock fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe("fetchApi", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     initializeIdTokenClient("http://test-api.example.com");
   });
 
@@ -18,7 +19,7 @@ describe("fetchApi", () => {
     const uninitializedFn = async () => {
       const ApiModule = await import("../fetchApi");
       // Reset the module
-      jest.resetModules();
+      vi.resetModules();
       return ApiModule.fetchApi("http://test-api.example.com/posts");
     };
 
@@ -29,42 +30,42 @@ describe("fetchApi", () => {
     const mockResponse = {
       ok: true,
       status: 200,
-      json: jest.fn().mockResolvedValue({ data: "test" }),
+      json: vi.fn().mockResolvedValue({ data: "test" }),
     };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     await fetchApi("http://test-api.example.com/posts", { traceId: "trace-123" });
 
     expect(global.fetch).toHaveBeenCalled();
-    const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+    const [, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(options.headers["x-trace-id"]).toBe("trace-123");
   });
 
   it("should include authorization header", async () => {
-    const mockResponse = { ok: true, status: 200, json: jest.fn().mockResolvedValue({}) };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    const mockResponse = { ok: true, status: 200, json: vi.fn().mockResolvedValue({}) };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     await fetchApi("http://test-api.example.com/posts");
 
-    const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+    const [, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(options.headers.Authorization).toBeDefined();
     expect(options.headers.Authorization).toMatch(/^Bearer/);
   });
 
   it("should set content type", async () => {
-    const mockResponse = { ok: true, status: 200, json: jest.fn().mockResolvedValue({}) };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    const mockResponse = { ok: true, status: 200, json: vi.fn().mockResolvedValue({}) };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     await fetchApi("http://test-api.example.com/posts");
 
-    const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+    const [, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(options.headers["Content-Type"]).toBe("application/json");
   });
 
   it("should return data with metadata", async () => {
     const responseData = { posts: ["post1", "post2"] };
-    const mockResponse = { ok: true, status: 200, json: jest.fn().mockResolvedValue(responseData) };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    const mockResponse = { ok: true, status: 200, json: vi.fn().mockResolvedValue(responseData) };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     const result = await fetchApi("http://test-api.example.com/posts");
 
@@ -76,7 +77,7 @@ describe("fetchApi", () => {
 
   it("should use provided trace ID", async () => {
     const mockResponse = { ok: true, status: 200, json: jest.fn().mockResolvedValue({}) };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     const result = await fetchApi("http://test-api.example.com/posts", { traceId: "custom-trace" });
 
@@ -85,7 +86,7 @@ describe("fetchApi", () => {
 
   it("should generate trace ID if not provided", async () => {
     const mockResponse = { ok: true, status: 200, json: jest.fn().mockResolvedValue({}) };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     const result = await fetchApi("http://test-api.example.com/posts");
 
@@ -103,8 +104,8 @@ describe("fetchApiWithTrace", () => {
 
   it("should return only data", async () => {
     const responseData = { posts: ["post1"] };
-    const mockResponse = { ok: true, status: 200, json: jest.fn().mockResolvedValue(responseData) };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    const mockResponse = { ok: true, status: 200, json: vi.fn().mockResolvedValue(responseData) };
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     const result = await fetchApiWithTrace("http://test-api.example.com/posts", "trace-123");
 
@@ -113,11 +114,11 @@ describe("fetchApiWithTrace", () => {
 
   it("should use provided trace ID", async () => {
     const mockResponse = { ok: true, status: 200, json: jest.fn().mockResolvedValue({}) };
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
     await fetchApiWithTrace("http://test-api.example.com/posts", "trace-456");
 
-    const [, options] = (global.fetch as jest.Mock).mock.calls[0];
+    const [, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(options.headers["x-trace-id"]).toBe("trace-456");
   });
 });
