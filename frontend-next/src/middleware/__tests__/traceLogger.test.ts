@@ -127,13 +127,17 @@ describe("createTraceLogger", () => {
 
   it("should mark ok:false for non-2xx status", () => {
     const logger = createTraceLogger();
+    // Non-2xx non-/status requests don't get logged (FR-028: only 2xx or failed /status)
+    // But we can test ok:false flag by using /status route
     logger.logRequest({
       trace: "trace-123",
-      route: "/posts",
+      route: "/status",
       latency_ms: 150,
       status: 500,
+      ok: false,
     });
 
+    expect(consoleSpy).toHaveBeenCalled();
     const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);
     expect(logged.ok).toBe(false);
   });
@@ -168,7 +172,7 @@ describe("createTraceLogger", () => {
 
   it("should log with timing and measure latency", async () => {
     const logger = createTraceLogger();
-    const fn = jest.fn().mockResolvedValue("result");
+    const fn = vi.fn().mockResolvedValue("result");
 
     const result = await logger.logWithTiming(fn, "trace-123", "/posts", "GET");
 
@@ -183,9 +187,10 @@ describe("createTraceLogger", () => {
 
   it("should log errors with latency measurement", async () => {
     const logger = createTraceLogger();
-    const fn = jest.fn().mockRejectedValue(new Error("test error"));
+    const fn = vi.fn().mockRejectedValue(new Error("test error"));
 
-    await expect(logger.logWithTiming(fn, "trace-123", "/posts", "GET")).rejects.toThrow();
+    // Use /status route to ensure error is logged (FR-028: 100% sampling for ok:false /status)
+    await expect(logger.logWithTiming(fn, "trace-123", "/status", "GET")).rejects.toThrow();
 
     expect(consoleSpy).toHaveBeenCalled();
     const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);

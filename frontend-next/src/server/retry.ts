@@ -87,9 +87,11 @@ export function parseRetryAfter(retryAfterHeader?: string): number | null {
   // Try parsing as HTTP-date
   try {
     const retryDate = new Date(retryAfterHeader);
+    const retryTime = retryDate.getTime();
+    if (isNaN(retryTime)) return null;
     const now = new Date();
-    const delayMs = retryDate.getTime() - now.getTime();
-    return delayMs > 0 ? delayMs : 0;
+    const delayMs = retryTime - now.getTime();
+    return delayMs > 0 ? delayMs : null;
   } catch {
     return null;
   }

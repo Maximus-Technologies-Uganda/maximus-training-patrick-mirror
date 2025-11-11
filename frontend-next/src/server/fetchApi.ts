@@ -1,5 +1,3 @@
-import "server-only";
-
 import { v4 as uuidv4 } from "uuid";
 import { retryWithBackoff } from "./retry";
 
@@ -18,7 +16,6 @@ interface IdTokenConfig {
   audience: string;
 }
 
- 
 let idTokenConfig: IdTokenConfig | null = null;
 
 /**

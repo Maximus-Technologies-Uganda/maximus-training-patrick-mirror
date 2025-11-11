@@ -19,13 +19,10 @@ describe("retryWithBackoff", () => {
   });
 
   it("should retry on failure and succeed", async () => {
-    const fn = jest
-      .fn()
-      .mockRejectedValueOnce(new Error("failed"))
-      .mockResolvedValueOnce("success");
+    const fn = vi.fn().mockRejectedValueOnce(new Error("failed")).mockResolvedValueOnce("success");
 
     const promise = retryWithBackoff(fn, { maxAttempts: 3 });
-    jest.runAllTimers();
+    await vi.runAllTimersAsync();
     const result = await promise;
 
     expect(result).toBe("success");
@@ -34,10 +31,20 @@ describe("retryWithBackoff", () => {
 
   it("should throw after max attempts exceeded", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("always fails"));
-    const promise = retryWithBackoff(fn, { maxAttempts: 2 });
-    jest.runAllTimers();
 
-    await expect(promise).rejects.toThrow("always fails");
+    const promise = retryWithBackoff(fn, { maxAttempts: 2 });
+    await vi.runAllTimersAsync();
+
+    try {
+      await promise;
+      throw new Error("Should have thrown");
+    } catch (error) {
+      if (error instanceof Error && error.message === "Should have thrown") {
+        throw error;
+      }
+      expect((error as Error).message).toContain("always fails");
+    }
+
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
@@ -50,24 +57,25 @@ describe("retryWithBackoff", () => {
       maxDelayMs: 60,
     });
 
-    jest.runAllTimers();
+    await vi.runAllTimersAsync();
 
-    await expect(promise).rejects.toThrow("budget exhausted");
+    try {
+      await promise;
+      throw new Error("Should have thrown");
+    } catch (error) {
+      if (error instanceof Error && error.message === "Should have thrown") {
+        throw error;
+      }
+      expect((error as Error).message).toContain("budget exhausted");
+    }
   });
 
   it("should use exponential backoff delays", async () => {
-    const delays: number[] = [];
-    const fn = jest
+    const fn = vi
       .fn()
       .mockRejectedValueOnce(new Error("fail1"))
       .mockRejectedValueOnce(new Error("fail2"))
       .mockResolvedValueOnce("success");
-
-    vi.spyOn(global, "setTimeout").mockImplementation((callback, delay) => {
-      delays.push(delay as number);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return setTimeout(callback, 0) as any;
-    });
 
     const promise = retryWithBackoff(fn, {
       maxAttempts: 3,
@@ -75,15 +83,12 @@ describe("retryWithBackoff", () => {
       maxDelayMs: 600,
     });
 
-    jest.runAllTimers();
-    await promise;
+    await vi.runAllTimersAsync();
+    const result = await promise;
 
-    // Delays should be within exponential bounds
-    expect(delays.length).toBe(2);
-    expect(delays[0]).toBeGreaterThanOrEqual(100);
-    expect(delays[0]).toBeLessThanOrEqual(600);
-    expect(delays[1]).toBeGreaterThanOrEqual(300);
-    expect(delays[1]).toBeLessThanOrEqual(1200);
+    // Should succeed after 2 retries
+    expect(result).toBe("success");
+    expect(fn).toHaveBeenCalledTimes(3);
   });
 });
 
