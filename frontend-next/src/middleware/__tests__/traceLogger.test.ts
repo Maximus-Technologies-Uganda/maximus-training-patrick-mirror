@@ -104,7 +104,7 @@ describe("createTraceLogger", () => {
     });
 
     expect(consoleSpy).toHaveBeenCalled();
-    const logged = JSON.parse(consoleSpy.mock.calls[0][0]);
+    const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);
     expect(logged.trace).toBe("trace-123");
     expect(logged.route).toBe("/posts");
     expect(logged.latency_ms).toBe(150);
@@ -121,7 +121,7 @@ describe("createTraceLogger", () => {
       status: 200,
     });
 
-    const logged = JSON.parse(consoleSpy.mock.calls[0][0]);
+    const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);
     expect(logged.ok).toBe(true);
   });
 
@@ -134,7 +134,7 @@ describe("createTraceLogger", () => {
       status: 500,
     });
 
-    const logged = JSON.parse(consoleSpy.mock.calls[0][0]);
+    const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);
     expect(logged.ok).toBe(false);
   });
 
@@ -162,7 +162,7 @@ describe("createTraceLogger", () => {
     } as any;
     logger.logRequest(entry);
 
-    const logged = JSON.parse(consoleSpy.mock.calls[0][0]);
+    const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);
     expect(logged.authorization).not.toBeDefined();
   });
 
@@ -174,7 +174,7 @@ describe("createTraceLogger", () => {
 
     expect(result).toBe("result");
     expect(consoleSpy).toHaveBeenCalled();
-    const logged = JSON.parse(consoleSpy.mock.calls[0][0]);
+    const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);
     expect(logged.trace).toBe("trace-123");
     expect(logged.route).toBe("/posts");
     expect(logged.latency_ms).toBeGreaterThanOrEqual(0);
@@ -188,7 +188,7 @@ describe("createTraceLogger", () => {
     await expect(logger.logWithTiming(fn, "trace-123", "/posts", "GET")).rejects.toThrow();
 
     expect(consoleSpy).toHaveBeenCalled();
-    const logged = JSON.parse(consoleSpy.mock.calls[0][0]);
+    const logged = JSON.parse(consoleSpy.mock.calls[0][0] as string);
     expect(logged.ok).toBe(false);
     expect(logged.reason).toBe("test error");
   });
