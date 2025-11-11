@@ -68,6 +68,8 @@ export function parseFilterState(url: string): FilterState {
  * FR-004: Query parameter validation
  */
 const ALLOWED_SORTS = ["new", "old"];
+const MAX_QUERY_LENGTH = 256; // Prevent abuse and excessive URL length
+const MAX_AUTHOR_LENGTH = 128; // Prevent abuse and excessive URL length
 
 export function validateFilterState(filter: FilterState): { valid: boolean; error?: string } {
   // Validate sort parameter
@@ -78,20 +80,36 @@ export function validateFilterState(filter: FilterState): { valid: boolean; erro
     };
   }
 
-  // Validate author (must be non-empty if provided)
-  if (filter.author !== undefined && filter.author.length === 0) {
-    return {
-      valid: false,
-      error: "Author filter must be non-empty",
-    };
+  // Validate author (must be non-empty and within length limit if provided)
+  if (filter.author !== undefined) {
+    if (filter.author.length === 0) {
+      return {
+        valid: false,
+        error: "Author filter must be non-empty",
+      };
+    }
+    if (filter.author.length > MAX_AUTHOR_LENGTH) {
+      return {
+        valid: false,
+        error: `Author filter must be at most ${MAX_AUTHOR_LENGTH} characters`,
+      };
+    }
   }
 
-  // Validate query (must be non-empty if provided)
-  if (filter.q !== undefined && filter.q.length === 0) {
-    return {
-      valid: false,
-      error: "Query must be non-empty",
-    };
+  // Validate query (must be non-empty and within length limit if provided)
+  if (filter.q !== undefined) {
+    if (filter.q.length === 0) {
+      return {
+        valid: false,
+        error: "Query must be non-empty",
+      };
+    }
+    if (filter.q.length > MAX_QUERY_LENGTH) {
+      return {
+        valid: false,
+        error: `Query must be at most ${MAX_QUERY_LENGTH} characters`,
+      };
+    }
   }
 
   return { valid: true };

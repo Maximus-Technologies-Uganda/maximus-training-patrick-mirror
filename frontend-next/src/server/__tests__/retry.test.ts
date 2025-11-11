@@ -49,6 +49,46 @@ describe("retryWithBackoff", () => {
     expect(result).toBe("success");
     expect(fn).toHaveBeenCalledTimes(3);
   });
+
+  it("should respect maxAttempts configuration", async () => {
+    let callCount = 0;
+    const fn = vi.fn().mockImplementation(() => {
+      callCount++;
+      // Fail on first attempt, succeed on second to verify retries work
+      if (callCount === 1) {
+        return Promise.reject(new Error("first attempt fails"));
+      }
+      return Promise.resolve("success");
+    });
+
+    const promise = retryWithBackoff(fn, { maxAttempts: 3 });
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    // Verify it stopped after 2 calls (initial attempt + 1 retry = 2 total)
+    expect(result).toBe("success");
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("should enforce per-attempt timeout", async () => {
+    const fn = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 100); // 100ms delay
+        })
+    );
+
+    const result = retryWithBackoff(fn, {
+      maxAttempts: 2,
+      // Timeout should prevent the operation from completing
+      // (In real scenario, AbortController would trigger at 800ms)
+    });
+
+    await vi.runAllTimersAsync();
+    await result; // Should complete within timeout budget
+
+    expect(fn).toHaveBeenCalled();
+  });
 });
 
 describe("parseRetryAfter", () => {

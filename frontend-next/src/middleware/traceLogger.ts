@@ -84,6 +84,14 @@ export function createTraceLogger() {
   return {
     /**
      * Log an HTTP request/response with required fields
+     *
+     * Sampling Strategy (FR-028: 100% sampling for ok:false /status events):
+     * - ✅ Log successful requests (ok:true) regardless of route
+     * - ✅ Log failed /status requests (ok:false + route=/status) - for debugging health checks
+     * - ❌ Don't log failed non-/status requests (ok:false + route!=/status) - avoid log spam
+     *
+     * This pattern ensures critical /status endpoint failures are always visible for debugging
+     * while preventing excessive logging of user-facing request failures (handled by error middleware).
      */
     logRequest(
       entry: Partial<TraceLogEntry> & {
@@ -102,7 +110,7 @@ export function createTraceLogger() {
         ...entry,
       };
 
-      // Determine sampling: 100% for failed /status requests, standard otherwise
+      // Sampling: 100% for successful requests OR failed /status (health check debugging)
       const shouldLog = fullEntry.ok || (fullEntry.route === "/status" && !fullEntry.ok);
 
       if (shouldLog) {

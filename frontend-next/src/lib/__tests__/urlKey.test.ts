@@ -82,6 +82,32 @@ describe("validateFilterState", () => {
     expect(result.valid).toBe(false);
     expect(result.error).toContain("non-empty");
   });
+
+  it("should reject query exceeding max length", () => {
+    const longQuery = "a".repeat(257); // Exceeds 256 char limit
+    const result = validateFilterState({ q: longQuery });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("at most 256 characters");
+  });
+
+  it("should reject author exceeding max length", () => {
+    const longAuthor = "a".repeat(129); // Exceeds 128 char limit
+    const result = validateFilterState({ author: longAuthor });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("at most 128 characters");
+  });
+
+  it("should accept query at max length", () => {
+    const maxQuery = "a".repeat(256);
+    const result = validateFilterState({ q: maxQuery });
+    expect(result.valid).toBe(true);
+  });
+
+  it("should accept author at max length", () => {
+    const maxAuthor = "a".repeat(128);
+    const result = validateFilterState({ author: maxAuthor });
+    expect(result.valid).toBe(true);
+  });
 });
 
 describe("normalizeFilterState", () => {
