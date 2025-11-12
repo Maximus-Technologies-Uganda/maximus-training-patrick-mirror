@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod';
+export * from './query';
 
 /**
  * Query/Filter State Schema
@@ -19,7 +20,7 @@ import { z } from 'zod';
  * Parameters:
  * - q: search query (optional, max 64 chars)
  * - author: author slug filter (optional, slug format)
- * - sort: sort order (optional, 'new' or 'top', defaults to 'new')
+ * - sort: sort order (optional, 'new' or 'old', defaults to 'new')
  */
 export const FilterStateSchema = z.object({
   q: z.string().trim().max(64).or(z.literal('')).optional(),
@@ -27,7 +28,7 @@ export const FilterStateSchema = z.object({
     .string()
     .regex(/^[a-z0-9-]{2,32}$/)
     .optional(),
-  sort: z.enum(['new', 'top']).default('new'),
+  sort: z.enum(['new', 'old']).default('new'),
 });
 
 export type FilterState = z.infer<typeof FilterStateSchema>;

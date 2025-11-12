@@ -29,10 +29,10 @@ export const querySchema = z
 
     /**
      * Sort order
-     * Allowed values: 'new' (default, newest first), 'top' (engagement-based)
+     * Allowed values: 'new' (default, newest first), 'old' (oldest first)
      * Invalid values rejected; defaults to 'new'
      */
-    sort: z.enum(['new', 'top']).default('new'),
+    sort: z.enum(['new', 'old']).default('new'),
   })
   .transform((raw) => {
     const cleaned: Record<string, string> = {};
