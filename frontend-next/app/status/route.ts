@@ -47,8 +47,13 @@ export async function GET(_request: NextRequest): Promise<NextResponse<StatusRes
 
   try {
     // Get upstream API URL from environment
-    const upstreamApiUrl =
-      process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    let upstreamApiUrl = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
+    if (!upstreamApiUrl) {
+      console.warn(
+        "[status route] Neither API_BASE_URL nor NEXT_PUBLIC_API_URL is set; falling back to http://localhost:8080. This may indicate a configuration issue."
+      );
+      upstreamApiUrl = "http://localhost:8080";
+    }
 
     // Probe upstream health with timeout
     const controller = new AbortController();
