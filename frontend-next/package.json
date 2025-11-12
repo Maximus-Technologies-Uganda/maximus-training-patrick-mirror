@@ -24,11 +24,20 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "swr": "^2.3.6",
+    "uuid": "^9.0.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
     "@playwright/test": "^1.56.1",
+    "@storybook/addon-a11y": "^8.6.7",
+    "@storybook/addon-essentials": "^8.6.7",
+    "@storybook/addon-interactions": "^8.6.7",
+    "@storybook/addon-links": "^8.6.7",
+    "@storybook/blocks": "^8.6.7",
+    "@storybook/nextjs": "^8.6.7",
+    "@storybook/react": "^8.6.7",
+    "@storybook/test": "^8.6.7",
     "@tailwindcss/postcss": "^4.1.17",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "13.4.0",
@@ -51,6 +60,7 @@
     "eslint-plugin-unused-imports": "^4.2.0",
     "msw": "^2.11.3",
     "prettier": "^3.6.2",
+    "storybook": "^8.6.7",
     "tailwindcss": "^4.1.16",
     "typescript": "^5",
     "vitest": "^3.2.4"

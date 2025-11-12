@@ -21,14 +21,14 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 
 **Purpose**: Ensure environment, tooling, directories, baseline configs.
 
-- [ ] T001 Verify Node & pnpm prerequisites via `.specify/scripts/powershell/check-prerequisites.ps1` (add validation output capture script)
-- [ ] T002 [P] Pin Node version (engines + .nvmrc) in `package.json` and `.nvmrc` (>=20 <21) per spec
-- [ ] T003 [P] Create evidence artifact directories `docs/week-10/{coverage,a11y,playwright}`
-- [ ] T004 [P] Add Spectral config `.spectral.yaml` at repo root enforcing operationId,error-schema,no-any
-- [ ] T005 [P] Create design tokens file `frontend-next/design/tokens.json` (initial minimal token set)
-- [ ] T006 [P] Add token parity script `scripts/figma-token-verify.ts` (warn-only gate)
-- [ ] T007 Add README placeholder artifact links section `README.md` (week-10 artifacts pending)
-- [ ] T008 Initialize Storybook config `frontend-next/.storybook/main.ts` with a11y addon
+- [x] T001 Verify Node & pnpm prerequisites via `.specify/scripts/powershell/check-prerequisites.ps1` (add validation output capture script)
+- [x] T002 [P] Pin Node version (engines + .nvmrc) in `package.json` and `.nvmrc` (>=20 <21) per spec
+- [x] T003 [P] Create evidence artifact directories `docs/week-10/{coverage,a11y,playwright}`
+- [x] T004 [P] Add Spectral config `.spectral.yaml` at repo root enforcing operationId,error-schema,no-any
+- [x] T005 [P] Create design tokens file `frontend-next/design/tokens.json` (initial minimal token set)
+- [x] T006 [P] Add token parity script `scripts/figma-token-verify.ts` (warn-only gate)
+- [x] T007 Add README placeholder artifact links section `README.md` (week-10 artifacts pending)
+- [x] T008 Initialize Storybook config `frontend-next/.storybook/main.ts` with a11y addon
 
 ---
 
