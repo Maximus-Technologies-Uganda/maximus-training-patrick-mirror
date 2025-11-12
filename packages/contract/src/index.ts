@@ -73,12 +73,6 @@ export const ErrorSchema = z.object({
 
 export type ApiError = z.infer<typeof ErrorSchema>;
 
-// Re-export all schemas and types
-export {
-  FilterStateSchema as QuerySchema,
-  type FilterState as QueryState,
-  HealthStatusSchema,
-  type HealthStatus,
-  ErrorSchema,
-  type ApiError,
-};
+// Also export with alternate names for convenience
+export { FilterStateSchema as QuerySchema };
+export type QueryState = FilterState;
