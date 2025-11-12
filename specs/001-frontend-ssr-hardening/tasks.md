@@ -37,35 +37,35 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 **Purpose**: Core infra required before any user story implementation.
 **CRITICAL**: All tasks here must complete before US phases.
 
-- [ ] T009 Implement server-only fetch utility with ID token & tracing in `frontend-next/src/server/fetchApi.ts` (import 'server-only')
-- [ ] T010 [P] Implement retry/backoff helper `frontend-next/src/server/retry.ts` (full-jitter, per-attempt timeout ≤800ms, total budget <3s)
-- [ ] T011 [P] Implement trace middleware `frontend-next/src/middleware/traceLogger.ts` (adds trace, measures latency, logs required fields)
-- [ ] T012 [P] Implement canonical cache key builder `frontend-next/src/lib/urlKey.ts` (lexicographic params, drop empty, encode)
-- [ ] T013 [P] Consolidate Zod schemas into contract package `packages/contract/src/query.ts` (migrate from `specs/.../contracts/query.zod.ts`)
-- [ ] T014 [P] Enhance OpenAPI spec `specs/001-frontend-ssr-hardening/contracts/openapi.yaml` (ensure error schema conformity)
-- [ ] T015 Add npm scripts: `spectral:lint`, `test:contracts`, `probe:status`, `tokens:parity` in `package.json`
-- [ ] T016 Configure Jest coverage scoping (collect only `frontend-next/src/**/*.{ts,tsx}`) in `jest.config.js`
-- [ ] T017 Implement status probe script `scripts/quality-gate/probe-status.ts` (rolling 10-min samples, exclude warmup, compute p95)
-- [ ] T018 Add SWR parity test harness `frontend-next/src/__tests__/swrParity.test.ts` (SSR vs SWR hash comparison)
-- [ ] T019 Add logging shape unit test `frontend-next/src/__tests__/loggingShape.test.ts` (assert trace,route,latency_ms,status,upstream_status)
-- [ ] T020 Add a11y Playwright base test `tests/e2e/posts.accessibility.spec.ts` (axe scan; fail on serious+)
-- [ ] T021 Add SSR JS-disabled Playwright test `tests/e2e/posts.ssr.spec.ts` (≥1 <tr> row, no placeholder text)
-- [ ] T022 Implement Zod parse failure mapping test `frontend-next/src/__tests__/queryErrorMapping.test.ts` (single user-facing message)
-- [ ] T023 Implement IAM/env unit test `frontend-next/src/__tests__/iamEnv.test.ts` (audience equality + mock invoker role)
-- [ ] T024 Implement sensitive field exclusion test `frontend-next/src/__tests__/statusSensitive.test.ts` (no secret/token/key field names)
-- [ ] T025 Implement log sampling test `frontend-next/src/__tests__/logSampling.test.ts` (100% sampling when ok:false)
-- [ ] T026 Implement token parity CI integration `scripts/quality-gate/token-parity.ts`
-- [ ] T027 Implement spectral lint CI integration config `.github/workflows/ci.yml` (add job or step)
-- [ ] T064 [P] Implement DS primitives (Button, Input, Select, Badge, Table, FormFieldGroup, Toast) with a11y semantics and stories `frontend-next/components/{Primitive}.tsx|.stories.tsx`
-- [ ] T065 [P] Unit tests per DS primitive (roles, focus, keyboard, aria) `frontend-next/components/__tests__/{Primitive}.test.tsx`
-- [ ] T066 [P] URL key canonicalization tests incl. reordering, empty params, percent-encoding, Unicode NFC/NFD `frontend-next/src/lib/urlKey.test.ts`
-- [ ] T067 [P] Enforce SSR/SWR key equality for identical canonical URL `frontend-next/src/__tests__/keyParity.test.ts`
-- [ ] T068 Set `dynamic='force-dynamic'` or `revalidate=0` for `/posts` and `/status`; add assertion tests `frontend-next/app/posts/page.test.tsx`, `frontend-next/app/status/route.test.ts`
-- [ ] T070 [P] Log redaction guard: strip auth headers, tokens, cookies; test with seeded headers `frontend-next/src/middleware/__tests__/redaction.test.ts`
-- [ ] T071 CI IAM check for `roles/run.invoker` on API from frontend SA `scripts/quality-gate/verify-invoker.ts` + workflow (fail if missing)
-- [ ] T072 CI Cloud Run config check for `min-instances >= 1` and env equality via `gcloud run services describe` parser `scripts/quality-gate/verify-cloudrun-config.ts`
-- [ ] T073 [P] Memoized ID token client perf/unit test proves reuse & per-attempt timeout enforcement `frontend-next/src/server/fetchApi.memo.test.ts`
-- [ ] T075 Security headers baseline tests (CSP, Referrer-Policy, X-Content-Type-Options) `frontend-next/src/__tests__/securityHeaders.test.ts`
+- [x] T009 Implement server-only fetch utility with ID token & tracing in `frontend-next/src/server/fetchApi.ts` (import 'server-only')
+- [x] T010 [P] Implement retry/backoff helper `frontend-next/src/server/retry.ts` (full-jitter, per-attempt timeout ≤800ms, total budget <3s)
+- [x] T011 [P] Implement trace middleware `frontend-next/src/middleware/traceLogger.ts` (adds trace, measures latency, logs required fields)
+- [x] T012 [P] Implement canonical cache key builder `frontend-next/src/lib/urlKey.ts` (lexicographic params, drop empty, encode)
+- [x] T013 [P] Consolidate Zod schemas into contract package `packages/contract/src/query.ts` (migrate from `specs/.../contracts/query.zod.ts`)
+- [x] T014 [P] Enhance OpenAPI spec `specs/001-frontend-ssr-hardening/contracts/openapi.yaml` (ensure error schema conformity)
+- [x] T015 Add npm scripts: `spectral:lint`, `test:contracts`, `probe:status`, `tokens:parity` in `package.json`
+- [x] T016 Configure Jest coverage scoping (collect only `frontend-next/src/**/*.{ts,tsx}`) in `jest.config.js`
+- [x] T017 Implement status probe script `scripts/quality-gate/probe-status.ts` (rolling 10-min samples, exclude warmup, compute p95)
+- [x] T018 Add SWR parity test harness `frontend-next/src/__tests__/swrParity.test.ts` (SSR vs SWR hash comparison)
+- [x] T019 Add logging shape unit test `frontend-next/src/__tests__/loggingShape.test.ts` (assert trace,route,latency_ms,status,upstream_status)
+- [x] T020 Add a11y Playwright base test `tests/e2e/posts.accessibility.spec.ts` (axe scan; fail on serious+)
+- [x] T021 Add SSR JS-disabled Playwright test `tests/e2e/posts.ssr.spec.ts` (≥1 <tr> row, no placeholder text)
+- [x] T022 Implement Zod parse failure mapping test `frontend-next/src/__tests__/queryErrorMapping.test.ts` (single user-facing message)
+- [x] T023 Implement IAM/env unit test `frontend-next/src/__tests__/iamEnv.test.ts` (audience equality + mock invoker role)
+- [x] T024 Implement sensitive field exclusion test `frontend-next/src/__tests__/statusSensitive.test.ts` (no secret/token/key field names)
+- [x] T025 Implement log sampling test `frontend-next/src/__tests__/logSampling.test.ts` (100% sampling when ok:false)
+- [x] T026 Implement token parity CI integration `scripts/quality-gate/token-parity.ts`
+- [x] T027 Implement spectral lint CI integration config `.github/workflows/ci.yml` (add job or step)
+- [x] T064 [P] Implement DS primitives (Button, Input, Select, Badge, Table, FormFieldGroup, Toast) with a11y semantics and stories `frontend-next/components/{Primitive}.tsx|.stories.tsx`
+- [x] T065 [P] Unit tests per DS primitive (roles, focus, keyboard, aria) `frontend-next/components/__tests__/{Primitive}.test.tsx`
+- [x] T066 [P] URL key canonicalization tests incl. reordering, empty params, percent-encoding, Unicode NFC/NFD `frontend-next/src/lib/urlKey.test.ts`
+- [x] T067 [P] Enforce SSR/SWR key equality for identical canonical URL `frontend-next/src/__tests__/keyParity.test.ts`
+- [x] T068 Set `dynamic='force-dynamic'` or `revalidate=0` for `/posts` and `/status`; add assertion tests `frontend-next/app/posts/page.test.tsx`, `frontend-next/app/status/route.test.ts`
+- [x] T070 [P] Log redaction guard: strip auth headers, tokens, cookies; test with seeded headers `frontend-next/src/middleware/__tests__/redaction.test.ts`
+- [x] T071 CI IAM check for `roles/run.invoker` on API from frontend SA `scripts/quality-gate/verify-invoker.ts` + workflow (fail if missing)
+- [x] T072 CI Cloud Run config check for `min-instances >= 1` and env equality via `gcloud run services describe` parser `scripts/quality-gate/verify-cloudrun-config.ts`
+- [x] T073 [P] Memoized ID token client perf/unit test proves reuse & per-attempt timeout enforcement `frontend-next/src/server/fetchApi.memo.test.ts`
+- [x] T075 Security headers baseline tests (CSP, Referrer-Policy, X-Content-Type-Options) `frontend-next/src/__tests__/securityHeaders.test.ts`
 
 **Checkpoint**: Foundation ready – begin user story phases.
 

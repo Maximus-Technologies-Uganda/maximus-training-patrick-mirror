@@ -37,24 +37,46 @@ jobs:
       - name: Verify Node.js version (T028/DEV-702)
         run: npm run verify:node
 
-      - name: Spectral Lint (pinned CLI)
+      - name: Spectral Lint - Week 10 Frontend (pinned CLI)
+        run: |
+          mkdir -p docs/week-10
+          npx @stoplight/spectral-cli@6.11.0 lint \
+            specs/001-frontend-ssr-hardening/contracts/openapi.yaml \
+            -f json --quiet > docs/week-10/spectral-report.json || true
+
+      - name: Check Spectral Errors (Week 10 Frontend)
+        run: |
+          if [ -f docs/week-10/spectral-report.json ]; then
+            SPECTRAL_ERRORS=$(cat docs/week-10/spectral-report.json | jq '[.[] | select(.severity == 0)] | length')
+            echo "Spectral errors found (Week 10): $SPECTRAL_ERRORS"
+            if [ "$SPECTRAL_ERRORS" -gt 0 ]; then
+              echo "❌ Found $SPECTRAL_ERRORS Spectral error(s) in Week 10 spec. Fix them before merging."
+              jq '[.[] | select(.severity == 0)]' docs/week-10/spectral-report.json
+              exit 1
+            fi
+            echo "✅ No Spectral errors found in Week 10 spec"
+          else
+            echo "⚠️  Spectral report not found for Week 10 spec (may not exist yet)"
+          fi
+
+      - name: Spectral Lint - Identity Platform (pinned CLI)
         run: |
           mkdir -p specs/008-identity-platform/contracts
           npx @stoplight/spectral-cli@6.11.0 lint \
             specs/008-identity-platform/contracts/openapi.yaml \
             -f json --quiet > specs/008-identity-platform/contracts/spectral-report.json || true
 
-      - name: Check Spectral Errors
+      - name: Check Spectral Errors (Identity Platform)
         run: |
           if [ -f specs/008-identity-platform/contracts/spectral-report.json ]; then
             SPECTRAL_ERRORS=$(cat specs/008-identity-platform/contracts/spectral-report.json | jq '[.[] | select(.severity == 0)] | length')
-            echo "Spectral errors found: $SPECTRAL_ERRORS"
+            echo "Spectral errors found (Identity Platform): $SPECTRAL_ERRORS"
             if [ "$SPECTRAL_ERRORS" -gt 0 ]; then
-              echo "❌ Found $SPECTRAL_ERRORS Spectral error(s). Fix them before merging."
+              echo "❌ Found $SPECTRAL_ERRORS Spectral error(s) in Identity Platform spec. Fix them before merging."
               jq '[.[] | select(.severity == 0)]' specs/008-identity-platform/contracts/spectral-report.json
               exit 1
             fi
-            echo "✅ No Spectral errors found"
+            echo "✅ No Spectral errors found in Identity Platform spec"
           else
             echo "❌ Spectral report not found"
             exit 1
@@ -66,23 +88,46 @@ jobs:
       - name: Secret Pattern Check
         run: npm run gate:secrets
 
-      - name: Upload Spectral Report
+      - name: Upload Spectral Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: contracts-spectral-report
-          path: specs/008-identity-platform/contracts/spectral-report.json
+          name: contracts-spectral-reports
+          path: |
+            specs/008-identity-platform/contracts/spectral-report.json
+            docs/week-10/spectral-report.json
 
       - name: Job Summary
         if: always()
         run: |
           {
-            echo "### Spectral Lint - openapi.yaml"
-            echo "Report: contracts-spectral-report/spectral-report.json"
+            echo "### Spectral Lint Reports - Week 10 & Identity Platform"
+            echo "Artifacts: contracts-spectral-reports/"
+            echo ""
+            echo "#### Week 10 Frontend Spec"
+            if [ -f docs/week-10/spectral-report.json ]; then
+              WEEK10_COUNT=$(cat docs/week-10/spectral-report.json | jq 'length')
+              echo "- Report entries: $WEEK10_COUNT"
+              echo "- Path: \`docs/week-10/spectral-report.json\`"
+              if [ "$WEEK10_COUNT" -gt 0 ]; then
+                echo "- Details:"
+                cat docs/week-10/spectral-report.json | jq '.' || echo "  (Could not parse JSON)"
+              fi
+            else
+              echo "- Status: Not yet generated (spec may not exist)"
+            fi
+            echo ""
+            echo "#### Identity Platform Spec"
             if [ -f specs/008-identity-platform/contracts/spectral-report.json ]; then
-              echo ""
-              echo "#### Report Contents:"
-              cat specs/008-identity-platform/contracts/spectral-report.json
+              IDPLATFORM_COUNT=$(cat specs/008-identity-platform/contracts/spectral-report.json | jq 'length')
+              echo "- Report entries: $IDPLATFORM_COUNT"
+              echo "- Path: \`specs/008-identity-platform/contracts/spectral-report.json\`"
+              if [ "$IDPLATFORM_COUNT" -gt 0 ]; then
+                echo "- Details:"
+                cat specs/008-identity-platform/contracts/spectral-report.json | jq '.' || echo "  (Could not parse JSON)"
+              fi
+            else
+              echo "- Status: Report not found (check logs)"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 

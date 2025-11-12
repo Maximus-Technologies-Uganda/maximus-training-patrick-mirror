@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SWRConfig } from "swr";
 import type { Cache, SWRConfiguration } from "swr";
@@ -340,9 +339,7 @@ export default function PostsPageClient({
     []
   );
 
-  return React.createElement(
-    SWRConfig as any,
-    { value: swrValue },
+  const mainContent = (
     <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
       <LiveRegion message={statusMessage} />
 
@@ -359,7 +356,7 @@ export default function PostsPageClient({
               onChange={(event) => {
                 const value = event.target.value;
                 if (isValidSort(value)) {
-                  onChangeSort(value);
+                onChangeSort(value);
                 }
               }}
               className="ml-2 rounded border border-text-muted/40 px-2 py-1 text-sm text-text"
@@ -451,5 +448,10 @@ export default function PostsPageClient({
           }}
         />
       </main>
+  );
+
+  return React.createElement(
+    SWRConfig as unknown as React.ComponentType<{ value: SWRConfiguration; children: React.ReactNode }>,
+    { value: swrValue, children: mainContent }
   );
 }

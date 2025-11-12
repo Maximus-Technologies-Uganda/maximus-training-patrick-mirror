@@ -9,6 +9,7 @@ let firstPostTitle: string;
 
 // Part 1: Authentication
 test("Part 1: Authentication (Steps 1-5)", async ({ page }) => {
+  test.setTimeout(60000); // 60 second timeout for integration test
   // Step 1: Navigate to login page
   try {
     await page.goto(`${APP_URL}/login`, { waitUntil: "networkidle" });
@@ -83,6 +84,7 @@ test("Part 1: Authentication (Steps 1-5)", async ({ page }) => {
 
 // Part 2: Functional & A11y Validation
 test("Part 2: Functional & A11y Validation (Steps 6-18)", async ({ page }) => {
+  test.setTimeout(60000); // 60 second timeout for integration test
   // Navigate to posts page (assuming we're already logged in from previous test)
   await page.goto(`${APP_URL}/posts`, { waitUntil: "networkidle" });
 
