@@ -19,7 +19,7 @@
     "openapi"
   ],
   "dependencies": {
-    "zod": "^3.22.0"
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
