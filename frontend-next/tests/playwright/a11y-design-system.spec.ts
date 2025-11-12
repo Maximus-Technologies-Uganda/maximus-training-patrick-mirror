@@ -64,9 +64,9 @@ test.describe("Design System - Accessibility (WCAG 2.1 AA)", () => {
     // Focus the button
     await button.focus();
 
-    // Verify focus styles are applied (ring-2 class)
+    // Verify focus styles are applied (focus-visible:ring-2 class)
     const className = await button.getAttribute("class");
-    expect(className).toContain("focus:ring-2");
+    expect(className).toContain("focus-visible:ring-2");
   });
 
   test("Input component has proper label associations", async ({ page }) => {
