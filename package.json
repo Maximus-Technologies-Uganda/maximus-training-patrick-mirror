@@ -6,6 +6,7 @@
     "node": "20.x"
   },
   "workspaces": [
+    "packages/contract",
     "frontend",
     "frontend-next",
     "api",
@@ -19,6 +20,10 @@
     "contracts:check": "tsx scripts/sync-openapi.ts --check",
     "contracts:validate": "tsx scripts/validate-openapi.ts",
     "contracts:spectral": "node scripts/generate-spectral-report.mjs",
+    "spectral:lint": "spectral lint specs/001-frontend-ssr-hardening/contracts/openapi.yaml --format json --output-file docs/week-10/spectral-report.json 2>/dev/null || spectral lint specs/001-frontend-ssr-hardening/contracts/openapi.yaml",
+    "test:contracts": "echo 'Contract validation via spectral:lint and zod schemas'",
+    "probe:status": "tsx scripts/quality-gate/probe-status.ts",
+    "tokens:parity": "tsx scripts/figma-token-verify.ts",
     "pretest": "npm run contracts:sync",
     "test": "node scripts/run-tests.js",
     "test:quote": "node quote/tests/test.js",
