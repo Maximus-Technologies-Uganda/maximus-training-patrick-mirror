@@ -4,15 +4,14 @@ This repository hosts a monorepo with a Node.js API (`api/`) and a Next.js app (
 
 ## Live Deployments
 
-- Frontend (Cloud Run): `https://maximus-training-frontend-673209018655.africa-south1.run.app`
-- API (Cloud Run): `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app`
-
-You can retrieve service URLs from the Cloud Run console or via:
+Note: Deployment URLs are environment-specific and managed via Google Cloud Run. Retrieve URLs via:
 
 ```bash
-gcloud run services describe maximus-training-frontend --region <region> --format='value(status.url)'
-gcloud run services describe maximus-training-api --region <region> --format='value(status.url)'
+gcloud run services describe maximus-training-frontend --region africa-south1 --format='value(status.url)'
+gcloud run services describe maximus-training-api --region africa-south1 --format='value(status.url)'
 ```
+
+Or check the [Google Cloud Console](https://console.cloud.google.com/run) for live service details.
 
 ## Authentication
 
