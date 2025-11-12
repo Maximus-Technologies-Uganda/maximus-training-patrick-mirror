@@ -22,12 +22,12 @@ import { z } from 'zod';
  * - sort: sort order (optional, 'new' or 'top', defaults to 'new')
  */
 export const FilterStateSchema = z.object({
-  q: z.string().trim().max(64).optional().or(z.literal('')),
+  q: z.string().trim().max(64).or(z.literal('')).optional(),
   author: z
     .string()
     .regex(/^[a-z0-9-]{2,32}$/)
     .optional(),
-  sort: z.enum(['new', 'top']).default('new').optional(),
+  sort: z.enum(['new', 'top']).default('new'),
 });
 
 export type FilterState = z.infer<typeof FilterStateSchema>;
