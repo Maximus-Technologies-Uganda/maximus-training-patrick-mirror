@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
-const fs = require("fs");
-const { URL } = require("url");
+const fs = require('fs');
+const { URL } = require('url');
 
 /**
  * Extract http/https links from markdown content.
@@ -24,7 +24,7 @@ function extractLinks(markdownText) {
   }
 
   return Array.from(links)
-    .map((u) => u.split("#")[0])
+    .map((u) => u.split('#')[0])
     .filter((u) => /^https?:\/\//.test(u));
 }
 
@@ -34,16 +34,16 @@ function extractLinks(markdownText) {
 function isSkippableUrl(urlString) {
   try {
     const u = new URL(urlString);
-    if (u.hostname === "localhost") return true;
-    if (u.hostname === "0.0.0.0") return true;
-    if (u.hostname === "::1") return true;
+    if (u.hostname === 'localhost') return true;
+    if (u.hostname === '0.0.0.0') return true;
+    if (u.hostname === '::1') return true;
     if (/^127\./.test(u.hostname)) return true;
     // Ignore known 403 from protected API base URL in README (publicly health-checkable endpoint may not exist)
-    if (
-      urlString ===
-      "https://maximus-training-api-wyb2jsgqyq-bq.a.run.app"
-    )
-      return true;
+    if (urlString === 'https://maximus-training-api-wyb2jsgqyq-bq.a.run.app') return true;
+    // Ignore Google Cloud Console URLs (require authentication)
+    if (u.hostname === 'console.cloud.google.com') return true;
+    // Ignore production Cloud Run URLs that may not be publicly accessible or require authentication
+    if (u.hostname.endsWith('.run.app')) return true;
     return false;
   } catch {
     return false;
@@ -57,8 +57,8 @@ function isSkippableUrl(urlString) {
  * @param {number} timeoutMs
  */
 async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
-  if (typeof fetch !== "function") {
-    throw new Error("Global fetch is not available. Use Node 18+ or setup undici.");
+  if (typeof fetch !== 'function') {
+    throw new Error('Global fetch is not available. Use Node 18+ or setup undici.');
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -72,12 +72,12 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
 async function checkUrl(url) {
   // Try HEAD first
   try {
-    const res = await fetchWithTimeout(url, { method: "HEAD" });
+    const res = await fetchWithTimeout(url, { method: 'HEAD' });
     if (res.ok) return { url, ok: true, status: res.status };
   } catch {}
   // Fallback to GET
   try {
-    const res = await fetchWithTimeout(url, { method: "GET" });
+    const res = await fetchWithTimeout(url, { method: 'GET' });
     return { url, ok: res.ok, status: res.status };
   } catch (err) {
     return { url, ok: false, status: 0, error: String(err && err.message ? err.message : err) };
@@ -85,12 +85,12 @@ async function checkUrl(url) {
 }
 
 async function run(markdownFilePath) {
-  const md = fs.readFileSync(markdownFilePath, "utf8");
+  const md = fs.readFileSync(markdownFilePath, 'utf8');
   const all = extractLinks(md);
   const urls = all.filter((u) => !isSkippableUrl(u));
 
   if (urls.length === 0) {
-    console.log("[link-check] No http(s) links to verify (after skipping local-only URLs).");
+    console.log('[link-check] No http(s) links to verify (after skipping local-only URLs).');
     return 0;
   }
 
@@ -105,8 +105,8 @@ async function run(markdownFilePath) {
       const u = urls[i];
       const r = await checkUrl(u);
       results[i] = r;
-      const status = r.status || "ERR";
-      console.log(`${r.ok ? "OK" : "FAIL"} ${status} ${u}`);
+      const status = r.status || 'ERR';
+      console.log(`${r.ok ? 'OK' : 'FAIL'} ${status} ${u}`);
     }
   }
 
@@ -116,7 +116,9 @@ async function run(markdownFilePath) {
   if (failures.length > 0) {
     console.error(`\n[link-check] ${failures.length}/${urls.length} link(s) failed.`);
     for (const f of failures) {
-      console.error(` - ${f.url} ${f.status ? `(status ${f.status})` : f.error ? `(${f.error})` : ""}`);
+      console.error(
+        ` - ${f.url} ${f.status ? `(status ${f.status})` : f.error ? `(${f.error})` : ''}`,
+      );
     }
     process.exitCode = 1;
   } else {
@@ -127,13 +129,11 @@ async function run(markdownFilePath) {
 if (require.main === module) {
   const file = process.argv[2];
   if (!file) {
-    console.error("Usage: node scripts/link-check.js <markdown-file>");
+    console.error('Usage: node scripts/link-check.js <markdown-file>');
     process.exit(2);
   }
   run(file).catch((err) => {
-    console.error("[link-check] Unhandled error:", err && err.stack ? err.stack : err);
+    console.error('[link-check] Unhandled error:', err && err.stack ? err.stack : err);
     process.exit(1);
   });
 }
-
-
