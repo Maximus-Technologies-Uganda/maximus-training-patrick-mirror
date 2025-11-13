@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { PostsTable, type PostRow } from "./PostsTable";
-import LiveRegion from "./LiveRegion";
+import { LiveRegion } from "./LiveRegion";
 
 export interface PostsStatesProps {
   /** Table rows to display (empty = empty state) */

@@ -5,7 +5,7 @@ import { SWRConfig } from "swr";
 import type { Cache, SWRConfiguration } from "swr";
 import type { State } from "swr/_internal";
 
-import LiveRegion from "./LiveRegion";
+import { LiveRegion } from "./LiveRegion";
 import NewPostForm from "./NewPostForm";
 import PageSizeSelect from "./PageSizeSelect";
 import { PaginationControls } from "../src/components/PaginationControls";
