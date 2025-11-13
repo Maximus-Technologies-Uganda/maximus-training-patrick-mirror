@@ -249,8 +249,9 @@ describe("SWR vs SSR Parity Test (T039)", () => {
       const validated = querySchema.parse(rawInput);
 
       // Canonical key should use validated, normalized data
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const key = buildCanonicalKey("/posts", validated as any);
+      // The validated output is Record<string, string>, which is compatible with
+      // Record<string, string | undefined> since all values are strings
+      const key = buildCanonicalKey("/posts", validated);
 
       expect(key).toContain("test"); // Trimmed
       expect(key).toContain("alice");
@@ -302,11 +303,9 @@ describe("SWR vs SSR Parity Test (T039)", () => {
       // Simulate complete workflow
       const userInput = { q: "design patterns", author: "bob-smith", sort: "old" };
       const validated = querySchema.parse(userInput);
-      // If validated is not exactly Record<string, string | undefined>, map it accordingly:
-      const canonicalKey = buildCanonicalKey(
-        "/posts",
-        validated as Record<string, string | undefined>
-      );
+      // The validated output is Record<string, string>, which is compatible with
+      // Record<string, string | undefined> since all values are strings
+      const canonicalKey = buildCanonicalKey("/posts", validated);
 
       // Fetch via both paths
       const ssrData = await mockSSRFetch(canonicalKey);

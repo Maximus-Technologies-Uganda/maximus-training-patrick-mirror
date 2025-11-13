@@ -173,13 +173,13 @@ export function usePostsRefresh(params?: Partial<QueryParams>): {
   isRefreshing: boolean;
 } {
   const key = buildPostsKey(querySchema.parse(params || {}));
-  const { mutate } = useSWR<PostsResponse>(key, postsFetcher);
+  const { mutate, isValidating } = useSWR<PostsResponse>(key, postsFetcher);
 
   return {
     refresh: async () => {
       await mutate();
     },
-    isRefreshing: false, // Would track via SWR's isValidating in real impl
+    isRefreshing: isValidating,
   };
 }
 

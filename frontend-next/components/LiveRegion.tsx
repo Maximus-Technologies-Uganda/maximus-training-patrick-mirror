@@ -143,7 +143,36 @@ export const LiveRegion: React.FC<LiveRegionProps> = ({
 
 /**
  * Composable live region announcement builder
- * Creates structured filter announcements
+ * Creates structured filter announcements for screen readers
+ *
+ * This function builds accessible, natural-language announcements that describe
+ * the active filters and results to assistive technology users.
+ *
+ * @param query - Optional search query string
+ * @param author - Optional author filter slug
+ * @param sort - Optional sort order ('new', 'old', or undefined for default)
+ * @param resultCount - Optional number of results found
+ * @returns A formatted announcement string describing the active filters
+ *
+ * @example
+ * // With query and author filters
+ * createFilterAnnouncement("react hooks", "alice", "new", 15)
+ * // Returns: 'Search query: "react hooks", Author: alice. 15 posts found.'
+ *
+ * @example
+ * // With only sort order
+ * createFilterAnnouncement(undefined, undefined, "old", 42)
+ * // Returns: 'Sorted oldest first. 42 posts found.'
+ *
+ * @example
+ * // No filters (cleared state)
+ * createFilterAnnouncement()
+ * // Returns: 'Filters cleared. Showing all posts.'
+ *
+ * @example
+ * // With filters but no result count
+ * createFilterAnnouncement("typescript", "bob-smith")
+ * // Returns: 'Search query: "typescript", Author: bob-smith. Filters applied.'
  */
 export const createFilterAnnouncement = (
   query?: string,

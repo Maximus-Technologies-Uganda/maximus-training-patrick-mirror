@@ -19,8 +19,7 @@ export interface SortablePost {
   title: string;
   author: string;
   createdAt: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
