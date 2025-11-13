@@ -102,19 +102,19 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 
 ### Tests
 
-- [ ] T037 [P] [US2] Filter schema unit tests `tests/contract/filterState.schema.test.ts`
-- [ ] T038 [P] [US2] URL sync & history navigation test `tests/e2e/posts.url-sync.spec.ts`
-- [ ] T039 [P] [US2] SWR vs SSR parity test `frontend-next/src/__tests__/swrSSRParity.test.ts`
+- [x] T037 [P] [US2] Filter schema unit tests `tests/contract/filterState.schema.test.ts`
+- [x] T038 [P] [US2] URL sync & history navigation test `tests/e2e/posts.url-sync.spec.ts`
+- [x] T039 [P] [US2] SWR vs SSR parity test `frontend-next/src/__tests__/swrSSRParity.test.ts`
 
 ### Implementation
 
-- [ ] T040 [P] [US2] Implement filter controls component `frontend-next/components/PostsFilters.tsx`
-- [ ] T041 [P] [US2] Implement SWR hook `frontend-next/src/hooks/usePosts.ts`
-- [ ] T042 [US2] Integrate canonical key usage in SWR hook (urlKey) `frontend-next/src/hooks/usePosts.ts`
-- [ ] T043 [US2] Implement sort utilities `frontend-next/src/lib/sortUtils.ts`
-- [ ] T044 [US2] Add live region update wiring to filter changes `frontend-next/components/LiveRegion.tsx`
+- [x] T040 [P] [US2] Implement filter controls component `frontend-next/components/PostsFilters.tsx`
+- [x] T041 [P] [US2] Implement SWR hook `frontend-next/src/hooks/usePosts.ts`
+- [x] T042 [US2] Integrate canonical key usage in SWR hook (urlKey) `frontend-next/src/hooks/usePosts.ts`
+- [x] T043 [US2] Implement sort utilities `frontend-next/src/lib/sortUtils.ts`
+- [x] T044 [US2] Add live region update wiring to filter changes `frontend-next/components/LiveRegion.tsx`
 
-**Checkpoint**: US2 independently testable (search/filter functional & accessible).
+**Checkpoint**: US2 independently testable (search/filter functional & accessible). ✅ COMPLETE
 
 ---
 
