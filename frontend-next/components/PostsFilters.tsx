@@ -31,6 +31,18 @@ interface PostsFiltersProps {
    * Accessible error message if validation fails
    */
   errorMessage?: string;
+
+  /**
+   * Callback to announce status messages to screen readers
+   * Should be connected to a LiveRegion with role="status"
+   */
+  onAnnounceStatus?: (message: string) => void;
+
+  /**
+   * Callback to announce error/alert messages to screen readers
+   * Should be connected to a LiveRegion with role="alert"
+   */
+  onAnnounceAlert?: (message: string) => void;
 }
 
 /**
@@ -42,6 +54,8 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
   onFilter,
   isLoading = false,
   errorMessage,
+  onAnnounceStatus,
+  onAnnounceAlert,
 }) => {
   const router = useRouter();
   const [formValues, setFormValues] = useState({
@@ -104,14 +118,14 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
         const newUrl = params.toString() ? `/posts?${params.toString()}` : "/posts";
         router.push(newUrl);
 
-        // Announce to screen readers via live region
-        const liveRegion = document.querySelector('[role="status"]');
-        if (liveRegion) {
-          liveRegion.textContent = `Filters applied: ${
+        // Announce to screen readers via callback
+        if (onAnnounceStatus) {
+          const statusMessage = `Filters applied: ${
             validated.q ? `query "${validated.q}"` : "all posts"
           }${validated.author ? `, author ${validated.author}` : ""}${
             validated.sort !== "new" ? `, sorted ${validated.sort}` : ""
           }`;
+          onAnnounceStatus(statusMessage);
         }
       } catch (error) {
         // Handle validation error
@@ -121,14 +135,13 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
             : "Invalid filter values. Please check your input.";
         setValidationError(message);
 
-        // Announce error
-        const liveRegion = document.querySelector('[role="alert"]');
-        if (liveRegion) {
-          liveRegion.textContent = `Filter error: ${message}`;
+        // Announce error via callback
+        if (onAnnounceAlert) {
+          onAnnounceAlert(`Filter error: ${message}`);
         }
       }
     },
-    [formValues, onFilter, router]
+    [formValues, onFilter, router, onAnnounceStatus, onAnnounceAlert]
   );
 
   /**
@@ -139,12 +152,11 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
     setValidationError(null);
     router.push("/posts");
 
-    // Announce clear action
-    const liveRegion = document.querySelector('[role="status"]');
-    if (liveRegion) {
-      liveRegion.textContent = "Filters cleared. Showing all posts.";
+    // Announce clear action via callback
+    if (onAnnounceStatus) {
+      onAnnounceStatus("Filters cleared. Showing all posts.");
     }
-  }, [router]);
+  }, [router, onAnnounceStatus]);
 
   const displayError = errorMessage || validationError;
 
