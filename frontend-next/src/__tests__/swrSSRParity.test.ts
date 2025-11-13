@@ -302,8 +302,11 @@ describe("SWR vs SSR Parity Test (T039)", () => {
       // Simulate complete workflow
       const userInput = { q: "design patterns", author: "bob-smith", sort: "old" };
       const validated = querySchema.parse(userInput);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const canonicalKey = buildCanonicalKey("/posts", validated as any);
+      // If validated is not exactly Record<string, string | undefined>, map it accordingly:
+      const canonicalKey = buildCanonicalKey(
+        "/posts",
+        validated as Record<string, string | undefined>
+      );
 
       // Fetch via both paths
       const ssrData = await mockSSRFetch(canonicalKey);
