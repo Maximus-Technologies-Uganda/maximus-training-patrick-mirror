@@ -6,13 +6,7 @@ import { createRequire } from "module";
 import path from "path";
 
 const require = createRequire(import.meta.url);
-// Use URL API directly instead of fileURLToPath for better Vitest compatibility
-const __filename = new URL(import.meta.url).pathname;
-const __dirname = path.dirname(
-  process.platform === "win32" && __filename.startsWith("/")
-    ? __filename.slice(1) // Remove leading slash on Windows
-    : __filename
-);
+const __dirname = import.meta.dirname;
 
 // Force module resolution for 'react' and 'react-dom' to the monorepo root
 // copies. Some dependencies (notably @testing-library/react) may resolve a

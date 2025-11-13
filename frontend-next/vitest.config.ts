@@ -89,7 +89,6 @@ export default defineConfig({
     jsx: "automatic",
     jsxInject: 'import React from "react"',
   },
-
   optimizeDeps: {
     // Ensure these testing and runtime libs are pre-bundled by Vite so the
     // runtime doesn't load nested React or React DOM from their own package
