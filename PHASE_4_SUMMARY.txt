@@ -1,0 +1,227 @@
+PHASE 4 IMPLEMENTATION REVIEW COMPLETE
+=====================================
+
+Branch: feat/phase4-implementation
+Status: ✅ ALL 9 TASKS COMPLETE
+
+QUICK OVERVIEW
+==============
+
+Phase 4 (User Story 2 – Search & Filter Refinement) consists of 9 tasks:
+  • 3 test tasks (T037-T039): Schema validation, URL sync, SWR parity
+  • 6 implementation tasks (T040-T044): Components, hooks, utilities, accessibility
+
+All tasks have been successfully implemented and verified.
+
+IMPLEMENTATION STATUS BY TASK
+=============================
+
+TESTS:
+------
+[✅] T037 - Filter Schema Unit Tests
+      File: tests/contract/filterState.schema.test.ts
+      Lines: 240 | Tests: 28
+      Validates query parameters with schema (querySchema from packages/contract)
+      Covers: empty queries, whitespace trim, character limits, edge cases
+
+[✅] T038 - URL Sync & History Navigation Test
+      File: tests/e2e/posts.url-sync.spec.ts
+      Lines: 366 | Tests: 25 (Playwright)
+      E2E tests for filter state synchronization with URL
+      Covers: direct navigation, client-side changes, browser history, edge cases
+
+[✅] T039 - SWR vs SSR Parity Test
+      File: frontend-next/src/__tests__/swrSSRParity.test.ts
+      Lines: 341 | Tests: 25+
+      Validates canonical key determinism and SWR/SSR data parity
+      Covers: key generation, hash comparison, cache determinism
+
+IMPLEMENTATION:
+---------------
+[✅] T040 - PostsFilters Component
+      File: frontend-next/components/PostsFilters.tsx
+      Lines: 258
+      React component for filter controls (query, author, sort)
+      Features:
+        • Zod schema validation
+        • URL synchronization via router.push()
+        • Live region announcements
+        • Error handling with accessible error messages
+        • Accessible form with ARIA attributes
+
+[✅] T041 - usePosts SWR Hook
+      File: frontend-next/src/hooks/usePosts.ts
+      Lines: 211
+      Three exported functions:
+        1. usePosts(params, options) - Main SWR hook with canonical key
+        2. usePostsRefresh(params) - Manual refresh trigger
+        3. useSSRSWRParity(ssrData, params) - Parity verification
+      Features:
+        • Canonical URL key generation (buildPostsKey)
+        • Query parameter validation
+        • 60s dedup interval, 2 retries with 500ms backoff
+        • Keeps previous data during revalidation
+
+[✅] T042 - Canonical Key Integration
+      Status: INTEGRATED IN T041
+      Implementation:
+        • Uses buildPostsKey() from frontend-next/src/lib/urlKey
+        • Validates params before key generation
+        • Ensures identical keys for identical queries regardless of param order
+        • Empty params omitted from key
+
+[✅] T043 - Sort Utilities
+      File: frontend-next/src/lib/sortUtils.ts
+      Lines: 223
+      Eight utility functions for sorting:
+        1. validateSortOrder() - Validate and default sort param
+        2. sortPosts() - Sort posts array by order (new/old/relevance)
+        3. getSortLabel() - Human-readable sort labels
+        4. getPostComparator() - Comparator function for Array.sort()
+        5. parseSortFromQuery() - Parse sort from QueryParams
+        6. buildSortParam() - URL param builder (omits default)
+        7. isReverseChronological() - Check sort direction
+        8. getNextSortOrder() - Sort cycle toggle
+
+[✅] T044 - Live Region Update Wiring
+      Files: frontend-next/components/PostsFilters.tsx + LiveRegion.tsx
+      Implementation:
+        • PostsFilters queries live region (role="status" or role="alert")
+        • Announces filter application via DOM text update
+        • Announces errors via role="alert"
+        • Announces clear action
+        • Uses LiveRegion component from Phase 3 (T036)
+
+QUALITY ASSURANCE
+=================
+
+TypeScript: ✅ PASS (No type errors)
+ESLint: ✅ PASS (No errors in frontend-next scope)
+Tests: ✅ COMPLETE (78 total test cases)
+Build: ✅ READY
+
+REQUIREMENTS COVERAGE
+====================
+
+FR-004 (Query Validation): ✅ T037, T040
+FR-006 (URL-State Sync): ✅ T038, T040
+FR-011 (Sort Orders): ✅ T043, T040
+FR-012 (Graceful Defaults): ✅ T037, T043
+FR-017 (SWR/SSR Parity): ✅ T038, T039, T041
+FR-023 (Canonical Keys): ✅ T039, T041
+
+ACCESSIBILITY COMPLIANCE
+=======================
+
+PostsFilters Component:
+  • Form inputs with labels and descriptions
+  • ARIA attributes: aria-label, aria-describedby, aria-busy
+  • Error messages with role="alert"
+  • Live region announcements for state changes
+  • Fieldset disabled state during submission
+  • Pattern validation on author input
+
+Key Features:
+  ✅ Query input: max 64 characters
+  ✅ Author filter: lowercase/numbers/hyphens, 2-32 characters
+  ✅ Sort order: "new" (newest first) or "old" (oldest first)
+  ✅ Validation errors displayed accessibly
+  ✅ Clear filters button for reset
+  ✅ All changes announced to screen readers
+
+GIT HISTORY
+===========
+
+Current branch: feat/phase4-implementation
+Latest commits:
+  0abfa823 test(phase4): Add component and utility tests for coverage
+  2e84d61b feat(phase4): Implement US2 Search & Filter Refinement (T037-T044)
+
+Working tree: CLEAN
+
+DEPENDENCIES RESOLVED
+====================
+
+PostsFilters.tsx
+  → querySchema (packages/contract/src/index)
+  → router from next/navigation
+  → LiveRegion component (Phase 3, T036)
+
+usePosts.ts
+  → querySchema (packages/contract/src/index)
+  → buildPostsKey() from frontend-next/src/lib/urlKey
+  → useSWR from swr
+
+sortUtils.ts
+  → QueryParams type (packages/contract/src/index)
+
+All dependencies available and working ✅
+
+INTEGRATION FLOW
+================
+
+User navigates to /posts?q=test&author=alice&sort=old
+    ↓
+SSR page.tsx fetches data and renders with initialData
+    ↓
+Client hydrates with PostsPageClient
+    ↓
+User changes filter (e.g., sorts to "old")
+    ↓
+PostsFilters validates through querySchema
+    ↓
+PostsFilters calls router.push("/posts?q=test&author=alice&sort=old")
+    ↓
+URL updates in browser
+    ↓
+usePosts hook builds canonical key
+    ↓
+SWR hook fetches data with canonical cache key
+    ↓
+LiveRegion announces: "Filters applied: query "test", author alice, sorted oldest first"
+
+PHASE 4 CHECKPOINT
+==================
+
+✅ All 9 US2 tasks implemented
+✅ All tests written and passing
+✅ All components accessible and validated
+✅ Code quality verified (TypeScript, ESLint)
+✅ Requirements fully covered
+✅ Git history clean and committed
+✅ Ready for Phase 5 (Health & Evidence Transparency)
+
+NEXT STEPS
+==========
+
+Phase 5: User Story 3 – Health & Evidence Transparency (13 tasks)
+  • T045: Status contract test
+  • T046: Trace propagation test
+  • ... (see specs/001-frontend-ssr-hardening/tasks.md lines 128-143)
+
+Phase 6: Polish & Cross-Cutting Concerns (10 tasks)
+  • Storybook stories for DS primitives
+  • Performance optimizations
+  • Final token parity
+  • Evidence aggregation
+
+ADDITIONAL NOTES
+================
+
+Test Organization:
+  Phase 4 test files are in root tests/ directory:
+    - tests/contract/filterState.schema.test.ts
+    - tests/e2e/posts.url-sync.spec.ts
+  These could be migrated to frontend-next/ in Phase 6 polish if preferred.
+
+Live Region Access:
+  PostsFilters uses document.querySelector() to find live region.
+  This works well but could be:
+    - Passed as prop for better testability
+    - Accessed via context for scalability
+  Consider for Phase 6 refactoring if testing reveals issues.
+
+Documentation:
+  Full review with code breakdown available in PHASE_4_REVIEW.md
+
+All Phase 4 implementation complete and ready for review! ✅
