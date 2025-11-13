@@ -25,7 +25,10 @@ export default defineConfig({
       },
       // Point 'react' to the shim that normalizes interop and default exports.
       { find: "react", replacement: path.resolve(__dirname, "src", "test", "react-shim.cjs") },
-      { find: "react-dom", replacement: path.resolve(__dirname, "..", "node_modules", "react-dom") },
+      {
+        find: "react-dom",
+        replacement: path.resolve(__dirname, "..", "node_modules", "react-dom"),
+      },
       {
         find: "@testing-library/react",
         replacement: path.resolve(__dirname, "src", "test", "testing-library-shim.cjs"),
@@ -43,7 +46,7 @@ export default defineConfig({
           "@testing-library",
           "react",
           "node_modules",
-          "react",
+          "react"
         ),
         replacement: path.resolve(__dirname, "..", "node_modules", "react"),
       },
@@ -55,7 +58,7 @@ export default defineConfig({
           "@testing-library",
           "react",
           "node_modules",
-          "react-dom",
+          "react-dom"
         ),
         replacement: path.resolve(__dirname, "..", "node_modules", "react-dom"),
       },
@@ -86,7 +89,6 @@ export default defineConfig({
     jsx: "automatic",
     jsxInject: 'import React from "react"',
   },
-  
   optimizeDeps: {
     // Ensure these testing and runtime libs are pre-bundled by Vite so the
     // runtime doesn't load nested React or React DOM from their own package
@@ -124,7 +126,13 @@ export default defineConfig({
     },
     server: {
       deps: {
-        inline: ["@testing-library/react", "@testing-library/jest-dom", "swr", "react", "react-dom"],
+        inline: [
+          "@testing-library/react",
+          "@testing-library/jest-dom",
+          "swr",
+          "react",
+          "react-dom",
+        ],
       },
     },
     environmentMatchGlobs: [
