@@ -125,23 +125,23 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 
 ### Tests
 
-- [ ] T045 [P] [US3] Status contract test `tests/contract/status.contract.test.ts`
-- [ ] T046 [P] [US3] Trace propagation test `/status` vs upstream logs `tests/e2e/status.trace.spec.ts`
-- [ ] T047 [P] [US3] Sensitive field exclusion test (already in foundational) reuse `frontend-next/src/__tests__/statusSensitive.test.ts`
-- [ ] T048 [P] [US3] `/status` headers test asserts `Cache-Control: no-store` and `X-Robots-Tag: noindex` `frontend-next/src/__tests__/statusHeaders.test.ts`
-- [ ] T074 `/status` uses same server-side ID-token flow as SSR; test stubs audience and base URL equality `tests/contract/status.auth-parity.test.ts`
-- [ ] T076 [P] DS usage coverage script: ensure ≥80% interactive elements on `/posts` use DS primitives; emit metric `scripts/quality-gate/ds-usage.ts`
+- [x] T045 [P] [US3] Status contract test `tests/contract/status.contract.test.ts`
+- [x] T046 [P] [US3] Trace propagation test `/status` vs upstream logs `tests/e2e/status.trace.spec.ts`
+- [x] T047 [P] [US3] Sensitive field exclusion test (already in foundational) reuse `frontend-next/src/__tests__/statusSensitive.test.ts`
+- [x] T048 [P] [US3] `/status` headers test asserts `Cache-Control: no-store` and `X-Robots-Tag: noindex` `frontend-next/src/__tests__/statusHeaders.test.ts`
+- [x] T074 `/status` uses same server-side ID-token flow as SSR; test stubs audience and base URL equality `tests/contract/status.auth-parity.test.ts`
+- [x] T076 [P] DS usage coverage script: ensure ≥80% interactive elements on `/posts` use DS primitives; emit metric `scripts/quality-gate/ds-usage.ts`
 
 ### Implementation
 
-- [ ] T049 [P] [US3] Implement `/status` route `frontend-next/app/status/route.ts`
-- [ ] T050 [P] [US3] Implement status latency logging & reason mapping `frontend-next/app/status/route.ts`
-- [ ] T051 [US3] Implement artifact generation script `scripts/artifacts/generate-week10.js`
-- [ ] T052 [US3] Integrate probe p95 gate in CI `scripts/quality-gate/p95-check.ts`
-- [ ] T053 [US3] Update README with final artifact links `README.md`
-- [ ] T054 [US3] Update release notes with spec PR & CI evidence `RELEASE-NOTES.md`
+- [x] T049 [P] [US3] Implement `/status` route `frontend-next/app/status/route.ts`
+- [x] T050 [P] [US3] Implement status latency logging & reason mapping `frontend-next/app/status/route.ts`
+- [x] T051 [US3] Implement artifact generation script `scripts/artifacts/generate-week10.js`
+- [x] T052 [US3] Integrate probe p95 gate in CI `scripts/quality-gate/p95-check.ts`
+- [x] T053 [US3] Update README with final artifact links `README.md`
+- [x] T054 [US3] Update release notes with spec PR & CI evidence `RELEASE-NOTES.md`
 
-**Checkpoint**: US3 independently testable (health transparency + artifacts published).
+**Checkpoint**: US3 independently testable (health transparency + artifacts published). ✅ COMPLETE
 
 ---
 
