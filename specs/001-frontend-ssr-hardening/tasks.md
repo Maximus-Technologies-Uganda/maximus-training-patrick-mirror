@@ -78,18 +78,18 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 
 ### Tests (write first)
 
-- [ ] T028 [P] [US1] Contract test for posts listing `tests/contract/posts.contract.test.ts`
-- [ ] T029 [P] [US1] SSR content test (JS disabled snapshot) `tests/e2e/posts.ssr-content.spec.ts`
-- [ ] T030 [P] [US1] Upstream failure graceful messaging test `tests/e2e/posts.failure.spec.ts`
+- [x] T028 [P] [US1] Contract test for posts listing `tests/contract/posts.contract.test.ts`
+- [x] T029 [P] [US1] SSR content test (JS disabled snapshot) `tests/e2e/posts.ssr-content.spec.ts`
+- [x] T030 [P] [US1] Upstream failure graceful messaging test `tests/e2e/posts.failure.spec.ts`
 
 ### Implementation
 
-- [ ] T031 [P] [US1] Implement posts table component `frontend-next/components/PostsTable.tsx`
-- [ ] T032 [P] [US1] Implement empty & error states component `frontend-next/components/PostsStates.tsx`
-- [ ] T033 [US1] Implement SSR posts page `frontend-next/app/posts/page.tsx` (uses fetchApi + canonical key)
-- [ ] T034 [US1] Add server-only token guard test `frontend-next/src/__tests__/serverOnlyToken.test.ts`
-- [ ] T035 [US1] Integrate trace logging for posts route `frontend-next/app/posts/routeLogger.ts`
-- [ ] T036 [US1] Accessibility live region for error/empty `frontend-next/components/LiveRegion.tsx`
+- [x] T031 [P] [US1] Implement posts table component `frontend-next/components/PostsTable.tsx`
+- [x] T032 [P] [US1] Implement empty & error states component `frontend-next/components/PostsStates.tsx`
+- [x] T033 [US1] Implement SSR posts page `frontend-next/app/posts/page.tsx` (uses fetchApi + canonical key)
+- [x] T034 [US1] Add server-only token guard test `frontend-next/src/__tests__/serverOnlyToken.test.ts`
+- [x] T035 [US1] Integrate trace logging for posts route `frontend-next/app/posts/routeLogger.ts`
+- [x] T036 [US1] Accessibility live region for error/empty `frontend-next/components/LiveRegion.tsx`
 
 **Checkpoint**: US1 independently testable (MVP deliverable).
 

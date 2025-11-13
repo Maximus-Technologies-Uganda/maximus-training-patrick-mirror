@@ -16,6 +16,7 @@ module.exports = [
       '**/.turbo/**',
       'assets/**',
       'scripts/create-project-issues.js',
+      'todo/todos.json',
     ],
   },
 
