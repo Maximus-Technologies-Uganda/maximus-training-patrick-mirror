@@ -39,6 +39,9 @@ coverage/
 /stopwatch/node_modules/
 /todo/node_modules/
 
+# Generated data files
+/todo/todos.json
+
 # Additional logs
 npm-debug.log*
 yarn-debug.log*
