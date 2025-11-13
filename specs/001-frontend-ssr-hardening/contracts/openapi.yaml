@@ -1,0 +1,57 @@
+openapi: 3.1.0
+info:
+  title: Frontend Foundations Status API
+  version: 0.1.0
+servers:
+  - url: http://localhost:5000/api
+paths:
+  /status:
+    get:
+      operationId: getStatus
+      summary: Health and upstream status
+      responses:
+        '200':
+          description: Status payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+        '500':
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Status:
+      type: object
+      required: [ok, traceId, upstream, ts]
+      properties:
+        ok:
+          type: boolean
+        traceId:
+          type: string
+        upstream:
+          type: object
+          required: [ok]
+          properties:
+            ok: { type: boolean }
+            latency_ms: { type: number }
+            status: { type: number }
+        ts:
+          type: string
+          format: date-time
+        reason:
+          type: string
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            traceId: { type: string }
