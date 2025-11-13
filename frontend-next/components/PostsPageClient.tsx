@@ -453,7 +453,7 @@ export default function PostsPageClient({
   // Using createElement to avoid passing children as a prop (react/no-children-prop)
   // eslint-disable-next-line react/no-children-prop
   return React.createElement(
-    SWRConfig as React.ComponentType<{ value: typeof swrValue; children: React.ReactNode }>,
+    SWRConfig as React.ComponentType<{ value: SWRConfiguration; children: React.ReactNode }>,
     {
       value: swrValue,
       children: mainContent,
