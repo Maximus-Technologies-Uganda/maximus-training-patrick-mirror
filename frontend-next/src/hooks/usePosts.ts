@@ -13,11 +13,21 @@ import { querySchema, type QueryParams } from "../../../packages/contract/src/in
 import { buildPostsKey } from "../lib/urlKey";
 
 /**
+ * Post entity interface
+ */
+interface Post {
+  id: string;
+  title: string;
+  author: string;
+  createdAt: string; // ISO date string
+  // Add other fields as needed, e.g. content, tags, etc.
+}
+
+/**
  * Posts response contract
  */
 interface PostsResponse {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  posts: any[]; // Post entity
+  posts: Post[]; // Post entity
   meta: {
     total: number;
     key: string;
