@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Posts SSR Content (T029)", () => {
   test("should render ≥1 post row without JavaScript", async ({ page, context }) => {
     // Disable JavaScript to test pure SSR
-    await context.setExtraHTTPHeaders({});
+    await context.setJavaScriptEnabled(false);
 
     const response = await page.goto("/posts");
     expect(response?.status()).toBe(200);
