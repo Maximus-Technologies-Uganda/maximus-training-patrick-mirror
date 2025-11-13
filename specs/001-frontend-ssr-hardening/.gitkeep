@@ -1,0 +1,14 @@
+# This folder is protected and critical to the project
+# DO NOT DELETE - Contains single source of truth for Frontend Foundations Week 10 SSR & Hardening
+# 
+# Key files:
+# - tasks.md: Complete specification for 78 tasks across 6 phases
+# - plan.md: Project planning & timeline
+# - spec.md: User stories & acceptance criteria
+# - research.md: Design patterns & investigation
+# - data-model.md: Schema & data structures
+# - contracts/: API specifications (OpenAPI, Zod schemas)
+# - checklists/: Requirements & quality criteria
+#
+# If this folder is ever empty or deleted, restore from git history:
+# git checkout 8c411829 -- specs/001-frontend-ssr-hardening/
