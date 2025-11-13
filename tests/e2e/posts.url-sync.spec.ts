@@ -12,11 +12,6 @@ test.describe('Posts URL Sync & History Navigation (T038)', () => {
   const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   const postsUrl = `${baseUrl}/posts`;
 
-  test.beforeEach(async ({ page }) => {
-    // Set a reasonable timeout for navigation and interactions
-    page.setDefaultTimeout(10000);
-  });
-
   test.describe('Direct navigation with filter parameters', () => {
     test('should server-render filtered results when navigating directly to /posts?q=design', async ({
       page,
