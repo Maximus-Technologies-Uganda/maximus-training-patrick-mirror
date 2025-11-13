@@ -131,11 +131,13 @@ jobs:
           fi
 
           # Save outputs for use in summary
-          echo "frontend_url=$SERVICE_URL" >> "$GITHUB_OUTPUT"
-          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
-          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
-          echo "build_link=$BUILD_LINK" >> "$GITHUB_OUTPUT"
-          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          {
+            echo "frontend_url=$SERVICE_URL"
+            echo "api_url=$API_URL"
+            echo "commit_sha=$COMMIT_SHA"
+            echo "build_link=$BUILD_LINK"
+            echo "build_id=$BUILD_ID"
+          } >> "$GITHUB_OUTPUT"
 
           {
             echo "## Cloud Run Deployment — Day-0 Task C (WIF Enabled)"

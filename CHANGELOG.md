@@ -43,6 +43,10 @@
 - test(frontend-next): wrap posts pagination integration interactions in React act to suppress async update warnings.
 - chore(frontend-next): document SWR cache isolation, aria-live assertive guidance, and local sort timestamp fallbacks.
 
+## 2025-11-13
+
+- fix(contract): resync pnpm lockfile to capture workspace dependencies so Corepack activation succeeds.
+
 ## 2025-11-06
 
 - fix(frontend): forward session cookies during SSR posts fetch so authenticated users receive initial data.

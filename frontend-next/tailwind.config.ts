@@ -24,13 +24,15 @@ const config: Config = {
       colors: {
         /* Colors - mapped to CSS variables in tokens.css */
         primary: "var(--color-primary)",
+        secondary: "var(--color-secondary)",
         surface: "var(--color-surface)",
         text: "var(--color-text)",
         "text-muted": "var(--color-text-muted)",
-        error: "var(--color-error, #dc2626)",
-        success: "var(--color-success, #16a34a)",
-        warning: "var(--color-warning, #ea8900)",
-        info: "var(--color-info, #0284c7)",
+        error: "var(--color-error)",
+        success: "var(--color-success)",
+        warning: "var(--color-warning)",
+        info: "var(--color-info)",
+        neutral: "var(--color-neutral)",
       },
       spacing: {
         /* Spacing - mapped to CSS variables in tokens.css */

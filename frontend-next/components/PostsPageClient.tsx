@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SWRConfig } from "swr";
 import type { Cache, SWRConfiguration } from "swr";
 import type { State } from "swr/_internal";
 
-import LiveRegion from "./LiveRegion";
+import { LiveRegion } from "./LiveRegion";
 import NewPostForm from "./NewPostForm";
 import PageSizeSelect from "./PageSizeSelect";
 import { PaginationControls } from "../src/components/PaginationControls";
@@ -340,116 +339,124 @@ export default function PostsPageClient({
     []
   );
 
-  return React.createElement(
-    SWRConfig as any,
-    { value: swrValue },
+  const mainContent = (
     <main className="mx-auto max-w-3xl bg-surface p-4 text-text">
       <LiveRegion message={statusMessage} />
 
-        <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold text-text">
-          Posts
-        </h1>
+      <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold text-text">
+        Posts
+      </h1>
 
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <PageSizeSelect pageSize={pageSize} onChangeAction={onChangePageSize} />
-          <label className="text-sm text-text">
-            Sort by
-            <select
-              value={sort}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (isValidSort(value)) {
-                  onChangeSort(value);
-                }
-              }}
-              className="ml-2 rounded border border-text-muted/40 px-2 py-1 text-sm text-text"
-              aria-label="Sort posts"
-            >
-              {POST_SORT_VALUES.map((option) => (
-                <option key={option} value={option}>
-                  {SORT_LABELS[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <SearchInput value={searchQuery} onChangeAction={onChangeSearchQuery} />
-        </div>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <PageSizeSelect pageSize={pageSize} onChangeAction={onChangePageSize} />
+        <label className="text-sm text-text">
+          Sort by
+          <select
+            value={sort}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (isValidSort(value)) {
+                onChangeSort(value);
+              }
+            }}
+            className="ml-2 rounded border border-text-muted/40 px-2 py-1 text-sm text-text"
+            aria-label="Sort posts"
+          >
+            {POST_SORT_VALUES.map((option) => (
+              <option key={option} value={option}>
+                {SORT_LABELS[option]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <SearchInput value={searchQuery} onChangeAction={onChangeSearchQuery} />
+      </div>
 
-        <div
-          className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-          aria-live="polite"
-        >
-          {session ? (
-            <p className="text-sm text-text">
-              Signed in as <span className="font-semibold">{session.name ?? session.userId}</span>
-            </p>
-          ) : (
-            <p className="text-sm text-text-muted">
-              You are browsing as a guest. Sign in to manage your posts.
-            </p>
-          )}
-          {session ? (
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-md border border-text-muted/40 px-3 py-1 text-sm font-medium text-text transition hover:bg-primary/10"
-              onClick={signOut}
-            >
-              Sign out
-            </button>
-          ) : (
-            <a
-              className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-sm font-medium text-surface transition hover:bg-primary/90"
-              href="/login"
-            >
-              Sign in
-            </a>
-          )}
-        </div>
+      <div
+        className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        aria-live="polite"
+      >
+        {session ? (
+          <p className="text-sm text-text">
+            Signed in as <span className="font-semibold">{session.name ?? session.userId}</span>
+          </p>
+        ) : (
+          <p className="text-sm text-text-muted">
+            You are browsing as a guest. Sign in to manage your posts.
+          </p>
+        )}
+        {session ? (
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-md border border-text-muted/40 px-3 py-1 text-sm font-medium text-text transition hover:bg-primary/10"
+            onClick={signOut}
+          >
+            Sign out
+          </button>
+        ) : (
+          <a
+            className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1 text-sm font-medium text-surface transition hover:bg-primary/90"
+            href="/login"
+          >
+            Sign in
+          </a>
+        )}
+      </div>
 
-        <div className="mt-4">
-          <NewPostForm
-            pageSize={pageSize}
-            sort={sort}
-            query={searchQuery}
-            onSuccessAction={onCreateSuccess}
-          />
-        </div>
-
-        <section className="mt-4" aria-label="Posts list">
-          {error && effectiveItems.length === 0 ? (
-            <ErrorState />
-          ) : isLoading && effectiveItems.length === 0 ? (
-            <p className="text-text-muted">Loading…</p>
-          ) : (
-            (() => {
-              const items = filterPostsByQuery(effectiveItems, searchQuery);
-              return items.length === 0 ? (
-                <EmptyState />
-              ) : (
-                <PostsList
-                  items={items}
-                  currentUserId={session?.userId ?? null}
-                  currentUserRole={session?.role}
-                />
-              );
-            })()
-          )}
-        </section>
-
-        <PaginationControls
-          currentPage={page}
-          totalPages={totalPages}
-          onPrevious={() => {
-            if (page > 1) {
-              onChangePage(page - 1);
-            }
-          }}
-          onNext={() => {
-            if (page < totalPages) {
-              onChangePage(page + 1);
-            }
-          }}
+      <div className="mt-4">
+        <NewPostForm
+          pageSize={pageSize}
+          sort={sort}
+          query={searchQuery}
+          onSuccessAction={onCreateSuccess}
         />
-      </main>
+      </div>
+
+      <section className="mt-4" aria-label="Posts list">
+        {error && effectiveItems.length === 0 ? (
+          <ErrorState />
+        ) : isLoading && effectiveItems.length === 0 ? (
+          <p className="text-text-muted">Loading…</p>
+        ) : (
+          (() => {
+            const items = filterPostsByQuery(effectiveItems, searchQuery);
+            return items.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <PostsList
+                items={items}
+                currentUserId={session?.userId ?? null}
+                currentUserRole={session?.role}
+              />
+            );
+          })()
+        )}
+      </section>
+
+      <PaginationControls
+        currentPage={page}
+        totalPages={totalPages}
+        onPrevious={() => {
+          if (page > 1) {
+            onChangePage(page - 1);
+          }
+        }}
+        onNext={() => {
+          if (page < totalPages) {
+            onChangePage(page + 1);
+          }
+        }}
+      />
+    </main>
+  );
+
+  // Using createElement to avoid passing children as a prop (react/no-children-prop)
+  // eslint-disable-next-line react/no-children-prop
+  return React.createElement(
+    SWRConfig as React.ComponentType<{ value: SWRConfiguration; children: React.ReactNode }>,
+    {
+      value: swrValue,
+      children: mainContent,
+    }
   );
 }

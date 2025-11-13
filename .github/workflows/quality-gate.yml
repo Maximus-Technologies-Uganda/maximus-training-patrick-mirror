@@ -32,11 +32,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - uses: ./.github/actions/setup-pnpm
       - name: Install dependencies (pnpm)
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
-          pnpm install --frozen-lockfile --reporter=silent
+        run: pnpm install --frozen-lockfile --reporter=silent
       - name: Link check README
         run: node scripts/link-check.js README.md
       - name: Enforce PR template
@@ -260,10 +258,22 @@ jobs:
           # Ensure frontend-next has its dependencies
           cd frontend-next
           pnpm install --ignore-scripts --frozen-lockfile=false
+          pnpm ls
 
       - name: Run frontend-next tests with coverage
         working-directory: frontend-next
-        run: npm run test:ci
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Node version: $(node -v)"
+          echo "npm version: $(npm -v)"
+          echo "pnpm version: $(pnpm -v)"
+          npm run test:ci 2>&1 || {
+            echo "Test execution failed. Checking environment..."
+            # Check for both 'vitest' and 'jest' binaries in case the test runner changes or is misconfigured.
+            ls -la node_modules/.bin/ | grep -E 'vitest|jest' || true
+            exit 1
+          }
 
       - name: Validate coverage directory
         id: validate_coverage_frontend_next
@@ -275,7 +285,7 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Coverage directory or coverage-summary.json not found" >&2
-            ls -la . | grep -E 'coverage|coverage-' || true
+            for item in coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
           fi
 
       - name: Upload frontend-next coverage artifact
@@ -390,6 +400,7 @@ jobs:
           name: coverage-frontend
           path: |
             frontend/coverage/**
+          if-no-files-found: warn
           retention-days: 21
 
       - name: Read coverage summary
@@ -496,7 +507,7 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Coverage directory or coverage-summary.json not found for ${{ matrix.workspace }}" >&2
-            ls -la . | grep -E 'coverage|coverage-' || true
+            for item in coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
           fi
 
       - name: Upload ${{ matrix.workspace }} coverage
@@ -544,12 +555,11 @@ jobs:
           npm config set fetch-retries 5 --location=project
           npm config set fetch-retry-mintimeout 20000 --location=project
           npm config set fetch-retry-maxtimeout 600000 --location=project
-          npm cache clean --force || true
-          # Install root and workspace dependencies
-          npm ci || npm ci
-          # Ensure API has its dependencies
+          pnpm install --frozen-lockfile
+          # Ensure API has its dependencies (already installed above)
           cd api
-          npm ci || npm ci
+
+      - uses: ./.github/actions/setup-pnpm
 
       - name: Debug available api scripts
         run: |
@@ -574,7 +584,7 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Coverage directory or coverage-summary.json not found" >&2
-            ls -la . | grep -E 'coverage|coverage-' || true
+            for item in coverage*; do [ -e "$item" ] && ls -la "$item"; done || true
           fi
 
       - name: Upload API coverage artifact
@@ -1137,25 +1147,28 @@ jobs:
           fi
 
           if [ "$has_week7" = true ] || [ "$has_week8" = true ]; then
-            echo "has_specs=true" >> "$GITHUB_OUTPUT"
-            echo "has_week7=$has_week7" >> "$GITHUB_OUTPUT"
-            echo "has_week8=$has_week8" >> "$GITHUB_OUTPUT"
+            {
+              echo "has_specs=true"
+              echo "has_week7=$has_week7"
+              echo "has_week8=$has_week8"
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "has_specs=false" >> "$GITHUB_OUTPUT"
-            echo "has_week7=false" >> "$GITHUB_OUTPUT"
-            echo "has_week8=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "has_specs=false"
+              echo "has_week7=false"
+              echo "has_week8=false"
+            } >> "$GITHUB_OUTPUT"
             echo "No OpenAPI specs found; skipping Spectral linting."
           fi
       - uses: actions/setup-node@v4
         if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         with:
           node-version: '20'
+      - uses: ./.github/actions/setup-pnpm
+        if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
       - name: Install dependencies (pnpm)
         if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.x --activate
-          pnpm install --frozen-lockfile --reporter=silent
+        run: pnpm install --frozen-lockfile --reporter=silent
       - name: Install Spectral (OpenAPI linter)
         if: ${{ steps.detect_contract_specs.outputs.has_specs == 'true' }}
         run: npm i -g @stoplight/spectral-cli@6
@@ -1237,7 +1250,7 @@ jobs:
           ENDPOINT="${URL%/}/auth/login"
           COUNT="${REQUESTS:-20}"
           tmpfile=$(mktemp)
-          for i in $(seq 1 "$COUNT"); do
+          for _ in $(seq 1 "$COUNT"); do
             t=$(curl -s -o /dev/null -w '%{time_total}' -X POST "$ENDPOINT" \
                  -H 'Content-Type: application/json' \
                  --data "{\"username\":\"$USERNAME\",\"password\":\"$PASSWORD\"}") || t="0"

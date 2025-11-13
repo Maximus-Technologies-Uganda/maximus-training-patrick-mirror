@@ -1,0 +1,13 @@
+﻿ΓÇëWARNΓÇë Unsupported engine: wanted: {"node":"20.x"} (current: {"node":"v24.7.0","pnpm":"10.20.0"})
+node.exe : The filename, directory name, or volume label syntax is incorrect.
+At C:\Users\LENOVO\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (The filename, d...x is incorrect.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ΓÇëWARNΓÇë Unsupported engine: wanted: {"node":"20.x"} (current: {"node":"v24.7.0","pnpm":"10.20.0"})
+undefined
+ΓÇëERR_PNPM_RECURSIVE_EXEC_FIRST_FAILΓÇë Command "test:unit" not found
+
+Did you mean "pnpm test:ci"?

@@ -19,17 +19,20 @@ export function PaginationControls({
   const isLastPage = currentPage >= totalPages;
 
   return (
-    <nav aria-label="Pagination" className={`flex items-center justify-center gap-2 ${className}`}>
+    <nav aria-label="Pagination" className={`flex items-center justify-center gap-3 ${className}`}>
       <button
         type="button"
         onClick={onPrevious}
         disabled={isFirstPage}
         aria-label="Previous page"
-        className="px-3 py-2 text-sm font-medium text-text bg-surface border border-text-muted/40 rounded-md hover:bg-surface/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="px-4 py-2 text-sm font-semibold text-purple-700 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95 disabled:transform-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 shadow-sm hover:shadow-md"
       >
         Previous
       </button>
-      <span aria-current="page" className="text-sm text-text font-medium px-2">
+      <span
+        aria-current="page"
+        className="text-sm font-bold text-gray-700 px-3 py-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border-2 border-purple-200 transition-all duration-200"
+      >
         Page {currentPage} of {totalPages}
       </span>
       <button
@@ -37,7 +40,7 @@ export function PaginationControls({
         onClick={onNext}
         disabled={isLastPage}
         aria-label="Next page"
-        className="px-3 py-2 text-sm font-medium text-text bg-surface border border-text-muted/40 rounded-md hover:bg-surface/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="px-4 py-2 text-sm font-semibold text-purple-700 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-50 hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-95 disabled:transform-none focus:outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-1 shadow-sm hover:shadow-md"
       >
         Next
       </button>

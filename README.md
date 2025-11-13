@@ -4,15 +4,14 @@ This repository hosts a monorepo with a Node.js API (`api/`) and a Next.js app (
 
 ## Live Deployments
 
-- Frontend (Cloud Run): `https://maximus-training-frontend-673209018655.africa-south1.run.app`
-- API (Cloud Run): `https://maximus-training-api-wyb2jsgqyq-bq.a.run.app`
-
-You can retrieve service URLs from the Cloud Run console or via:
+Note: Deployment URLs are environment-specific and managed via Google Cloud Run. Retrieve URLs via:
 
 ```bash
-gcloud run services describe maximus-training-frontend --region <region> --format='value(status.url)'
-gcloud run services describe maximus-training-api --region <region> --format='value(status.url)'
+gcloud run services describe maximus-training-frontend --region africa-south1 --format='value(status.url)'
+gcloud run services describe maximus-training-api --region africa-south1 --format='value(status.url)'
 ```
+
+Or check the [Google Cloud Console](https://console.cloud.google.com/run) for live service details.
 
 ## Authentication
 
@@ -142,6 +141,17 @@ Cloud Build file: `cloudbuild.yaml`
 - The Quality Gate job summary includes a section titled "frontend-next Coverage (with thresholds)" with the current coverage table.
 - The Review Packet artifacts include the `coverage-frontend-next` HTML coverage report and the Playwright HTML report. See the Review Packet guide for details and local rebuild steps: [docs/ReviewPacket/README.md](docs/ReviewPacket/README.md)
 - For guidance on finding and interpreting CI/CD evidence artifacts, see [docs/release-evidence.md](docs/release-evidence.md)
+
+### Week 10 Artifacts (Frontend Foundations – SSR & Hardening)
+
+Evidence artifacts for the Week 10 milestone (Frontend Foundations with SSR, observability, design system v1, and quality gates):
+
+- **Coverage Report**: [docs/week-10/coverage/index.html](docs/week-10/coverage/index.html) — Jest coverage for `frontend-next/src/**/*.{ts,tsx}` with threshold targets
+- **Accessibility Audit**: [docs/week-10/a11y/index.html](docs/week-10/a11y/index.html) — axe-core scan results for SSR pages and design system components
+- **Playwright Report**: [docs/week-10/playwright/index.html](docs/week-10/playwright/index.html) — E2E test evidence: SSR proof (JS disabled), accessibility, error states
+- **Status Probe Metrics**: [docs/week-10/status-probe.json](docs/week-10/status-probe.json) — p95 latency tracking for `/status` endpoint (rolling 10-minute samples)
+
+All artifacts are generated during the CI/Quality Gate phase and linked in release PRs per `DEVELOPMENT_RULES.md`.
 
 ### Evidence Collection Flow (T028–T106)
 
@@ -343,6 +353,7 @@ Use Claude Code interactively for comprehensive PR reviews:
 
 **How to use:**
 Simply ask in your Claude Code session:
+
 ```
 "Review my Phase 2 PR"
 "Check this code for security issues"
@@ -350,6 +361,7 @@ Simply ask in your Claude Code session:
 ```
 
 **Advantages:**
+
 - ✅ **Free** - No API key required
 - ✅ **Interactive** - Ask follow-up questions
 - ✅ **Context-aware** - Understands your codebase
@@ -366,6 +378,7 @@ Trigger Gemini code reviews on any PR:
 ```
 
 **Features:**
+
 - Integrated via MCP tools
 - Direct inline suggestions
 - Automatic on PR open (if enabled)
@@ -379,6 +392,7 @@ For additional free AI review tools and detailed comparison, see:
 **[docs/AI-REVIEW-ALTERNATIVES.md](docs/AI-REVIEW-ALTERNATIVES.md)**
 
 **Available alternatives:**
+
 - Manual Claude Code reviews (⭐ Recommended)
 - Gemini reviews (already set up)
 - CodeRabbit (free for open source)

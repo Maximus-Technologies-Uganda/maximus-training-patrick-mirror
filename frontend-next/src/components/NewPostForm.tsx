@@ -121,9 +121,26 @@ export function NewPostForm({
 
         let message = "Failed to create post";
         try {
-          const payload = (await response.json()) as { message?: string };
-          if (payload?.message) {
+          const payload = (await response.json()) as {
+            message?: string;
+            error?: { code?: string; message?: string };
+          };
+          if (payload?.error?.message) {
+            message = payload.error.message;
+          } else if (payload?.message) {
             message = payload.message;
+          }
+          // Provide user-friendly error messages
+          if (
+            response.status === 401 ||
+            message.includes("authentication") ||
+            message.includes("unauthorized")
+          ) {
+            message = "Your session has expired. Please sign in again.";
+          } else if (response.status === 403) {
+            message = "You don't have permission to create posts.";
+          } else if (response.status === 400 && message.includes("CSRF")) {
+            message = "Security token missing. Please refresh the page and try again.";
           }
         } catch {
           // ignore malformed payloads

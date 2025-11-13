@@ -155,7 +155,6 @@ export interface ObservabilityLogger {
 
 export function createObservabilityLogger(options: LoggerOptions = {}): ObservabilityLogger {
   const writer = options.writer ?? ((line: string) => {
-    // eslint-disable-next-line no-console
     console.log(line);
   });
 

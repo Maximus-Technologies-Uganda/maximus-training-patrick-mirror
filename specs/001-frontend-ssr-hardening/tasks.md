@@ -78,18 +78,18 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 
 ### Tests (write first)
 
-- [ ] T028 [P] [US1] Contract test for posts listing `tests/contract/posts.contract.test.ts`
-- [ ] T029 [P] [US1] SSR content test (JS disabled snapshot) `tests/e2e/posts.ssr-content.spec.ts`
-- [ ] T030 [P] [US1] Upstream failure graceful messaging test `tests/e2e/posts.failure.spec.ts`
+- [x] T028 [P] [US1] Contract test for posts listing `tests/contract/posts.contract.test.ts`
+- [x] T029 [P] [US1] SSR content test (JS disabled snapshot) `tests/e2e/posts.ssr-content.spec.ts`
+- [x] T030 [P] [US1] Upstream failure graceful messaging test `tests/e2e/posts.failure.spec.ts`
 
 ### Implementation
 
-- [ ] T031 [P] [US1] Implement posts table component `frontend-next/components/PostsTable.tsx`
-- [ ] T032 [P] [US1] Implement empty & error states component `frontend-next/components/PostsStates.tsx`
-- [ ] T033 [US1] Implement SSR posts page `frontend-next/app/posts/page.tsx` (uses fetchApi + canonical key)
-- [ ] T034 [US1] Add server-only token guard test `frontend-next/src/__tests__/serverOnlyToken.test.ts`
-- [ ] T035 [US1] Integrate trace logging for posts route `frontend-next/app/posts/routeLogger.ts`
-- [ ] T036 [US1] Accessibility live region for error/empty `frontend-next/components/LiveRegion.tsx`
+- [x] T031 [P] [US1] Implement posts table component `frontend-next/components/PostsTable.tsx`
+- [x] T032 [P] [US1] Implement empty & error states component `frontend-next/components/PostsStates.tsx`
+- [x] T033 [US1] Implement SSR posts page `frontend-next/app/posts/page.tsx` (uses fetchApi + canonical key)
+- [x] T034 [US1] Add server-only token guard test `frontend-next/src/__tests__/serverOnlyToken.test.ts`
+- [x] T035 [US1] Integrate trace logging for posts route `frontend-next/app/posts/routeLogger.ts`
+- [x] T036 [US1] Accessibility live region for error/empty `frontend-next/components/LiveRegion.tsx`
 
 **Checkpoint**: US1 independently testable (MVP deliverable).
 
@@ -102,19 +102,19 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 
 ### Tests
 
-- [ ] T037 [P] [US2] Filter schema unit tests `tests/contract/filterState.schema.test.ts`
-- [ ] T038 [P] [US2] URL sync & history navigation test `tests/e2e/posts.url-sync.spec.ts`
-- [ ] T039 [P] [US2] SWR vs SSR parity test `frontend-next/src/__tests__/swrSSRParity.test.ts`
+- [x] T037 [P] [US2] Filter schema unit tests `tests/contract/filterState.schema.test.ts`
+- [x] T038 [P] [US2] URL sync & history navigation test `tests/e2e/posts.url-sync.spec.ts`
+- [x] T039 [P] [US2] SWR vs SSR parity test `frontend-next/src/__tests__/swrSSRParity.test.ts`
 
 ### Implementation
 
-- [ ] T040 [P] [US2] Implement filter controls component `frontend-next/components/PostsFilters.tsx`
-- [ ] T041 [P] [US2] Implement SWR hook `frontend-next/src/hooks/usePosts.ts`
-- [ ] T042 [US2] Integrate canonical key usage in SWR hook (urlKey) `frontend-next/src/hooks/usePosts.ts`
-- [ ] T043 [US2] Implement sort utilities `frontend-next/src/lib/sortUtils.ts`
-- [ ] T044 [US2] Add live region update wiring to filter changes `frontend-next/components/LiveRegion.tsx`
+- [x] T040 [P] [US2] Implement filter controls component `frontend-next/components/PostsFilters.tsx`
+- [x] T041 [P] [US2] Implement SWR hook `frontend-next/src/hooks/usePosts.ts`
+- [x] T042 [US2] Integrate canonical key usage in SWR hook (urlKey) `frontend-next/src/hooks/usePosts.ts`
+- [x] T043 [US2] Implement sort utilities `frontend-next/src/lib/sortUtils.ts`
+- [x] T044 [US2] Add live region update wiring to filter changes `frontend-next/components/LiveRegion.tsx`
 
-**Checkpoint**: US2 independently testable (search/filter functional & accessible).
+**Checkpoint**: US2 independently testable (search/filter functional & accessible). ✅ COMPLETE
 
 ---
 
