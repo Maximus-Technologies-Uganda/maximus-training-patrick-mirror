@@ -4,7 +4,9 @@
  * FR-028: 100% sampling for ok:false /status events
  */
 
-describe('Log Sampling', () => {
+import { describe, it, expect, vi } from "vitest";
+
+describe("Log Sampling", () => {
   /**
    * Sampling decision logic
    * Rules:
@@ -18,7 +20,7 @@ describe('Log Sampling', () => {
     standardSamplingRate: number = 0.1 // 10% default
   ): boolean {
     // /status failures always logged for debugging health checks
-    if (route === '/status' && !ok) {
+    if (route === "/status" && !ok) {
       return true; // 100% sampling
     }
 
@@ -26,37 +28,33 @@ describe('Log Sampling', () => {
     return Math.random() < standardSamplingRate;
   }
 
-  it('should always log /status endpoint failures', () => {
-    const route = '/status';
+  it("should always log /status endpoint failures", () => {
+    const route = "/status";
     const ok = false;
 
     // Simulate 100 attempts - all should return true
-    const samples = Array.from({ length: 100 }, () =>
-      shouldSampleLog(route, ok, 0.1)
-    );
+    const samples = Array.from({ length: 100 }, () => shouldSampleLog(route, ok, 0.1));
 
     const sampledCount = samples.filter((s) => s).length;
     expect(sampledCount).toBe(100); // All 100% sampled
   });
 
-  it('should not always log /status endpoint successes', () => {
-    const route = '/status';
+  it("should not always log /status endpoint successes", () => {
+    const route = "/status";
     const ok = true;
     const samplingRate = 0.1; // 10%
 
     // Mock Math.random for predictable testing
     const originalRandom = Math.random;
     let callCount = 0;
-    Math.random = jest.fn(() => {
+    Math.random = vi.fn(() => {
       callCount++;
       // Return values < 0.1 for first 10, >= 0.1 for rest
       return callCount <= 10 ? callCount / 100 : callCount / 100;
-    });
+    }) as unknown as () => number;
 
     try {
-      const samples = Array.from({ length: 100 }, () =>
-        shouldSampleLog(route, ok, samplingRate)
-      );
+      const samples = Array.from({ length: 100 }, () => shouldSampleLog(route, ok, samplingRate));
 
       const sampledCount = samples.filter((s) => s).length;
       // Not all should be sampled (only ~10%)
@@ -66,8 +64,8 @@ describe('Log Sampling', () => {
     }
   });
 
-  it('should apply standard sampling to non-/status routes', () => {
-    const route = '/posts';
+  it("should apply standard sampling to non-/status routes", () => {
+    const route = "/posts";
     const ok = true;
     const samplingRate = 0.1;
 
@@ -85,38 +83,38 @@ describe('Log Sampling', () => {
     expect(sampledCount).toBeLessThan(150);
   });
 
-  it('should log /status errors with complete details', () => {
+  it("should log /status errors with complete details", () => {
     const logEntry = {
-      trace: '550e8400-e29b-41d4-a716-446655440000',
-      route: '/status',
+      trace: "550e8400-e29b-41d4-a716-446655440000",
+      route: "/status",
       latency_ms: 5000,
       status: 200,
       upstream_status: 503,
-      method: 'GET',
+      method: "GET",
       timestamp: new Date().toISOString(),
       ok: false,
-      reason: 'Upstream service unavailable',
+      reason: "Upstream service unavailable",
     };
 
     // Determine if should log
-    const shouldLog = logEntry.route === '/status' && !logEntry.ok;
+    const shouldLog = logEntry.route === "/status" && !logEntry.ok;
 
     expect(shouldLog).toBe(true);
     expect(logEntry.trace).toBeTruthy();
     expect(logEntry.reason).toBeTruthy();
   });
 
-  it('should differentiate between /status ok and not ok for sampling', () => {
+  it("should differentiate between /status ok and not ok for sampling", () => {
     const successLog = {
-      route: '/status',
+      route: "/status",
       ok: true,
-      trace: 'trace-1',
+      trace: "trace-1",
     };
 
     const failureLog = {
-      route: '/status',
+      route: "/status",
       ok: false,
-      trace: 'trace-2',
+      trace: "trace-2",
     };
 
     // Failure should always be sampled
@@ -134,19 +132,19 @@ describe('Log Sampling', () => {
     expect(sampledCount).toBeLessThan(100); // But not all
   });
 
-  it('should maintain trace ID across sampled logs', () => {
-    const traceId = '550e8400-e29b-41d4-a716-446655440000';
+  it("should maintain trace ID across sampled logs", () => {
+    const traceId = "550e8400-e29b-41d4-a716-446655440000";
 
     const failureLog1 = {
       trace: traceId,
-      route: '/status',
+      route: "/status",
       ok: false,
       latency_ms: 100,
     };
 
     const failureLog2 = {
       trace: traceId,
-      route: '/api/posts',
+      route: "/api/posts",
       ok: false,
       latency_ms: 50,
     };
@@ -154,11 +152,11 @@ describe('Log Sampling', () => {
     expect(failureLog1.trace).toBe(failureLog2.trace);
   });
 
-  it('should sample errors on other routes normally', () => {
+  it("should sample errors on other routes normally", () => {
     const errorLog = {
-      route: '/posts',
+      route: "/posts",
       ok: false,
-      trace: 'trace',
+      trace: "trace",
       latency_ms: 150,
       status: 400,
     };
@@ -176,7 +174,7 @@ describe('Log Sampling', () => {
     expect(sampledCount).toBeGreaterThan(50);
   });
 
-  it('should respect /status health check critical nature', () => {
+  it("should respect /status health check critical nature", () => {
     /**
      * Rationale: /status endpoint failures are critical for observability
      * A health check failure indicates the application or upstream is down
@@ -187,45 +185,41 @@ describe('Log Sampling', () => {
      */
 
     const healthCheckFailure = {
-      route: '/status',
+      route: "/status",
       ok: false,
-      reason: 'Database unreachable',
+      reason: "Database unreachable",
     };
 
     const validationFailure = {
-      route: '/posts',
+      route: "/posts",
       ok: false,
-      reason: 'Invalid query parameter',
+      reason: "Invalid query parameter",
     };
 
     // Health check failure must be logged
-    expect(shouldSampleLog(healthCheckFailure.route, healthCheckFailure.ok)).toBe(
-      true
-    );
+    expect(shouldSampleLog(healthCheckFailure.route, healthCheckFailure.ok)).toBe(true);
 
     // Validation failure uses standard sampling (may not be logged)
     // We test the logic, not the random outcome
-    const isValidationSampled = shouldSampleLog(
-      validationFailure.route,
-      validationFailure.ok,
-      0.1
-    );
-    expect(typeof isValidationSampled).toBe('boolean');
+    const isValidationSampled = shouldSampleLog(validationFailure.route, validationFailure.ok, 0.1);
+    expect(typeof isValidationSampled).toBe("boolean");
   });
 
-  it('should use configurable sampling rates', () => {
-    const route = '/posts';
+  it("should use configurable sampling rates", () => {
+    const route = "/posts";
     const ok = true;
 
     // High sampling rate
-    const highRateSamples = Array.from({ length: 100 }, () =>
-      shouldSampleLog(route, ok, 0.5) // 50%
+    const highRateSamples = Array.from(
+      { length: 100 },
+      () => shouldSampleLog(route, ok, 0.5) // 50%
     );
     const highSampledCount = highRateSamples.filter((s) => s).length;
 
     // Low sampling rate
-    const lowRateSamples = Array.from({ length: 100 }, () =>
-      shouldSampleLog(route, ok, 0.01) // 1%
+    const lowRateSamples = Array.from(
+      { length: 100 },
+      () => shouldSampleLog(route, ok, 0.01) // 1%
     );
     const lowSampledCount = lowRateSamples.filter((s) => s).length;
 

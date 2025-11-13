@@ -32,23 +32,35 @@ export function redactSensitiveFields(obj: any): any {
     return obj;
   }
 
-  const sensitiveKeys = [
+  // Patterns to match sensitive keys
+  // Exact matches: standalone keywords that should match the exact key name (case-insensitive)
+  const exactMatches = ["token"];
+  // Substring matches: patterns that should match if they appear anywhere in the key
+  const substringMatches = [
     "authorization",
     "cookie",
     "x-api-key",
-    "token",
+    "x_api_key",
     "secret",
     "password",
     "api_key",
     "access_token",
     "refresh_token",
     "id_token",
+    "x_token",
+    "token_type",
   ];
 
   const sanitized = Array.isArray(obj) ? [...obj] : { ...obj };
 
   for (const key in sanitized) {
-    if (sensitiveKeys.some((k) => key.toLowerCase().includes(k))) {
+    const lowerKey = key.toLowerCase();
+    // Check if key matches exact match or contains any substring pattern
+    const isSensitive =
+      exactMatches.includes(lowerKey) ||
+      substringMatches.some((pattern) => lowerKey.includes(pattern));
+
+    if (isSensitive) {
       sanitized[key] = "[REDACTED]";
     } else if (typeof sanitized[key] === "object") {
       sanitized[key] = redactSensitiveFields(sanitized[key]);
