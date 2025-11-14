@@ -16,8 +16,9 @@ interface FetchApiOptions extends RequestInit {
 }
 
 /**
- * Memoized ID token client – delegated to getIdTokenClient
- * FR-015 requires reuse of the underlying client and per-attempt timeout
+ * ID token acquisition delegated to getIdToken()
+ * FR-015 requires reuse of the underlying client and per-attempt timeout enforcement
+ * Per-attempt timeout ≤800ms enforced; total budget <3s via retryWithBackoff
  */
 
 /**
