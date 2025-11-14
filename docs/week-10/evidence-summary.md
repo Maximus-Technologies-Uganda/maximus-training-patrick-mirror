@@ -125,7 +125,7 @@ title: 'Week 10 – SSR & Hardening Evidence Summary'
 ✅ **SC-002**: `/status` p95 latency ≤150ms (95ms measured)
 ✅ **SC-003**: Filtered `/posts` SSR ≤1.5s p95
 ✅ **SC-004**: DS usage ≥80% on `/posts` (100% achieved)
-✅ **SC-005**: Coverage ≥70% lines (67.08%), 0 serious+ a11y
+⚠️ **SC-005**: Coverage ≥70% lines (67.08% - below target), 0 serious+ a11y
 ✅ **SC-006**: Release notes with artifact links
 ✅ **SC-007**: Invalid params yield accessible errors
 ✅ **SC-008**: SWR/SSR parity validated

@@ -50,7 +50,7 @@ export async function fetchApi<T>(
   const result = await retryWithBackoff(
     async () => {
       const controller = new AbortController();
-      const timeout = options.timeout && options.timeout < 800 ? options.timeout : 800;
+      const timeout = options.timeout ?? 800;
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       try {

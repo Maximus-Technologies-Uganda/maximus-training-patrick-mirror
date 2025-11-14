@@ -162,10 +162,10 @@ upstream_api_latency_ms (histogram)
 **Backoff Strategy**: Full-jitter exponential
 
 ```
-Attempt 1: 100-600ms wait
-Attempt 2: 300-1200ms wait
-Attempt 3: 600-2400ms wait
-Total max: 2400ms + 800ms = 3200ms ≈ 3s budget
+Attempt 1: 800ms (request) + 100-600ms wait = max 1400ms
+Attempt 2: 800ms (request) + 300-1200ms wait = max 2000ms
+Attempt 3: 800ms (request) = 800ms
+Note: Actual total time is capped at 3s by dynamically adjusting waits and aborting if the budget would be exceeded.
 ```
 
 ---

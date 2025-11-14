@@ -274,18 +274,26 @@ function main() {
 
   // Create git tag
   const tagName = 'v10.0.0';
-  const tagMessage =
-    'Week 10 – Frontend SSR & Hardening Release\n\nAll quality gates passed:\n- Coverage: 91% functions, 72% branches\n- A11y: 0 serious violations\n- E2E: 25/25 tests passing\n- Performance: p95 <150ms for /status\n\nSee RELEASE-NOTES.md for full details.';
+  const tagMessage = 'Week 10 – Frontend SSR & Hardening Release';
 
-  try {
-    exec(`git tag -a ${tagName} -m "${tagMessage}"`);
-    console.log('✅ Git tag created:', tagName);
-    console.log('\n📝 To push the tag:');
+  // Check if tag already exists
+  const existingTag = exec(`git tag -l ${tagName}`);
+  if (existingTag) {
+    console.warn(`⚠️  Tag ${tagName} already exists`);
+    console.log('\n📝 To push the tag (if not already pushed):');
     console.log(`   git push origin ${tagName}`);
-  } catch (_error) {
-    console.warn('⚠️  Git tag creation skipped (CI environment may not support it)');
-    console.log('\n📝 Manual tag creation:');
-    console.log(`   git tag -a v10.0.0 -m "Week 10 – Frontend SSR & Hardening Release"`);
+  } else {
+    // Use array-based approach to avoid shell escaping issues
+    try {
+      childProcess.spawnSync('git', ['tag', '-a', tagName, '-m', tagMessage], { stdio: 'inherit' });
+      console.log('✅ Git tag created:', tagName);
+      console.log('\n📝 To push the tag:');
+      console.log(`   git push origin ${tagName}`);
+    } catch (_error) {
+      console.warn('⚠️  Git tag creation skipped (CI environment may not support it)');
+      console.log('\n📝 Manual tag creation:');
+      console.log(`   git tag -a v10.0.0 -m "Week 10 – Frontend SSR & Hardening Release"`);
+    }
   }
 
   // Summary
