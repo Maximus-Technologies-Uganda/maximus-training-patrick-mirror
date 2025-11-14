@@ -7,16 +7,16 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.x --activate
 
 # Copy package files from root
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy API source files
-COPY api/tsconfig.json api/package.json api/src ./api/
+# Copy API source files (preserving the directory structure)
+COPY api/ ./api/
 
 # Install all dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build the API
-RUN cd api && npm run build
+# Build the API - use pnpm exec to access node_modules/.bin
+RUN cd api && pnpm exec tsc -p tsconfig.json
 
 # Final stage
 FROM node:20-bookworm-slim
@@ -29,13 +29,11 @@ RUN corepack enable && corepack prepare pnpm@9.x --activate
 
 # Copy built artifacts from builder
 COPY --from=builder /app/api/dist ./dist
-COPY package.json pnpm-lock.yaml ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy API package.json for dependencies
-COPY api/package.json ./
-
-# Install runtime dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Copy API package.json for reference
+COPY api/package.json ./api/
 
 # Copy OpenAPI spec
 COPY api/openapi.json ./

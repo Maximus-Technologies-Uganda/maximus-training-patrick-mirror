@@ -85,7 +85,8 @@ steps:
           --min-instances="${_API_MIN_INSTANCES}" \
           --max-instances="${_API_MAX_INSTANCES}" \
           --timeout="${_API_TIMEOUT}" \
-          --ingress=all)
+          --ingress=all \
+          --set-env-vars="NODE_ENV=production,SESSION_SECRET=$(openssl rand -base64 32)")
         if [ -n "${_SERVICE_ACCOUNT}" ]; then
           DEPLOY_ARGS+=(--service-account="${_SERVICE_ACCOUNT}")
         fi
