@@ -24,22 +24,21 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@9.x --activate
+# Copy only the necessary production artifacts from builder
+COPY --from=builder --chown=node:node /app/api/dist ./dist
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 
-# Copy built artifacts from builder
-COPY --from=builder /app/api/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Copy only necessary config files
+COPY --chown=node:node package.json ./
 
 # Copy API package.json for reference
-COPY api/package.json ./api/
-
-# Copy OpenAPI spec
-COPY api/openapi.json ./
+COPY --chown=node:node api/package.json ./
 
 USER node
 EXPOSE 8080
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
 CMD ["node", "dist/server.js"]
 
