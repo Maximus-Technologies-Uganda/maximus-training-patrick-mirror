@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { querySchema, type QueryParams } from "../../packages/contract/src/index";
 
@@ -69,6 +69,15 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
 
   const [formValues, setFormValues] = useState(initialState);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Sync formValues when initialValues changes (e.g., after navigation)
+  useEffect(() => {
+    setFormValues({
+      q: initialValues.q || "",
+      author: initialValues.author || "",
+      sort: initialValues.sort || "new",
+    });
+  }, [initialValues.q, initialValues.author, initialValues.sort]);
 
   /**
    * Handle input change

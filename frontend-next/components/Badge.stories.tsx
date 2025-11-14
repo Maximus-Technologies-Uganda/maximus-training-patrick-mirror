@@ -7,7 +7,7 @@ import { Badge } from "./Badge";
  * Accessibility (FR-007):
  * - ARIA role: status (for informational badges)
  * - Semantic variants: success (green), warning (yellow), danger (red), info (blue)
- * - Dismissible state: Close button with aria-label="Dismiss {variant} badge"
+ * - Dismissible state: Close button with aria-label="Dismiss badge"
  * - Screen reader: Badge text announced; dismissible state announced
  * - Color not sole differentiator: Icon or text label clarifies meaning
  */
