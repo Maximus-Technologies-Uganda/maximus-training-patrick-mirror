@@ -116,7 +116,7 @@ All artifacts are published and linked below:
 ## Dependencies & Compatibility
 
 - **Node.js**: 20.x LTS
-- **React**: 19+
+- **React**: 18.3.1
 - **Next.js**: 15 (App Router)
 - **Playwright**: 1.40+
 - **TypeScript**: 5.x
