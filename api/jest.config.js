@@ -12,9 +12,9 @@ module.exports = {
     ],
   },
   // Do NOT enable coverage; it breaks ts-jest isolatedModules mode.
-  // Use: pnpm jest --coverage (manual invocation only if needed)
+  // Use: pnpm test:coverage (manual invocation only if needed)
   collectCoverage: false,
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/index.ts'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/index.ts', '!src/**/types.ts'],
   coverageReporters: ['json', 'json-summary', 'lcov', 'text-summary'],
   coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '\\.test\\.ts$', '\\.spec\\.ts$'],
   testPathIgnorePatterns: ['<rootDir>/dist/'],

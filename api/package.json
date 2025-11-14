@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "test": "jest --runInBand",
     "test:ci": "jest --runInBand --verbose",
+    "test:coverage": "jest --runInBand --coverage --coverageReporters=lcov --coverageReporters=json-summary --verbose",
     "test:watch": "jest --watch"
   },
   "dependencies": {

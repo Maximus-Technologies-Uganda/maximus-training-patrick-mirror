@@ -224,6 +224,7 @@ All security requirements met for Week 10 release. No critical or high-severity 
    - **Severity**: Low (not a security issue; code quality)
    - **Mitigation**: Edge case utility functions not fully tested
    - **Impact**: All critical paths covered; can be addressed post-release
+   - **Backlog**: Create follow-up issue to reach 70%+ line coverage in post-release sprint (edge cases in retry logic, boundary conditions)
 
 ---
 
