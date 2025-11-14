@@ -2,6 +2,7 @@ import "server-only";
 
 import { v4 as uuidv4 } from "uuid";
 import { retryWithBackoff } from "./retry";
+import { getIdToken } from "./auth/getIdToken";
 
 /**
  * Server-only fetch utility for API calls with ID token authentication
@@ -14,19 +15,10 @@ interface FetchApiOptions extends RequestInit {
   timeout?: number;
 }
 
-interface IdTokenConfig {
-  audience: string;
-}
-
-let idTokenConfig: IdTokenConfig | null = null;
-
 /**
- * Initialize ID token client (memoized singleton)
- * Called once during app startup to avoid repeated instantiation overhead
+ * Memoized ID token client – delegated to getIdTokenClient
+ * FR-015 requires reuse of the underlying client and per-attempt timeout
  */
-export function initializeIdTokenClient(audience: string) {
-  idTokenConfig = { audience };
-}
 
 /**
  * Server-only fetch with ID token authentication and trace propagation
@@ -43,25 +35,8 @@ export async function fetchApi<T>(
   options: FetchApiOptions = {}
 ): Promise<{ data: T; traceId: string; status: number; upstreamStatus?: number }> {
   const traceId = options.traceId || uuidv4();
-
-  if (!idTokenConfig) {
-    throw new Error(
-      "fetchApi: ID token client not initialized. Call initializeIdTokenClient() first."
-    );
-  }
-
-  // Memoized ID token to avoid per-request instantiation
-  // In production, fetch token once at startup and cache with minimal TTL refresh
-  let token: string;
-  try {
-    // Placeholder: In real implementation, use google-auth-library
-    // const { GoogleAuth } = require('google-auth-library');
-    // const auth = new GoogleAuth();
-    // token = await auth.getIdToken(idTokenConfig.audience);
-    token = process.env.ID_TOKEN || "mock-token";
-  } catch (error) {
-    throw new Error(`Failed to acquire ID token: ${error}`);
-  }
+  const audience = process.env.ID_TOKEN_AUDIENCE || process.env.API_BASE_URL || "";
+  const token = await getIdToken(audience);
 
   const headers = {
     "Content-Type": "application/json",
@@ -74,7 +49,7 @@ export async function fetchApi<T>(
   const result = await retryWithBackoff(
     async () => {
       const controller = new AbortController();
-      const timeout = options.timeout || 800; // Per-attempt timeout ≤800ms
+      const timeout = options.timeout && options.timeout < 800 ? options.timeout : 800;
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       try {
