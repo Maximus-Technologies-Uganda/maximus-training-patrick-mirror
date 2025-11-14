@@ -6,16 +6,17 @@ WORKDIR /app
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@9.x --activate
 
-# Copy everything needed to build
+# Copy package files from root
 COPY package.json pnpm-lock.yaml ./
-COPY api/tsconfig.json ./
-COPY api/src ./src
 
-# Install all dependencies (including devDependencies for build)
+# Copy API source files
+COPY api/tsconfig.json api/package.json api/src ./api/
+
+# Install all dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build
-RUN pnpm run build 2>/dev/null || pnpm exec tsc --outDir dist
+# Build the API
+RUN cd api && npm run build
 
 # Final stage
 FROM node:20-bookworm-slim
@@ -26,15 +27,17 @@ ENV PORT=8080
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@9.x --activate
 
-# Copy built artifacts
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-lock.yaml ./
+# Copy built artifacts from builder
+COPY --from=builder /app/api/dist ./dist
+COPY package.json pnpm-lock.yaml ./
 
-# Copy runtime dependencies only
+# Copy API package.json for dependencies
+COPY api/package.json ./
+
+# Install runtime dependencies only
 RUN pnpm install --frozen-lockfile --prod
 
-# Copy remaining assets
+# Copy OpenAPI spec
 COPY api/openapi.json ./
 
 USER node
