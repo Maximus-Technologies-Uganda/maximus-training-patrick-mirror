@@ -1,69 +1,54 @@
 # Multi-stage Dockerfile for Next.js application optimized for Google Cloud Run
 
-# Stage 1: Dependencies
-FROM node:20-bookworm-slim AS deps
-WORKDIR /repo
-# Install build tools needed for native modules (lightningcss)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-COPY package.json package-lock.json ./
-COPY frontend-next/package.json ./frontend-next/package.json
-ENV NODE_OPTIONS=--max-old-space-size=2048
-# Install frontend dependencies within the frontend-next workspace specifically.
-# This avoids running `npm ci` at the monorepo root which can fail for workspace setups.
-RUN if [ -f frontend-next/package-lock.json ]; then \
-      npm ci --prefix frontend-next --no-audit --no-fund --prefer-offline --progress=false; \
-    else \
-      echo "No frontend-next/package-lock.json found; running npm install in frontend-next as a fallback"; \
-      npm install --prefix frontend-next --no-audit --no-fund --prefer-offline --progress=false; \
-    fi
-# Ensure /repo/node_modules exists so later stages can copy it (some build paths expect it).
-RUN mkdir -p /repo/node_modules
-
-# Stage 2: Builder
 FROM node:20-bookworm-slim AS builder
-WORKDIR /repo
-# Install build tools needed for native modules (lightningcss)
+WORKDIR /app
+
+# Enable pnpm via corepack
+RUN corepack enable && corepack prepare pnpm@9.x --activate
+
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
+    python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=deps /repo/node_modules ./node_modules
-COPY --from=deps /repo/frontend-next/node_modules ./frontend-next/node_modules
-COPY --from=deps /repo/package.json ./package.json
+
+# Install dependencies
+COPY package.json pnpm-lock.yaml ./
+COPY frontend-next/package.json ./frontend-next/
+RUN pnpm install --frozen-lockfile
+
+# Copy source and workspace packages
 COPY frontend-next ./frontend-next
-WORKDIR /repo/frontend-next
+COPY packages ./packages
+
+# Build
+WORKDIR /app/frontend-next
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NODE_OPTIONS=--max-old-space-size=2048
-RUN npm run build
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+RUN pnpm run build 2>/dev/null || pnpm exec next build
 
-# Stage 3: Runner - Production Image
+# Stage 2: Runner
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV HOSTNAME="0.0.0.0"
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-RUN groupadd --system --gid 1001 nodejs \
-  && useradd --system --uid 1001 --gid 1001 nextjs
-# Copy only the necessary standalone files from the builder stage
-# Place the standalone server at /app/server.js as expected by Next.js
-COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/.next/standalone ./
-# Place static assets and public content in the paths expected by the standalone server (monorepo)
-COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/.next/static ./frontend-next/.next/static
-COPY --from=builder --chown=nextjs:nodejs /repo/frontend-next/public ./frontend-next/public
+
+# Enable pnpm via corepack
+RUN corepack enable && corepack prepare pnpm@9.x --activate
+
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid 1001 nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next/static ./frontend-next/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/public ./frontend-next/public
+
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 USER nextjs
 EXPOSE 8080
-# Healthcheck to see if the server is responding
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=5 \
   CMD sh -c 'curl -fsS http://localhost:${PORT:-8080}/ || exit 1'
-# Start the application from the monorepo app path inside standalone output
+
 CMD ["node", "frontend-next/server.js"]

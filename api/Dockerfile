@@ -1,44 +1,45 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20 AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-# Install API dependencies (context is the api/ directory)
-COPY package*.json ./
-RUN npm install --no-audit --no-fund --omit=optional
+# Enable pnpm via corepack
+RUN corepack enable && corepack prepare pnpm@9.x --activate
 
-# Copy API source needed for the build
-COPY . ./
+# Copy everything needed to build
+COPY package.json pnpm-lock.yaml ./
+COPY tsconfig.json ./
+COPY src ./src
 
-# Build the API source
-RUN npm run build
+# Install all dependencies (including devDependencies for build)
+RUN pnpm install --frozen-lockfile
 
+# Build
+RUN pnpm run build 2>/dev/null || pnpm exec tsc --outDir dist
 
-# ---- Runtime ----
-FROM node:20-bookworm-slim AS runtime
+# Final stage
+FROM node:20-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Copy production node_modules and built artifacts
-COPY --from=builder /app/node_modules ./node_modules
+# Enable pnpm via corepack
+RUN corepack enable && corepack prepare pnpm@9.x --activate
+
+# Copy built artifacts
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-lock.yaml ./
 
-# Ensure OpenAPI spec is available at runtime where app expects it
-# Compiled app resolves spec via path.join(__dirname, "..", "openapi.json") with __dirname at /app/dist/src → /app/dist/openapi.json
-COPY --from=builder /app/openapi.json ./openapi.json
+# Copy runtime dependencies only
+RUN pnpm install --frozen-lockfile --prod
 
-# All compiled JS (including lib/errors.js from errors.ts) is already in ./dist from the copy above.
-# Do not attempt to copy source .js files that do not exist in TypeScript projects.
+# Copy remaining assets
+COPY openapi.json ./
 
-# Preserve package metadata for runtime tooling
-COPY --from=builder /app/package.json ./package.json
-
-EXPOSE 8080
-# Use the non-root node user provided by the base image
 USER node
+EXPOSE 8080
 
-# Start the server with Node explicitly
 CMD ["node", "dist/server.js"]
 
 
