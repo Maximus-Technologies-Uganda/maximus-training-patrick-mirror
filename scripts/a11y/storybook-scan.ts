@@ -13,28 +13,43 @@ import AxeBuilder from '@axe-core/playwright';
 
 async function main() {
   const baseUrl = process.env.STORYBOOK_BASE_URL || 'http://localhost:6006';
-  const iframeUrl = new URL('iframe.html', baseUrl).toString();
+  const storiesUrl = new URL('stories.json', baseUrl).toString();
 
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
   try {
-    await page.goto(iframeUrl, { waitUntil: 'domcontentloaded' });
+    // Fetch stories.json to get all story IDs
+    await page.goto(storiesUrl, { waitUntil: 'domcontentloaded' });
+    const storiesJson = await page.evaluate(() => JSON.parse(document.body.innerText));
+    const stories = Object.values(storiesJson.stories || {});
 
-    const axe = new AxeBuilder({ page })
-      .disableRules(['color-contrast'])
-      .withTags(['wcag2a', 'wcag2aa']);
+    let allViolations: any[] = [];
 
-    const results = await axe.analyze();
+    for (const story of stories) {
+      const storyUrl = `${baseUrl}/iframe.html?id=${story.id}&viewMode=story`;
+      await page.goto(storyUrl, { waitUntil: 'domcontentloaded' });
 
-    const seriousOrWorse = results.violations.filter((v) =>
-      ['serious', 'critical'].includes(v.impact || 'minor'),
-    );
+      const axe = new AxeBuilder({ page })
+        .disableRules(['color-contrast'])
+        .withTags(['wcag2a', 'wcag2aa']);
 
-    if (seriousOrWorse.length > 0) {
+      const results = await axe.analyze();
+      const seriousOrWorse = results.violations.filter((v) =>
+        ['serious', 'critical'].includes(v.impact || 'minor'),
+      );
+      if (seriousOrWorse.length > 0) {
+        // Attach story info to each violation for reporting
+        for (const v of seriousOrWorse) {
+          allViolations.push({ ...v, storyId: story.id, storyName: story.name });
+        }
+      }
+    }
+
+    if (allViolations.length > 0) {
       console.error('A11y violations detected in Storybook:');
-      for (const v of seriousOrWorse) {
-        console.error(`- ${v.id}: ${v.description}`);
+      for (const v of allViolations) {
+        console.error(`- [${v.storyId}] ${v.storyName}: ${v.id}: ${v.description}`);
       }
       process.exitCode = 1;
     } else {
