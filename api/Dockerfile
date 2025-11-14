@@ -8,8 +8,8 @@ RUN corepack enable && corepack prepare pnpm@9.x --activate
 
 # Copy everything needed to build
 COPY package.json pnpm-lock.yaml ./
-COPY tsconfig.json ./
-COPY src ./src
+COPY api/tsconfig.json ./
+COPY api/src ./src
 
 # Install all dependencies (including devDependencies for build)
 RUN pnpm install --frozen-lockfile
@@ -35,7 +35,7 @@ COPY --from=builder /app/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 # Copy remaining assets
-COPY openapi.json ./
+COPY api/openapi.json ./
 
 USER node
 EXPOSE 8080
