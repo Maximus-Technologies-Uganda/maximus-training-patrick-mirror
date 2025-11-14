@@ -7,7 +7,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { querySchema, type QueryParams } from "../../packages/contract/src/index";
 
@@ -58,12 +58,26 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
   onAnnounceAlert,
 }) => {
   const router = useRouter();
-  const [formValues, setFormValues] = useState({
-    q: initialValues.q || "",
-    author: initialValues.author || "",
-    sort: initialValues.sort || "new",
-  });
+  const initialState = useMemo(
+    () => ({
+      q: initialValues.q || "",
+      author: initialValues.author || "",
+      sort: initialValues.sort || "new",
+    }),
+    [initialValues.q, initialValues.author, initialValues.sort]
+  );
+
+  const [formValues, setFormValues] = useState(initialState);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Sync formValues when initialValues changes (e.g., after navigation)
+  useEffect(() => {
+    setFormValues({
+      q: initialValues.q || "",
+      author: initialValues.author || "",
+      sort: initialValues.sort || "new",
+    });
+  }, [initialValues.q, initialValues.author, initialValues.sort]);
 
   /**
    * Handle input change
@@ -148,7 +162,7 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
    * Handle clear filters
    */
   const handleClear = useCallback(() => {
-    setFormValues({ q: "", author: "", sort: "new" });
+    setFormValues(initialState);
     setValidationError(null);
     router.push("/posts");
 
@@ -156,7 +170,7 @@ export const PostsFilters: React.FC<PostsFiltersProps> = ({
     if (onAnnounceStatus) {
       onAnnounceStatus("Filters cleared. Showing all posts.");
     }
-  }, [router, onAnnounceStatus]);
+  }, [router, onAnnounceStatus, initialState]);
 
   const displayError = errorMessage || validationError;
 

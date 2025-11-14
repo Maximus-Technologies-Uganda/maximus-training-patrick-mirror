@@ -59,10 +59,12 @@ cd frontend-next && pnpm dev
 # NEXT_PUBLIC_API_URL=http://localhost:8080
 
 Testing
+
 # Run all monorepo tests (quote, expense, stopwatch, todo)
 pnpm -r test
 
-# API tests with coverage (Jest)
+# API tests (Jest) – coverage disabled due to ts-jest isolatedModules incompatibility
+# Use: cd api && pnpm test -- --coverage (manual collection if needed)
 cd api && pnpm test:ci
 
 # Frontend tests with coverage (Vitest)

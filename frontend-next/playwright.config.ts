@@ -15,7 +15,10 @@ function resolveCommitSha(): string {
   return "local-dev";
 }
 
-const htmlReportDir = path.resolve(__dirname, "..", "a11y-frontend-next", resolveCommitSha());
+const htmlReportDir =
+  process.env.PLAYWRIGHT_HTML_REPORT && process.env.PLAYWRIGHT_HTML_REPORT.trim().length > 0
+    ? process.env.PLAYWRIGHT_HTML_REPORT
+    : path.resolve(__dirname, "..", "a11y-frontend-next", resolveCommitSha());
 
 // Align default with package.json dev script (next dev -p 3001)
 const port = process.env.E2E_PORT || "3001";
@@ -48,6 +51,7 @@ export default defineConfig({
       reuseExistingServer: boolean;
       timeout: number;
     }> = [];
+    const baseTimeout = process.env.CI ? 180_000 : 120_000;
     if (startApi) {
       // Note: API dev server defaults to PORT=3000. If you need to run it alongside the frontend
       // at a different port, start it manually with PORT set, then run tests with E2E_SKIP_SERVER=1.
@@ -55,14 +59,14 @@ export default defineConfig({
         command: "npm run dev --workspace=api",
         url: "http://localhost:3000/health",
         reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
+        timeout: baseTimeout,
       });
     }
     servers.push({
       command: `npm run dev --workspace=frontend-next -- --port=${port}`,
       url: `http://localhost:${port}`,
       reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
+      timeout: baseTimeout,
     });
     return servers;
   })(),

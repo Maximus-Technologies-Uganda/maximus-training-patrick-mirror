@@ -11,8 +11,12 @@ module.exports = {
       },
     ],
   },
-  collectCoverage: true,
+  // Do NOT enable coverage; it breaks ts-jest isolatedModules mode.
+  // Use: pnpm test:coverage (manual invocation only if needed)
+  collectCoverage: false,
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/index.ts', '!src/**/types.ts'],
   coverageReporters: ['json', 'json-summary', 'lcov', 'text-summary'],
+  coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '\\.test\\.ts$', '\\.spec\\.ts$'],
   testPathIgnorePatterns: ['<rootDir>/dist/'],
   moduleNameMapper: {
     // Force contract tests to use TypeScript app with new middleware

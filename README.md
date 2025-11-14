@@ -146,6 +146,14 @@ Cloud Build file: `cloudbuild.yaml`
 
 Evidence artifacts for the Week 10 milestone (Frontend Foundations with SSR, observability, design system v1, and quality gates):
 
+**Evidence Reports:**
+
+- **Security Review**: [docs/week-10/SECURITY-REVIEW.md](docs/week-10/SECURITY-REVIEW.md) — Comprehensive audit: OWASP Top 10 compliance, threat modeling, vulnerability assessment, sign-off
+- **Performance Audit**: [docs/week-10/performance.md](docs/week-10/performance.md) — Measured baselines for `/status` (p95: 95ms), `/posts` SSR (p95: 1.2s), optimization analysis, load capacity
+- **Evidence Summary**: [docs/week-10/evidence-summary.md](docs/week-10/evidence-summary.md) — Quality gate results, acceptance criteria, implementation summary, artifact links
+
+**Test Artifacts:**
+
 - **Coverage Report**: [docs/week-10/coverage/index.html](docs/week-10/coverage/index.html) — Jest coverage for `frontend-next/src/**/*.{ts,tsx}` with threshold targets
 - **Accessibility Audit**: [docs/week-10/a11y/index.html](docs/week-10/a11y/index.html) — axe-core scan results for SSR pages and design system components
 - **Playwright Report**: [docs/week-10/playwright/index.html](docs/week-10/playwright/index.html) — E2E test evidence: SSR proof (JS disabled), accessibility, error states

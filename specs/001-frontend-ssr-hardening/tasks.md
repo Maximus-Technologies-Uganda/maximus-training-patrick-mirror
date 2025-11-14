@@ -149,16 +149,16 @@ description: 'Task list for Frontend Foundations Week 10 – SSR & Hardening'
 
 **Purpose**: Final refinements, performance, documentation, and hardening.
 
-- [ ] T055 [P] Add Storybook stories for all DS primitives `frontend-next/components/**/*.stories.tsx`
-- [ ] T056 [P] Implement Storybook a11y scan script `scripts/a11y/storybook-scan.ts`
-- [ ] T057 Refactor fetchApi for memoized ID token client & explicit timeout tests `frontend-next/src/server/fetchApi.ts`
-- [ ] T058 Optimize filter component to prevent unnecessary re-renders `frontend-next/components/PostsFilters.tsx`
-- [ ] T059 [P] Final token parity run & adjust tokens `frontend-next/design/tokens.json`
-- [ ] T060 [P] Aggregate evidence summary `docs/week-10/evidence-summary.md`
-- [ ] T061 Final release tag automation script `scripts/release/tag-week10.ts`
-- [ ] T062 Security review & remove any temporary logs `frontend-next/src/middleware/traceLogger.ts`
-- [ ] T063 Performance audit & add notes to `docs/week-10/performance.md`
-- [ ] T077 Workflow to run `scripts/release/tag-week10.ts` on green main, attach artifact links `.github/workflows/release-week10.yml`
+- [x] T055 [P] Add Storybook stories for all DS primitives `frontend-next/components/**/*.stories.tsx`
+- [x] T056 [P] Implement Storybook a11y scan script `scripts/a11y/storybook-scan.ts`
+- [x] T057 Refactor fetchApi for memoized ID token client & explicit timeout tests `frontend-next/src/server/fetchApi.ts`
+- [x] T058 Optimize filter component to prevent unnecessary re-renders `frontend-next/components/PostsFilters.tsx`
+- [x] T059 [P] Final token parity run & adjust tokens `frontend-next/design/tokens.json`
+- [x] T060 [P] Aggregate evidence summary `docs/week-10/evidence-summary.md`
+- [x] T061 Final release tag automation script `scripts/release/tag-week10.ts`
+- [x] T062 Security review & remove any temporary logs `frontend-next/src/middleware/traceLogger.ts`
+- [x] T063 Performance audit & add notes to `docs/week-10/performance.md`
+- [x] T077 Workflow to run `scripts/release/tag-week10.ts` on green main, attach artifact links `.github/workflows/release-week10.yml`
 
 ---
 
