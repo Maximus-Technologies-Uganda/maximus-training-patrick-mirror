@@ -32,4 +32,4 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Run Week 10 tag script
-        run: pnpm ts-node scripts/release/tag-week10.ts
+        run: pnpm exec tsx scripts/release/tag-week10.ts

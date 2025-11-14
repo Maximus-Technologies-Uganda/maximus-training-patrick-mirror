@@ -292,7 +292,9 @@ jobs:
         run: |
           # Ensure Playwright HTML report lands in the Review Packet path with index.html
           export PLAYWRIGHT_HTML_REPORT=docs/ReviewPacket/a11y/html
-          pnpm exec playwright test --reporter=list,html
+          # Use the local wrapper so CI+local runs share behavior and
+          # config.webServer/E2E_PORT are respected.
+          node scripts/run-playwright.mjs --reporter=list,html
         env:
           # Align Playwright baseURL with dev server port (see frontend-next/playwright.config.ts)
           E2E_PORT: '3001'
