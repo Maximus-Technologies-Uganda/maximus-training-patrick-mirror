@@ -662,7 +662,7 @@ jobs:
           NODE
 
       - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.validate_coverage_api.outputs.exists == 'true'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: api-coverage-report
