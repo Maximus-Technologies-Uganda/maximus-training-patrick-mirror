@@ -185,21 +185,9 @@ steps:
         fi
         echo "Service URL: $$SERVICE_URL"
         sleep 60
-        if [ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ]; then
-          echo "Frontend allows unauthenticated access; verifying anonymously."
-          AUTH_HEADER=()
-        else
-          echo "Frontend is private; verifying with an identity token."
-          AUDIENCE="${_FRONTEND_AUDIENCE:-$$SERVICE_URL}"
-          TOKEN=$(gcloud auth print-identity-token --audiences="$$AUDIENCE")
-          if [ -z "$$TOKEN" ]; then
-            echo "Failed to mint identity token" >&2
-            exit 1
-          fi
-          AUTH_HEADER=(-H "Authorization: Bearer $$TOKEN")
-        fi
+        echo "Frontend allows unauthenticated access; verifying anonymously."
         for i in {1..30}; do
-          CODE=$(curl -s -L --connect-timeout 5 --max-time 10 "${AUTH_HEADER[@]}" -o /dev/null -w "%{http_code}" "$$SERVICE_URL") || true
+          CODE=$(curl -s -L --connect-timeout 5 --max-time 10 -o /dev/null -w "%{http_code}" "$$SERVICE_URL") || true
           if [ "$$CODE" = "200" ] || [ "$$CODE" = "301" ] || [ "$$CODE" = "302" ] || [ "$$CODE" = "404" ] || [ "$$CODE" = "503" ]; then
             echo "Frontend responding (HTTP $$CODE)"
             exit 0
