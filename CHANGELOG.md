@@ -1,3 +1,14 @@
+## 2025-11-16
+
+- test(frontend-next): add `/api/posts/[id]` integration coverage for DELETE/PATCH flows (identity propagation, CSRF enforcement, local fallback) to lift frontend coverage above the 65% pre-push gate.
+- fix(frontend-next): ensure SSR posts fetch derives a valid origin from deployment env vars or request headers so `/posts` initial HTML contains real data instead of a loading placeholder (spec FR-001).
+- chore(deploy): inject `APP_ORIGIN` during Cloud Run deploy when the service URL is known so SSR origin resolution stays stable across regions.
+
+## 2025-11-15
+
+- fix(deploy): include NEXT_PUBLIC_API_URL in `scripts/deploy-frontend.sh` so Cloud Run instances satisfy the frontend env validation and stop returning HTTP 500 on boot.
+- fix(ci): run the quality gate aggregate job with pnpm (instead of npm) to avoid the `@storybook/nextjs` peer-resolution failure blocking artifacts and contract enforcement.
+
 ## 2025-11-09
 
 - feat(deploy): successfully deployed maximus-training-api and maximus-training-frontend to Google Cloud Run (africa-south1) after resolving gcloud substitution validation, TypeScript type mismatches, and Next.js Link component incompatibilities. Migrated environment variable injection to external bash script to bypass gcloud YAML parsing. Replaced Next.js Link with HTML anchors and used React.createElement for async/SWR components to resolve React 18 type conflicts. Both services now running at africa-south1.run.app.

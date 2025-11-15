@@ -45,6 +45,24 @@ steps:
           || gcloud artifacts repositories create "${_AR_REPOSITORY}" --repository-format=docker --location="${_REGION}" --description="Cloud Run images" \
           || echo "Repo ensure step failed (permissions?); continuing."
 
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    id: Ensure Session Secret
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        set -euxo pipefail
+        # Check if session-secret exists, create if not
+        if ! gcloud secrets describe session-secret --project="${PROJECT_ID}" >/dev/null 2>&1; then
+          echo "Creating session-secret in Secret Manager..."
+          echo -n "$(openssl rand -base64 32)" | gcloud secrets create session-secret \
+            --data-file=- \
+            --replication-policy=automatic \
+            --project="${PROJECT_ID}"
+        else
+          echo "session-secret already exists in Secret Manager"
+        fi
+
   # Build and deploy API first
   - name: 'gcr.io/cloud-builders/docker'
     id: Build API Image
@@ -85,7 +103,9 @@ steps:
           --min-instances="${_API_MIN_INSTANCES}" \
           --max-instances="${_API_MAX_INSTANCES}" \
           --timeout="${_API_TIMEOUT}" \
-          --ingress=all)
+          --ingress=all \
+          --set-env-vars="NODE_ENV=production" \
+          --update-secrets="SESSION_SECRET=session-secret:latest")
         if [ -n "${_SERVICE_ACCOUNT}" ]; then
           DEPLOY_ARGS+=(--service-account="${_SERVICE_ACCOUNT}")
         fi
@@ -186,6 +206,7 @@ steps:
           exit 1
         fi
         echo "Service URL: $$SERVICE_URL"
+        # Give service a moment to start, then rely on retry loop
         sleep 10
         if [ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ]; then
           echo "Frontend allows unauthenticated access; verifying anonymously."
