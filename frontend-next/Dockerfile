@@ -11,14 +11,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-COPY package.json pnpm-lock.yaml ./
+# Copy workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY frontend-next/package.json ./frontend-next/
+COPY packages ./packages
+
+# Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy source and workspace packages
+# Copy frontend-next source
 COPY frontend-next ./frontend-next
-COPY packages ./packages
 
 # Build
 WORKDIR /app/frontend-next
