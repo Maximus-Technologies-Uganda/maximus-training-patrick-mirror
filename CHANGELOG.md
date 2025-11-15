@@ -1,3 +1,7 @@
+## 2025-11-15
+
+- fix(deploy): include NEXT_PUBLIC_API_URL in `scripts/deploy-frontend.sh` so Cloud Run instances satisfy the frontend env validation and stop returning HTTP 500 on boot.
+
 ## 2025-11-09
 
 - feat(deploy): successfully deployed maximus-training-api and maximus-training-frontend to Google Cloud Run (africa-south1) after resolving gcloud substitution validation, TypeScript type mismatches, and Next.js Link component incompatibilities. Migrated environment variable injection to external bash script to bypass gcloud YAML parsing. Replaced Next.js Link with HTML anchors and used React.createElement for async/SWR components to resolve React 18 type conflicts. Both services now running at africa-south1.run.app.
