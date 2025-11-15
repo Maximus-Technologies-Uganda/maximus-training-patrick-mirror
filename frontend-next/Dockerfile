@@ -29,27 +29,21 @@ ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
 RUN pnpm run build 2>/dev/null || pnpm exec next build
 
-# Stage 2: Runner
+# Stage 2: Runner - use the full built app
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
 
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@9.x --activate
-
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid 1001 nextjs
 
-# Copy the entire standalone build which includes node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next/standalone ./
-# Copy static files
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next/static ./frontend-next/.next/static
-# Copy public files
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/public ./frontend-next/public
-# Copy package.json for reference
-COPY --chown=nextjs:nodejs frontend-next/package.json ./frontend-next/package.json
+# Copy entire frontend-next directory with .next build output
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next /app/frontend-next
+# Copy node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules /app/node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/node_modules /app/frontend-next/node_modules
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
@@ -59,5 +53,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
   CMD sh -c 'curl -fsS http://localhost:${PORT:-8080}/ || exit 1'
 
-# Start the Next.js server - it should be at ./server.js from the standalone build
-CMD ["node", "server.js"]
+# Use next start to run the production build
+WORKDIR /app/frontend-next
+CMD ["pnpm", "start"]
