@@ -14,5 +14,6 @@ gcloud run deploy "$1" \
   --max-instances="$8" \
   --timeout="3600s" \
   --ingress=all \
-  ${10:+$10}
+  "${10}" \
+  --allow-unauthenticated
 
