@@ -36,9 +36,6 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
 
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@9.x --activate
-
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid 1001 nextjs
 
@@ -58,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
 
 # Use next start to run the production build
 WORKDIR /app/frontend-next
-CMD ["pnpm", "start"]
+CMD ["/app/node_modules/.bin/pnpm", "start"]
