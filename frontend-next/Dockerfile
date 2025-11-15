@@ -43,7 +43,10 @@ RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid 1001 nextjs
 
 # Copy entire frontend-next directory with .next build output
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next /app/frontend-next
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/public /app/frontend-next/public
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next /app/frontend-next/.next
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/package.json /app/frontend-next/package.json
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/next.config.ts /app/frontend-next/next.config.ts
 # Copy node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules /app/node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/node_modules /app/frontend-next/node_modules
