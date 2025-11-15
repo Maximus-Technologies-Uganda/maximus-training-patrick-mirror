@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getIdToken } from "../../src/server/auth/getIdToken";
+import { getIdToken } from "@/server/auth/getIdToken";
 import {
   ensureRequestContext,
   buildPropagationHeaders,
   type RequestContext,
-} from "../../src/middleware/requestId";
+} from "@/middleware/requestId";
 
 /**
  * T049 & T050: /status Route Handler

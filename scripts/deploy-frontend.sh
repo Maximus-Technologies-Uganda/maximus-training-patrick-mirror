@@ -1,13 +1,21 @@
 #!/bin/bash
 set -euxo pipefail
 API_URL=$(cat api_url.txt)
-gcloud run deploy "$1" \
+SERVICE_NAME="$1"
+PROJECT_ID="$3"
+REGION="$4"
+EXISTING_URL=$(gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)' 2>/dev/null || true)
+ENV_VARS="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$API_URL,NEXT_PUBLIC_API_URL=$API_URL,ID_TOKEN_AUDIENCE=$API_URL"
+if [ -n "$EXISTING_URL" ]; then
+  ENV_VARS="$ENV_VARS,APP_ORIGIN=$EXISTING_URL"
+fi
+gcloud run deploy "$SERVICE_NAME" \
   --image="$2" \
-  --project="$3" \
-  --region="$4" \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
   --platform=managed \
   --port=8080 \
-  --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$API_URL,NEXT_PUBLIC_API_URL=$API_URL,ID_TOKEN_AUDIENCE=$API_URL" \
+  --set-env-vars="$ENV_VARS" \
   --memory="1Gi" \
   --cpu="2" \
   --min-instances="$7" \

@@ -12,18 +12,41 @@ import {
 
 export const dynamic = "force-dynamic";
 
-function getSsrAppOrigin(): string {
-  const configured = process.env.APP_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL;
-  if (configured) {
-    try {
-      const parsed = new URL(configured);
-      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-        return parsed.origin;
-      }
-    } catch {
-      // Ignore invalid URLs and fall back below
+type HeaderLike = {
+  get(name: string): string | null | undefined;
+};
+
+function parseOrigin(candidate: string | undefined | null): string | null {
+  if (!candidate) return null;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.origin;
     }
+  } catch {
+    // Ignore invalid URLs and fall back to other strategies
   }
+  return null;
+}
+
+function inferOriginFromHeaders(incoming: HeaderLike | undefined): string | null {
+  if (!incoming) return null;
+  const forwardedHost = incoming.get("x-forwarded-host") || incoming.get("host");
+  if (!forwardedHost) return null;
+  const protoHeader = incoming.get("x-forwarded-proto") || "https";
+  const proto = protoHeader
+    .split(",")
+    .map((value) => value.trim())
+    .find(Boolean);
+  const scheme = proto === "http" || proto === "https" ? proto : "https";
+  return `${scheme}://${forwardedHost}`;
+}
+
+function getSsrAppOrigin(incoming: HeaderLike | undefined): string {
+  const fromEnv = parseOrigin(process.env.APP_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL);
+  if (fromEnv) return fromEnv;
+  const fromHeaders = parseOrigin(inferOriginFromHeaders(incoming));
+  if (fromHeaders) return fromHeaders;
   return "http://localhost:3000";
 }
 
@@ -42,6 +65,12 @@ export default async function PostsPage({
 }: {
   searchParams?: Promise<PageSearchParams>;
 }): Promise<React.ReactElement> {
+  let incomingHeaders: HeaderLike | undefined;
+  try {
+    incomingHeaders = await headers();
+  } catch (_e) {
+    incomingHeaders = undefined;
+  }
   const incomingQuery = (searchParams ? await searchParams : {}) as PageSearchParams;
   const requestedPage = Number(incomingQuery.page ?? "1");
   const requestedPageSize = Number(incomingQuery.pageSize ?? "10");
@@ -63,7 +92,7 @@ export default async function PostsPage({
   let initialHasNextPage: boolean | undefined;
   try {
     // SSR for all pages to meet spec requirement FR-001 (SSR-first architecture)
-    const url = new URL("/api/posts", getSsrAppOrigin());
+    const url = new URL("/api/posts", getSsrAppOrigin(incomingHeaders));
     url.searchParams.set("page", String(page));
     // Request one extra to determine if there's a next page without another round trip
     url.searchParams.set("pageSize", String(pageSize + 1));
@@ -72,16 +101,6 @@ export default async function PostsPage({
       url.searchParams.set("q", incomingQ);
     }
     const fetchHeaders: Record<string, string> = {};
-    let incomingHeaders;
-    try {
-      incomingHeaders = await headers();
-    } catch (_e) {
-      // headers() can throw when running outside a Next request scope (tests).
-      // Don't rethrow here — proceed without incoming headers so SSR can still
-      // attempt to fetch (tests can stub global fetch). This mirrors production
-      // behavior where cookies may be absent.
-      incomingHeaders = undefined;
-    }
     const cookieHeader =
       incomingHeaders && typeof incomingHeaders.get === "function"
         ? incomingHeaders.get("cookie")

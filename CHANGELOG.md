@@ -1,3 +1,9 @@
+## 2025-11-16
+
+- test(frontend-next): add `/api/posts/[id]` integration coverage for DELETE/PATCH flows (identity propagation, CSRF enforcement, local fallback) to lift frontend coverage above the 65% pre-push gate.
+- fix(frontend-next): ensure SSR posts fetch derives a valid origin from deployment env vars or request headers so `/posts` initial HTML contains real data instead of a loading placeholder (spec FR-001).
+- chore(deploy): inject `APP_ORIGIN` during Cloud Run deploy when the service URL is known so SSR origin resolution stays stable across regions.
+
 ## 2025-11-15
 
 - fix(deploy): include NEXT_PUBLIC_API_URL in `scripts/deploy-frontend.sh` so Cloud Run instances satisfy the frontend env validation and stop returning HTTP 500 on boot.

@@ -53,6 +53,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
   CMD sh -c 'curl -fsS http://localhost:${PORT:-8080}/ || exit 1'
 
-# Use next start to run the production build
+# Use the compiled Next CLI entry so Node executes JavaScript, not the shell shim
 WORKDIR /app/frontend-next
-CMD ["node", "/app/node_modules/.bin/next", "start"]
+CMD ["node", "./node_modules/next/dist/bin/next", "start"]
