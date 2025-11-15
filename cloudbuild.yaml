@@ -121,10 +121,11 @@ steps:
       - |
         set -euxo pipefail
         API_URL=$(cat api_url.txt)
-        echo "Building frontend image (Route Handlers mode; no client NEXT_PUBLIC_API_URL)"
+        echo "Building frontend image with API_URL: $${API_URL}"
         docker build \
           --progress=plain \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
+          --build-arg NEXT_PUBLIC_API_URL="$${API_URL}" \
           -t "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_SERVICE_NAME}:${BUILD_ID}" \
           -f frontend-next/Dockerfile \
           .
