@@ -813,11 +813,11 @@ jobs:
         with:
           node-version: '20'
 
+      - uses: ./.github/actions/setup-pnpm
+
       - name: Install root deps for scripts
         run: |
-          npm config set audit false --location=project
-          npm config set fund false --location=project
-          npm install --no-audit --no-fund --omit=optional
+          pnpm install --ignore-scripts --frozen-lockfile=false --silent
 
       - name: Download coverage artifacts from prior jobs
         uses: actions/download-artifact@v4
@@ -901,7 +901,7 @@ jobs:
           fi
 
       - name: Normalize coverage (monorepo)
-        run: npm run coverage:normalize
+        run: pnpm run coverage:normalize
 
       - name: Summarize coverage totals (monorepo and frontend-next)
         if: always()

@@ -7,6 +7,7 @@
 ## 2025-11-15
 
 - fix(deploy): include NEXT_PUBLIC_API_URL in `scripts/deploy-frontend.sh` so Cloud Run instances satisfy the frontend env validation and stop returning HTTP 500 on boot.
+- fix(ci): run the quality gate aggregate job with pnpm (instead of npm) to avoid the `@storybook/nextjs` peer-resolution failure blocking artifacts and contract enforcement.
 
 ## 2025-11-09
 
