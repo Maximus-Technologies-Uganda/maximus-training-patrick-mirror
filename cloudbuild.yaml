@@ -72,7 +72,7 @@ steps:
       - -ceu
       - |
         set -euxo pipefail
-        DEPLOY_ARGS=(run deploy "${_API_SERVICE_NAME}" \
+        gcloud run deploy "${_API_SERVICE_NAME}" \
           --image="${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_API_SERVICE_NAME}:${BUILD_ID}" \
           --project="${PROJECT_ID}" \
           --region="${_REGION}" \
@@ -85,11 +85,13 @@ steps:
           --timeout="${_API_TIMEOUT}" \
           --ingress=all \
           --allow-unauthenticated \
-          --set-env-vars="NODE_ENV=production,SESSION_SECRET=$(openssl rand -base64 32)")
+          --set-env-vars="NODE_ENV=production,SESSION_SECRET=$(openssl rand -base64 32)"
         if [ -n "${_SERVICE_ACCOUNT}" ]; then
-          DEPLOY_ARGS+=(--service-account="${_SERVICE_ACCOUNT}")
+          gcloud run deploy "${_API_SERVICE_NAME}" \
+            --service-account="${_SERVICE_ACCOUNT}" \
+            --project="${PROJECT_ID}" \
+            --region="${_REGION}"
         fi
-        gcloud --verbosity=debug "${DEPLOY_ARGS[@]}"
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: Capture API URL
