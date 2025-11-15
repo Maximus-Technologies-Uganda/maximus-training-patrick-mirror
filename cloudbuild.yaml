@@ -86,12 +86,10 @@ steps:
           --max-instances="${_API_MAX_INSTANCES}" \
           --timeout="${_API_TIMEOUT}" \
           --ingress=all \
+          --allow-unauthenticated \
           --set-env-vars="NODE_ENV=production,SESSION_SECRET=$(openssl rand -base64 32)")
         if [ -n "${_SERVICE_ACCOUNT}" ]; then
           DEPLOY_ARGS+=(--service-account="${_SERVICE_ACCOUNT}")
-        fi
-        if [ "${_ALLOW_UNAUTH_API}" = "true" ]; then
-          DEPLOY_ARGS+=(--allow-unauthenticated)
         fi
         gcloud --verbosity=debug "${DEPLOY_ARGS[@]}"
 
@@ -153,7 +151,7 @@ steps:
           "${_FRONTEND_MIN_INSTANCES}" \
           "${_FRONTEND_MAX_INSTANCES}" \
           "${_FRONTEND_TIMEOUT}" \
-          "$([ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ] && echo --allow-unauthenticated || true)"
+          "--allow-unauthenticated"
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     id: Grant Frontend Invoker on API
