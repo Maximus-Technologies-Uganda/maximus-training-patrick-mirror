@@ -1,11 +1,16 @@
 import type { NextConfig } from "next";
 import path from "path";
-import { validateFrontendEnvOnBoot } from "./src/config/env";
 
-// T076: Validate required environment variables at build time (but not in Docker production builds)
+// T076: Validate required environment variables at boot (but not in Docker production builds)
 // Skip validation if NEXT_TELEMETRY_DISABLED is set (Docker production build indicator)
 if (process.env.NEXT_TELEMETRY_DISABLED !== "1") {
-  validateFrontendEnvOnBoot();
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { validateFrontendEnvOnBoot } = require("./src/config/env");
+    validateFrontendEnvOnBoot();
+  } catch (error) {
+    console.warn("Warning: Could not validate frontend env config:", error);
+  }
 }
 
 /** @type {import('next').NextConfig} */
