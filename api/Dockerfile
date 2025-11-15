@@ -23,12 +23,17 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 # Copy only the necessary production artifacts from builder
-COPY --from=builder --chown=node:node /app/api/dist ./dist
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
-COPY --chown=node:node package.json ./
+COPY --from=builder /app/api/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/api/node_modules ./api/node_modules
+COPY package.json ./
+COPY api/package.json ./api/package.json
 
 USER node
 EXPOSE 8080
+
+# Set NODE_PATH to resolve api's node_modules
+ENV NODE_PATH=/app/node_modules:/app/api/node_modules
 
 CMD ["node", "dist/server.js"]
 
