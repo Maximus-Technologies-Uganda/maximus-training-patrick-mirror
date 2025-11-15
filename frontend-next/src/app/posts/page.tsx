@@ -112,6 +112,9 @@ export default async function PostsPage({
       cache: "no-store",
       headers: fetchHeaders,
     });
+    const fallbackSource = res.headers.get("x-posts-fallback-source");
+    const fallbackCountHeader = res.headers.get("x-posts-fallback-count");
+    const shouldDropLocalEmptyFallback = fallbackSource === "local" && fallbackCountHeader === "0";
     if (res.ok) {
       const data = (await res.json()) as unknown;
       if (Array.isArray(data)) {
@@ -143,6 +146,10 @@ export default async function PostsPage({
           initialHasNextPage =
             typeof obj.hasNextPage === "boolean" ? obj.hasNextPage : obj.items.length > pageSize;
         }
+      }
+      if (shouldDropLocalEmptyFallback) {
+        posts = undefined;
+        initialHasNextPage = undefined;
       }
     }
   } catch {

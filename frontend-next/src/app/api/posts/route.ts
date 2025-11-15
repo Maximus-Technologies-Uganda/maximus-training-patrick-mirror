@@ -49,7 +49,10 @@ function toTimestamp(value: string | undefined): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function filterLocalPosts(posts: Array<LocalPost>, query: string | null | undefined): Array<LocalPost> {
+function filterLocalPosts(
+  posts: Array<LocalPost>,
+  query: string | null | undefined
+): Array<LocalPost> {
   const trimmed = typeof query === "string" ? query.trim() : "";
   if (!trimmed) return posts;
   const needle = trimmed.toLowerCase();
@@ -322,6 +325,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const total = sortedPosts.length;
       const hasNextPage = start + items.length < total;
       const fallbackHeaders = responseHeadersFromContext(context);
+      fallbackHeaders["x-posts-fallback-source"] = "local";
+      fallbackHeaders["x-posts-fallback-count"] = String(items.length);
       return NextResponse.json(
         { page, pageSize, hasNextPage, items, total, sort },
         {
