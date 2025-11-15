@@ -8,10 +8,11 @@ gcloud run deploy "$1" \
   --platform=managed \
   --port=8080 \
   --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=$API_URL,ID_TOKEN_AUDIENCE=$API_URL" \
-  --memory="$5" \
-  --cpu="$6" \
+  --memory="1Gi" \
+  --cpu="2" \
   --min-instances="$7" \
   --max-instances="$8" \
-  --timeout="$9" \
+  --timeout="3600s" \
   --ingress=all \
   ${10:+$10}
+
