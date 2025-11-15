@@ -43,10 +43,7 @@ RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid 1001 nextjs
 
 # Copy entire frontend-next directory with .next build output
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/public /app/frontend-next/public
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next /app/frontend-next/.next
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/package.json /app/frontend-next/package.json
-COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/next.config.ts /app/frontend-next/next.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/frontend-next /app/frontend-next
 # Copy node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules /app/node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/node_modules /app/frontend-next/node_modules
@@ -61,4 +58,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
 
 # Use next start to run the production build
 WORKDIR /app/frontend-next
-CMD ["./node_modules/.bin/next", "start"]
+CMD ["pnpm", "start"]
