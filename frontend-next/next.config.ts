@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 import path from "path";
 
 // T076: Validate required environment variables at boot (but not in Docker production builds)
-// Skip validation if NEXT_TELEMETRY_DISABLED is set (Docker production build indicator)
-if (process.env.NEXT_TELEMETRY_DISABLED !== "1") {
+// Skip validation if SKIP_ENV_VALIDATION is set (Docker production build indicator)
+if (process.env.SKIP_ENV_VALIDATION !== "1") {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { validateFrontendEnvOnBoot } = require("./src/config/env");

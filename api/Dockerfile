@@ -21,6 +21,8 @@ RUN cd api && pnpm exec tsc -p tsconfig.json
 # Final stage
 FROM node:20-bookworm-slim
 WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=8080
 
 # Copy only the necessary production artifacts from builder
 COPY --from=builder /app/api/dist ./dist
