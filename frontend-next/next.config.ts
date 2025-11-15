@@ -10,8 +10,8 @@ if (process.env.NEXT_TELEMETRY_DISABLED !== "1") {
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
-  // This is the most important line for your Docker build.
-  output: "standalone",
+  // Default output mode works better with next start in Docker
+  // output: "standalone", // Commented out - use default mode instead
 
   // Good practice for Docker deployments.
   images: { unoptimized: true },
