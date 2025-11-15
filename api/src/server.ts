@@ -5,28 +5,32 @@ import { loadConfigFromEnv } from './config';
 import { createInMemoryRepository } from './repositories/factory';
 import { createApp } from './app';
 
-const config = loadConfigFromEnv();
-const repository = createInMemoryRepository();
-const app = createApp(config, repository);
+let app;
+let config;
+try {
+  config = loadConfigFromEnv();
+  const repository = createInMemoryRepository();
+  app = createApp(config, repository);
+} catch (error) {
+  process.stderr.write(
+    `Failed to initialize API: ${error instanceof Error ? error.message : String(error)}\n`,
+  );
+  process.exit(1);
+}
 
 export { app };
 
-const port = config.port;
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : config.port;
 // Use CommonJS-friendly check to avoid ESM-only import.meta in build
 if (require.main === module) {
-  try {
-    app.listen(port, () => {
-      try {
-        // Use stdout directly to avoid eslint no-console rule in app code
-        process.stdout.write(`API listening on http://localhost:${port}\n`);
-      } catch {
-        /* noop */
-      }
-    });
-  } catch (error) {
+  const server = app.listen(port, '0.0.0.0', () => {
+    process.stdout.write(`API listening on port ${port}\n`);
+  });
+
+  server.on('error', (error) => {
     process.stderr.write(
-      `Failed to start server: ${error instanceof Error ? error.message : String(error)}\n`,
+      `Server error: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     process.exit(1);
-  }
+  });
 }
