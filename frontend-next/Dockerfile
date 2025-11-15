@@ -58,4 +58,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
 
 # Use next start to run the production build
 WORKDIR /app/frontend-next
-CMD ["pnpm", "start"]
+CMD ["./node_modules/.bin/next", "start"]
