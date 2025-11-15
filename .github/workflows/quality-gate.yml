@@ -537,6 +537,8 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'package-lock.json'
 
+      - uses: ./.github/actions/setup-pnpm
+
       - name: Cache Jest
         uses: actions/cache@v4
         with:
@@ -558,8 +560,6 @@ jobs:
           pnpm install --frozen-lockfile
           # Ensure API has its dependencies (already installed above)
           cd api
-
-      - uses: ./.github/actions/setup-pnpm
 
       - name: Debug available api scripts
         run: |

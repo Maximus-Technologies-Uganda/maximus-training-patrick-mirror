@@ -25,13 +25,13 @@ const port = process.env.E2E_PORT || "3001";
 const skipServer = process.env.E2E_SKIP_SERVER === "1";
 
 export default defineConfig({
-  testDir: "./tests",
+  // Only collect Playwright specs; unit/integration suites live alongside but
+  // must never be executed by the E2E runner.
+  testDir: "./tests/playwright",
   testMatch: ["**/*.spec.ts"],
-  // Ignore Vitest tests; they are not Playwright tests
   testIgnore: [
     "**/contract.*.spec.ts",
     "**/idempotency.e2e.spec.ts",
-    "**/tests/integration/**/*.spec.ts",
     "**/openapi.validation.test.ts",
     "**/request-context.test.ts",
   ],
