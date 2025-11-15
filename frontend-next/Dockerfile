@@ -34,6 +34,7 @@ FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=8080
 
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@9.x --activate
@@ -41,16 +42,22 @@ RUN corepack enable && corepack prepare pnpm@9.x --activate
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid 1001 nextjs
 
+# Copy the entire standalone build which includes node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next/standalone ./
+# Copy static files
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/.next/static ./frontend-next/.next/static
+# Copy public files
 COPY --from=builder --chown=nextjs:nodejs /app/frontend-next/public ./frontend-next/public
+# Copy package.json for reference
+COPY --chown=nextjs:nodejs frontend-next/package.json ./frontend-next/package.json
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 USER nextjs
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
   CMD sh -c 'curl -fsS http://localhost:${PORT:-8080}/ || exit 1'
 
+# Start the Next.js server - it should be at ./server.js from the standalone build
 CMD ["node", "server.js"]
