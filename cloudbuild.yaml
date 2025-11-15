@@ -187,7 +187,7 @@ steps:
           exit 1
         fi
         echo "Service URL: $$SERVICE_URL"
-        sleep 10
+        sleep 30
         if [ "${_ALLOW_UNAUTH_FRONTEND}" = "true" ]; then
           echo "Frontend allows unauthenticated access; verifying anonymously."
           AUTH_HEADER=()

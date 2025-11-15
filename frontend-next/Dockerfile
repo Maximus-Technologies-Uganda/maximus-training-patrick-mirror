@@ -53,4 +53,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=5 \
   CMD sh -c 'curl -fsS http://localhost:${PORT:-8080}/ || exit 1'
 
-CMD ["node", "frontend-next/server.js"]
+CMD ["node", "server.js"]
