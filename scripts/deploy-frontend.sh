@@ -16,11 +16,11 @@ gcloud run deploy "$SERVICE_NAME" \
   --platform=managed \
   --port=8080 \
   --set-env-vars="$ENV_VARS" \
-  --memory="1Gi" \
-  --cpu="2" \
+  --memory="$5" \
+  --cpu="$6" \
   --min-instances="$7" \
   --max-instances="$8" \
-  --timeout="3600s" \
+  --timeout="$9" \
   --ingress=all \
   ${10:+$10}
 

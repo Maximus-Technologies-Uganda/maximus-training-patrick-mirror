@@ -25,9 +25,10 @@ COPY frontend-next ./frontend-next
 # Build
 WORKDIR /app/frontend-next
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV SKIP_ENV_VALIDATION=1
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-RUN pnpm run build 2>/dev/null || pnpm exec next build
+RUN pnpm run build
 
 # Stage 2: Runner - use the full built app
 FROM node:20-bookworm-slim AS runner

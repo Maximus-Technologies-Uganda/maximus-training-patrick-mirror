@@ -1,6 +1,7 @@
 // TypeScript server entrypoint that boots the app with an in-memory repository
 // for development and testing environments.
 
+/* eslint-disable no-console */
 import { loadConfigFromEnv } from './config';
 import { createInMemoryRepository } from './repositories/factory';
 import { createApp } from './app';
@@ -22,9 +23,7 @@ try {
   app = createApp(config, repository);
   console.log('Server startup: App created successfully');
 } catch (error) {
-  console.error(
-    `Server startup FAILED: ${error instanceof Error ? error.message : String(error)}`,
-  );
+  console.error(`Server startup FAILED: ${error instanceof Error ? error.message : String(error)}`);
   if (error instanceof Error && error.stack) {
     console.error(`Stack: ${error.stack}`);
   }
@@ -44,9 +43,7 @@ if (require.main === module) {
   });
 
   server.on('error', (error) => {
-    console.error(
-      `Server error: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    console.error(`Server error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   });
 } else {

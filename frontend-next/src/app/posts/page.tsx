@@ -31,7 +31,7 @@ function parseOrigin(candidate: string | undefined | null): string | null {
 
 function inferOriginFromHeaders(incoming: HeaderLike | undefined): string | null {
   if (!incoming) return null;
-  const forwardedHost = incoming.get("x-forwarded-host") || incoming.get("host");
+  const forwardedHost = incoming.get("x-forwarded-host") ?? incoming.get("host");
   if (!forwardedHost) return null;
   const protoHeader = incoming.get("x-forwarded-proto") || "https";
   const proto = protoHeader
