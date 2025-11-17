@@ -4,6 +4,12 @@ import { headers } from "next/headers";
 
 import type { Post } from "@/lib/schemas";
 
+type FallbackResult = {
+  items?: Post[];
+  hasNextPage?: boolean;
+  source?: "local-fallback" | "api";
+};
+
 type PostsPayload =
   | Array<Record<string, unknown>>
   | {
@@ -57,7 +63,7 @@ function normalizePayload(
 export async function fetchLocalPostsFallback(
   params: URLSearchParams,
   pageSize: number
-): Promise<{ items?: Post[]; hasNextPage?: boolean } | null> {
+): Promise<FallbackResult | null> {
   const headerList = await headers();
   const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
   if (!host) return null;
@@ -82,7 +88,12 @@ export async function fetchLocalPostsFallback(
       return null;
     }
     const payload = (await response.json()) as PostsPayload;
-    return normalizePayload(payload, pageSize);
+    const normalized = normalizePayload(payload, pageSize);
+    const sourceHeader = response.headers.get("x-posts-fallback-source");
+    return {
+      ...normalized,
+      source: sourceHeader === "local" ? "local-fallback" : "api",
+    };
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[posts] Local API fallback failed", error);

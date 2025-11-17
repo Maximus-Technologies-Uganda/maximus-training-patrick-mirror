@@ -41,6 +41,7 @@ type PostsPageClientProps = {
   sort?: PostSort;
   initialData?: Post[];
   initialHasNextPage?: boolean;
+  initialDataSource?: "upstream" | "local-fallback";
 };
 
 function createSWRCache(): Cache<unknown> {
@@ -97,6 +98,7 @@ function PostsPageClientInner({
   sort: initialSort = DEFAULT_POST_SORT,
   initialData,
   initialHasNextPage = false,
+  initialDataSource = "upstream",
 }: PostsPageClientProps): React.ReactElement {
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
@@ -189,6 +191,7 @@ function PostsPageClientInner({
     sort === initialSort;
 
   const initialFallbackData = shouldUseInitialFallback ? fallbackList : undefined;
+  const shouldForceRevalidation = initialDataSource === "local-fallback";
 
   const { data, isLoading, isValidating, error, mutate } = usePostsList({
     page,
@@ -196,6 +199,7 @@ function PostsPageClientInner({
     sort,
     q: searchQuery,
     fallbackData: initialFallbackData,
+    revalidateOnMount: shouldForceRevalidation ? true : undefined,
   });
 
   const resolvedList = data ?? initialFallbackData;
@@ -203,6 +207,19 @@ function PostsPageClientInner({
   const hasNextPage = resolvedList?.hasNextPage ?? false;
   const totalPages = deriveTotalPages(resolvedList, page, pageSize);
   const { session, signOut } = useSession();
+  const hasInitialFallback = Boolean(initialFallbackData);
+  const usingFallbackReference = hasInitialFallback && data === initialFallbackData;
+  const treatFallbackAsAuthoritative = initialDataSource !== "local-fallback";
+  const hasAuthoritativeData = data
+    ? !usingFallbackReference || treatFallbackAsAuthoritative
+    : false;
+  const awaitingAuthoritativeData =
+    (!hasAuthoritativeData && (isLoading || isValidating)) ||
+    (!hasAuthoritativeData && shouldForceRevalidation && usingFallbackReference);
+  const showLoadingState = awaitingAuthoritativeData && !error;
+  const showErrorState = Boolean(error) && !hasAuthoritativeData;
+  const showEmptyState =
+    !showLoadingState && !showErrorState && hasAuthoritativeData && posts.length === 0;
 
   const syncUrl = useCallback(
     (next: { page?: number; sort?: PostSort; q?: string; pageSize?: number }) => {
@@ -251,33 +268,45 @@ function PostsPageClientInner({
   // surfaced immediately without delaying polite status updates.
   const [errorAnnouncement, setErrorAnnouncement] = useState<string | null>(null);
   useEffect(() => {
-    const hasPosts = posts.length > 0;
-    if ((isLoading || isValidating) && !hasPosts) {
+    if (showLoadingState) {
       setLiveAnnouncement("Loading posts…");
       setErrorAnnouncement(null);
       return;
     }
-    if (error) {
+    if (showErrorState) {
       const message = error instanceof Error ? error.message : undefined;
       setErrorAnnouncement(message ? `Error loading posts: ${message}` : "Error loading posts");
       setLiveAnnouncement("");
       return;
     }
-    if (isValidating && hasPosts) {
-      setLiveAnnouncement("Refreshing posts…");
-      setErrorAnnouncement(null);
-      return;
-    }
-    if (!hasPosts) {
+    if (showEmptyState) {
       setLiveAnnouncement("No posts available");
       setErrorAnnouncement(null);
       return;
     }
-    const sortLabel = SORT_LABELS[sort];
-    const announcement = `Showing page ${page} of ${totalPages}, ${posts.length} posts, sorted by ${sortLabel}`;
-    setLiveAnnouncement(announcement);
-    setErrorAnnouncement(null);
-  }, [isLoading, isValidating, error, posts.length, page, totalPages, sort]);
+    if (hasAuthoritativeData && posts.length > 0) {
+      const sortLabel = SORT_LABELS[sort];
+      const announcement = `Showing page ${page} of ${totalPages}, ${posts.length} posts, sorted by ${sortLabel}`;
+      setLiveAnnouncement(announcement);
+      setErrorAnnouncement(null);
+      return;
+    }
+    if (!hasAuthoritativeData && hasInitialFallback) {
+      setLiveAnnouncement("Loading posts…");
+      setErrorAnnouncement(null);
+    }
+  }, [
+    showLoadingState,
+    showErrorState,
+    showEmptyState,
+    hasAuthoritativeData,
+    posts.length,
+    sort,
+    page,
+    totalPages,
+    error,
+    hasInitialFallback,
+  ]);
 
   const errorMessage = error instanceof Error ? error.message : undefined;
 
@@ -361,11 +390,11 @@ function PostsPageClientInner({
         </label>
       </div>
 
-      {posts.length === 0 && !resolvedList && (isLoading || isValidating) ? (
+      {showLoadingState ? (
         <LoadingState message="Loading posts…" />
-      ) : error && posts.length === 0 ? (
+      ) : showErrorState ? (
         <ErrorState title="Error loading posts" message={errorMessage} onRetry={handleRetry} />
-      ) : posts.length === 0 ? (
+      ) : showEmptyState ? (
         <EmptyState
           title="No posts yet"
           message={

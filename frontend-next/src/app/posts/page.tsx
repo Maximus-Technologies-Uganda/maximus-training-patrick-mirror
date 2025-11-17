@@ -113,30 +113,35 @@ export default async function PostsPage({
   searchParams?: SearchParamsInput;
 }): Promise<React.ReactElement> {
   const query = await parseQuery(searchParams);
-  const params = new URLSearchParams();
-  params.set("page", String(query.page));
+  const upstreamParams = new URLSearchParams();
+  upstreamParams.set("page", String(query.page));
   const upstreamPageSize = Math.min(query.pageSize + 1, 100);
-  params.set("pageSize", String(upstreamPageSize));
-  params.set("sort", query.sort);
+  upstreamParams.set("pageSize", String(upstreamPageSize));
+  upstreamParams.set("sort", query.sort);
   if (query.q) {
-    params.set("q", query.q);
+    upstreamParams.set("q", query.q);
   }
+  const fallbackParams = new URLSearchParams(upstreamParams);
+  fallbackParams.set("pageSize", String(query.pageSize));
 
   let initialData: SsrPost[] | undefined;
   let initialHasNextPage: boolean | undefined;
+  let initialDataSource: "upstream" | "local-fallback" | undefined;
   try {
-    const data = await fetchApi<PostsPayload>(`/posts?${params.toString()}`);
+    const data = await fetchApi<PostsPayload>(`/posts?${upstreamParams.toString()}`);
     const normalized = normalizePayload(data, query.pageSize);
     initialData = normalized.items;
     initialHasNextPage = normalized.hasNextPage;
+    initialDataSource = "upstream";
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[posts] SSR fetch failed", error);
     }
-    const fallback = await fetchLocalPostsFallback(params, query.pageSize);
+    const fallback = await fetchLocalPostsFallback(fallbackParams, query.pageSize);
     if (fallback) {
       initialData = fallback.items;
       initialHasNextPage = fallback.hasNextPage;
+      initialDataSource = fallback.source === "local-fallback" ? "local-fallback" : "upstream";
     }
   }
 
@@ -148,6 +153,7 @@ export default async function PostsPage({
       sort={query.sort}
       initialData={initialData}
       initialHasNextPage={initialHasNextPage}
+      initialDataSource={initialDataSource}
     />
   );
 }

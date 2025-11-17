@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIdToken } from "../../../server/auth/getIdToken";
+import { buildAuthHeaders } from "../../../server/auth/getIdToken";
 import {
   ensureRequestContext,
   buildPropagationHeaders,
@@ -8,37 +8,24 @@ import {
   type RequestContext,
 } from "../../../middleware/requestId";
 import { DEFAULT_POST_SORT, PostSortSchema, type PostSort } from "../../../lib/schemas";
+import { getLocalPostsStore, seedLocalPostsStore, type LocalPost } from "./localFallbackStore";
 
-// Prefer a server-only base URL for backend calls; never expose secrets to the client
-// In E2E/dev mode, leave unset to skip upstream and use local fallback directly
+/**
+ * Prefer a server-only base URL for backend calls; never expose secrets to the client.
+ * In E2E/dev mode, leave unset to skip upstream and use local fallback directly.
+ *
+ * Authentication is handled by buildAuthHeaders() from src/server/auth/getIdToken.ts,
+ * which respects ID_TOKEN_AUDIENCE and API_SERVICE_TOKEN environment variables.
+ */
 const API_BASE_URL: string | undefined =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL;
-const API_SERVICE_TOKEN: string | undefined = process.env.API_SERVICE_TOKEN;
-// Use logical-OR so an empty IAP_AUDIENCE falls back to ID_TOKEN_AUDIENCE
-const IAP_AUDIENCE: string | undefined = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE;
 
 // Ensure Node.js runtime so google-auth-library can mint ID tokens on Cloud Run
 export const runtime = "nodejs";
 
 // Local in-process fallback store for CI/local when upstream API is unavailable
-// Use globalThis to better survive module reloads in dev
-type LocalPost = {
-  id: string;
-  ownerId?: string;
-  title: string;
-  content: string;
-  tags: string[];
-  published: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-const localPostsFallback: Array<LocalPost> =
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ ?? [];
-// Initialize global store if missing
-if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__) {
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ =
-    localPostsFallback;
-}
+seedLocalPostsStore();
+const localPostsFallback: Array<LocalPost> = getLocalPostsStore();
 
 function toTimestamp(value: string | undefined): number {
   if (!value) return 0;
@@ -81,21 +68,6 @@ function sortLocalPosts(posts: Array<LocalPost>, sort: PostSort): Array<LocalPos
       break;
   }
   return copy;
-}
-
-async function buildAuthHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  const serviceAuthorization = API_SERVICE_TOKEN ? `Bearer ${API_SERVICE_TOKEN}` : undefined;
-
-  if (IAP_AUDIENCE) {
-    const idToken = await getIdToken(IAP_AUDIENCE);
-    headers["Authorization"] = `Bearer ${idToken}`;
-    if (serviceAuthorization) headers["X-Service-Authorization"] = serviceAuthorization;
-    return headers;
-  }
-
-  if (serviceAuthorization) headers["Authorization"] = serviceAuthorization;
-  return headers;
 }
 
 async function extractUserIdentity(
@@ -276,9 +248,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       {
         method: "GET",
         headers: {
-          ...(await buildAuthHeaders()),
+          ...(await buildAuthHeaders({ ...propagationHeaders })),
           ...(sessionCookie ? { Cookie: sessionCookie } : {}),
-          ...propagationHeaders,
           ...(originHeader ? { Origin: originHeader } : {}),
         },
         cache: "no-store",
@@ -516,12 +487,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(await buildAuthHeaders()),
+        ...(await buildAuthHeaders({
+          ...propagationHeaders,
+          ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
+          ...identityHeaders,
+        })),
         ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
-        ...propagationHeaders,
-        ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
         ...(originHeader ? { Origin: originHeader } : {}),
-        ...identityHeaders,
       },
       body: bodyText,
     });
