@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { NextRequest } from "next/server";
+
+const buildAuthHeadersMock =
+  vi.fn<(headers?: Record<string, string>) => Promise<Record<string, string>>>();
+
 vi.mock("next/server", () => {
   class NextResponse extends Response {
     constructor(body?: BodyInit | null, init?: ResponseInit) {
@@ -14,6 +18,10 @@ vi.mock("next/server", () => {
   const NextRequest = class {};
   return { NextResponse, NextRequest };
 });
+
+vi.mock("../../../server/auth/getIdToken", () => ({
+  buildAuthHeaders: buildAuthHeadersMock,
+}));
 // Avoid importing next/server in Vitest environment
 
 // Minimal polyfill for fetch used by route handler
@@ -24,8 +32,16 @@ const mockText = vi.fn();
 beforeEach(() => {
   mockJson.mockReset();
   mockText.mockReset();
+  buildAuthHeadersMock.mockReset();
+  buildAuthHeadersMock.mockImplementation(async (headers = {}) => ({
+    Accept: "application/json",
+    ...headers,
+    Authorization: "Bearer test-id-token",
+  }));
   // Set API_BASE_URL so route handler attempts upstream fetch
   process.env.API_BASE_URL = "http://localhost:8080";
+  delete process.env.ID_TOKEN_AUDIENCE;
+  delete process.env.API_SERVICE_TOKEN;
   // Default: return 200 with JSON array
   global.fetch = vi.fn(async () => {
     return {
