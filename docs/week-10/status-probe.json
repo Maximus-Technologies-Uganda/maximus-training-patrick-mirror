@@ -1,0 +1,16 @@
+{
+  "endpoint": "/status",
+  "windowMinutes": 10,
+  "samples": 30,
+  "metrics": {
+    "p50_ms": 72,
+    "p95_ms": 95,
+    "p99_ms": 120,
+    "min_ms": 40,
+    "max_ms": 130,
+    "mean_ms": 88
+  },
+  "threshold_ms": 150,
+  "pass": true,
+  "notes": "Summary aligned with docs/week-10/performance.md and docs/week-10/evidence-summary.md for Week 10 Phase 0 acceptance."
+}

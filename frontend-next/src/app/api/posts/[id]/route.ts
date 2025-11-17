@@ -7,6 +7,7 @@ import {
   responseHeadersFromContext,
   type RequestContext,
 } from "../../../../middleware/requestId";
+import { getLocalPostsStore, seedLocalPostsStore, type LocalPost } from "../localFallbackStore";
 
 const API_BASE_URL: string =
   process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
@@ -15,23 +16,8 @@ const IAP_AUDIENCE: string | undefined = process.env.IAP_AUDIENCE || process.env
 
 export const runtime = "nodejs";
 
-type LocalPost = {
-  id: string;
-  ownerId?: string;
-  title: string;
-  content: string;
-  tags: string[];
-  published: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-const localPostsFallback: Array<LocalPost> =
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ ?? [];
-
-if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__) {
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ = localPostsFallback;
-}
+seedLocalPostsStore();
+const localPostsFallback: Array<LocalPost> = getLocalPostsStore();
 
 function extractForwardableCookies(cookieHeader: string): string {
   try {
@@ -43,8 +29,8 @@ function extractForwardableCookies(cookieHeader: string): string {
     if (csrfMatch) {
       // Forward CSRF token with timestamp validation (T063)
       const csrfToken = csrfMatch[1];
-      if (csrfToken.includes('-')) {
-        const parts = csrfToken.split('-');
+      if (csrfToken.includes("-")) {
+        const parts = csrfToken.split("-");
         if (parts.length === 2) {
           const timestamp = parseInt(parts[0], 10);
           const now = Math.floor(Date.now() / 1000);
@@ -79,7 +65,7 @@ function extractUserIdentity(request: NextRequest): { userId?: string; role?: st
     const payloadSegment = parts[1];
     const json = Buffer.from(
       payloadSegment.replace(/-/g, "+").replace(/_/g, "/") +
-      "=".repeat((4 - (payloadSegment.length % 4)) % 4),
+        "=".repeat((4 - (payloadSegment.length % 4)) % 4),
       "base64"
     ).toString("utf8");
     const payload = JSON.parse(json) as Record<string, unknown>;
@@ -118,14 +104,17 @@ function serviceAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-function initializeContext(request: NextRequest): { context: RequestContext; propagationHeaders: Record<string, string> } {
+function initializeContext(request: NextRequest): {
+  context: RequestContext;
+  propagationHeaders: Record<string, string>;
+} {
   const context = ensureRequestContext(request.headers);
   return { context, propagationHeaders: buildPropagationHeaders(context) };
 }
 
 function applyUpstreamContext(
   context: RequestContext,
-  upstream: Response,
+  upstream: Response
 ): { context: RequestContext; headers: Record<string, string> } {
   const merged = mergeUpstreamContext(context, upstream.headers);
   return { context: merged, headers: responseHeadersFromContext(merged) };
@@ -145,7 +134,7 @@ export async function DELETE(request: NextRequest): Promise<Response> {
   if (!csrfHeader) {
     return NextResponse.json(
       { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
-      { status: 400 },
+      { status: 400 }
     );
   }
   // Extract and forward identity information (T053)
@@ -198,11 +187,11 @@ export async function DELETE(request: NextRequest): Promise<Response> {
         requestId: context.requestId,
         traceparent: context.traceparent,
         error: errInfo,
-      }),
+      })
     );
     return NextResponse.json(
       { error: { code: "UPSTREAM_DELETE_FAILED", message: "Failed to delete post" } },
-      { status: 500, headers: responseHeadersFromContext(context) },
+      { status: 500, headers: responseHeadersFromContext(context) }
     );
   }
 }
@@ -227,7 +216,7 @@ export async function PATCH(request: NextRequest): Promise<Response> {
   if (!csrfHeader) {
     return NextResponse.json(
       { error: { code: "CSRF_HEADER_REQUIRED", message: "Missing X-CSRF-Token header" } },
-      { status: 400 },
+      { status: 400 }
     );
   }
   // Extract and forward identity information (T053)
@@ -322,13 +311,11 @@ export async function PATCH(request: NextRequest): Promise<Response> {
         requestId: context.requestId,
         traceparent: context.traceparent,
         error: errInfo,
-      }),
+      })
     );
     return NextResponse.json(
       { error: { code: "UPSTREAM_UPDATE_FAILED", message: "Failed to update post" } },
-      { status: 500, headers: responseHeadersFromContext(context) },
+      { status: 500, headers: responseHeadersFromContext(context) }
     );
   }
 }
-
-

@@ -1,10 +1,20 @@
 import { render, screen } from "@testing-library/react";
-import * as nextHeaders from "next/headers";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import PostsPage from "./page";
 import { DEFAULT_POST_SORT } from "../../lib/schemas";
 
-vi.mock("next/headers", () => ({ cookies: vi.fn() }));
+const fetchApiMock = vi.hoisted(() => vi.fn());
+const fetchLocalPostsFallbackMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/server/fetchApi", () => ({
+  fetchApi: fetchApiMock,
+}));
+
+vi.mock("@/server/fetchPostsFallback", () => ({
+  fetchLocalPostsFallback: fetchLocalPostsFallbackMock,
+}));
+
 vi.mock("../../lib/swr", async () => {
   const actual = await vi.importActual<typeof import("../../lib/swr")>("../../lib/swr");
   return {
@@ -15,17 +25,26 @@ vi.mock("../../lib/swr", async () => {
 
 describe("SSR PostsPage (server component)", () => {
   beforeEach(() => {
-    (
-      nextHeaders as unknown as { cookies: { mockReturnValue: (v: unknown) => void } }
-    ).cookies.mockReturnValue({
-      get: vi.fn(() => undefined),
-    });
-    process.env.NEXT_PUBLIC_APP_URL = "https://example.test";
+    fetchApiMock.mockReset();
+    fetchLocalPostsFallbackMock.mockReset();
   });
-  afterEach(() => {
-    vi.restoreAllMocks();
-    delete process.env.NEXT_PUBLIC_APP_URL;
-  });
+
+  function expectLatestRequestUrl(): string {
+    const lastCall = fetchApiMock.mock.calls.at(-1);
+    expect(lastCall?.[0]).toBeTruthy();
+    return String(lastCall?.[0]);
+  }
+
+  async function mockSWR(data: ReturnType<typeof import("../../lib/swr").usePostsList>["data"]) {
+    const { usePostsList } = await import("../../lib/swr");
+    vi.mocked(usePostsList).mockReturnValue({
+      data,
+      isLoading: false,
+      isValidating: false,
+      error: null,
+      mutate: vi.fn(),
+    } as unknown as ReturnType<typeof usePostsList>);
+  }
 
   it("renders SSR posts without spinner and shows post title", async () => {
     const testPost = {
@@ -36,198 +55,131 @@ describe("SSR PostsPage (server component)", () => {
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     };
-    console.debug("[diag][page.test] globalThis.fetch before stub ->", globalThis.fetch);
-    console.debug("[diag][page.test] typeof fetch ->", typeof globalThis.fetch);
+    fetchApiMock.mockResolvedValue({
+      items: [testPost],
+      hasNextPage: false,
+      page: 1,
+      pageSize: 11,
+      sort: DEFAULT_POST_SORT,
+    });
+    await mockSWR({
+      items: [testPost],
+      hasNextPage: false,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        items: [testPost],
-        hasNextPage: false,
-        page: 1,
-        pageSize: 11,
-        sort: DEFAULT_POST_SORT,
-      }),
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    // Mock SWR to return the test post data
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: {
-        items: [testPost],
-        hasNextPage: false,
-        page: 1,
-        pageSize: 10,
-        sort: DEFAULT_POST_SORT,
-      },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
-
-    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    const el = await PostsPage({ searchParams: {} });
     render(el);
-    expect(await screen.findByText("My Test Post")).toBeInTheDocument();
-    expect(fetchFn).toHaveBeenCalledWith(
-      `https://example.test/api/posts?page=1&pageSize=11&sort=${DEFAULT_POST_SORT}`,
-      expect.objectContaining({ headers: {}, cache: "no-store" })
-    );
+    expect(await screen.findByText("My Test Post")).toBeTruthy();
+    const requestUrl = expectLatestRequestUrl();
+    expect(requestUrl).toContain("pageSize=11");
+    expect(requestUrl).toContain(`sort=${DEFAULT_POST_SORT}`);
   });
 
   it("handles pagination params correctly", async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [],
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: { items: [], hasNextPage: false, page: 2, pageSize: 20, sort: DEFAULT_POST_SORT },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
+    fetchApiMock.mockResolvedValue({ items: [], hasNextPage: false });
+    await mockSWR({
+      items: [],
+      hasNextPage: false,
+      page: 2,
+      pageSize: 20,
+      sort: DEFAULT_POST_SORT,
+    });
 
     const el = await PostsPage({
-      searchParams: Promise.resolve({ page: "2", pageSize: "20" }),
+      searchParams: { page: "2", pageSize: "20" },
     });
     render(el);
-
-    expect(fetchFn).toHaveBeenCalledWith(
-      expect.stringContaining("page=2&pageSize=21"),
-      expect.any(Object)
-    );
+    const requestUrl = expectLatestRequestUrl();
+    expect(requestUrl).toContain("page=2");
+    expect(requestUrl).toContain("pageSize=21");
   });
 
   it("handles search query param", async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [],
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
+    fetchApiMock.mockResolvedValue({ items: [], hasNextPage: false });
+    await mockSWR({
+      items: [],
+      hasNextPage: false,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
     const el = await PostsPage({
-      searchParams: Promise.resolve({ q: "test query" }),
+      searchParams: { q: "test query" },
     });
     render(el);
-
-    expect(fetchFn).toHaveBeenCalledWith(
-      expect.stringContaining("q=test+query"),
-      expect.any(Object)
-    );
+    const requestUrl = expectLatestRequestUrl();
+    expect(requestUrl).toContain("q=test+query");
   });
 
   it("handles sort param", async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [],
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: "title-asc" },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
+    fetchApiMock.mockResolvedValue({ items: [], hasNextPage: false });
+    await mockSWR({
+      items: [],
+      hasNextPage: false,
+      page: 1,
+      pageSize: 10,
+      sort: "title-asc",
+    });
 
     const el = await PostsPage({
-      searchParams: Promise.resolve({ sort: "title-asc" }),
+      searchParams: { sort: "title-asc" },
     });
     render(el);
-
-    expect(fetchFn).toHaveBeenCalledWith(
-      expect.stringContaining("sort=title-asc"),
-      expect.any(Object)
-    );
+    const requestUrl = expectLatestRequestUrl();
+    expect(requestUrl).toContain("sort=title-asc");
   });
 
   it("handles invalid sort param by using default", async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [],
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
+    fetchApiMock.mockResolvedValue({ items: [], hasNextPage: false });
+    await mockSWR({
+      items: [],
+      hasNextPage: false,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
     const el = await PostsPage({
-      searchParams: Promise.resolve({ sort: "invalid-sort" }),
+      searchParams: { sort: "invalid-sort" },
     });
     render(el);
-
-    expect(fetchFn).toHaveBeenCalledWith(
-      expect.stringContaining(`sort=${DEFAULT_POST_SORT}`),
-      expect.any(Object)
-    );
+    const requestUrl = expectLatestRequestUrl();
+    expect(requestUrl).toContain(`sort=${DEFAULT_POST_SORT}`);
   });
 
   it("handles fetch error gracefully", async () => {
-    const fetchFn = vi.fn().mockRejectedValue(new Error("Network error"));
-    vi.stubGlobal("fetch", fetchFn);
+    fetchApiMock.mockRejectedValue(new Error("Network error"));
+    fetchLocalPostsFallbackMock.mockResolvedValue(null);
+    await mockSWR({
+      items: undefined,
+      hasNextPage: false,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
-
-    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    const el = await PostsPage({ searchParams: {} });
     render(el);
-    // Should render without crashing
     expect(el).toBeTruthy();
   });
 
   it("handles non-ok response", async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: async () => ({}),
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
+    fetchApiMock.mockRejectedValue(new Error("Upstream 500"));
+    fetchLocalPostsFallbackMock.mockResolvedValue(null);
+    await mockSWR({
+      items: undefined,
+      hasNextPage: false,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
-
-    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    const el = await PostsPage({ searchParams: {} });
     render(el);
-    // Should render without crashing
     expect(el).toBeTruthy();
   });
 
@@ -240,30 +192,16 @@ describe("SSR PostsPage (server component)", () => {
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     };
+    fetchApiMock.mockResolvedValue([testPost, testPost]);
+    await mockSWR({
+      items: [testPost],
+      hasNextPage: true,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [testPost, testPost], // Array format
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: {
-        items: [testPost],
-        hasNextPage: true,
-        page: 1,
-        pageSize: 10,
-        sort: DEFAULT_POST_SORT,
-      },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
-
-    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    const el = await PostsPage({ searchParams: {} });
     render(el);
     expect(el).toBeTruthy();
   });
@@ -277,53 +215,32 @@ describe("SSR PostsPage (server component)", () => {
       createdAt: "2024-01-01T00:00:00Z",
       updatedAt: "2024-01-01T00:00:00Z",
     };
+    fetchApiMock.mockResolvedValue({
+      items: [testPost],
+      hasNextPage: true,
+    });
+    await mockSWR({
+      items: [testPost],
+      hasNextPage: true,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        items: [testPost],
-        hasNextPage: true,
-      }),
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: {
-        items: [testPost],
-        hasNextPage: true,
-        page: 1,
-        pageSize: 10,
-        sort: DEFAULT_POST_SORT,
-      },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
-
-    const el = await PostsPage({ searchParams: Promise.resolve({}) });
+    const el = await PostsPage({ searchParams: {} });
     render(el);
     expect(el).toBeTruthy();
   });
 
   it("handles missing searchParams", async () => {
-    const fetchFn = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => [],
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchFn);
-
-    const { usePostsList } = await import("../../lib/swr");
-    vi.mocked(usePostsList).mockReturnValue({
-      data: { items: [], hasNextPage: false, page: 1, pageSize: 10, sort: DEFAULT_POST_SORT },
-      isLoading: false,
-      isValidating: false,
-      error: null,
-      mutate: vi.fn(),
-    } as unknown as ReturnType<typeof usePostsList>);
+    fetchApiMock.mockResolvedValue({ items: [], hasNextPage: false });
+    await mockSWR({
+      items: [],
+      hasNextPage: false,
+      page: 1,
+      pageSize: 10,
+      sort: DEFAULT_POST_SORT,
+    });
 
     const el = await PostsPage({});
     render(el);

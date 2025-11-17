@@ -1,7 +1,7 @@
 {
   "url": "/design-system-demo",
-  "timestamp": "2025-11-08T14:27:34.119Z",
+  "timestamp": "2025-11-17T15:25:03.930Z",
   "violations": [],
-  "passes": 23,
-  "incomplete": 0
+  "passes": 25,
+  "incomplete": 1
 }

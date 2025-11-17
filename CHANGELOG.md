@@ -1,3 +1,18 @@
+## 2025-11-18
+
+- docs(evidence): add Week 10 coverage, Playwright, and `/status` latency stub artifacts under `docs/week-10/**` so README and release notes links resolve without 404s while still pointing back to the authoritative frontend-next coverage output.
+
+## 2025-11-17
+
+- fix(frontend-next): keep `/posts` loading indicator + live regions aligned with SWR fallback hydration so Playwright core flows continue to observe loading, empty, and assertive retry states after the table refactor.
+- test(frontend-next): update posts Playwright specs to the table markup (tbody row selectors + heading assertions) and rerun the core-flows/screenshot suites for evidence.
+- docs(evidence): refresh `docs/ReviewPacket/screenshots/frontend-next/posts-loading.png` and `posts-loaded.png` via the `tests/playwright/screenshots.posts.spec.ts` capture workflow.
+- fix(frontend-next): harden `/posts` SSR query parsing by treating invalid sort params as the default and route every server fetch through the Google ID token client (no retries on upstream 4xx/5xx).
+- test(frontend-next): replace legacy global fetch stubs with `fetchApi` mocks, add server-only stub wiring for Vitest, and expand PostsPage SSR/unit/integration coverage for payload normalization + error handling.
+- chore(frontend-next): raise Vitest + verify-coverage thresholds to ≥70% lines/statements to match the Finish-to-Green gate and document the passing run.
+- docs(evidence): publish JS-disabled Playwright SSR artifacts (`posts-ssr-raw.html`, `posts-ssr-first-paint.png`) and refresh the Week 10 evidence summary with the new coverage + gate status.
+- fix(frontend-next): seed the local `/api/posts` fallback store for SSR, tag seeded responses, and force SWR revalidation/announcements so Playwright core flows keep functioning without `API_BASE_URL` while loading/error retries stay testable.
+
 ## 2025-11-16
 
 - test(frontend-next): add `/api/posts/[id]` integration coverage for DELETE/PATCH flows (identity propagation, CSRF enforcement, local fallback) to lift frontend coverage above the 65% pre-push gate.

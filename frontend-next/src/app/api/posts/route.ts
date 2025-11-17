@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIdToken } from "../../../server/auth/getIdToken";
+import { buildAuthHeaders } from "../../../server/auth/getIdToken";
 import {
   ensureRequestContext,
   buildPropagationHeaders,
@@ -8,38 +8,24 @@ import {
   type RequestContext,
 } from "../../../middleware/requestId";
 import { DEFAULT_POST_SORT, PostSortSchema, type PostSort } from "../../../lib/schemas";
+import { getLocalPostsStore, seedLocalPostsStore, type LocalPost } from "./localFallbackStore";
 
-// Prefer a server-only base URL for backend calls; never expose secrets to the client
-// Fallback to NEXT_PUBLIC_API_URL so server and client target the same host in local dev
-// Default to http://localhost:8080 to avoid self-referential loops to the Next dev server (3000)
-const API_BASE_URL: string =
-  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-const API_SERVICE_TOKEN: string | undefined = process.env.API_SERVICE_TOKEN;
-// Use logical-OR so an empty IAP_AUDIENCE falls back to ID_TOKEN_AUDIENCE
-const IAP_AUDIENCE: string | undefined = process.env.IAP_AUDIENCE || process.env.ID_TOKEN_AUDIENCE;
+/**
+ * Prefer a server-only base URL for backend calls; never expose secrets to the client.
+ * In E2E/dev mode, leave unset to skip upstream and use local fallback directly.
+ *
+ * Authentication is handled by buildAuthHeaders() from src/server/auth/getIdToken.ts,
+ * which respects ID_TOKEN_AUDIENCE and API_SERVICE_TOKEN environment variables.
+ */
+const API_BASE_URL: string | undefined =
+  process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL;
 
 // Ensure Node.js runtime so google-auth-library can mint ID tokens on Cloud Run
 export const runtime = "nodejs";
 
 // Local in-process fallback store for CI/local when upstream API is unavailable
-// Use globalThis to better survive module reloads in dev
-type LocalPost = {
-  id: string;
-  ownerId?: string;
-  title: string;
-  content: string;
-  tags: string[];
-  published: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-const localPostsFallback: Array<LocalPost> =
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ ?? [];
-// Initialize global store if missing
-if (!(globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__) {
-  (globalThis as unknown as { __LOCAL_POSTS__?: Array<LocalPost> }).__LOCAL_POSTS__ =
-    localPostsFallback;
-}
+seedLocalPostsStore();
+const localPostsFallback: Array<LocalPost> = getLocalPostsStore();
 
 function toTimestamp(value: string | undefined): number {
   if (!value) return 0;
@@ -82,21 +68,6 @@ function sortLocalPosts(posts: Array<LocalPost>, sort: PostSort): Array<LocalPos
       break;
   }
   return copy;
-}
-
-async function buildAuthHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  const serviceAuthorization = API_SERVICE_TOKEN ? `Bearer ${API_SERVICE_TOKEN}` : undefined;
-
-  if (IAP_AUDIENCE) {
-    const idToken = await getIdToken(IAP_AUDIENCE);
-    headers["Authorization"] = `Bearer ${idToken}`;
-    if (serviceAuthorization) headers["X-Service-Authorization"] = serviceAuthorization;
-    return headers;
-  }
-
-  if (serviceAuthorization) headers["Authorization"] = serviceAuthorization;
-  return headers;
 }
 
 async function extractUserIdentity(
@@ -217,9 +188,49 @@ function applyUpstreamContext(
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const upstreamUrl = buildUpstreamUrl("/posts", request.nextUrl.searchParams);
   const { context: initialContext, propagationHeaders } = initializeContext(request);
   let context = initialContext;
+
+  // Skip upstream fetch if API_BASE_URL not configured (e.g., E2E/dev mode)
+  if (!API_BASE_URL) {
+    // Jump straight to local fallback
+    const search = request.nextUrl.searchParams;
+    const page = Number(search.get("page") ?? "1") || 1;
+    const pageSize = Number(search.get("pageSize") ?? "10") || 10;
+    const sortParam = search.get("sort");
+    const query = search.get("q");
+    const sortResult = PostSortSchema.safeParse(sortParam);
+    const sort = sortResult.success ? sortResult.data : DEFAULT_POST_SORT;
+
+    const filteredPosts = filterLocalPosts(localPostsFallback, query);
+    const sortedPosts = sortLocalPosts(filteredPosts, sort);
+    const start = (page - 1) * pageSize;
+    const identity = await extractUserIdentity(request);
+    const items = sortedPosts.slice(start, start + pageSize).map((p) => {
+      const isOwner = Boolean(p.ownerId && identity?.userId && p.ownerId === identity.userId);
+      const isAdmin = identity?.role === "admin";
+      const permissions = {
+        canEdit: Boolean(isAdmin || isOwner),
+        canDelete: Boolean(isAdmin || isOwner),
+      };
+      return { ...p, permissions };
+    });
+    const total = sortedPosts.length;
+    const hasNextPage = start + items.length < total;
+    const fallbackHeaders = responseHeadersFromContext(context);
+    fallbackHeaders["x-posts-fallback-source"] = "local";
+    fallbackHeaders["x-posts-fallback-count"] = String(items.length);
+    return NextResponse.json(
+      { page, pageSize, hasNextPage, items, total, sort },
+      {
+        status: 200,
+        headers: fallbackHeaders,
+      }
+    );
+  }
+
+  const upstreamUrl = buildUpstreamUrl("/posts", request.nextUrl.searchParams);
+
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
     const originHeader = (request.headers.get("origin") || "").trim();
@@ -237,9 +248,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       {
         method: "GET",
         headers: {
-          ...(await buildAuthHeaders()),
+          ...(await buildAuthHeaders({ ...propagationHeaders })),
           ...(sessionCookie ? { Cookie: sessionCookie } : {}),
-          ...propagationHeaders,
           ...(originHeader ? { Origin: originHeader } : {}),
         },
         cache: "no-store",
@@ -300,7 +310,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       headers: { "content-type": contentType || "text/plain", ...responseHeaders },
     });
   } catch (error) {
-    // Fallback for local/CI: return an empty list to keep UI flows working
+    // Fallback for local/CI: return stored local posts (or empty list) to keep UI flows working
     if (process.env.NODE_ENV !== "production") {
       const search = request.nextUrl.searchParams;
       const page = Number(search.get("page") ?? "1") || 1;
@@ -309,6 +319,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const query = search.get("q");
       const sortResult = PostSortSchema.safeParse(sortParam);
       const sort = sortResult.success ? sortResult.data : DEFAULT_POST_SORT;
+
       const filteredPosts = filterLocalPosts(localPostsFallback, query);
       const sortedPosts = sortLocalPosts(filteredPosts, sort);
       const start = (page - 1) * pageSize;
@@ -358,7 +369,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const upstreamUrl = new URL("/posts", API_BASE_URL).toString();
   let bodyText = "";
   try {
     bodyText = await request.text();
@@ -367,6 +377,58 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   const { context: initialContext, propagationHeaders } = initializeContext(request);
   let context = initialContext;
+
+  // Skip upstream fetch if API_BASE_URL not configured (e.g., E2E/dev mode)
+  if (!API_BASE_URL) {
+    // Fallback for local/CI: accept creation and return a fabricated record
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        const parsed = JSON.parse(bodyText || "{}") as { title?: string; content?: string };
+        // Derive userId from incoming cookie if present (decode unsigned dev token)
+        const cookieHeader = request.headers.get("cookie") || "";
+        let ownerId: string | undefined = undefined;
+        try {
+          const match = cookieHeader.match(/(?:^|;\s*)session=([^;]+)/);
+          const token = match?.[1] ?? "";
+          const parts = token.split(".");
+          if (parts.length === 3) {
+            const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+            const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+            const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+            if (typeof payload.userId === "string") ownerId = payload.userId;
+          }
+        } catch {
+          // ignore decode errors; leave ownerId undefined
+        }
+        const now = new Date().toISOString();
+        const created = {
+          id: "local-" + Math.random().toString(36).slice(2),
+          ownerId,
+          title: parsed.title ?? "",
+          content: parsed.content ?? "",
+          tags: [],
+          published: true,
+          createdAt: now,
+          updatedAt: now,
+        };
+        // Store for subsequent GET fallback reads
+        localPostsFallback.unshift(created);
+        return NextResponse.json(created, {
+          status: 201,
+          headers: responseHeadersFromContext(context),
+        });
+      } catch {
+        // noop and fall through
+      }
+    }
+    return NextResponse.json(
+      { error: { code: "UPSTREAM_CREATE_FAILED", message: "Failed to create post" } },
+      { status: 500, headers: responseHeadersFromContext(context) }
+    );
+  }
+
+  const upstreamUrl = new URL("/posts", API_BASE_URL).toString();
+
   try {
     const incomingCookieHeader = request.headers.get("cookie") || "";
     const originHeader = (request.headers.get("origin") || "").trim();
@@ -425,12 +487,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(await buildAuthHeaders()),
+        ...(await buildAuthHeaders({
+          ...propagationHeaders,
+          ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
+          ...identityHeaders,
+        })),
         ...(forwardCookieHeader ? { Cookie: forwardCookieHeader } : {}),
-        ...propagationHeaders,
-        ...(csrfHeader ? { "X-CSRF-Token": csrfHeader } : {}),
         ...(originHeader ? { Origin: originHeader } : {}),
-        ...identityHeaders,
       },
       body: bodyText,
     });

@@ -11,7 +11,7 @@ options:
   machineType: E2_HIGHCPU_8
 
 steps:
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     id: Debug Context
     entrypoint: bash
     args:
@@ -23,7 +23,7 @@ steps:
         gcloud auth list
         gcloud config list
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     id: Ensure Artifact Registry
     entrypoint: bash
     args:
@@ -33,28 +33,28 @@ steps:
         gcloud artifacts repositories describe "${_AR_REPOSITORY}" --location="${_REGION}" \
           || gcloud artifacts repositories create "${_AR_REPOSITORY}" --repository-format=docker --location="${_REGION}" --description="Cloud Run images" \
           || echo "Repo ensure step failed (permissions?); continuing."
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     id: Build Image
     env:
       - DOCKER_BUILDKIT=1
     args:
       - build
-      - '--progress=plain'
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
-      - '-f'
-      - 'frontend-next/Dockerfile'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=${_PROD_API_URL}'
-      - '.'
+      - "--progress=plain"
+      - "-t"
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}"
+      - "-f"
+      - "frontend-next/Dockerfile"
+      - "--build-arg"
+      - "NEXT_PUBLIC_API_URL=${_PROD_API_URL}"
+      - "."
 
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     id: Push Image
     args:
       - push
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
+      - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     id: Deploy to Cloud Run
     entrypoint: bash
     args:
@@ -83,7 +83,47 @@ steps:
         fi
         gcloud --verbosity=debug "${DEPLOY_ARGS[@]}"
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
+    id: Grant Frontend Invoker Role on API
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        set -euxo pipefail
+        # Get the frontend service account email
+        FRONTEND_SA=$(gcloud run services describe "${_SERVICE_NAME}" \
+          --region="${_REGION}" \
+          --project="${PROJECT_ID}" \
+          --format='value(spec.template.spec.serviceAccountName)')
+
+        if [ -z "${FRONTEND_SA}" ]; then
+          echo "Warning: Could not determine frontend service account; skipping IAM binding."
+          exit 0
+        fi
+
+        # Derive full service account email if it's just the name
+        if [[ "${FRONTEND_SA}" != *"@"* ]]; then
+          FRONTEND_SA="${FRONTEND_SA}@${PROJECT_ID}.iam.gserviceaccount.com"
+        fi
+
+        echo "Granting ${FRONTEND_SA} invoker role on API service..."
+        # Extract API service name from API_BASE_URL (e.g., https://service-hash.region.run.app -> service-hash)
+        API_SERVICE_NAME=$(echo "${_PROD_API_URL}" | sed -E 's|https://([a-z0-9-]+)\..+|\1|')
+
+        if [ -z "${API_SERVICE_NAME}" ]; then
+          echo "Warning: Could not parse API service name from ${_PROD_API_URL}; skipping IAM binding."
+          exit 0
+        fi
+
+        gcloud run services add-iam-policy-binding "${API_SERVICE_NAME}" \
+          --region="${_REGION}" \
+          --project="${PROJECT_ID}" \
+          --member="serviceAccount:${FRONTEND_SA}" \
+          --role="roles/run.invoker" \
+          --condition=None \
+          --quiet || echo "IAM binding already exists or failed; continuing."
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:slim"
     id: Verify Frontend
     entrypoint: bash
     args:
@@ -110,6 +150,6 @@ steps:
         exit 1
 
 images:
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}'
+  - "${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/${_SERVICE_NAME}:${BUILD_ID}"
 
-timeout: '1200s'
+timeout: "1200s"

@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// PostsPage imports must be lazy inside tests so we can spy on global fetch
-// before the module captures the runtime fetch implementation.
 import { DEFAULT_POST_SORT, type Post } from "../../src/lib/schemas";
+
+const fetchApiMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/server/fetchApi", () => ({
+  fetchApi: fetchApiMock,
+}));
 
 function buildPost(id: number, overrides: Partial<Post> = {}): Post {
   return {
@@ -18,16 +22,9 @@ function buildPost(id: number, overrides: Partial<Post> = {}): Post {
   };
 }
 
-function createJsonResponse(payload: unknown): Response {
-  return new Response(JSON.stringify(payload), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
 describe("Posts SSR Integration", () => {
   afterEach(() => {
-    vi.restoreAllMocks();
+    fetchApiMock.mockReset();
   });
 
   it("renders posts in the server HTML without showing the loading state", async () => {
@@ -35,23 +32,16 @@ describe("Posts SSR Integration", () => {
       buildPost(1, { title: "Alpha Post" }),
       buildPost(2, { title: "Beta Post" }),
     ];
-    console.debug('[diag][posts-ssr] globalThis.fetch before spy ->', globalThis.fetch);
-    console.debug('[diag][posts-ssr] typeof fetch ->', typeof globalThis.fetch);
+    fetchApiMock.mockResolvedValueOnce({
+      items: serverPosts,
+      page: 1,
+      pageSize: 10,
+      hasNextPage: false,
+      sort: "title-asc",
+    });
 
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
-      createJsonResponse({
-        items: serverPosts,
-        page: 1,
-        pageSize: 10,
-        hasNextPage: false,
-        sort: "title-asc",
-      })
-    ));
-
-  // Import PostsPage after spying on fetch so the module doesn't capture
-  // a different fetch implementation at import-time.
-  const PostsPage = (await import("../../src/app/posts/page")).default;
-  const element = await PostsPage({ searchParams: Promise.resolve({ sort: "title-asc" }) });
+    const PostsPage = (await import("../../src/app/posts/page")).default;
+    const element = await PostsPage({ searchParams: { sort: "title-asc" } });
     const clientProps = element.props as {
       initialData?: Post[];
       page?: number;
@@ -60,34 +50,24 @@ describe("Posts SSR Integration", () => {
       initialHasNextPage?: boolean;
     };
 
-    // Verify SSR data fetching
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("sort=title-asc"),
-      expect.objectContaining({ cache: "no-store" })
-    );
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("pageSize=11"),
-      expect.any(Object)
-    );
+    const [[requestUrl]] = fetchApiMock.mock.calls;
+    expect(requestUrl).toContain("sort=title-asc");
+    expect(requestUrl).toContain("pageSize=11");
 
-    // Verify initialData is passed to client component
     expect(clientProps.initialData).toEqual(serverPosts);
     expect(clientProps.page).toBe(1);
     expect(clientProps.sort).toBe("title-asc");
     expect(clientProps.pageSize).toBe(10);
+    expect(clientProps.initialHasNextPage).toBe(false);
   });
 
   it("falls back to the default sort when the query parameter is invalid", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
-      createJsonResponse({ items: [], page: 1, pageSize: 11, hasNextPage: false })
-    ));
+    fetchApiMock.mockResolvedValueOnce({ items: [], hasNextPage: false });
 
     const PostsPage2 = (await import("../../src/app/posts/page")).default;
-    await PostsPage2({ searchParams: Promise.resolve({ sort: "not-a-real-sort" }) });
+    await PostsPage2({ searchParams: { sort: "not-a-real-sort" } });
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining(`sort=${DEFAULT_POST_SORT}`),
-      expect.any(Object)
-    );
+    const [[requestUrl]] = fetchApiMock.mock.calls;
+    expect(requestUrl).toContain(`sort=${DEFAULT_POST_SORT}`);
   });
 });

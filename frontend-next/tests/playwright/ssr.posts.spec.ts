@@ -2,67 +2,42 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 
+const repoRoot = path.resolve(__dirname, "..", "..", "..");
+const evidenceDir = path.join(repoRoot, "docs", "week-10", "playwright");
+
 test.describe("SSR first-paint verification", () => {
-  test("server-rendered HTML contains post data (proves SSR working)", async ({ page }) => {
-    // First ensure API server is available
-    await page.goto("/api/health", { waitUntil: "domcontentloaded", timeout: 10000 });
+  test("server-rendered posts content stays visible when JS is disabled", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    try {
+      await page.goto("/api/health", { waitUntil: "domcontentloaded", timeout: 10000 });
+      await page.goto("/posts", { waitUntil: "domcontentloaded", timeout: 60000 });
+      const html = await page.content();
 
-    // Navigate to posts page - this will trigger server-side rendering
-    await page.goto("/posts", { waitUntil: "domcontentloaded", timeout: 60000 });
+      fs.mkdirSync(evidenceDir, { recursive: true });
+      fs.writeFileSync(path.join(evidenceDir, "posts-ssr-raw.html"), html, "utf-8");
+      await page.screenshot({
+        path: path.join(evidenceDir, "posts-ssr-first-paint.png"),
+        fullPage: true,
+      });
 
-    // Wait briefly to ensure page is ready
-    await page.waitForTimeout(2000);
+      expect(html).not.toContain("Loading posts");
+      expect(html).toContain('<section aria-label="Posts list"');
 
-    // Get the raw HTML content (includes SSR output)
-    const html = await page.content();
+      const hasTable = html.includes("<table");
+      const hasEmptyState = html.includes('id="empty-state"');
+      expect(hasTable || hasEmptyState).toBeTruthy();
 
-    // Save evidence artifacts
-    const repoRoot = path.resolve(__dirname, "..", "..", "..");
-    const outDir = path.join(repoRoot, "docs", "ReviewPacket", "screenshots", "frontend-next");
-    fs.mkdirSync(outDir, { recursive: true });
+      if (hasTable) {
+        const rows = html.match(/<tr[\s\S]*?>/g) ?? [];
+        expect(rows.length).toBeGreaterThan(0);
+      }
 
-    // Save raw SSR HTML as evidence
-    fs.writeFileSync(path.join(outDir, "posts-ssr-raw.html"), html, "utf-8");
-
-    // Capture screenshot of SSR first paint
-    await page.screenshot({
-      path: path.join(outDir, "posts-ssr-first-paint.png"),
-      fullPage: true,
-    });
-
-    // === KEY ASSERTIONS: Prove SSR is working ===
-
-    // 1. Verify the page heading is in the HTML (basic structure)
-    expect(html).toContain("<h1");
-    expect(html).toContain("Posts");
-
-    // 2. Verify post-related UI elements are present (not just a loading skeleton)
-    // This proves the server rendered actual content, not just placeholders
-    const hasServerRenderedContent =
-      html.includes('role="list"') || // Posts list
-      html.includes("article") || // Post articles
-      html.includes("Create") || // Create button/form
-      html.includes("Prev") || // Pagination
-      html.includes("Next") || // Pagination
-      html.includes("No posts"); // Or empty state message
-
-    expect(hasServerRenderedContent).toBe(true);
-
-    // 3. Ensure we have some server-rendered content (proves SSR is working)
-    // Note: Loading states are acceptable if API server is not immediately available during SSR
-    expect(html).toContain("<h1");
-
-    // 4. Verify critical interactive elements are present
-    // (proves SSR rendered the full page, not just shell)
-    const hasInteractiveElements =
-      html.includes("Sort by") || // Sort selector
-      html.includes("Create"); // Create button
-
-    expect(hasInteractiveElements).toBe(true);
-
-    console.log("[SSR Test] ✅ Successfully verified server-rendered post content in HTML");
-    console.log("[SSR Test] Evidence saved:");
-    console.log(`  - ${outDir}/posts-ssr-raw.html`);
-    console.log(`  - ${outDir}/posts-ssr-first-paint.png`);
+      if (hasEmptyState) {
+        expect(html).toContain("No posts yet");
+      }
+    } finally {
+      await context.close();
+    }
   });
 });
