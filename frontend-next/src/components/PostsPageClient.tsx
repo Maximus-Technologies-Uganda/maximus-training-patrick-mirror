@@ -105,6 +105,7 @@ function PostsPageClientInner({
   const [sort, setSort] = useState<PostSort>(initialSort);
   const [searchQuery, setSearchQuery] = useState<string>(initialQuery);
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>("");
+  const [hasHydrated, setHasHydrated] = useState<boolean>(false);
 
   const initialParamsRef = useRef({
     page: initialPage,
@@ -184,6 +185,10 @@ function PostsPageClientInner({
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
+
   const shouldUseInitialFallback =
     page === initialPage &&
     pageSize === initialPageSize &&
@@ -215,7 +220,8 @@ function PostsPageClientInner({
     : treatFallbackAsAuthoritative && hasInitialFallback;
   const canRenderFallbackWhileValidating = hasInitialFallback && !hasAuthoritativeData;
   const awaitingAuthoritativeData = !hasAuthoritativeData && (isLoading || isValidating);
-  const showLoadingState = awaitingAuthoritativeData && !canRenderFallbackWhileValidating;
+  const showLoadingState =
+    awaitingAuthoritativeData && (!canRenderFallbackWhileValidating || hasHydrated);
   const showErrorState = Boolean(error) && !hasAuthoritativeData && !isValidating;
   const showEmptyState =
     !showLoadingState && !showErrorState && hasAuthoritativeData && posts.length === 0;
@@ -272,15 +278,15 @@ function PostsPageClientInner({
       setErrorAnnouncement(null);
       return;
     }
-    if (canRenderFallbackWhileValidating) {
-      setLiveAnnouncement("Showing cached posts while we fetch the latest data.");
-      setErrorAnnouncement(null);
-      return;
-    }
     if (showErrorState) {
       const message = error instanceof Error ? error.message : undefined;
       setErrorAnnouncement(message ? `Error loading posts: ${message}` : "Error loading posts");
       setLiveAnnouncement("");
+      return;
+    }
+    if (canRenderFallbackWhileValidating) {
+      setLiveAnnouncement("Showing cached posts while we fetch the latest data.");
+      setErrorAnnouncement(null);
       return;
     }
     if (showEmptyState) {

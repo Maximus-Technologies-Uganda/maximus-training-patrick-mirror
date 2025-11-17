@@ -96,8 +96,8 @@ test.describe("Posts initial load", () => {
     expect(html).not.toContain("Loading…");
 
     // Verify posts list is populated
-    const listItems = page.locator("section[aria-label='Posts list'] li");
-    const count = await listItems.count();
+    const tableRows = page.locator("section[aria-label='Posts list'] tbody tr");
+    const count = await tableRows.count();
     expect(count).toBeGreaterThan(0);
 
     // If SSR was successful, check Server-Timing; otherwise just confirm content loaded
@@ -122,8 +122,8 @@ test.describe("Posts initial load", () => {
     await expect(sortSelect).toHaveValue("date-desc");
 
     // Wait for initial posts to be visible before changing sort
-    const postItems = page.locator("section[aria-label='Posts list'] li");
-    await expect(postItems.first()).toBeVisible({ timeout: 5000 });
+    const tableRows = page.locator("section[aria-label='Posts list'] tbody tr");
+    await expect(tableRows.first()).toBeVisible({ timeout: 5000 });
 
     // Change sort order and wait for API request to complete
     // SWR will trigger a new fetch when the key changes due to sort parameter change
@@ -143,7 +143,7 @@ test.describe("Posts initial load", () => {
 
     // Wait for posts list items to be rendered with new sort order
     // Use a longer timeout since we need to wait for the response and re-render
-    await expect(postItems.first()).toBeVisible({ timeout: 5000 });
+    await expect(tableRows.first()).toBeVisible({ timeout: 5000 });
   });
 
   test("supports pagination and URL state", async ({ page }) => {
@@ -151,7 +151,7 @@ test.describe("Posts initial load", () => {
 
     await page.goto("/posts");
 
-    const firstItem = page.locator("section[aria-label='Posts list'] li").first();
+    const firstItem = page.locator("section[aria-label='Posts list'] tbody tr").first();
     await expect(firstItem).toContainText("Post 20");
 
     const nextButton = page.getByRole("button", { name: "Next page" });
@@ -181,7 +181,7 @@ test.describe("Posts initial load", () => {
     const sortSelect = page.locator('select[aria-label="Sort posts"]');
     await expect(sortSelect).toHaveValue("title-asc");
 
-    const firstItem = page.locator("section[aria-label='Posts list'] li").first();
+    const firstItem = page.locator("section[aria-label='Posts list'] tbody tr").first();
     await expect(firstItem).toContainText("Post 11");
 
     const liveRegion = page.locator('div[aria-live="polite"][role="status"]').first();
@@ -269,7 +269,7 @@ test.describe("Posts initial load", () => {
     const politeLive = section.locator("div.sr-only[aria-live='polite']");
     await expect(politeLive).toHaveText(/Loading posts/);
 
-    await expect(section.locator("li").first()).toContainText(MOCK_POSTS[0].title);
+    await expect(section.locator("tbody tr").first()).toContainText(MOCK_POSTS[0].title);
     await expect(assertiveLive).toHaveText("");
     await expect(politeLive).toContainText(/Showing page 1 of/);
   });

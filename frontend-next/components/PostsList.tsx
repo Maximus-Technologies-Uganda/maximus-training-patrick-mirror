@@ -125,7 +125,7 @@ export default function PostsList({
             return (
               <tr key={post.id} className="bg-white">
                 <td className="px-4 py-3 align-top">
-                  <div className="text-sm font-semibold text-gray-900">{post.title}</div>
+                  <h3 className="text-sm font-semibold text-gray-900">{post.title}</h3>
                   <p className="mt-2 text-sm text-gray-700">{truncate(post.content)}</p>
                 </td>
                 <td className="px-4 py-3 align-top text-sm text-gray-700">

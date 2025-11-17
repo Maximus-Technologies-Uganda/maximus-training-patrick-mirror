@@ -1,5 +1,8 @@
 ## 2025-11-17
 
+- fix(frontend-next): keep `/posts` loading indicator + live regions aligned with SWR fallback hydration so Playwright core flows continue to observe loading, empty, and assertive retry states after the table refactor.
+- test(frontend-next): update posts Playwright specs to the table markup (tbody row selectors + heading assertions) and rerun the core-flows/screenshot suites for evidence.
+- docs(evidence): refresh `docs/ReviewPacket/screenshots/frontend-next/posts-loading.png` and `posts-loaded.png` via the `tests/playwright/screenshots.posts.spec.ts` capture workflow.
 - fix(frontend-next): harden `/posts` SSR query parsing by treating invalid sort params as the default and route every server fetch through the Google ID token client (no retries on upstream 4xx/5xx).
 - test(frontend-next): replace legacy global fetch stubs with `fetchApi` mocks, add server-only stub wiring for Vitest, and expand PostsPage SSR/unit/integration coverage for payload normalization + error handling.
 - chore(frontend-next): raise Vitest + verify-coverage thresholds to ≥70% lines/statements to match the Finish-to-Green gate and document the passing run.
