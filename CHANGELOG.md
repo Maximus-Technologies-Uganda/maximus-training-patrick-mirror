@@ -1,3 +1,7 @@
+## 2025-11-18
+
+- docs(evidence): add Week 10 coverage, Playwright, and `/status` latency stub artifacts under `docs/week-10/**` so README and release notes links resolve without 404s while still pointing back to the authoritative frontend-next coverage output.
+
 ## 2025-11-17
 
 - fix(frontend-next): keep `/posts` loading indicator + live regions aligned with SWR fallback hydration so Playwright core flows continue to observe loading, empty, and assertive retry states after the table refactor.
