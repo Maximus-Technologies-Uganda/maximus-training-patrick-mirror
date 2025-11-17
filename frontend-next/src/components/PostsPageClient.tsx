@@ -212,9 +212,10 @@ function PostsPageClientInner({
   const treatFallbackAsAuthoritative = initialDataSource !== "local-fallback";
   const hasAuthoritativeData = data
     ? !usingFallbackReference || treatFallbackAsAuthoritative
-    : false;
+    : treatFallbackAsAuthoritative && hasInitialFallback;
+  const canRenderFallbackWhileValidating = hasInitialFallback && !hasAuthoritativeData;
   const awaitingAuthoritativeData = !hasAuthoritativeData && (isLoading || isValidating);
-  const showLoadingState = awaitingAuthoritativeData;
+  const showLoadingState = awaitingAuthoritativeData && !canRenderFallbackWhileValidating;
   const showErrorState = Boolean(error) && !hasAuthoritativeData && !isValidating;
   const showEmptyState =
     !showLoadingState && !showErrorState && hasAuthoritativeData && posts.length === 0;
@@ -271,6 +272,11 @@ function PostsPageClientInner({
       setErrorAnnouncement(null);
       return;
     }
+    if (canRenderFallbackWhileValidating) {
+      setLiveAnnouncement("Showing cached posts while we fetch the latest data.");
+      setErrorAnnouncement(null);
+      return;
+    }
     if (showErrorState) {
       const message = error instanceof Error ? error.message : undefined;
       setErrorAnnouncement(message ? `Error loading posts: ${message}` : "Error loading posts");
@@ -304,6 +310,7 @@ function PostsPageClientInner({
     totalPages,
     error,
     hasInitialFallback,
+    canRenderFallbackWhileValidating,
   ]);
 
   const errorMessage = error instanceof Error ? error.message : undefined;

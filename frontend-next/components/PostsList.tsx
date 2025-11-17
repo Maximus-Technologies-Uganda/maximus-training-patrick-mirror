@@ -27,7 +27,7 @@ function deriveOwner(post: Post): { id: string | null; name: string | null } {
 function canManagePost(
   post: Post,
   currentUserId: string | null | undefined,
-  currentUserRole?: "owner" | "admin",
+  currentUserRole?: "owner" | "admin"
 ): {
   canEdit: boolean;
   canDelete: boolean;
@@ -50,7 +50,11 @@ function truncate(text: string, max = 200): string {
   return text.slice(0, max).trimEnd() + "…";
 }
 
-export default function PostsList({ items, currentUserId, currentUserRole }: PostListProps): React.ReactElement {
+export default function PostsList({
+  items,
+  currentUserId,
+  currentUserRole,
+}: PostListProps): React.ReactElement {
   if (!items.length) {
     return (
       <p className="text-gray-600" aria-live="polite">
@@ -63,7 +67,7 @@ export default function PostsList({ items, currentUserId, currentUserRole }: Pos
     try {
       const res = await fetch(
         `/api/posts/${encodeURIComponent(id)}`,
-        withCsrf({ method: "DELETE" }),
+        withCsrf({ method: "DELETE" })
       );
       if (res.status === 204 || res.status === 200) {
         // Post deleted successfully
@@ -84,7 +88,7 @@ export default function PostsList({ items, currentUserId, currentUserRole }: Pos
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, content }),
-        }),
+        })
       );
       if (res.ok) {
         // Post updated successfully
@@ -95,53 +99,88 @@ export default function PostsList({ items, currentUserId, currentUserRole }: Pos
   }
 
   return (
-    <ul role="list" className="space-y-4">
-      {items.map((post) => {
-        const owner = deriveOwner(post);
-        const permissions = canManagePost(post, currentUserId ?? null, currentUserRole);
-        return (
-          <li
-            key={post.id}
-            className="rounded border border-gray-200 p-4 shadow-sm bg-white"
-          >
-            <h3 className="text-lg font-semibold text-gray-900">{post.title}</h3>
-            <p className="mt-2 text-gray-700">{truncate(post.content)}</p>
-            {owner.id || owner.name ? (
-              <p className="mt-2 text-sm text-gray-500">
-                Owned by {owner.name ?? "Unknown"}
-              </p>
-            ) : null}
-            {permissions.canEdit || permissions.canDelete ? (
-              <div className="mt-3 flex gap-2" aria-label="Post actions">
-                {permissions.canEdit ? (
-                  <button
-                    type="button"
-                    className="rounded border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
-                    onClick={() => onEdit(post.id)}
-                  >
-                    Edit
-                  </button>
-                ) : null}
-                {permissions.canDelete ? (
-                  <button
-                    type="button"
-                    className="rounded border border-red-300 px-3 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50"
-                    onClick={() => onDelete(post.id)}
-                  >
-                    Delete
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-gray-500">
-                You do not have permission to edit or delete this post.
-              </p>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+      <table className="min-w-full divide-y divide-gray-200" aria-label="Posts table">
+        <caption className="sr-only">Posts</caption>
+        <thead className="bg-gray-50">
+          <tr>
+            <th scope="col" className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+              Title &amp; excerpt
+            </th>
+            <th scope="col" className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+              Owner
+            </th>
+            <th scope="col" className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+              Tags
+            </th>
+            <th scope="col" className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {items.map((post) => {
+            const owner = deriveOwner(post);
+            const permissions = canManagePost(post, currentUserId ?? null, currentUserRole);
+            return (
+              <tr key={post.id} className="bg-white">
+                <td className="px-4 py-3 align-top">
+                  <div className="text-sm font-semibold text-gray-900">{post.title}</div>
+                  <p className="mt-2 text-sm text-gray-700">{truncate(post.content)}</p>
+                </td>
+                <td className="px-4 py-3 align-top text-sm text-gray-700">
+                  {owner.name ?? owner.id ?? "Unknown"}
+                </td>
+                <td className="px-4 py-3 align-top">
+                  <div className="flex flex-wrap gap-1" aria-label="Post tags">
+                    {(post.tags ?? []).length === 0 ? (
+                      <span className="text-xs text-gray-400">No tags</span>
+                    ) : (
+                      (post.tags ?? []).map((tag) => (
+                        <span
+                          key={`${post.id}-${tag}`}
+                          className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700"
+                        >
+                          {tag}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3 align-top">
+                  {permissions.canEdit || permissions.canDelete ? (
+                    <div
+                      className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                      aria-label="Post actions"
+                    >
+                      {permissions.canEdit ? (
+                        <button
+                          type="button"
+                          className="rounded border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+                          onClick={() => onEdit(post.id)}
+                        >
+                          Edit
+                        </button>
+                      ) : null}
+                      {permissions.canDelete ? (
+                        <button
+                          type="button"
+                          className="rounded border border-red-300 px-3 py-1 text-sm font-medium text-red-700 transition hover:bg-red-50"
+                          onClick={() => onDelete(post.id)}
+                        >
+                          Delete
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No edit or delete permissions.</p>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
-
-
