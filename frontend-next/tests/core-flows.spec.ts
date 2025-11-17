@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-async function loginProgrammatically(page: import("@playwright/test").Page, creds: { username: string; password: string }): Promise<void> {
+async function loginProgrammatically(
+  page: import("@playwright/test").Page,
+  creds: { username: string; password: string }
+): Promise<void> {
   await page.goto("/");
   await page.evaluate(async (payload) => {
     try {
@@ -22,20 +25,20 @@ async function loginProgrammatically(page: import("@playwright/test").Page, cred
 }
 
 test.describe("Core flows and accessibility", () => {
-  test("Posts list page shows heading and has no critical/serious a11y issues", async ({ page }) => {
+  test("Posts list page shows heading and has no critical/serious a11y issues", async ({
+    page,
+  }) => {
     await page.goto("/posts");
 
     await expect(page.getByRole("heading", { level: 1, name: "Posts" })).toBeVisible();
 
+    // @ts-expect-error Playwright version mismatch between @playwright/test and @axe-core/playwright (expires: 2025-12-31)
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
     const severe = results.violations.filter(
-      (v) => v.impact === "critical" || v.impact === "serious",
+      (v) => v.impact === "critical" || v.impact === "serious"
     );
-    expect(
-      severe,
-      severe.map((v) => v.id).join(", "),
-    ).toEqual([]);
+    expect(severe, severe.map((v) => v.id).join(", ")).toEqual([]);
   });
 
   test("Create post form is present and has no critical/serious a11y issues", async ({ page }) => {
@@ -47,18 +50,14 @@ test.describe("Core flows and accessibility", () => {
     await expect(page.getByLabel("Content")).toBeVisible();
     await expect(page.getByRole("button", { name: "Create" })).toBeVisible();
 
+    // @ts-expect-error Playwright version mismatch between @playwright/test and @axe-core/playwright (expires: 2025-12-31)
     const axe = new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa"]) // Scope to the create post form only
       .include("form");
     const results = await axe.analyze();
     const severe = results.violations.filter(
-      (v) => v.impact === "critical" || v.impact === "serious",
+      (v) => v.impact === "critical" || v.impact === "serious"
     );
-    expect(
-      severe,
-      severe.map((v) => v.id).join(", "),
-    ).toEqual([]);
+    expect(severe, severe.map((v) => v.id).join(", ")).toEqual([]);
   });
 });
-
-

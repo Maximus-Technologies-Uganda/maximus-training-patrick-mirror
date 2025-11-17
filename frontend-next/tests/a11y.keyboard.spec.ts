@@ -110,6 +110,7 @@ test.describe("keyboard-only navigation", () => {
     // Look for page 2 indicator in the pagination controls (not live region)
     await expect(page.locator('span[aria-current="page"]')).toContainText("Page 2");
 
+    // @ts-expect-error Playwright version mismatch between @playwright/test and @axe-core/playwright (expires: 2025-12-31)
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
     expect(results.violations, results.violations.map((v) => v.id).join(", ")).toEqual([]);
