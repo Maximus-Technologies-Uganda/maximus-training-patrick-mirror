@@ -1,3 +1,8 @@
+## 2025-11-17
+
+- fix(frontend-next): harden `/posts` SSR query parsing by treating invalid sort params as the default and route every server fetch through the Google ID token client (no retries on upstream 4xx/5xx).
+- test(frontend-next): replace legacy global fetch stubs with `fetchApi` mocks, add server-only stub wiring for Vitest, and expand PostsPage SSR/unit/integration coverage for payload normalization + error handling.
+
 ## 2025-11-16
 
 - test(frontend-next): add `/api/posts/[id]` integration coverage for DELETE/PATCH flows (identity propagation, CSRF enforcement, local fallback) to lift frontend coverage above the 65% pre-push gate.

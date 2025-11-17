@@ -30,6 +30,10 @@ export default defineConfig({
         replacement: path.resolve(__dirname, "..", "node_modules", "react-dom"),
       },
       {
+        find: "server-only",
+        replacement: path.resolve(__dirname, "src", "test", "server-only-stub.ts"),
+      },
+      {
         find: "@testing-library/react",
         replacement: path.resolve(__dirname, "src", "test", "testing-library-shim.cjs"),
       },
