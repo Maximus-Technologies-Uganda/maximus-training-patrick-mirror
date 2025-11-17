@@ -1,4 +1,4 @@
-name: Submit Full Deploy to Cloud Build
+name: Submit Full Deploy to Cloud Build (DEPRECATED - Use Build and Deploy workflow)
 
 on:
   workflow_run:
@@ -6,6 +6,10 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+
+# DEPRECATED: This workflow has been replaced by 'build-and-deploy.yml'
+# GitHub Actions now handles building and deploying directly instead of using Cloud Build.
+# This workflow is disabled to prevent duplicate deployments.
 
 permissions:
   contents: read
