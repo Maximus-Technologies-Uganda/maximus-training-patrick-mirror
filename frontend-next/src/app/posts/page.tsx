@@ -1,5 +1,7 @@
 import React from "react";
 
+import { headers } from "next/headers";
+
 import { z } from "zod";
 
 import PostsPageClient from "@/components/PostsPageClient";
@@ -14,6 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 
 type SearchParams = Record<string, string | string[] | undefined> | undefined;
+type SearchParamsInput = SearchParams | Promise<SearchParams>;
 
 const SortSchema = PostSortSchema.catch(DEFAULT_POST_SORT);
 
@@ -45,7 +48,8 @@ function toScalar(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-function parseQuery(params: SearchParams): ParsedQuery {
+async function parseQuery(paramsInput: SearchParamsInput): Promise<ParsedQuery> {
+  const params = await paramsInput;
   const parsed = QuerySchema.parse({
     page: params?.page,
     pageSize: params?.pageSize,
@@ -104,12 +108,49 @@ function normalizePayload(
   return {};
 }
 
+async function fetchLocalPostsFallback(
+  params: URLSearchParams,
+  pageSize: number
+): Promise<{ items?: SsrPost[]; hasNextPage?: boolean } | null> {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  if (!host) return null;
+  const forwardedProto = headerList.get("x-forwarded-proto");
+  const protocol =
+    forwardedProto && forwardedProto.trim().length > 0
+      ? forwardedProto
+      : host.includes("localhost") || host.startsWith("127.")
+        ? "http"
+        : "https";
+  const origin = `${protocol}://${host}`;
+  try {
+    const cookieHeader = headerList.get("cookie");
+    const response = await fetch(`${origin}/api/posts?${params.toString()}`, {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[posts] Local API fallback returned", response.status);
+      }
+      return null;
+    }
+    const payload = (await response.json()) as PostsPayload;
+    return normalizePayload(payload, pageSize);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[posts] Local API fallback failed", error);
+    }
+    return null;
+  }
+}
+
 export default async function PostsPage({
   searchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams?: SearchParamsInput;
 }): Promise<React.ReactElement> {
-  const query = parseQuery(searchParams);
+  const query = await parseQuery(searchParams);
   const params = new URLSearchParams();
   params.set("page", String(query.page));
   const upstreamPageSize = Math.min(query.pageSize + 1, 100);
@@ -129,6 +170,11 @@ export default async function PostsPage({
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[posts] SSR fetch failed", error);
+    }
+    const fallback = await fetchLocalPostsFallback(params, query.pageSize);
+    if (fallback) {
+      initialData = fallback.items;
+      initialHasNextPage = fallback.hasNextPage;
     }
   }
 

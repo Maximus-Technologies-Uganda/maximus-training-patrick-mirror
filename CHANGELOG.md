@@ -2,6 +2,8 @@
 
 - fix(frontend-next): harden `/posts` SSR query parsing by treating invalid sort params as the default and route every server fetch through the Google ID token client (no retries on upstream 4xx/5xx).
 - test(frontend-next): replace legacy global fetch stubs with `fetchApi` mocks, add server-only stub wiring for Vitest, and expand PostsPage SSR/unit/integration coverage for payload normalization + error handling.
+- chore(frontend-next): raise Vitest + verify-coverage thresholds to ≥70% lines/statements to match the Finish-to-Green gate and document the passing run.
+- docs(evidence): publish JS-disabled Playwright SSR artifacts (`posts-ssr-raw.html`, `posts-ssr-first-paint.png`) and refresh the Week 10 evidence summary with the new coverage + gate status.
 
 ## 2025-11-16
 

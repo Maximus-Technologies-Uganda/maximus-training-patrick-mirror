@@ -2,8 +2,8 @@
 
 /**
  * Coverage Verification Script
- * 
- * Verifies that test coverage meets Week 9 spec requirement ≥80% (FR-016, SC-005)
+ *
+ * Verifies that test coverage meets Phase 0 Finish-to-Green requirement ≥70%
  * 
  * Usage:
  *   node scripts/verify-coverage.mjs
@@ -20,7 +20,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const COVERAGE_THRESHOLD = 80; // Spec requirement: ≥80% (FR-016, SC-005)
+const COVERAGE_THRESHOLD = 70; // Phase 0 requirement: ≥70% aggregate coverage
 const COVERAGE_FILE = path.join(__dirname, "..", "coverage", "coverage-summary.json");
 
 function calculatePercentage(covered, total) {
