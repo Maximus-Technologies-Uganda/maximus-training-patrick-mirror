@@ -213,11 +213,9 @@ function PostsPageClientInner({
   const hasAuthoritativeData = data
     ? !usingFallbackReference || treatFallbackAsAuthoritative
     : false;
-  const awaitingAuthoritativeData =
-    (!hasAuthoritativeData && (isLoading || isValidating)) ||
-    (!hasAuthoritativeData && shouldForceRevalidation && usingFallbackReference);
-  const showLoadingState = awaitingAuthoritativeData && !error;
-  const showErrorState = Boolean(error) && !hasAuthoritativeData;
+  const awaitingAuthoritativeData = !hasAuthoritativeData && (isLoading || isValidating);
+  const showLoadingState = awaitingAuthoritativeData;
+  const showErrorState = Boolean(error) && !hasAuthoritativeData && !isValidating;
   const showEmptyState =
     !showLoadingState && !showErrorState && hasAuthoritativeData && posts.length === 0;
 

@@ -4,6 +4,7 @@
 - test(frontend-next): replace legacy global fetch stubs with `fetchApi` mocks, add server-only stub wiring for Vitest, and expand PostsPage SSR/unit/integration coverage for payload normalization + error handling.
 - chore(frontend-next): raise Vitest + verify-coverage thresholds to ≥70% lines/statements to match the Finish-to-Green gate and document the passing run.
 - docs(evidence): publish JS-disabled Playwright SSR artifacts (`posts-ssr-raw.html`, `posts-ssr-first-paint.png`) and refresh the Week 10 evidence summary with the new coverage + gate status.
+- fix(frontend-next): seed the local `/api/posts` fallback store for SSR, tag seeded responses, and force SWR revalidation/announcements so Playwright core flows keep functioning without `API_BASE_URL` while loading/error retries stay testable.
 
 ## 2025-11-16
 
