@@ -5,6 +5,9 @@ substitutions:
   _PROD_API_URL: https://maximus-training-api-wyb2jsgqyq-bq.a.run.app
   _SERVICE_ACCOUNT: ""
   _ALLOW_UNAUTH: "false"
+  # Bash variables used in script blocks (defined by Cloud Build)
+  PROJECT_ID: ""
+  BUILD_ID: ""
 
 options:
   logging: CLOUD_LOGGING_ONLY
