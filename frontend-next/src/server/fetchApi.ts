@@ -7,13 +7,6 @@ type HeadersDictionary = Record<string, string>;
 const googleAuth = new GoogleAuth();
 let cachedClientPromise: Promise<import("google-auth-library").IdTokenClient> | null = null;
 
-function assertEnv(name: string, value: string | undefined): string {
-  if (!value) {
-    throw new Error(`fetchApi: missing required env ${name}`);
-  }
-  return value;
-}
-
 function normalizeHeaders(headers?: HeadersInit): HeadersDictionary {
   if (!headers) return {};
   if (headers instanceof Headers) {
@@ -47,9 +40,21 @@ function jitterDelay(attempt: number): number {
   return base + Math.floor(Math.random() * 60);
 }
 
+/**
+ * Server-side fetch with Google ID token authentication.
+ *
+ * In development/testing without API_BASE_URL, falls back to local /api routes.
+ * In production, requires API_BASE_URL and ID_TOKEN_AUDIENCE environment variables.
+ */
 export async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
-  const baseUrl = assertEnv("API_BASE_URL", process.env.API_BASE_URL);
-  const audience = assertEnv("ID_TOKEN_AUDIENCE", process.env.ID_TOKEN_AUDIENCE ?? baseUrl);
+  const baseUrl = process.env.API_BASE_URL;
+
+  // If no API_BASE_URL, we're in local dev/test mode - fall through to caller's fallback
+  if (!baseUrl) {
+    throw new Error("fetchApi: missing required env API_BASE_URL");
+  }
+
+  const audience = process.env.ID_TOKEN_AUDIENCE ?? baseUrl;
   const client = await getIdTokenClient(audience);
   const url = withBaseUrl(path, baseUrl);
   const headers: HeadersDictionary = {

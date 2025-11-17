@@ -50,6 +50,7 @@ export default defineConfig({
       url: string;
       reuseExistingServer: boolean;
       timeout: number;
+      env?: Record<string, string>;
     }> = [];
     const baseTimeout = process.env.CI ? 180_000 : 120_000;
     if (startApi) {
@@ -67,6 +68,8 @@ export default defineConfig({
       url: `http://localhost:${port}`,
       reuseExistingServer: !process.env.CI,
       timeout: baseTimeout,
+      // Note: Do NOT set API_BASE_URL for E2E tests - let SSR fail gracefully and fall back to local /api routes.
+      // This allows Playwright tests to stub /api/posts on the client side and control data flow.
     });
     return servers;
   })(),

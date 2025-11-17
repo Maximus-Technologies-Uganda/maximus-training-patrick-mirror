@@ -150,8 +150,8 @@
             }
           ],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [],
@@ -424,8 +424,8 @@
           ],
           "none": [],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [],
@@ -677,7 +677,37 @@
           "none": [],
           "impact": null,
           "html": "<svg class=\"w-12 h-12 text-purple-600 transition-transform duration-300\" width=\"48\" height=\"48\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">",
-          "target": ["svg"]
+          "target": [".w-12"]
+        },
+        {
+          "any": [],
+          "all": [
+            {
+              "id": "focusable-modal-open",
+              "data": null,
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "No focusable elements while a modal is open"
+            },
+            {
+              "id": "focusable-disabled",
+              "data": null,
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "No focusable elements contained within element"
+            },
+            {
+              "id": "focusable-not-tabbable",
+              "data": null,
+              "relatedNodes": [],
+              "impact": "serious",
+              "message": "No focusable elements contained within element"
+            }
+          ],
+          "none": [],
+          "impact": null,
+          "html": "<div aria-hidden=\"true\" data-dot=\"true\"></div>",
+          "target": [["nextjs-portal", "div[data-dot=\"true\"]"]]
         }
       ]
     },
@@ -782,8 +812,8 @@
             }
           ],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [],
@@ -1242,8 +1272,8 @@
           ],
           "none": [],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [],
@@ -1558,8 +1588,8 @@
           "all": [],
           "none": [],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [
@@ -1948,7 +1978,7 @@
           "any": [
             {
               "id": "duplicate-id-aria",
-              "data": "_R_eclubvb_",
+              "data": "_R_ed5esnflb_",
               "relatedNodes": [],
               "impact": "critical",
               "message": "Document has no elements referenced with ARIA or labels that share the same id attribute"
@@ -1957,8 +1987,8 @@
           "all": [],
           "none": [],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [
@@ -2016,7 +2046,7 @@
               "data": null,
               "relatedNodes": [
                 {
-                  "html": "<label for=\"_R_eclubvb_\" class=\"block text-sm font-medium text-text mb-1\">Title</label>",
+                  "html": "<label for=\"_R_ed5esnflb_\" class=\"block text-sm font-medium text-text mb-1\">Title</label>",
                   "target": [".mb-1"]
                 }
               ],
@@ -2025,8 +2055,8 @@
             }
           ],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [],
@@ -2149,7 +2179,7 @@
               },
               "relatedNodes": [
                 {
-                  "html": "<label for=\"_R_eclubvb_\" class=\"block text-sm font-medium text-text mb-1\">Title</label>",
+                  "html": "<label for=\"_R_ed5esnflb_\" class=\"block text-sm font-medium text-text mb-1\">Title</label>",
                   "target": [".mb-1"]
                 }
               ],
@@ -2182,8 +2212,8 @@
             }
           ],
           "impact": null,
-          "html": "<input id=\"_R_eclubvb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
-          "target": ["#_R_eclubvb_"]
+          "html": "<input id=\"_R_ed5esnflb_\" aria-invalid=\"false\" class=\"block w-full px-2 py-1 bg-surface border rounded-sm text-text placeholder:text-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed border-text-muted/40 hover:border-text-muted/60\" placeholder=\"Post title\" aria-label=\"Title\" value=\"\">",
+          "target": ["#_R_ed5esnflb_"]
         },
         {
           "any": [

@@ -24,6 +24,8 @@ const mockText = vi.fn();
 beforeEach(() => {
   mockJson.mockReset();
   mockText.mockReset();
+  // Set API_BASE_URL so route handler attempts upstream fetch
+  process.env.API_BASE_URL = "http://localhost:8080";
   // Default: return 200 with JSON array
   global.fetch = vi.fn(async () => {
     return {
@@ -33,9 +35,9 @@ beforeEach(() => {
       text: mockText.mockResolvedValue(JSON.stringify([{ id: "p1", title: "Hello" }])),
     } as unknown as Response;
   }) as unknown as typeof fetch;
+  // Reload route module to pick up updated env var
+  vi.resetModules();
 });
-
-import { GET } from "./route";
 
 function makeRequest(url: string): NextRequest {
   // Minimal NextRequest-like shape sufficient for handler under test
@@ -47,6 +49,7 @@ function makeRequest(url: string): NextRequest {
 
 describe("GET /api/posts route handler", () => {
   it("proxies JSON arrays from upstream as JSON", async () => {
+    const { GET } = await import("./route");
     const req = makeRequest("/api/posts?page=1&pageSize=5");
     const res = await GET(req);
     // Accessing NextResponse internals for assertion in test
@@ -59,6 +62,7 @@ describe("GET /api/posts route handler", () => {
     (global.fetch as unknown as Mock).mockImplementationOnce(async () => {
       throw new Error("upstream down");
     });
+    const { GET } = await import("./route");
     const req = makeRequest("/api/posts?page=1&pageSize=1");
     const res = await GET(req);
     // Accessing NextResponse internals for assertion in test
@@ -71,9 +75,10 @@ describe("GET /api/posts route handler", () => {
         status: 200,
         headers: new Map([["content-type", "application/json; charset=utf-8"]]),
         json: vi.fn().mockResolvedValue({ ok: true }),
-        text: vi.fn().mockResolvedValue("{\"ok\":true}"),
+        text: vi.fn().mockResolvedValue('{"ok":true}'),
       } as unknown as Response;
     });
+    const { GET } = await import("./route");
     const req = makeRequest("/api/posts?page=1&pageSize=1");
     const res = await GET(req);
     // Accessing NextResponse internals for assertion in test
@@ -89,7 +94,7 @@ describe("GET /api/posts route handler", () => {
         status: 201,
         headers: new Map([["content-type", "application/json"]]),
         json: vi.fn().mockResolvedValue({ ok: true }),
-        text: vi.fn().mockResolvedValue("{\"ok\":true}"),
+        text: vi.fn().mockResolvedValue('{"ok":true}'),
       } as unknown as Response;
     });
     const now = Math.floor(Date.now() / 1000);
@@ -100,20 +105,22 @@ describe("GET /api/posts route handler", () => {
         ["x-csrf-token", csrfToken],
       ]),
       nextUrl: new URL("http://localhost:3000/api/posts"),
-      text: vi.fn().mockResolvedValue("{\"title\":\"T\"}"),
+      text: vi.fn().mockResolvedValue('{"title":"T"}'),
     } as unknown as NextRequest;
     const { POST } = await import("./route");
     const res = await POST(req);
     expect(res.status).toBe(201);
     const fetchArgs = (global.fetch as unknown as Mock).mock.calls[0];
-    expect(fetchArgs?.[1]?.headers).toMatchObject({ Cookie: `session=abc.def.dev; csrf=${csrfToken}` });
+    expect(fetchArgs?.[1]?.headers).toMatchObject({
+      Cookie: `session=abc.def.dev; csrf=${csrfToken}`,
+    });
   });
 
   it("rejects POST without X-CSRF-Token header", async () => {
     const req = {
       headers: new Map([["cookie", "session=abc.def.dev"]]),
       nextUrl: new URL("http://localhost:3000/api/posts"),
-      text: vi.fn().mockResolvedValue("{\"title\":\"T\"}"),
+      text: vi.fn().mockResolvedValue('{"title":"T"}'),
     } as unknown as NextRequest;
     const { POST } = await import("./route");
     const res = await POST(req);
@@ -124,5 +131,3 @@ describe("GET /api/posts route handler", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 });
-
-
