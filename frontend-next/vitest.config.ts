@@ -141,6 +141,7 @@ export default defineConfig({
     },
     environmentMatchGlobs: [
       ["tests/openapi.validation.test.ts", "node"],
+      ["src/server/**/*.test.ts", "node"],
       ["src/app/api/**", "node"],
       ["src/app/**/__tests__/**", "node"],
     ],

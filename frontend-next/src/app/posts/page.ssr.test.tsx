@@ -4,15 +4,22 @@ import PostsPage from "./page";
 import { DEFAULT_POST_SORT } from "@/lib/schemas";
 
 const fetchApiMock = vi.hoisted(() => vi.fn());
+const fetchLocalPostsFallbackMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/server/fetchApi", () => ({
   fetchApi: fetchApiMock,
 }));
 
+vi.mock("@/server/fetchPostsFallback", () => ({
+  fetchLocalPostsFallback: fetchLocalPostsFallbackMock,
+}));
+
 describe("SSR Posts page (server component)", () => {
   beforeEach(() => {
     fetchApiMock.mockReset();
+    fetchLocalPostsFallbackMock.mockReset();
     fetchApiMock.mockResolvedValue({ items: [], hasNextPage: false });
+    fetchLocalPostsFallbackMock.mockResolvedValue(null);
   });
 
   it("returns a React element with normalized props", async () => {

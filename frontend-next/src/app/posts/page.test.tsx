@@ -5,9 +5,14 @@ import PostsPage from "./page";
 import { DEFAULT_POST_SORT } from "../../lib/schemas";
 
 const fetchApiMock = vi.hoisted(() => vi.fn());
+const fetchLocalPostsFallbackMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/server/fetchApi", () => ({
   fetchApi: fetchApiMock,
+}));
+
+vi.mock("@/server/fetchPostsFallback", () => ({
+  fetchLocalPostsFallback: fetchLocalPostsFallbackMock,
 }));
 
 vi.mock("../../lib/swr", async () => {
@@ -21,6 +26,7 @@ vi.mock("../../lib/swr", async () => {
 describe("SSR PostsPage (server component)", () => {
   beforeEach(() => {
     fetchApiMock.mockReset();
+    fetchLocalPostsFallbackMock.mockReset();
   });
 
   function expectLatestRequestUrl(): string {
@@ -147,6 +153,7 @@ describe("SSR PostsPage (server component)", () => {
 
   it("handles fetch error gracefully", async () => {
     fetchApiMock.mockRejectedValue(new Error("Network error"));
+    fetchLocalPostsFallbackMock.mockResolvedValue(null);
     await mockSWR({
       items: undefined,
       hasNextPage: false,
@@ -162,6 +169,7 @@ describe("SSR PostsPage (server component)", () => {
 
   it("handles non-ok response", async () => {
     fetchApiMock.mockRejectedValue(new Error("Upstream 500"));
+    fetchLocalPostsFallbackMock.mockResolvedValue(null);
     await mockSWR({
       items: undefined,
       hasNextPage: false,
