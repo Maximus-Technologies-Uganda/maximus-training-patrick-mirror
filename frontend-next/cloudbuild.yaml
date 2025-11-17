@@ -2,7 +2,7 @@ substitutions:
   _SERVICE_NAME: maximus-training-frontend
   _REGION: africa-south1
   _AR_REPOSITORY: cloud-run-images
-  _PROD_API_URL: https://maximus-training-api-673209018655.africa-south1.run.app
+  _PROD_API_URL: https://maximus-training-api-wyb2jsgqyq-bq.a.run.app
   _SERVICE_ACCOUNT: ""
   _ALLOW_UNAUTH: "false"
 
