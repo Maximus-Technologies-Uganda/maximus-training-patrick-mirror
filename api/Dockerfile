@@ -3,8 +3,8 @@
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@9.x --activate
+# Install pnpm globally
+RUN npm install -g pnpm@9.15.9
 
 # Copy package files from root
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
