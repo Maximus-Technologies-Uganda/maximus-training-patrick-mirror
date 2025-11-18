@@ -82,7 +82,7 @@ jobs:
             --progress=plain \
             -t "${IMAGE_URI}" \
             -f api/Dockerfile \
-            api
+            .
 
       - name: Push API Docker image
         run: |
