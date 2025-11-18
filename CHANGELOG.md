@@ -1,5 +1,6 @@
 ## 2025-11-18
 
+- fix(ci): pin the build-and-deploy workflow checkout to the `workflow_run.head_sha` (or manual dispatch ref) so Cloud Run releases always use the commit that cleared the Quality Gate instead of whatever landed on `main` afterward.
 - docs(evidence): add Week 10 coverage, Playwright, and `/status` latency stub artifacts under `docs/week-10/**` so README and release notes links resolve without 404s while still pointing back to the authoritative frontend-next coverage output.
 
 ## 2025-11-17
