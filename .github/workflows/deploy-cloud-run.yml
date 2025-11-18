@@ -1,10 +1,6 @@
 name: Submit Full Deploy to Cloud Build (DEPRECATED - Use Build and Deploy workflow)
 
 on:
-  workflow_run:
-    workflows: ['Quality Gate']
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 # DEPRECATED: This workflow has been replaced by 'build-and-deploy.yml'
@@ -31,7 +27,7 @@ env:
 jobs:
   submit-build:
     name: Submit Cloud Build Job
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     concurrency:
       group: frontend-cloudbuild-${{ github.ref }}

@@ -5,7 +5,11 @@
 
 ## 2025-11-18
 
+- chore(ci): remove the Quality Gate trigger and replace `.github/workflows/deploy.yml` with a stub so the deprecated Cloud Build
+  workflow no longer runs (or fails) now that its config has been archived in favor of `build-and-deploy.yml`.
 - fix(ci): pin the build-and-deploy workflow checkout to the `workflow_run.head_sha` (or manual dispatch ref) so Cloud Run releases always use the commit that cleared the Quality Gate instead of whatever landed on `main` afterward.
+- fix(ci): gate the deprecated `deploy-cloud-run.yml` workflow behind manual dispatch only so the archived Cloud Build config no longer fails on every Quality Gate completion.
+- fix(ci): push and deploy Docker images using the shell env populated via `$GITHUB_ENV`, ensuring the URIs resolved at runtime are honored by Docker and `gcloud run deploy`.
 - docs(evidence): add Week 10 coverage, Playwright, and `/status` latency stub artifacts under `docs/week-10/**` so README and release notes links resolve without 404s while still pointing back to the authoritative frontend-next coverage output.
 
 ## 2025-11-17
