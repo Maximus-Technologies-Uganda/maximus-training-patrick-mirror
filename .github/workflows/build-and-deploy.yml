@@ -19,6 +19,8 @@ env:
   FRONTEND_SERVICE_NAME: maximus-training-frontend
   WORKLOAD_IDENTITY_PROVIDER: projects/673209018655/locations/global/workloadIdentityPools/github-pool/providers/github-provider
   SERVICE_ACCOUNT: github-actions-deployer@proj-app-dev.iam.gserviceaccount.com
+  DEPLOY_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+  DEPLOY_BRANCH: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.event.workflow_run.head_branch }}
 
 jobs:
   build-and-deploy:
@@ -76,7 +78,7 @@ jobs:
       - name: Build API Docker image
         run: |
           set -euo pipefail
-          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.API_SERVICE_NAME }}:${{ github.sha }}"
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.API_SERVICE_NAME }}:${{ env.DEPLOY_SHA }}"
           echo "API_IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
           docker build \
             --progress=plain \
@@ -87,13 +89,21 @@ jobs:
       - name: Push API Docker image
         run: |
           set -euo pipefail
-          docker push "${{ env.API_IMAGE_URI }}"
+          if [ -z "${API_IMAGE_URI:-}" ]; then
+            echo "API_IMAGE_URI is not set" >&2
+            exit 1
+          fi
+          docker push "$API_IMAGE_URI"
 
       - name: Deploy API to Cloud Run
         run: |
           set -euo pipefail
+          if [ -z "${API_IMAGE_URI:-}" ]; then
+            echo "API_IMAGE_URI is not set" >&2
+            exit 1
+          fi
           gcloud run deploy "${{ env.API_SERVICE_NAME }}" \
-            --image="${{ env.API_IMAGE_URI }}" \
+            --image="$API_IMAGE_URI" \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
             --platform=managed \
@@ -128,7 +138,7 @@ jobs:
       - name: Build Frontend Docker image
         run: |
           set -euo pipefail
-          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.FRONTEND_SERVICE_NAME }}:${{ github.sha }}"
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.FRONTEND_SERVICE_NAME }}:${{ env.DEPLOY_SHA }}"
           echo "FRONTEND_IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
           docker build \
             --progress=plain \
@@ -140,13 +150,21 @@ jobs:
       - name: Push Frontend Docker image
         run: |
           set -euo pipefail
-          docker push "${{ env.FRONTEND_IMAGE_URI }}"
+          if [ -z "${FRONTEND_IMAGE_URI:-}" ]; then
+            echo "FRONTEND_IMAGE_URI is not set" >&2
+            exit 1
+          fi
+          docker push "$FRONTEND_IMAGE_URI"
 
       - name: Deploy Frontend to Cloud Run
         run: |
           set -euo pipefail
+          if [ -z "${FRONTEND_IMAGE_URI:-}" ]; then
+            echo "FRONTEND_IMAGE_URI is not set" >&2
+            exit 1
+          fi
           gcloud run deploy "${{ env.FRONTEND_SERVICE_NAME }}" \
-            --image="${{ env.FRONTEND_IMAGE_URI }}" \
+            --image="$FRONTEND_IMAGE_URI" \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
             --platform=managed \
@@ -219,7 +237,7 @@ jobs:
           set -euo pipefail
           FRONTEND_URL="${{ steps.frontend-url.outputs.url }}"
           API_URL="${{ steps.api-url.outputs.url }}"
-          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHA="${{ env.DEPLOY_SHA }}"
 
           {
             echo "## ✅ Build & Deploy to Cloud Run"
@@ -228,7 +246,7 @@ jobs:
             echo "| Key | Value |"
             echo "| --- | --- |"
             echo "| **Commit SHA** | \`${COMMIT_SHA:0:7}\` ([full](https://github.com/${{ github.repository }}/commit/${COMMIT_SHA})) |"
-            echo "| **Branch** | \`${{ github.ref_name }}\` |"
+            echo "| **Branch** | \`${{ env.DEPLOY_BRANCH }}\` |"
             echo "| **Workflow** | [Build & Deploy](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
             echo ""
             echo "### Deployed Services & URLs"
@@ -238,8 +256,8 @@ jobs:
             echo "| API | ${{ env.REGION }} | [\`${API_URL}\`](${API_URL}) |"
             echo ""
             echo "### Build Information"
-            echo "- **API Image**: \`${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.API_SERVICE_NAME }}:${{ github.sha }}\`"
-            echo "- **Frontend Image**: \`${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.FRONTEND_SERVICE_NAME }}:${{ github.sha }}\`"
+            echo "- **API Image**: \`${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.API_SERVICE_NAME }}:${{ env.DEPLOY_SHA }}\`"
+            echo "- **Frontend Image**: \`${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.FRONTEND_SERVICE_NAME }}:${{ env.DEPLOY_SHA }}\`"
             echo ""
             echo "### Authentication Method"
             echo "✓ **Workload Identity Federation (WIF)** — No secrets/credentials in GitHub"

@@ -1,3 +1,8 @@
+## 2025-11-19
+
+- fix(ci): use runtime shell variables for Docker push/deploy commands in the GitHub Actions build-and-deploy workflow so Artifact Registry image references resolve correctly after being written via `$GITHUB_ENV`.
+- fix(ci): pin workflow metadata (image tags, summary links) to the verified Quality Gate commit/branch to prevent accidental drift when newer pushes arrive during deployment.
+
 ## 2025-11-18
 
 - fix(ci): pin the build-and-deploy workflow checkout to the `workflow_run.head_sha` (or manual dispatch ref) so Cloud Run releases always use the commit that cleared the Quality Gate instead of whatever landed on `main` afterward.
