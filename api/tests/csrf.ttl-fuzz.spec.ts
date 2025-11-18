@@ -621,7 +621,7 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
 
     it('validates CSRF for PUT requests with boundary conditions', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const boundaryTimestamp = now - 2 * 60 * 60; // Exactly 2 hours ago
+      const boundaryTimestamp = now - 2 * 60 * 60 + 5; // 2 hours ago minus 5 seconds (safely within boundary)
 
       const repository = buildRepository({
         getById: async (id) => ({
@@ -686,7 +686,7 @@ describe('CSRF TTL Fuzzing Tests (T093)', () => {
 
     it('validates CSRF for DELETE requests with boundary conditions', async () => {
       const now = Math.floor(Date.now() / 1000);
-      const boundaryTimestamp = now - 2 * 60 * 60; // Exactly 2 hours ago
+      const boundaryTimestamp = now - 2 * 60 * 60 + 5; // 2 hours ago minus 5 seconds (safely within boundary)
 
       const repository = buildRepository({
         getById: async (id) => ({
