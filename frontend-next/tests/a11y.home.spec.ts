@@ -10,7 +10,6 @@ test.describe("/ (home) accessibility", () => {
     });
     await expect(page.getByRole("main")).toBeVisible();
 
-    // @ts-expect-error Playwright version mismatch between @playwright/test and @axe-core/playwright (expires: 2025-12-31)
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
     expect(results.violations, results.violations.map((v) => v.id).join(", ")).toEqual([]);

@@ -32,7 +32,6 @@ test.describe("Core flows and accessibility", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: "Posts" })).toBeVisible();
 
-    // @ts-expect-error Playwright version mismatch between @playwright/test and @axe-core/playwright (expires: 2025-12-31)
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
     const severe = results.violations.filter(
@@ -50,7 +49,6 @@ test.describe("Core flows and accessibility", () => {
     await expect(page.getByLabel("Content")).toBeVisible();
     await expect(page.getByRole("button", { name: "Create" })).toBeVisible();
 
-    // @ts-expect-error Playwright version mismatch between @playwright/test and @axe-core/playwright (expires: 2025-12-31)
     const axe = new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa"]) // Scope to the create post form only
       .include("form");

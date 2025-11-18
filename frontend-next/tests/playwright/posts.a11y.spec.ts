@@ -6,7 +6,6 @@ import path from "path";
 test.describe("/posts accessibility", () => {
   test("smoke axe check", async ({ page }) => {
     await page.goto("/posts");
-    // @ts-expect-error Playwright version mismatch between @playwright/test and @axe-core/playwright (expires: 2025-12-31)
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
 
