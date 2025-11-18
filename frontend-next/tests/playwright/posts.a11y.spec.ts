@@ -15,8 +15,15 @@ test.describe("/posts accessibility", () => {
     const outDir = path.join(repoRoot, "a11y");
     fs.mkdirSync(outDir, { recursive: true });
     const outFile = path.join(outDir, "report.json");
-    fs.writeFileSync(outFile, JSON.stringify({ violations: results.violations }, null, 2) + "\n", "utf8");
+    fs.writeFileSync(
+      outFile,
+      JSON.stringify({ violations: results.violations }, null, 2) + "\n",
+      "utf8"
+    );
 
-    expect(results.violations, results.violations.map((violation) => violation.id).join(", ")).toEqual([]);
+    expect(
+      results.violations,
+      results.violations.map((violation) => violation.id).join(", ")
+    ).toEqual([]);
   });
 });

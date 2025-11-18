@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-async function loginProgrammatically(page: import("@playwright/test").Page, creds: { username: string; password: string }): Promise<void> {
+async function loginProgrammatically(
+  page: import("@playwright/test").Page,
+  creds: { username: string; password: string }
+): Promise<void> {
   await page.goto("/");
   await page.evaluate(async (payload) => {
     try {
@@ -22,7 +25,9 @@ async function loginProgrammatically(page: import("@playwright/test").Page, cred
 }
 
 test.describe("Core flows and accessibility", () => {
-  test("Posts list page shows heading and has no critical/serious a11y issues", async ({ page }) => {
+  test("Posts list page shows heading and has no critical/serious a11y issues", async ({
+    page,
+  }) => {
     await page.goto("/posts");
 
     await expect(page.getByRole("heading", { level: 1, name: "Posts" })).toBeVisible();
@@ -30,12 +35,9 @@ test.describe("Core flows and accessibility", () => {
     const axe = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
     const results = await axe.analyze();
     const severe = results.violations.filter(
-      (v) => v.impact === "critical" || v.impact === "serious",
+      (v) => v.impact === "critical" || v.impact === "serious"
     );
-    expect(
-      severe,
-      severe.map((v) => v.id).join(", "),
-    ).toEqual([]);
+    expect(severe, severe.map((v) => v.id).join(", ")).toEqual([]);
   });
 
   test("Create post form is present and has no critical/serious a11y issues", async ({ page }) => {
@@ -52,13 +54,8 @@ test.describe("Core flows and accessibility", () => {
       .include("form");
     const results = await axe.analyze();
     const severe = results.violations.filter(
-      (v) => v.impact === "critical" || v.impact === "serious",
+      (v) => v.impact === "critical" || v.impact === "serious"
     );
-    expect(
-      severe,
-      severe.map((v) => v.id).join(", "),
-    ).toEqual([]);
+    expect(severe, severe.map((v) => v.id).join(", ")).toEqual([]);
   });
 });
-
-
