@@ -108,6 +108,8 @@ jobs:
             --region="${{ env.REGION }}" \
             --platform=managed \
             --port=8080 \
+            --set-env-vars="NODE_ENV=production" \
+            --update-secrets="SESSION_SECRET=session-secret:latest" \
             --memory=512Mi \
             --cpu=1 \
             --min-instances=0 \
@@ -201,10 +203,18 @@ jobs:
         run: |
           set -euo pipefail
           echo "Granting Frontend service account permission to invoke API..."
+          FRONTEND_SA=$(gcloud run services describe "${{ env.FRONTEND_SERVICE_NAME }}" \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --format='value(spec.template.spec.serviceAccountName)')
+          if [ -z "$FRONTEND_SA" ]; then
+            echo "Failed to determine frontend service account" >&2
+            exit 1
+          fi
           gcloud run services add-iam-policy-binding "${{ env.API_SERVICE_NAME }}" \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
-            --member="serviceAccount:${{ env.SERVICE_ACCOUNT }}" \
+            --member="serviceAccount:$FRONTEND_SA" \
             --role="roles/run.invoker"
           echo "✓ IAM binding added successfully"
 
