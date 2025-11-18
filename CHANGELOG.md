@@ -1,3 +1,8 @@
+## 2025-11-20
+
+- fix(ci): keep Cloud Run services on their existing runtime identities by removing the GitHub Actions deployer service account override in the build-and-deploy workflow.
+- fix(ci): include `NEXT_PUBLIC_API_URL` in the frontend deploy step so Next.js boot-time env validation passes in production.
+
 ## 2025-11-19
 
 - fix(ci): use runtime shell variables for Docker push/deploy commands in the GitHub Actions build-and-deploy workflow so Artifact Registry image references resolve correctly after being written via `$GITHUB_ENV`.

@@ -114,7 +114,6 @@ jobs:
             --max-instances=10 \
             --timeout=300s \
             --ingress=all \
-            --service-account="${{ env.SERVICE_ACCOUNT }}" \
             --no-allow-unauthenticated
 
       - name: Get API URL
@@ -170,14 +169,13 @@ jobs:
             --region="${{ env.REGION }}" \
             --platform=managed \
             --port=8080 \
-            --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${{ steps.api-url.outputs.url }},ID_TOKEN_AUDIENCE=${{ steps.api-url.outputs.url }}" \
+            --set-env-vars="NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,API_BASE_URL=${{ steps.api-url.outputs.url }},NEXT_PUBLIC_API_URL=${{ steps.api-url.outputs.url }},ID_TOKEN_AUDIENCE=${{ steps.api-url.outputs.url }}" \
             --memory=512Mi \
             --cpu=1 \
             --min-instances=1 \
             --max-instances=10 \
             --timeout=300s \
             --ingress=all \
-            --service-account="${{ env.SERVICE_ACCOUNT }}" \
             --allow-unauthenticated
 
       - name: Get Frontend URL
