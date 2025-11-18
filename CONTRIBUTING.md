@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Welcome to the Training monorepo. This guide explains the repository layout, branching/review process, and the complete local validation workflow aligned to Week 7.5 Finishâ€‘toâ€‘Green. It references the feature artifacts:
+Welcome to the Training monorepo. This guide explains the repository layout, branching/review process, and the complete local validation workflow aligned to Week 7.5 Finish-to-Green. It references the feature artifacts:
 
 - Spec: `specs/007-spec/week-7.5-finishers/spec.md`
 - Plan: `specs/007-spec/week-7.5-finishers/plan.md`
@@ -16,7 +16,7 @@ Welcome to the Training monorepo. This guide explains the repository layout, bra
   - `scripts/run-tests.js` (root test runner)
   - `scripts/quality-gate/aggregate-results.js` (gate decision)
   - `scripts/quality-gate/build-review-packet.js` (Review Packet)
-- `specs/007-spec/week-7.5-finishers/`: Spec, plan, and tasks for Week 7.5 Finishâ€‘toâ€‘Green.
+- `specs/007-spec/week-7.5-finishers/`: Spec, plan, and tasks for Week 7.5 Finish-to-Green.
 - `.github/workflows/main.yml`: CI pipeline that runs gate checks and deploys via Cloud Build.
 
 Node version: 18+ (see `package.json` engines).
@@ -92,7 +92,7 @@ cd api && npm run test:ci
 cd ../frontend-next && npm run test:ci
 ```
 
-4) Contract validation (frontend-next â†’ `api/openapi.json`) (FR-008)
+4) Contract validation (frontend-next → `api/openapi.json`) (FR-008)
 
 ```bash
 npm run test:contract -w frontend-next
@@ -116,7 +116,7 @@ npm run test:e2e -w frontend-next
 
 Thresholds per spec/plan:
 
-- Coverage (including `frontend-next`): statements â‰¥ 60%, branches â‰¥ 50%, functions â‰¥ 55%.
+- Coverage (including `frontend-next`): statements ≥ 60%, branches ≥ 50%, functions ≥ 55%.
 - A11y: zero critical and zero serious violations on posts list and create post form.
 - Contract: no breaking mismatches vs `api/openapi.json`.
 - Type-check: 0 errors across `api` and `frontend-next`.

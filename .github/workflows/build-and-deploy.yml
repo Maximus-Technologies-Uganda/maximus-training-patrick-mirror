@@ -84,7 +84,7 @@ jobs:
             --progress=plain \
             -t "${IMAGE_URI}" \
             -f api/Dockerfile \
-            api
+            .
 
       - name: Push API Docker image
         run: |
@@ -114,6 +114,7 @@ jobs:
             --max-instances=10 \
             --timeout=300s \
             --ingress=all \
+            --service-account="${{ env.SERVICE_ACCOUNT }}" \
             --no-allow-unauthenticated
 
       - name: Get API URL
@@ -176,6 +177,7 @@ jobs:
             --max-instances=10 \
             --timeout=300s \
             --ingress=all \
+            --service-account="${{ env.SERVICE_ACCOUNT }}" \
             --allow-unauthenticated
 
       - name: Get Frontend URL
@@ -198,20 +200,15 @@ jobs:
       # =====================
 
       - name: Grant Frontend invoker role on API
-        continue-on-error: true
         run: |
           set -euo pipefail
-          FRONTEND_SA=$(gcloud run services describe "${{ env.FRONTEND_SERVICE_NAME }}" \
+          echo "Granting Frontend service account permission to invoke API..."
+          gcloud run services add-iam-policy-binding "${{ env.API_SERVICE_NAME }}" \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
-            --format='value(spec.template.spec.serviceAccountName)')
-          if [ -n "$FRONTEND_SA" ]; then
-            gcloud run services add-iam-policy-binding "${{ env.API_SERVICE_NAME }}" \
-              --project="${{ env.PROJECT_ID }}" \
-              --region="${{ env.REGION }}" \
-              --member="serviceAccount:${FRONTEND_SA}" \
-              --role="roles/run.invoker"
-          fi
+            --member="serviceAccount:${{ env.SERVICE_ACCOUNT }}" \
+            --role="roles/run.invoker"
+          echo "✓ IAM binding added successfully"
 
       - name: Verify Frontend deployment
         run: |
